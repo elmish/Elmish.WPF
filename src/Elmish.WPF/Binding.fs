@@ -25,6 +25,7 @@ and Variable<'model,'msg> =
     | BindCmd of Execute<'model,'msg>
     | BindCmdIf of Execute<'model,'msg> * CanExecute<'model>
     | BindVm of Getter<'model> * ViewBindings<'model,'msg>
+    | BindMap of Getter<'model> * (obj -> obj)
 
 [<RequireQualifiedAccess>]
 module Binding =
@@ -48,6 +49,9 @@ module Binding =
             | BindVm (getter,binding) ->
                 (mModel >> getter, binding |> mapViewBinding mModel mMsg)
                 |> BindVm
+            | BindMap (getter,mapper) ->
+                ((mModel >> getter), mapper)
+                |> BindMap
 
         viewBinding
         |> List.map (fun (n,v) -> n, mapVariable v)
@@ -66,14 +70,6 @@ module Binding =
         p, BindCmdIf (exec, canExec)
     let vm (getter: 'model -> '_model) (viewBinding: ViewBindings<'_model,'_msg>) (toMsg: '_msg -> 'msg) p : ViewBinding<'model,'msg> = 
         p, BindVm ((getter >> unbox), viewBinding |> mapViewBinding getter toMsg)
-
-    /// Maps a single Variable binding to a (usually mutable) type to be used at bind-time.
-    /// Only applies to Bind or BindSeq.
-//    let map (f: 'a -> 'b) ((p,v):ViewBinding<'model,'msg>) =
-//        let coerce (getter: Getter<'model>) = (fun m -> (getter m) :?> 'a)
-//        p,
-//        match v with
-//        | Bind getter -> Bind (coerce getter >> f >> unbox)
-//        //TODO get a compile-time check for this
-//        | _ -> failwith ("Unable to map ViewBinding, only Bind and BindSeq are mappable")
+    let oneWayMap (getter: 'model -> 'a) (mapper: 'a -> 'b) p : ViewBinding<'model,'msg> =
+        p, BindMap (getter >> unbox, unbox >> mapper >> unbox)
             

@@ -1,5 +1,4 @@
 ﻿[<RequireQualifiedAccess>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Elmish.WPF.Program
 
 open System.Windows
