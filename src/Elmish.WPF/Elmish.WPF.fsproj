@@ -50,8 +50,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FableStub.fs" />
-    <Compile Include="elmish\cmd.fs" />
-    <Compile Include="elmish\program.fs" />
+    <Compile Include="elmish\src\cmd.fs" />
+    <Compile Include="elmish\src\program.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="Cmd.fs" />
