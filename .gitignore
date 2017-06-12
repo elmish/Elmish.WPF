@@ -10,6 +10,9 @@ bin
 obj
 _ReSharper*
 
+*.psess
+*.vspx
+
 *.csproj.user
 *.resharper.user
 *.resharper
@@ -28,6 +31,8 @@ src/SolutionVersion.fs
 *.userprefs
 *.log.txt
 
+.fake
+paket.exe
 packages
 tools/paket/paket.exe
 tools/paket/paket.target
