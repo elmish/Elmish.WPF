@@ -17,6 +17,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     let propertyChanged = Event<PropertyChangedEventHandler,PropertyChangedEventArgs>()
     let notifyPropertyChanged name = 
+        //console.log <| sprintf "Notify %s" name
         propertyChanged.Trigger(this,PropertyChangedEventArgs(name))
 
     let mutable model : 'model = m
@@ -57,6 +58,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         member this.PropertyChanged = propertyChanged.Publish
 
     member this.UpdateModel other =
+        //console.log <| sprintf "UpdateModel %A" (props.Keys |> Seq.toArray)
         let propDiff name =
             function
             | Get getter | GetSet (getter,_) | Map (getter,_) ->
@@ -79,7 +81,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
     // DynamicObject overrides
 
     override this.TryGetMember (binder, r) = 
-        //printfn "TryGetMember %s = %b" binder.Name (props.ContainsKey binder.Name)
+        //console.log <| sprintf "TryGetMember %s" binder.Name
         if props.ContainsKey binder.Name then
             r <-
                 match props.[binder.Name] with 
@@ -92,9 +94,9 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         else false
 
     override this.TrySetMember (binder, value) =
+        //console.log <| sprintf "TrySetMember %s" binder.Name
         if props.ContainsKey binder.Name then
             match props.[binder.Name] with 
             | GetSet (_,setter) -> setter value model |> dispatch
             | _ -> invalidOp "Unable to set read-only member"
-            true
-        else false
+        false

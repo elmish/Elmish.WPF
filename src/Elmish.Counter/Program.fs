@@ -17,23 +17,27 @@ module Types =
         | Increment
         | Decrement
         | SetStepSize of int
+        | SetToSource of string
+        | SetTwoWay of string
 
     type Model = 
         { Count: int
           StepSize: int
-          Clock: ClockModel }
+          Clock: ClockModel
+          ToSource: string
+          TwoWay: string }
 
 
 module State =
     open Types
      
-    let init() = { Count = 0; StepSize = 1; Clock = { Time = DateTime.Now }}
+    let init() = { Count = 0; StepSize = 1; Clock = { Time = DateTime.Now }; ToSource = ""; TwoWay = "Default" }
 
     let timerTick dispatch =
         let timer = new System.Timers.Timer 1.
         timer.Elapsed.Subscribe (fun _ -> dispatch (System.DateTime.Now |> Tick |> ClockMsg)) |> ignore
-        timer.Enabled <- true
-        timer.Start()
+        //timer.Enabled <- true
+        //timer.Start()
 
     let subscribe model =
         Cmd.ofSub timerTick
@@ -43,11 +47,14 @@ module State =
         | Tick t -> { model with Time = t }
 
     let update (msg:Msg) (model:Model) =
+        console.log <| sprintf "Updating %A" msg
         match msg with
         | Increment -> { model with Count = model.Count + model.StepSize }
         | Decrement -> { model with Count = model.Count - model.StepSize }
         | SetStepSize n -> { model with StepSize = n }
-        | ClockMsg m -> { model with Clock = clockUpdate m model.Clock}
+        | ClockMsg m -> { model with Clock = clockUpdate m model.Clock }
+        | SetToSource s -> { model with ToSource = s }
+        | SetTwoWay s -> { model with TwoWay = s }
         
 
 module App =
@@ -62,11 +69,13 @@ module App =
           "Decrement" |> Binding.cmdIf (fun m -> Decrement) (fun m -> m.StepSize = 1)
           "Count" |> Binding.oneWay (fun m -> m.Count)
           "StepSize" |> Binding.twoWay (fun m -> (double m.StepSize)) (fun v m -> v |> int |> SetStepSize)
-          "Clock" |> Binding.vm (fun m -> m.Clock) clockViewBinding ClockMsg ]
+          "Clock" |> Binding.vm (fun m -> m.Clock) clockViewBinding ClockMsg
+          "ToSource" |> Binding.twoWay (fun m -> m.ToSource) (fun v m -> SetToSource v)
+          "TwoWay" |> Binding.twoWay (fun m -> m.TwoWay) (fun v m -> SetTwoWay v) ]
 
     [<EntryPoint;STAThread>]
     let main argv = 
         Program.mkSimple init update view
-//        |> Program.withConsoleTrace
+        //|> Program.withConsoleTrace
         |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.CounterViews.MainWindow())

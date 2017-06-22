@@ -13,7 +13,7 @@ module Fable
             [<AutoOpen>]
             module console =
                 let error (str,ex) = printfn "%s: %O" str ex
-                let log o = printfn "%A" o
+                let log o = printfn "%s -- %A" (System.DateTime.Now.ToString("o")) o
                 let toJson o = o
         [<AutoOpen>] 
         module JS =
