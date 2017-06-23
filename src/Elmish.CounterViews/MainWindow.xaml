@@ -14,8 +14,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBox Text="{Binding Count}"/>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
@@ -29,7 +27,5 @@
         <Grid Grid.Row="5" HorizontalAlignment="Center">
             <local:Clock DataContext="{Binding Clock}"/>
         </Grid>
-        <TextBox Grid.Row="6" Text="{Binding ToSource, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
-        <TextBox Grid.Row="7" Text="{Binding TwoWay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
     </Grid>
 </Window>
