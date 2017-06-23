@@ -39,7 +39,7 @@ Target "AssemblyInfo" (fun _ ->
           (getAssemblyInfoAttributes projectName)
         )
 
-    !! "src/**/*.??proj"
+    !! "src/*/*.??proj"
     |> Seq.map getProjectDetails
     |> Seq.iter (fun (projFileName, projectName, folderName, attributes) ->
         match projFileName with
