@@ -5,7 +5,7 @@ WPF done the Elmish Way
 
 Never write a ViewModel class again!
 
-This library uses [fable-elmish], an Elm architecture implemented in F#, to build WPF applications. Fable-elmish was originally written for [Fable](https://github.com/fable-compiler) web applications, however it is used here for WPF. It is highly recommended to have a look at the [elmish docs site](https://fable-elmish.github.io/elmish/) if you are not familiar with the Elm architecture.
+This library uses [fable-elmish], an Elm architecture implemented in F#, to build WPF applications. Fable-elmish was originally written for [Fable](https://github.com/fable-compiler) applications, however it is used here for WPF. It is highly recommended to have a look at the [elmish docs site](https://fable-elmish.github.io/elmish/) if you are not familiar with the Elm architecture.
 
 Getting started with Elmish.WPF
 ------
