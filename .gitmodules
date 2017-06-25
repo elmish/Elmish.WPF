@@ -1,3 +1,0 @@
-[submodule "src/Elmish.WPF/elmish"]
-	path = src/Elmish.WPF/elmish
-	url = https://github.com/fable-elmish/elmish.git
