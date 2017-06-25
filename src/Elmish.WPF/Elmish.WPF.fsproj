@@ -9,8 +9,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Elmish.ViewModels</RootNamespace>
     <AssemblyName>Elmish.WPF</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>Elmish.WPF</Name>
     <TargetFrameworkProfile />
@@ -36,9 +36,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -50,8 +47,14 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FableStub.fs" />
-    <Compile Include="elmish\src\cmd.fs" />
-    <Compile Include="elmish\src\program.fs" />
+    <Compile Include="..\..\paket-files\fable-elmish\elmish\src\cmd.fs">
+      <Paket>True</Paket>
+      <Link>elmish/src/cmd.fs</Link>
+    </Compile>
+    <Compile Include="..\..\paket-files\fable-elmish\elmish\src\program.fs">
+      <Paket>True</Paket>
+      <Link>elmish/src/program.fs</Link>
+    </Compile>
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="Cmd.fs" />
@@ -80,4 +83,15 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7')">
+      <ItemGroup>
+        <Reference Include="FSharp.Core">
+          <HintPath>..\..\packages\FSharp.Core\lib\net45\FSharp.Core.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
 </Project>
