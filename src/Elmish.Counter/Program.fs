@@ -43,7 +43,6 @@ module State =
         | Tick t -> { model with Time = t }
 
     let update (msg:Msg) (model:Model) =
-        console.log <| sprintf "Updating %A" msg
         match msg with
         | Increment -> { model with Count = model.Count + model.StepSize }
         | Decrement -> { model with Count = model.Count - model.StepSize }
@@ -68,6 +67,6 @@ module App =
     [<EntryPoint;STAThread>]
     let main argv = 
         Program.mkSimple init update view
-        //|> Program.withConsoleTrace
+        |> Program.withConsoleTrace
         |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.CounterViews.MainWindow())
