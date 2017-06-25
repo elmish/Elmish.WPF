@@ -28,7 +28,9 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         p |> List.iter notifyPropertyChanged
         let raiseCanExecuteChanged =
             function
-            | Cmd c -> 
+            | Cmd c ->
+                if isNull Application.Current then ()
+                elif isNull Application.Current.Dispatcher then () else
                 fun _ -> c.RaiseCanExecuteChanged()
                 |> Application.Current.Dispatcher.Invoke
             | _ -> ()
