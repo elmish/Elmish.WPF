@@ -30,7 +30,7 @@ module State =
     let init() = { Count = 0; StepSize = 1; Clock = { Time = DateTime.Now }}
 
     let timerTick dispatch =
-        let timer = new System.Timers.Timer 1.
+        let timer = new System.Timers.Timer(1000.)
         timer.Elapsed.Subscribe (fun _ -> dispatch (System.DateTime.Now |> Tick |> ClockMsg)) |> ignore
         timer.Enabled <- true
         timer.Start()
