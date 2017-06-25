@@ -44,7 +44,6 @@ The init function returns your initial state, and each model gets an update func
         | Tick t -> { model with Time = t }
 
     let update (msg:Msg) (model:Model) =
-        console.log <| sprintf "Updating %A" msg
         match msg with
         | Increment -> { model with Count = model.Count + model.StepSize }
         | Decrement -> { model with Count = model.Count - model.StepSize }
