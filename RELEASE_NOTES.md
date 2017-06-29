@@ -1,3 +1,9 @@
+#### 1.0.0-beta-2
+
+* Added command parameter
+* Renamed Binding.vm to Binding.model
+* Reorganized sampels and added performance sample (WIP)
+
 #### 1.0.0-beta-1
 
 * Fixing two way binding bugs
