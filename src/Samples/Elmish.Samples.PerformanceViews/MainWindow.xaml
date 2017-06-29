@@ -1,0 +1,34 @@
+﻿<Window x:Class="Elmish.Samples.PerformanceViews.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Elmish.Samples.PerformanceViews"
+        mc:Ignorable="d"
+        Title="Elmish.WPF Performance" Height="300" Width="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Button Grid.ColumnSpan="2" Content="Add Items" Command="{Binding AddItems}"/>
+        <ListView Grid.Column="0" Grid.Row="1" ItemsSource="{Binding ArrayItems}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <local:Item/>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <ListView Grid.Column="1" Grid.Row="1" ItemsSource="{Binding ListItems}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <local:Item/>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Window>

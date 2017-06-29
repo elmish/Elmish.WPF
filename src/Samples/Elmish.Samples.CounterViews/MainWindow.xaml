@@ -22,7 +22,7 @@
         </StackPanel>
         <Slider Grid.Row="2" TickFrequency="1" TickPlacement="Both" Width="200"
                 Maximum="10" Minimum="1" IsSnapToTickEnabled="True"
-                Value="{Binding StepSize, Mode=TwoWay}"/>
+                Value="{Binding StepSize}"/>
         <TextBlock Grid.Row="3" Text="{Binding StepSize}"/>
         <Grid Grid.Row="5" HorizontalAlignment="Center">
             <local:Clock DataContext="{Binding Clock}"/>

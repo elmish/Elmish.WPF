@@ -1,4 +1,4 @@
-﻿namespace Elmish.Counter
+﻿namespace Elmish.Samples.Counter
 
 open System
 open Elmish
@@ -58,15 +58,15 @@ module App =
         let clockViewBinding : ViewBindings<ClockModel,ClockMsg> =
             [ "Time" |> Binding.oneWay (fun m -> m.Time) ]
 
-        [ "Increment" |> Binding.cmd (fun m -> Increment)
-          "Decrement" |> Binding.cmdIf (fun m -> Decrement) (fun m -> m.StepSize = 1)
+        [ "Increment" |> Binding.cmd (fun _ m -> Increment)
+          "Decrement" |> Binding.cmdIf (fun _ m -> Decrement) (fun _ m -> m.StepSize = 1)
           "Count" |> Binding.oneWay (fun m -> m.Count)
           "StepSize" |> Binding.twoWay (fun m -> (double m.StepSize)) (fun v m -> v |> int |> SetStepSize)
-          "Clock" |> Binding.vm (fun m -> m.Clock) clockViewBinding ClockMsg ]
+          "Clock" |> Binding.model (fun m -> m.Clock) clockViewBinding ClockMsg ]
 
     [<EntryPoint;STAThread>]
     let main argv = 
         Program.mkSimple init update view
-        |> Program.withConsoleTrace
+//        |> Program.withConsoleTrace
         |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.CounterViews.MainWindow())

@@ -5,26 +5,25 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>1405ccd7-4423-445a-992a-e44f212c2805</ProjectGuid>
+    <ProjectGuid>44b24123-515d-425b-8739-66a2de49467d</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Elmish.App</RootNamespace>
-    <AssemblyName>Elmish.Counter</AssemblyName>
+    <RootNamespace>Elmish.Samples.Counter</RootNamespace>
+    <AssemblyName>Elmish.Samples.Counter</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
-    <Name>Elmish.Counter</Name>
-    <TargetFrameworkProfile />
+    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
+    <Name>Elmish.Samples.Counter</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>..\..\build_output</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>..\..\build_output\Elmish.Counter.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\Elmish.Samples.Counter.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -35,17 +34,19 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\Elmish.App.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Elmish.Samples.Counter.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="System.Windows" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -54,14 +55,14 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Elmish.CounterViews\Elmish.CounterViews.csproj">
-      <Name>Elmish.CounterViews</Name>
-      <Project>{c25b6732-5f3e-4ec7-9524-883d6c97788b}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Elmish.WPF\Elmish.WPF.fsproj">
+    <ProjectReference Include="..\..\Elmish.WPF\Elmish.WPF.fsproj">
       <Name>Elmish.WPF</Name>
       <Project>{62f04666-3f3e-49c6-b7be-afc1b64da81b}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Elmish.Samples.CounterViews\Elmish.Samples.CounterViews.csproj">
+      <Name>Elmish.Samples.CounterViews</Name>
+      <Project>{c25b6732-5f3e-4ec7-9524-883d6c97788b}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
@@ -88,15 +89,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <Choose>
-    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7')">
-      <ItemGroup>
-        <Reference Include="FSharp.Core">
-          <HintPath>..\..\packages\FSharp.Core\lib\net45\FSharp.Core.dll</HintPath>
-          <Private>True</Private>
-          <Paket>True</Paket>
-        </Reference>
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>

@@ -3,13 +3,12 @@
 open System.ComponentModel
 open System.Dynamic
 open System.Windows
-open System.Collections.ObjectModel
 
 type PropertyAccessor<'model,'msg> =
     | Get of Getter<'model>
     | GetSet of Getter<'model> * Setter<'model,'msg>
     | Cmd of Command
-    | Vm of ViewModelBase<'model,'msg>
+    | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>) as this =
@@ -38,16 +37,15 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         props |> List.ofSeq |> List.iter (fun kvp -> raiseCanExecuteChanged kvp.Value)
 
     let buildProps =
-        let toCommand (exec, canExec) = Command((fun () -> exec model |> dispatch), fun () -> canExec model)      
-        let toSubView propMap = ViewModelBase<'model,'msg>(model, dispatch, propMap)
+        let toCommand (exec, canExec) = Command((fun p -> exec p model |> dispatch), fun p -> canExec p model)
+        let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap)
         let rec convert = 
             List.map (fun (name,binding) ->
                 match binding with
                 | Bind getter -> name, Get getter
                 | BindTwoWay (getter,setter) -> name, GetSet (getter,setter)
-                | BindCmd exec -> name, Cmd <| toCommand (exec,(fun _ -> true))
-                | BindCmdIf (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
-                | BindVm (getter, propMap) -> name, Vm <| toSubView propMap
+                | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
+                | BindModel (_, propMap) -> name, Model <| toSubView propMap
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
             )
         
@@ -57,16 +55,16 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     interface INotifyPropertyChanged with
         [<CLIEvent>]
-        member this.PropertyChanged = propertyChanged.Publish
+        member __.PropertyChanged = propertyChanged.Publish
 
-    member this.UpdateModel other =
+    member __.UpdateModel other =
         //console.log <| sprintf "UpdateModel %A" (props.Keys |> Seq.toArray)
         let propDiff name =
             function
             | Get getter | GetSet (getter,_) | Map (getter,_) ->
                 if getter model <> getter other then Some name else None
-            | Vm vm ->
-                vm.UpdateModel other
+            | Model m ->
+                m.UpdateModel other
                 None
             | _ -> None
 
@@ -74,7 +72,6 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
             props
             |> Seq.choose (fun (kvp) -> propDiff kvp.Key kvp.Value)
             |> Seq.toList
-            //|> Seq.choose id
         
         model <- other
         notify diffs
@@ -82,20 +79,20 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     // DynamicObject overrides
 
-    override this.TryGetMember (binder, r) = 
-        //console.log <| sprintf "TryGetMember %s" binder.Name
+    override __.TryGetMember (binder, r) = 
+//        console.log <| sprintf "TryGetMember %s" binder.Name
         if props.ContainsKey binder.Name then
             r <-
                 match props.[binder.Name] with 
                 | Get getter 
                 | GetSet (getter,_) -> getter model
                 | Cmd c -> unbox c
-                | Vm m -> unbox m
+                | Model m -> unbox m
                 | Map (getter,mapper) -> getter model |> mapper
             true
         else false
 
-    override this.TrySetMember (binder, value) =
+    override __.TrySetMember (binder, value) =
         //console.log <| sprintf "TrySetMember %s" binder.Name
         if props.ContainsKey binder.Name then
             match props.[binder.Name] with 

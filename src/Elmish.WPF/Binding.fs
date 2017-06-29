@@ -2,11 +2,12 @@
   
 open System
 open System.Windows.Input
+open System.Windows.Data
 
 type Getter<'model> = 'model -> obj
 type Setter<'model,'msg> = obj -> 'model -> 'msg
-type Execute<'model,'msg> = 'model -> 'msg
-type CanExecute<'model> = 'model -> bool
+type Execute<'model,'msg> = obj -> 'model -> 'msg
+type CanExecute<'model> = obj -> 'model -> bool
 
 type Command(execute, canExecute) =
     let canExecuteChanged = Event<EventHandler,EventArgs>()
@@ -14,62 +15,55 @@ type Command(execute, canExecute) =
     interface ICommand with
         [<CLIEvent>]
         member x.CanExecuteChanged = canExecuteChanged.Publish
-        member x.CanExecute _ = canExecute()
-        member x.Execute _ = execute()
+        member x.CanExecute p = canExecute p
+        member x.Execute p = execute p
 
 type ViewBinding<'model,'msg> = string * Variable<'model,'msg>
 and ViewBindings<'model,'msg> = ViewBinding<'model,'msg> list
 and Variable<'model,'msg> =
     | Bind of Getter<'model>
     | BindTwoWay of Getter<'model> * Setter<'model,'msg>
-    | BindCmd of Execute<'model,'msg>
-    | BindCmdIf of Execute<'model,'msg> * CanExecute<'model>
-    | BindVm of Getter<'model> * ViewBindings<'model,'msg>
+    | BindCmd of Execute<'model,'msg> * CanExecute<'model>
+    | BindModel of Getter<'model> * ViewBindings<'model,'msg>
     | BindMap of Getter<'model> * (obj -> obj)
 
 [<RequireQualifiedAccess>]
 module Binding =
     
-    /// Maps a set of view bindings to its parent view bindings
-    let rec private mapViewBinding<'model,'msg,'_model,'_msg> mModel mMsg (viewBinding: ViewBindings<'_model,'_msg>) : ViewBindings<'model,'msg> =
+    // Maps a set of view bindings to its parent view bindings
+    let rec private mapViewBinding<'model,'msg,'_model,'_msg> toModel toMsg (viewBinding: ViewBindings<'_model,'_msg>) : ViewBindings<'model,'msg> =
         let mapVariable =
             function
-            | Bind getter ->                
-                mModel >> getter 
+            | Bind getter ->
+                toModel >> getter
                 |> Bind
             | BindTwoWay (getter,setter) -> 
-                (mModel >> getter, fun v m -> (mModel m) |> (setter v >> mMsg))
+                (toModel >> getter, fun v m -> (toModel m) |> (setter v >> toMsg))
                 |> BindTwoWay
-            | BindCmd exec ->
-                mModel >> exec >> mMsg
+            | BindCmd (exec,canExec) ->
+                ((fun v m -> (toModel m) |> exec v |> toMsg), (fun v m -> (toModel m) |> canExec v))
                 |> BindCmd
-            | BindCmdIf (exec,canExec) ->
-                (mModel >> exec >> mMsg, mModel >> canExec)
-                |> BindCmdIf
-            | BindVm (getter,binding) ->
-                (mModel >> getter, binding |> mapViewBinding mModel mMsg)
-                |> BindVm
+            | BindModel (getter,binding) ->
+                (toModel >> getter, binding |> mapViewBinding toModel toMsg)
+                |> BindModel
             | BindMap (getter,mapper) ->
-                ((mModel >> getter), mapper)
+                ((toModel >> getter), mapper)
                 |> BindMap
 
         viewBinding
         |> List.map (fun (n,v) -> n, mapVariable v)
-            
-
 
     // Helper functions that clean up binding creation
 
     let oneWay (getter: 'model -> 'a) p : ViewBinding<'model,'msg> = 
         p, Bind (getter >> unbox)
     let twoWay (getter: 'model -> 'a) (setter: 'a -> 'model -> 'msg) p : ViewBinding<'model,'msg> = 
-        p, BindTwoWay ((getter >> unbox), (fun v m -> setter (v :?> 'a) m))
+        p, BindTwoWay (getter >> unbox, fun v m -> setter (v :?> 'a) m)
     let cmd exec p : ViewBinding<'model,'msg> = 
-        p, BindCmd exec
+        p, BindCmd (exec, fun _ _ -> true)
     let cmdIf exec canExec p : ViewBinding<'model,'msg> = 
-        p, BindCmdIf (exec, canExec)
-    let vm (getter: 'model -> '_model) (viewBinding: ViewBindings<'_model,'_msg>) (toMsg: '_msg -> 'msg) p : ViewBinding<'model,'msg> = 
-        p, BindVm ((getter >> unbox), viewBinding |> mapViewBinding getter toMsg)
+        p, BindCmd (exec, canExec)
+    let model (getter: 'model -> '_model) (viewBinding: ViewBindings<'_model,'_msg>) (toMsg: '_msg -> 'msg) p : ViewBinding<'model,'msg> = 
+        p, BindModel (getter >> unbox, viewBinding |> mapViewBinding getter toMsg)
     let oneWayMap (getter: 'model -> 'a) (mapper: 'a -> 'b) p : ViewBinding<'model,'msg> =
         p, BindMap (getter >> unbox, unbox >> mapper >> unbox)
-            
