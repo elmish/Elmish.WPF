@@ -17,13 +17,8 @@
         </Grid.RowDefinitions>
         <Label Content="Showing a number:"/>
         <TextBlock Grid.Row="1" Text="{Binding Text}"/>
-        <Button Grid.Column="1" Grid.Row="0"  Content="Go" 
+        <Button Grid.Column="1" Grid.RowSpan="2"  Content="Go" 
                 Command="{Binding Path=DataContext.NumToText, RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type ListView}}}"
                 CommandParameter="{Binding Id}"/>
-        <!--<Button Grid.Column="1" Grid.Row="0"  Content="Go" 
-                Command="{Binding Path=DataContext.NumToText, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                CommandParameter="{Binding Id}"/>-->
-        <!--<Button Grid.Column="1" Grid.Row="1"  Content="Go" 
-                Command="{Binding ItemNumToText}"/>-->
     </Grid>
 </UserControl>
