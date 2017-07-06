@@ -12,4 +12,4 @@ licenseUrl
 	https://github.com/Prolucid/Elmish.WPF/blob/master/LICENSE.md
 requireLicenseAcceptance false
 files
-	build_output/Elmish.WPF.dll ==> lib/net46
+	build_output/Elmish.WPF.dll ==> lib/net45

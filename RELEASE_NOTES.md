@@ -1,8 +1,12 @@
+#### 1.0.0-beta-3
+
+* Fixing nuget framework version
+
 #### 1.0.0-beta-2
 
 * Added command parameter
 * Renamed Binding.vm to Binding.model
-* Reorganized sampels and added performance sample (WIP)
+* Reorganized samples and added performance sample (WIP)
 
 #### 1.0.0-beta-1
 
