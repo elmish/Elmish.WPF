@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elmish.Samples.PerformanceV
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Elmish.Samples.Counter", "Samples\Elmish.Samples.Counter\Elmish.Samples.Counter.fsproj", "{44B24123-515D-425B-8739-66A2DE49467D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Elmish.Samples.DesignDataContext", "Samples\Elmish.Samples.DesignDataContext\Elmish.Samples.DesignDataContext.fsproj", "{7584C5A4-4870-4415-A8D7-B5C902B5AC20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,14 @@ Global
 		{44B24123-515D-425B-8739-66A2DE49467D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{44B24123-515D-425B-8739-66A2DE49467D}.Release|x86.ActiveCfg = Release|Any CPU
 		{44B24123-515D-425B-8739-66A2DE49467D}.Release|x86.Build.0 = Release|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Debug|x86.Build.0 = Debug|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Release|x86.ActiveCfg = Release|Any CPU
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,5 +82,6 @@ Global
 		{4BA4E632-DA64-4307-B4BA-3C2BD933CE2B} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
 		{2DCD389D-97D9-4B85-9DFB-92FA1783E5EB} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
 		{44B24123-515D-425B-8739-66A2DE49467D} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
+		{7584C5A4-4870-4415-A8D7-B5C902B5AC20} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
 	EndGlobalSection
 EndGlobal
