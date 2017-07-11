@@ -110,3 +110,7 @@ Pass an instance of your main window into `Program.runWindow`. The DataContext o
         |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.CounterViews.MainWindow())
 ```
+
+Credits
+-----
+This library would not have been possible without the elmish engine, [fable-elmish](https://github.com/fable-elmish/elmish), written by [et1975](https://github.com/et1975). This project technically has no tie to [Fable](http://fable.io/), which is an F# to JavaScript transpiler that is definitely worth checking out.
