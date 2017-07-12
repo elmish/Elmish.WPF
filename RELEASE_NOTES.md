@@ -1,3 +1,7 @@
+#### 1.0.0-beta-4
+
+* Added Program.withExceptionHandler
+
 #### 1.0.0-beta-3
 
 * Fixing nuget framework version
