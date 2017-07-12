@@ -5,8 +5,8 @@ open System.Windows
 open Elmish.WPF.ViewModel
 open Elmish
 
-type WpfProgram<'arg, 'model, 'msg, 'view when 'view :> Window> = 
-    Elmish.Program<'arg, 'model, 'msg, 'view>
+let withExceptionHandler f program =
+    { program with onError = f }
 
 /// Blocking function
 /// Starts both Elmish and WPF dispatch loops.

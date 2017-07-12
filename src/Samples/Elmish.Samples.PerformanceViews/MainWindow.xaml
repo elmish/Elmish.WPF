@@ -13,17 +13,21 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Button Grid.ColumnSpan="2" Content="Add Items" Command="{Binding AddItems}"/>
-        <ListView Grid.Column="0" Grid.Row="1" ItemsSource="{Binding ArrayItems}">
+        <Button Grid.Column="0" Grid.Row="0" Content="Add more" Command="{Binding AddItems}"/>
+        <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Center" Text="{Binding NumItems}"/>
+        <TextBlock Grid.Column="0" Grid.Row="1" HorizontalAlignment="Center" Text="Array"/>
+        <TextBlock Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center" Text="List"/>
+        <ListView Grid.Column="0" Grid.Row="2" ItemsSource="{Binding ArrayItems}">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <local:Item/>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <ListView Grid.Column="1" Grid.Row="1" ItemsSource="{Binding ListItems}">
+        <ListView Grid.Column="1" Grid.Row="2" ItemsSource="{Binding ListItems}">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <local:Item/>

@@ -49,17 +49,20 @@ module State =
 module App =
     open State
     open Types
+    open System.Windows
 
     let view _ _ = 
         [ "ArrayItems" |> Binding.oneWay (fun m -> m.Items)
           "ListItems" |> Binding.oneWay (fun m -> m.Items)
           "AddItems" |> Binding.cmd (fun _ _ -> AddItems)
+          "NumItems" |> Binding.oneWayMap (fun m -> m.Items.Length) (sprintf "%d items!")
           "NumToText" |> Binding.cmd (fun p m -> console.log(p); p :?> Guid |> NumberToText)
           "ItemNumToText" |> Binding.cmd (fun p m -> console.log(p); p :?> Guid |> NumberToText) ]
 
     [<EntryPoint;STAThread>]
     let main argv = 
         Program.mkSimple init update view
+        |> Program.withExceptionHandler (fun (_, ex) -> MessageBox.Show(ex.Message) |> ignore)
 //        |> Program.withConsoleTrace
 //        |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.Samples.PerformanceViews.MainWindow())
