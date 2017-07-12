@@ -9,9 +9,13 @@ type Setter<'model,'msg> = obj -> 'model -> 'msg
 type Execute<'model,'msg> = obj -> 'model -> 'msg
 type CanExecute<'model> = obj -> 'model -> bool
 
-type Command(execute, canExecute) =
+type Command(execute, canExecute) as this =
     let canExecuteChanged = Event<EventHandler,EventArgs>()
-    member x.RaiseCanExecuteChanged _ = canExecuteChanged.Trigger(x,EventArgs.Empty)
+    let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged()) 
+    do CommandManager.RequerySuggested.AddHandler(handler)
+    // CommandManager only keeps a weak reference to the event handler, so a strong handler must be maintained
+    member private x._Handler = handler
+    member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x,EventArgs.Empty)
     interface ICommand with
         [<CLIEvent>]
         member x.CanExecuteChanged = canExecuteChanged.Publish
