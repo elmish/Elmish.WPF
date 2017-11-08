@@ -5,8 +5,8 @@ NUGET
     FSharp.Core (4.2.1) - redirects: force
 GITHUB
   remote: fable-elmish/elmish
-    src/cmd.fs (de5d6ce3c99de4991f25006b7ac2a339eaba3cfd)
-    src/program.fs (de5d6ce3c99de4991f25006b7ac2a339eaba3cfd)
+    src/cmd.fs (46f0313c26266c5703d4f7dcf111fb0038393a77)
+    src/program.fs (46f0313c26266c5703d4f7dcf111fb0038393a77)
 GROUP sample
 NUGET
   remote: https://www.nuget.org/api/v2

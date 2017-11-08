@@ -13,21 +13,52 @@
                 <Setter Property="Margin" Value="10 2"/>
             </Style.Setters>
         </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TextBox Grid.Row="0" Text="{Binding Name}"/>
-        <TextBox Grid.Row="1" Text="{Binding Email}"/>
-        <TextBox Grid.Row="2" Text="{Binding Age}"/>
-        <TextBox Grid.Row="3" Text="{Binding Address}"/>
-        <TextBox Grid.Row="4" Text="{Binding Phone}"/>
-        <TextBox Grid.Row="5" Text="{Binding Postal}"/>
+        <Grid Panel.ZIndex="10" Visibility="{Binding IsDialogVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="Gray" Opacity="0.2">
+            </Border>
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="20" Margin="20"
+                    BorderBrush="BlueViolet" BorderThickness="2" Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20"
+                               Text="This is a dialog without opening a new window" TextWrapping="WrapWithOverflow" Grid.ColumnSpan="3"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Margin="2" Content="Ok" Width="50" Command="{Binding Ok}"/>
+                        <Button Margin="2" Content="Cancel" Width="50" Command="{Binding Cancel}" />
+                        <Button Margin="2" Content="Clear" Width="50" Command="{Binding Clear}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        <Grid IsEnabled="{Binding IsEditable}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBox Grid.Row="0" Text="{Binding Name}"/>
+            <TextBox Grid.Row="1" Text="{Binding Email}"/>
+            <TextBox Grid.Row="2" Text="{Binding Age}"/>
+            <TextBox Grid.Row="3" Text="{Binding Address}"/>
+            <TextBox Grid.Row="4" Text="{Binding Phone}"/>
+            <TextBox Grid.Row="5" Text="{Binding Postal}"/>
+            <TextBox Grid.Row="6" Visibility="{Binding HasDialogResult, Converter={StaticResource BoolToVisibilityConverter}}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Text="{Binding CurrentDialogResult, StringFormat=Last Result: {0}}"/>
+            <Button Grid.Row="7" VerticalAlignment="Bottom" Margin="5" 
+                    Content="Show Dialog" Command="{Binding ShowDialog}"/>
+        </Grid>
     </Grid>
 </Window>

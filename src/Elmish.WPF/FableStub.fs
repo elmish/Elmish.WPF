@@ -20,8 +20,9 @@ module Fable
             [<AutoOpen>]
             module JSON =
                 let parse str = str
+            type Promise() = class end
             type Promise<'T>() = 
-                class end
+                inherit Promise()
                 with
                     static member map _ = failwith "Promise not supported"
                     static member catch _ = failwith "Promise not supported"

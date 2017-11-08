@@ -96,6 +96,6 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         //console.log <| sprintf "TrySetMember %s" binder.Name
         if props.ContainsKey binder.Name then
             match props.[binder.Name] with 
-            | GetSet (_,setter) -> setter value model |> dispatch
+            | GetSet (_,setter) -> try setter value model |> dispatch with | _ -> ()
             | _ -> invalidOp "Unable to set read-only member"
         false
