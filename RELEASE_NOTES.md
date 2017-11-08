@@ -1,3 +1,8 @@
+#### 1.0.0-beta-5
+
+* Target F# 4.1
+* Lastest fable-elmish, includes memory leak fix
+
 #### 1.0.0-beta-4
 
 * Added Program.withExceptionHandler
