@@ -5,20 +5,18 @@ open System.Windows
 open Elmish.WPF.ViewModel
 open Elmish
 
-let withExceptionHandler f program =
-    { program with onError = f }
+let withMessageBoxErrorHandler program =
+    program 
+    |> Program.withErrorHandler (fun (_, ex) -> System.Windows.MessageBox.Show(ex.Message) |> ignore)
 
-/// Blocking function
-/// Starts both Elmish and WPF dispatch loops.
-let runWindow (window:Window) (program: Program<unit, 'model, 'msg, ViewBindings<'model,'msg>>) = 
-
+let private _run debug (window:Window) (program: Program<unit, 'model, 'msg, ViewBindings<'model,'msg>>) =
     let mutable lastModel = None
 
     let setState model dispatch = 
         match lastModel with
         | None -> 
             let mapping = program.view model dispatch
-            let vm = ViewModelBase<'model,'msg>(model, dispatch, mapping)
+            let vm = ViewModelBase<'model,'msg>(model, dispatch, mapping, debug)
             window.DataContext <- vm
             lastModel <- Some vm
         | Some vm ->
@@ -31,3 +29,12 @@ let runWindow (window:Window) (program: Program<unit, 'model, 'msg, ViewBindings
     // Start WPF dispatch loop
     let app = Application()
     app.Run(window) //blocking
+
+/// Blocking function.
+/// Starts both Elmish and WPF dispatch loops.
+let runWindow window program = _run false window program
+
+/// Blocking function.
+/// Starts both Elmish and WPF dispatch loops.
+/// Enables debug console logging.
+let runDebugWindow window program = _run true window program

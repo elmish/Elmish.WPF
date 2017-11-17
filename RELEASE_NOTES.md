@@ -1,3 +1,9 @@
+#### 1.0.0-beta-6
+
+* Implemented INotifyDataErrorInfo and corresponding bindings
+* Added some documentation for binding assemblers
+* Added message box error handler to Program module
+
 #### 1.0.0-beta-5
 
 * Target F# 4.1

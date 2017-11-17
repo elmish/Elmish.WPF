@@ -8,10 +8,24 @@
         d:DataContext="{d:DesignInstance Type=local:Model, IsDesignTimeCreatable=False}"
         Title="Elmish.WPF Design Time" Height="300" Width="300">
     <Window.Resources>
-        <Style TargetType="TextBox">
-            <Style.Setters>
-                <Setter Property="Margin" Value="10 2"/>
-            </Style.Setters>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Margin" Value="20 2"/>
+            <Setter Property="Validation.ErrorTemplate">
+                <Setter.Value>
+                    <ControlTemplate x:Name="TextErrorTemplate">
+                        <DockPanel LastChildFill="True">
+                            <AdornedElementPlaceholder>
+                                <Border BorderBrush="Red" BorderThickness="2"/>
+                            </AdornedElementPlaceholder>
+                        </DockPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="ToolTip" Value="{Binding RelativeSource={x:Static RelativeSource.Self},Path=(Validation.Errors)[0].ErrorContent}"></Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
@@ -48,9 +62,9 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <TextBox Grid.Row="0" Text="{Binding Name}"/>
-            <TextBox Grid.Row="1" Text="{Binding Email}"/>
-            <TextBox Grid.Row="2" Text="{Binding Age}"/>
+            <TextBox Grid.Row="0" Text="{Binding Name, ValidatesOnNotifyDataErrors=True}"/>
+            <TextBox Grid.Row="1" Text="{Binding Email, ValidatesOnNotifyDataErrors=True}"/>
+            <TextBox Grid.Row="2" Text="{Binding Age, ValidatesOnNotifyDataErrors=True}"/>
             <TextBox Grid.Row="3" Text="{Binding Address}"/>
             <TextBox Grid.Row="4" Text="{Binding Phone}"/>
             <TextBox Grid.Row="5" Text="{Binding Postal}"/>

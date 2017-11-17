@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2006
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Elmish.WPF", "Elmish.WPF\Elmish.WPF.fsproj", "{62F04666-3F3E-49C6-B7BE-AFC1B64DA81B}"
 EndProject
@@ -83,5 +83,8 @@ Global
 		{2DCD389D-97D9-4B85-9DFB-92FA1783E5EB} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
 		{44B24123-515D-425B-8739-66A2DE49467D} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
 		{7584C5A4-4870-4415-A8D7-B5C902B5AC20} = {AEA12531-DBBF-4EE8-BF3E-85BD784DEE88}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E142F9FB-7EA9-4866-81D4-718660BDCAEB}
 	EndGlobalSection
 EndGlobal

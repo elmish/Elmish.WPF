@@ -67,7 +67,7 @@ module App =
     [<EntryPoint;STAThread>]
     let main argv = 
         Program.mkProgram init update view
-        |> Program.withExceptionHandler (fun (_, ex) -> MessageBox.Show(ex.Message) |> ignore)
+        |> Program.withErrorHandler (fun (_, ex) -> MessageBox.Show(ex.Message) |> ignore)
 //        |> Program.withConsoleTrace
 //        |> Program.withSubscription subscribe
         |> Program.runWindow (Elmish.Samples.PerformanceViews.MainWindow())
