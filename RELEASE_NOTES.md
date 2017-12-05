@@ -1,3 +1,7 @@
+#### 1.0.0-beta-7
+
+* Fix for #19, model to view updates for validation bindings
+
 #### 1.0.0-beta-6
 
 * Implemented INotifyDataErrorInfo and corresponding bindings
