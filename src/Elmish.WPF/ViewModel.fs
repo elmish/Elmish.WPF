@@ -86,7 +86,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         log <| sprintf "UpdateModel %A" (props.Keys |> Seq.toArray)
         let propDiff name =
             function
-            | Get getter | GetSet (getter,_) | Map (getter,_) ->
+            | Get getter | GetSet (getter,_) | GetSetValidate(getter,_) | Map (getter,_) ->
                 if getter model <> getter other then Some name else None
             | Model m ->
                 m.UpdateModel other
