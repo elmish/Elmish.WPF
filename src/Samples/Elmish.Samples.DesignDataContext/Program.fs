@@ -15,8 +15,7 @@ module State =
           IsDialogVisible = false
           DialogResult = None }
 
-    let update (msg:Msg) (model:Model) =
-        match msg with
+    let update (model:Model) = function
         | SetName str -> { model with Name = str }
         | SetEmail str -> { model with Email = str }
         | SetAge a -> { model with Age = int a }

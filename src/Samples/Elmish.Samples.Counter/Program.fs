@@ -38,16 +38,14 @@ module State =
     let subscribe model =
         Cmd.ofSub timerTick
 
-    let clockUpdate (msg:ClockMsg) (model:ClockModel) =
-        match msg with
+    let clockUpdate (model:ClockModel) = function
         | Tick t -> { model with Time = t }
 
-    let update (msg:Msg) (model:Model) =
-        match msg with
+    let update (model:Model) = function
         | Increment -> { model with Count = model.Count + model.StepSize }
         | Decrement -> { model with Count = model.Count - model.StepSize }
         | SetStepSize n -> { model with StepSize = n }
-        | ClockMsg m -> { model with Clock = clockUpdate m model.Clock }
+        | ClockMsg m -> { model with Clock = clockUpdate model.Clock m }
         
 
 module App =

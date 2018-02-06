@@ -1,10 +1,14 @@
+source https://www.nuget.org/api/v2
+framework: net47
+storage: none
+nuget FSharp.Core redirects:force
+nuget Elmish prerelease
+
+group build
 framework: >= net45
 source https://www.nuget.org/api/v2
 nuget FAKE
 nuget FSharp.Core redirects:force
-
-github fable-elmish/elmish src/cmd.fs
-github fable-elmish/elmish src/program.fs
 
 group sample
 source https://www.nuget.org/api/v2
