@@ -35,8 +35,7 @@ module State =
         match msg with
         | ItemNumberToText id -> { model with Text = sprintf "Number = %d" model.Number }
 
-    let update (msg:Msg) (model:Model) =
-        match msg with
+    let update (model:Model) = function
         | AddItems -> 
             let numToAdd = 1000
             let newItems = 
