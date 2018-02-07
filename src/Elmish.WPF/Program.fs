@@ -11,16 +11,17 @@ let withMessageBoxErrorHandler program =
 
 let private _run debug (window:Window) (program: Program<unit, 'model, 'msg, ViewBindings<'model,'msg>>) =
     let mutable lastModel = None
-
-    let setState model dispatch = 
-        match lastModel with
-        | None -> 
-            let mapping = program.view model dispatch
-            let vm = ViewModelBase<'model,'msg>(model, dispatch, mapping, debug)
-            window.DataContext <- vm
-            lastModel <- Some vm
-        | Some vm ->
-            vm.UpdateModel model
+    let setState dispatch = 
+        let view = program.view dispatch
+        fun model ->
+            match lastModel with
+            | None -> 
+                let mapping = view model
+                let vm = ViewModelBase<'model,'msg>(model, dispatch, mapping, debug)
+                window.DataContext <- vm
+                lastModel <- Some vm
+            | Some vm ->
+                vm.UpdateModel model
                   
     // Start Elmish dispatch loop  
     { program with setState = setState } 

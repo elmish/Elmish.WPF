@@ -1,12 +1,18 @@
+STORAGE: NONE
+RESTRICTION: == net47
+NUGET
+  remote: https://www.nuget.org/api/v2
+    Elmish (2.0.0-beta-1)
+      FSharp.Core (>= 4.3.2)
+    FSharp.Core (4.3.3) - redirects: force
+
+GROUP Build
 RESTRICTION: >= net45
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.61.3)
-    FSharp.Core (4.2.1) - redirects: force
-GITHUB
-  remote: fable-elmish/elmish
-    src/cmd.fs (46f0313c26266c5703d4f7dcf111fb0038393a77)
-    src/program.fs (46f0313c26266c5703d4f7dcf111fb0038393a77)
+    FAKE (4.64.4)
+    FSharp.Core (4.3.3) - redirects: force
+
 GROUP sample
 NUGET
   remote: https://www.nuget.org/api/v2

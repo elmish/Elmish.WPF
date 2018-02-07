@@ -1,3 +1,7 @@
+#### 2.0.0-beta-1
+
+* Migration to packaged elmish 2.0 core
+
 #### 1.0.0-beta-7
 
 * Fix for #19, model to view updates for validation bindings

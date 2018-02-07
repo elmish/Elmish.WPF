@@ -5,7 +5,7 @@ WPF done the Elmish Way
 
 Never write a ViewModel class again!
 
-This library uses [fable-elmish](https://fable-elmish.github.io/), an Elm architecture implemented in F#, to build WPF applications. Fable-elmish was originally written for [Fable](https://github.com/fable-compiler) applications, however it is used here for WPF. It is highly recommended to have a look at the [elmish docs site](https://fable-elmish.github.io/elmish/) if you are not familiar with the Elm architecture.
+This library uses [fable-elmish](https://fable-elmish.github.io/), an Elm architecture implemented in F#, to build WPF applications. Fable-elmish was originally written for [Fable](https://github.com/fable-compiler) applications, however it was trimmed and packaged for .NET as well. It is highly recommended to have a look at the [elmish docs site](https://fable-elmish.github.io/elmish/) if you are not familiar with the Elm architecture.
 
 Getting started with Elmish.WPF
 ------
@@ -39,12 +39,10 @@ The init function returns your initial state, and each model gets an update func
 ```ocaml
     let init() = { Count = 0; StepSize = 1; Clock = { Time = DateTime.Now }}
     
-    let clockUpdate (msg:ClockMsg) (model:ClockModel) =
-        match msg with
+    let clockUpdate (model:ClockModel) = function
         | Tick t -> { model with Time = t }
 
-    let update (msg:Msg) (model:Model) =
-        match msg with
+    let update (model:Model) = function
         | Increment -> { model with Count = model.Count + model.StepSize }
         | Decrement -> { model with Count = model.Count - model.StepSize }
         | SetStepSize n -> { model with StepSize = n }

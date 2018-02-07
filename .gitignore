@@ -1,6 +1,5 @@
 build_output
-build_artifacts
-
+Directory.Build.props
 *.suo
 *.user
 *.dotCover
@@ -24,24 +23,13 @@ _ReSharper*
 *.bak
 *.orig
 
-npm-debug*
-
-src/SolutionVersion.cs
-src/SolutionVersion.fs
 *.userprefs
 *.log.txt
 
 .fake
-paket.exe
 packages
-tools/paket/paket.exe
-tools/paket/paket.target
 TestResults
 run
 
 .vs
-bower_components
-node_modules
-out
-public
 paket-files/
