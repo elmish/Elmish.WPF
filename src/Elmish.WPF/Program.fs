@@ -34,7 +34,7 @@ let private _run debug (window:Window) (programRun:Program<'t, 'model, 'msg, Vie
 /// Starts both Elmish and WPF dispatch loops.
 let runWindow window program = _run false window Elmish.Program.run program
 
-let runWindowWith<'t, 'model, 'msg> window (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>) (initialValue:'t) =
+let runWindowWith<'t, 'model, 'msg> window (initialValue:'t) (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>)  =
     _run false window (Elmish.Program.runWith initialValue) program
 
 /// Blocking function.
