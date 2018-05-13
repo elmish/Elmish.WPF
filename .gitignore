@@ -45,3 +45,5 @@ node_modules
 out
 public
 paket-files/
+
+.idea/

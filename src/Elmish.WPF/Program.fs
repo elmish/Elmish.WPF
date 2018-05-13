@@ -9,7 +9,7 @@ let withMessageBoxErrorHandler program =
     program 
     |> Program.withErrorHandler (fun (_, ex) -> System.Windows.MessageBox.Show(ex.Message) |> ignore)
 
-let private _run debug (window:Window) (program: Program<unit, 'model, 'msg, ViewBindings<'model,'msg>>) =
+let private _run debug (window:Window) (programRun:Program<'t, 'model, 'msg, ViewBindings<'model,'msg>> -> unit) (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>) =
     let mutable lastModel = None
 
     let setState model dispatch = 
@@ -24,7 +24,7 @@ let private _run debug (window:Window) (program: Program<unit, 'model, 'msg, Vie
                   
     // Start Elmish dispatch loop  
     { program with setState = setState } 
-    |> Elmish.Program.run
+    |> programRun
     
     // Start WPF dispatch loop
     let app = Application()
@@ -32,7 +32,10 @@ let private _run debug (window:Window) (program: Program<unit, 'model, 'msg, Vie
 
 /// Blocking function.
 /// Starts both Elmish and WPF dispatch loops.
-let runWindow window program = _run false window program
+let runWindow window program = _run false window Elmish.Program.run program
+
+let runWindowWith<'t, 'model, 'msg> window (initialValue:'t) (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>)  =
+    _run false window (Elmish.Program.runWith initialValue) program
 
 /// Blocking function.
 /// Starts both Elmish and WPF dispatch loops.
