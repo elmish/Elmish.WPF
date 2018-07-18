@@ -1,16 +1,24 @@
 ﻿module Elmish.WPF.ViewModel
 
+open System
 open System.ComponentModel
 open System.Dynamic
 open System.Windows
+open System.Collections
+open System.Collections.Generic
+
+open Elmish.WPF.CollectionViewModel      
 
 type PropertyAccessor<'model,'msg> =
-    | Get of Getter<'model>
+    | Get of Getter<'model>    
     | GetSet of Getter<'model> * Setter<'model,'msg>
     | GetSetValidate of Getter<'model> * ValidSetter<'model,'msg>
     | Cmd of Command
     | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
+    | CollectionGetSet of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
+    | CollectionModel of seq<ViewModelBase<'model,'msg>>
+                                                                
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
     inherit DynamicObject()
@@ -22,6 +30,9 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
     // Store all errors
     let errors = new System.Collections.Generic.Dictionary<string, string list>()
 
+    // Store two-way binders so they are not GC'd  
+    let twoWays = System.Collections.Generic.List<ListViewModel<'model,'msg>>()
+    
     // Current model
     let mutable model : 'model = m
 
@@ -63,7 +74,10 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
                 | BindModel (_, propMap) -> name, Model <| toSubView propMap
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
-            )
+                | BindCollectionTwoWay (mgetter, kgetter, ksetter) -> name, CollectionGetSet (mgetter, kgetter, ksetter) 
+                | BindCollectionModel (mgetter, binding) -> 
+                    name, CollectionModel (mgetter model |> Seq.mapi (fun i m -> toSubView <| binding (string i)))
+                )
         
         convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
 
@@ -91,16 +105,25 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
             | Model m ->
                 m.UpdateModel other
                 None
+            | CollectionGetSet (listGetter, _, _) ->
+                if listGetter model <> listGetter other then Some name else None
+            | CollectionModel (viewmodels) ->
+                viewmodels |> Seq.iteri (fun i m -> m.UpdateModel other)   
+                Some name
             | _ -> None
-
         let diffs = 
             props
             |> Seq.choose (fun (kvp) -> propDiff kvp.Key kvp.Value)
             |> Seq.toList
         
         model <- other
-        notify diffs
-
+        
+        // clear 2-way binders list
+        twoWays.Clear() |> ignore
+        
+        notify (diffs)
+   
+    member __.UpdateSubModels (m: obj) = ()
 
     // DynamicObject overrides
 
@@ -109,12 +132,23 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         if props.ContainsKey binder.Name then
             r <-
                 match props.[binder.Name] with 
-                | Get getter 
+                | Get getter                 
                 | GetSet (getter,_)
-                | GetSetValidate (getter,_) -> getter model
+                | GetSetValidate (getter,_) -> getter model                
                 | Cmd c -> unbox c
                 | Model m -> unbox m
                 | Map (getter,mapper) -> getter model |> mapper
+                | CollectionGetSet (listGetter, keyedGetter, keyedSetter) -> 
+                    let binder = ListViewModel(binder.Name, 
+                                               unbox<seq<obj>> (listGetter model),
+                                               keyedGetter model ,
+                                               (fun v k -> keyedSetter v model k |> dispatch))
+                    twoWays.Add binder
+                    box binder
+                | CollectionModel (viewmodels) ->
+                    let bindings' = viewmodels |> Seq.map (fun (binding) -> box binding)
+                    let binder = ModelViewModel(binder.Name, bindings')
+                    box binder
             true
         else false
 

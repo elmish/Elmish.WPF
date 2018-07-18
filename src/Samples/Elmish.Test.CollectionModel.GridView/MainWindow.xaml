@@ -1,0 +1,112 @@
+﻿<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DataGrid;assembly=Elmish.Test.CollectionModel.GridView"
+        mc:Ignorable="d"
+        Title="Elmish.WPF Model collection" Height="674.203" Width="1311.317">
+    <Window.Resources>
+        <local:IntOptionConverter x:Key="IntOptionConverter" />
+        <local:DecimalOptionConverter x:Key="DecimalOptionConverter" />
+    </Window.Resources>
+    <Grid Margin="0,0,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20" />
+            <RowDefinition Height="20*"/>
+            <RowDefinition Height="20" />
+            <RowDefinition Height="20*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Gridview in read-write mode, filled with Binding.collectionModel" Grid.Row="0"/>
+        <ListView ItemsSource="{Binding Data}" Margin="5" Grid.Row="1">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Id" DisplayMemberBinding="{Binding Path=Id}" Width="40" />
+                    <GridViewColumn Header="Country">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=Country, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Region">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=Region, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="ItemType">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=ItemType, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="SaleChannel">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=SaleChannel, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="OrderDate">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <DatePicker SelectedDate="{Binding Path=OrderDate, Mode=TwoWay}" />
+                                <!--<TextBox Text="{Binding Path=OrderDate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>-->
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="OrderID">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=OrderID, Mode=TwoWay, Converter={StaticResource IntOptionConverter}}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="UnitSold">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=UnitSold, Mode=TwoWay, Converter={StaticResource IntOptionConverter}}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="UnitPrice">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=UnitPrice, Mode=TwoWay, Converter={StaticResource DecimalOptionConverter}}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Revenue">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Path=Revenue, Mode=TwoWay, Converter={StaticResource DecimalOptionConverter}}" HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <TextBlock Text="DataGrid in read-only mode, filled with Binding.oneWay" Grid.Row="2"/>
+        <DataGrid 
+                  ItemsSource="{Binding Data2}" 
+                  Grid.Row="3"                
+                  IsSynchronizedWithCurrentItem="True"
+                  AutoGenerateColumns="True" Margin="5">
+            <!--<DataGrid.Columns>
+                <DataGridTextColumn Header="Country" Binding="{Binding Country}" />
+                <DataGridTextColumn Header="Region" Binding="{Binding Region}" />
+            </DataGrid.Columns>-->
+        </DataGrid>
+    </Grid>
+</Window>

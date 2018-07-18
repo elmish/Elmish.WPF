@@ -1,0 +1,97 @@
+﻿<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Elmish.WPF TwoWayList" Height="460.309" Width="773.225">
+    <Grid Margin="0,0,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" 
+               Grid.Row="0"
+               Text="Read and write list - Binding.collectionTwoWay" TextWrapping="WrapWithOverflow" />
+        <ListView ItemsSource="{Binding WordsWithEnumerator}"  
+                  Grid.Column="0"
+                  Grid.Row="1"
+                  Grid.RowSpan="6" >
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="Black" BorderThickness="1">
+                        <Grid>
+                            <!--<Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="4*"/>
+                            </Grid.ColumnDefinitions>-->
+                            <!--<Label Content="{Binding Path=.}" />-->
+                            <TextBox Text="{Binding Path=.Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Grid.Column="1"  />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <TextBlock Grid.Column="2" 
+               Grid.Row="0"
+               Text="Read only list - Binding.collectionTwoWay" TextWrapping="WrapWithOverflow" />
+        <ListView ItemsSource="{Binding ReadonlyWords}" 
+                  Grid.Row="1" 
+                  Grid.RowSpan="6" 
+                  Grid.Column="2"   >
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="Black" BorderThickness="1">
+                        <Label Content="{Binding Path=.}"/>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <TextBlock Grid.Column="1" 
+               Grid.Row="0"
+               Text="Read and write fields accessed through indexes - Binding.collectionTwoWay" TextWrapping="WrapWithOverflow" />
+        <Label Content="Bound to Items[0]" Grid.Column="1" HorizontalAlignment="Left" Margin="10,5,0,0" Grid.Row="1" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.231"/>
+        <Border Grid.Column="1" Grid.Row="1" BorderBrush="Black" BorderThickness="1" Height="26" VerticalAlignment="Top" Margin="10,31,10,0">
+            <TextBox Text="{Binding Words[0], UpdateSourceTrigger=LostFocus}" />
+        </Border>
+        <Label Content="Bound to Items[2]" Grid.Column="1" HorizontalAlignment="Left" Margin="10,2,0,0" Grid.Row="2" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.231"/>
+        <Border Grid.Column="1"  Grid.Row="2" BorderBrush="Black" BorderThickness="1" Height="26" VerticalAlignment="Top" Margin="10,24,10,0">
+            <TextBox Text="{Binding Path=Words[2], Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+        </Border>
+        <Label Content="Bound to Items[4]" Grid.Column="1" HorizontalAlignment="Left" Margin="10,58,0,0" Grid.Row="2" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.231" Grid.RowSpan="2"/>
+        <Border  Grid.Column="1" Grid.Row="3" BorderBrush="Black" BorderThickness="1" Height="26" VerticalAlignment="Top" Margin="10,24,10,0">
+            <TextBox Text="{Binding Path=Words[4], Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+        </Border>
+
+        <TextBlock Text="Bound to Items[2] trough string key [secondItem]" Grid.Column="1" Margin="5,0,49,0" Grid.Row="4" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.231" TextWrapping="WrapWithOverflow" />
+        <Border  Grid.Column="1" Grid.Row="4" BorderBrush="Black" BorderThickness="1" Height="26" VerticalAlignment="Top" Margin="15,34,10,0">
+            <TextBox Text="{Binding Path=Words[secondItem], Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+        </Border>
+
+        <Label Content="One data not part of the list" Grid.Column="1" HorizontalAlignment="Left" Margin="10,59,0,0" Grid.Row="5" VerticalAlignment="Top" RenderTransformOrigin="0.553,0.231" Grid.RowSpan="2"/>
+        <Border  Grid.Column="1" Grid.Row="6" BorderBrush="Black" BorderThickness="1" Height="26" VerticalAlignment="Top" Margin="10,25,10,0">
+            <TextBox  Text="{Binding SingleValue, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+        </Border>
+
+    </Grid>
+</Window>
