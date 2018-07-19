@@ -3,13 +3,17 @@
 open System
 open System.Windows.Input
 
+type IndexOrKey =
+    | Index of int
+    | Key of string
+
 type Getter<'model> = 'model -> obj
 type Setter<'model,'msg> = obj -> 'model -> 'msg
 type ValidSetter<'model,'msg> = obj -> 'model -> Result<'msg,string>
 type Execute<'model,'msg> = obj -> 'model -> 'msg
 type CanExecute<'model> = obj -> 'model -> bool
-type KeyedGetter<'model> = 'model -> string -> obj
-type KeyedSetter<'model,'msg> = obj -> 'model -> string -> 'msg
+type KeyedGetter<'model> = 'model -> IndexOrKey -> obj
+type KeyedSetter<'model,'msg> = obj -> 'model -> IndexOrKey -> 'msg
 
 type Command(execute, canExecute) as this =
     let canExecuteChanged = Event<EventHandler,EventArgs>()
@@ -34,7 +38,7 @@ and Variable<'model,'msg> =
     | BindModel of Getter<'model> * ViewBindings<'model,'msg>
     | BindMap of Getter<'model> * (obj -> obj)
     | BindCollectionTwoWay of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
-    | BindCollectionModel of ('model -> seq<obj>) * ((*'model ->*) string -> ViewBindings<'model,'msg>)
+    | BindCollectionModel of ('model -> seq<obj>) * (IndexOrKey -> ViewBindings<'model,'msg>)
     
 
 [<RequireQualifiedAccess>]
@@ -130,7 +134,7 @@ module Binding =
     ///<param name="getItem">Gets an item from the list from the model with a given index</param>
     ///<param name="getList">Setter function, returns a message to dispatch, to set the value of an indexed item</param>
     ///<param name="name">Binding name</param>
-    let collectionTwoWay (listGetter:'model -> seq<'a>) (keyedGetter:'model -> string -> 'a) (keyedSetter:'a -> 'model -> string -> 'msg) name : ViewBinding<'model,'msg> = 
+    let collectionTwoWay (listGetter:'model -> seq<'a>) (keyedGetter:'model -> IndexOrKey -> 'a) (keyedSetter:'a -> 'model -> IndexOrKey -> 'msg) name : ViewBinding<'model,'msg> = 
         let unwrapGetter getter = fun m k -> getter m k |> unbox
         let unwrapSetter setter = fun v m -> setter (unbox v) m
 
@@ -141,9 +145,11 @@ module Binding =
     ///<param name="viewBinding">Set of view bindings for the sub-view</param>
     ///<param name="toMsg">Maps sub-messages to the base message type</param>
     ///<param name="name">Binding name</param>
-    let collectionModel (getter:'model -> seq<'_model>) (viewBindings: unit -> ViewBindings<'_model,'_msg>)  (toMsg: string -> '_msg -> 'msg) name : ViewBinding<'model,'msg> = 
+    let collectionModel (getter:'model -> seq<'_model>) (viewBindings: unit -> ViewBindings<'_model,'_msg>)  (toMsg: IndexOrKey -> '_msg -> 'msg) name : ViewBinding<'model,'msg> = 
         
         let unwrapViewBindings key =
-            viewBindings() |> mapViewBinding (fun m -> (getter m) |> Seq.item (int key)) (toMsg key)
+            match key with
+            | Index i -> viewBindings() |> mapViewBinding (fun m -> (getter m) |> Seq.item i) (toMsg <| Index i)
+            | Key _ -> failwith "?"
 
         name, BindCollectionModel(getter >> unbox,  unwrapViewBindings)

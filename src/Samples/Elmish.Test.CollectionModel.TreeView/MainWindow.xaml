@@ -6,32 +6,36 @@
         xmlns:local="clr-namespace:TreeViewModel;assembly=Elmish.Test.CollectionModel.TreeView"
         xmlns:elm="clr-namespace:Elmish.WPF;assembly=Elmish.WPF"
         mc:Ignorable="d"
-        Title="Elmish.WPF Model Collection - TreeView" Height="452" Width="510.667" >
+        Title="Elmish.WPF Model Collection - TreeView" Height="545.059" Width="510.667" >
     <Window.Resources>
     </Window.Resources>
     <Grid Margin="0,0,0,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*" />
             <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
-        <TreeView ItemsSource="{Binding Path=TreeData}" 
+        <TreeView ItemsSource="{Binding Path=TreeData, Mode=TwoWay}" 
                   Grid.Column="0">
             <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate DataType="x:Type local:Exposable" ItemsSource="{Binding Content}">
+                <HierarchicalDataTemplate DataType="x:Type INotifyPropertyChanged" ItemsSource="{Binding Content}">
                     <StackPanel Orientation="Horizontal">
                         <TextBox Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" HorizontalAlignment="Stretch" />
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
-        <TreeView ItemsSource="{Binding Path=TreeDataReadonly}" Grid.Column="1">
+        <TreeView ItemsSource="{Binding Path=TreeData}" Grid.Column="1">
             <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate DataType="x:Type local:Exposable" ItemsSource="{Binding Content}">
+                <HierarchicalDataTemplate
+                        DataType="x:Type INotifyPropertyChanged"
+                        ItemsSource="{Binding Content, BindsDirectlyToSource=True}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Title}" />
+                        <TextBlock Text="{Binding Title, BindsDirectlyToSource=True}" />
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
+        <TextBlock Text="{Binding RawTreeData}" Grid.Column="2" TextWrapping="Wrap" />
     </Grid>
 </Window>

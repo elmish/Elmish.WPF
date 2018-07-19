@@ -8,6 +8,8 @@ open System.Collections
 open System.Collections.Generic
 
 open Elmish.WPF.CollectionViewModel      
+open System.Collections.ObjectModel
+open System.Windows.Data
 
 type PropertyAccessor<'model,'msg> =
     | Get of Getter<'model>    
@@ -17,7 +19,7 @@ type PropertyAccessor<'model,'msg> =
     | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
     | CollectionGetSet of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
-    | CollectionModel of seq<ViewModelBase<'model,'msg>>
+    | CollectionModel of KeyedGetter<'model> (*'model -> string -> obj*) * seq<ViewModelBase<'model,'msg>>
                                                                 
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
@@ -32,6 +34,8 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     // Store two-way binders so they are not GC'd  
     let twoWays = System.Collections.Generic.List<ListViewModel<'model,'msg>>()
+    //let models = System.Collections.Generic.Dictionary<string,ModelViewModel<'model,'msg>>()
+    let models = System.Collections.Generic.Dictionary<string,ObservableCollection<_>>()
     
     // Current model
     let mutable model : 'model = m
@@ -44,6 +48,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         propertyChanged.Trigger(this,PropertyChangedEventArgs(name))
     let notify (p:string list) =
         p |> List.iter notifyPropertyChanged
+
         let raiseCanExecuteChanged =
             function
             | Cmd c ->
@@ -76,7 +81,12 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
                 | BindCollectionTwoWay (mgetter, kgetter, ksetter) -> name, CollectionGetSet (mgetter, kgetter, ksetter) 
                 | BindCollectionModel (mgetter, binding) -> 
-                    name, CollectionModel (mgetter model |> Seq.mapi (fun i m -> toSubView <| binding (string i)))
+                    let kgetter m = function
+                        | Index i -> (mgetter m) |> Seq.item i |> box
+                        | Key _ -> failwith "?"
+                        
+                    name, CollectionModel ( kgetter,
+                                            mgetter model |> Seq.mapi (fun i m -> toSubView <| binding (Index i)))
                 )
         
         convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
@@ -107,9 +117,12 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 None
             | CollectionGetSet (listGetter, _, _) ->
                 if listGetter model <> listGetter other then Some name else None
-            | CollectionModel (viewmodels) ->
-                viewmodels |> Seq.iteri (fun i m -> m.UpdateModel other)   
-                Some name
+            | CollectionModel (kgetter, viewmodels) ->       
+                viewmodels 
+                |> Seq.mapi (fun i m -> i,m)
+                |> Seq.filter (fun (i,m) -> kgetter model (Index i) <> kgetter other (Index i))
+                |> Seq.iter (fun (i,m) -> (m.UpdateModel other))
+                Some name                
             | _ -> None
         let diffs = 
             props
@@ -145,10 +158,16 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                                                (fun v k -> keyedSetter v model k |> dispatch))
                     twoWays.Add binder
                     box binder
-                | CollectionModel (viewmodels) ->
-                    let bindings' = viewmodels |> Seq.map (fun (binding) -> box binding)
-                    let binder = ModelViewModel(binder.Name, bindings')
-                    box binder
+                | CollectionModel (_,viewmodels) ->
+                    if models.ContainsKey binder.Name then
+                        box models.[binder.Name]
+                    else                       
+                        let obsc = new ObservableCollection<_>(viewmodels)
+                        for b in obsc do
+                            (b :> INotifyPropertyChanged).PropertyChanged.Add (fun arg -> printfn "%s" arg.PropertyName) // <- never raised - why ?
+                        obsc.CollectionChanged.Add (fun arg -> printfn "%A" arg )
+                        models.Add (binder.Name, obsc)
+                        box obsc
             true
         else false
 

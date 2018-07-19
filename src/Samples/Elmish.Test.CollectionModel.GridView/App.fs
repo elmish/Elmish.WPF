@@ -62,7 +62,7 @@ module Sales =
 
     type Message = 
         | SomethingHappened
-        | RowChanged of int * SaleMessage
+        | RowChanged of IndexOrKey * SaleMessage
 
     type Model = SaleModel list
      
@@ -72,7 +72,7 @@ module Sales =
             | SomethingHappened -> model
             | RowChanged (i, m) -> 
                 model
-                |> List.mapi (fun j x -> if i = j then Sale.update m (model.[i]) else x)
+                |> List.mapi (fun j x -> if i = (Index j) then Sale.update m (model.[j]) else x)
 
         model', Cmd.none
 
@@ -89,7 +89,43 @@ module Sales =
 
     let view _ _ =
         [  
-            "Refresh" |> Binding.cmd (fun _ _ -> SomethingHappened)
-            "Data" |> Binding.collectionModel subModels (fun () -> Sale.view) (fun k msg -> RowChanged (int k, msg))
+            "Data" |> Binding.collectionModel subModels (fun () -> Sale.view) (fun k msg -> RowChanged (k, msg))
             "Data2" |> Binding.oneWay (fun m -> m)
         ]
+
+open FSharp.Data
+
+type Data = CsvProvider<"./Resources/5000 Sales Records.csv">
+
+module DataAccess =
+    open Sale
+
+    let extractData () =
+        let data = Data.Load("./Resources/5000 Sales Records.csv")
+
+        data.Rows
+        |> Seq.mapi (fun i r ->
+            {   Id=i
+                Country = r.Country
+                Region = r.Region
+                ItemType = r.``Item Type``
+                SaleChannel = r.``Sales Channel``
+                OrderDate = r.``Order Date``
+                OrderID = Some r.``Order ID``
+                UnitSold = Some r.``Units Sold``
+                UnitPrice = Some r.``Unit Price``
+                Revenue = Some r.``Total Revenue``})
+        |> Seq.toList                  
+
+module App =
+    open System
+    open Sales
+
+    [<EntryPoint;STAThread>]
+    let main argv = 
+
+        let init() = DataAccess.extractData(), Cmd.none
+    
+        Program.mkProgram init update view
+        |> Program.withConsoleTrace
+        |> Program.runWindow (MainWindow())

@@ -59,8 +59,7 @@
     <Compile Include="Converters.fs" />
     <Resource Include="MainWindow.xaml" />
     <Compile Include="MainWindow.xaml.fs" />
-    <Compile Include="Models.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="App.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
     <None Include="Resources\5000 Sales Records.csv">

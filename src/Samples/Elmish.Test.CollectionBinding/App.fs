@@ -39,17 +39,19 @@ module App =
                 fst model, values
         model', Cmd.none
 
-    let listGetter m = (modelToList m) //:?> IEnumerable<string>
-    let getter (model:Model) (key:string) =
-        match Int32.TryParse key, key with
-        | (true, index), _ -> (modelToList model).[index]
-        | (false,_), "secondItem" -> (modelToList model).[1]
-        | _,_ -> "Key error"
-    let setter (value:string) _ (key:string) = 
-        match Int32.TryParse key, key with
-        | (true, index), _ -> ValueChanged(index, unbox value)
-        | (false,_), "secondItem" -> ValueChanged(1, unbox value)
-        | _,_ -> failwith "unexpected key"
+    let listGetter m = (modelToList m) 
+   
+    let getter model key =
+        match key with
+        | (Index i) -> (modelToList model).[i]
+        | Key "secondItem" -> (modelToList model).[1]
+        | _ -> "Key error"
+
+    let setter value _ key = 
+        match  key with
+        | Index i -> ValueChanged(i, unbox value)
+        | Key "secondItem" -> ValueChanged(1, unbox value)
+        | _ -> failwith "unexpected key"
         
 
     let singlegetter (v,_) = v
@@ -58,7 +60,6 @@ module App =
     let view _ _ =
         [
             "SingleValue" |> Binding.twoWay singlegetter singlesetter
-            //"Words" |> Binding.collectionTwoWay (modelToList >> List.mapi(fun i _ -> getter, setter) >> List.toSeq)
             "Words" |> Binding.collectionTwoWay (modelToList >> List.toSeq) getter setter
             "WordsWithEnumerator" |> Binding.collectionTwoWay (modelToList >> List.toSeq) getter setter
             "ReadonlyWords" |> Binding.oneWay (fun m -> modelToList m)

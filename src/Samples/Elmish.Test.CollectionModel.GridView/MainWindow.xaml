@@ -19,9 +19,42 @@
             <RowDefinition Height="20*"/>
             <RowDefinition Height="20" />
             <RowDefinition Height="20*"/>
+            <!--<RowDefinition Height="20" />
+            <RowDefinition Height="20*"/>-->
         </Grid.RowDefinitions>
         <TextBlock Text="Gridview in read-write mode, filled with Binding.collectionModel" Grid.Row="0"/>
-        <ListView ItemsSource="{Binding Data}" Margin="5" Grid.Row="1">
+        <DataGrid 
+                  ItemsSource="{Binding Data, Mode=TwoWay}" 
+                  Grid.Row="1"
+                  AutoGenerateColumns="False"
+                  Margin="5">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Id" Binding="{Binding Id}" />
+                <DataGridTextColumn Header="Country" Binding="{Binding Path=Country, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                <DataGridTextColumn Header="Region" Binding="{Binding Path=Region, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                <DataGridTextColumn Header="Item type" Binding="{Binding Path=ItemType, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                <DataGridTextColumn Header="Sale channel" Binding="{Binding Path=SaleChannel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                <DataGridTemplateColumn Header="Order Date">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <DatePicker SelectedDate="{Binding Path=OrderDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="OrderID" Binding="{Binding Path=OrderID, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource IntOptionConverter}}" />
+                <DataGridTextColumn Header="UnitSold" Binding="{Binding Path=UnitSold, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource IntOptionConverter}}" />
+                <DataGridTextColumn Header="UnitPrice" Binding="{Binding Path=UnitPrice, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource DecimalOptionConverter}}" />
+                <DataGridTextColumn Header="Revenue" Binding="{Binding Path=Revenue, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource DecimalOptionConverter}}" />        
+            </DataGrid.Columns>                                                                                                                 
+        </DataGrid>
+        <TextBlock Text="DataGrid in read-only mode, filled with Binding.oneWay" Grid.Row="2"/>
+        <DataGrid 
+                  ItemsSource="{Binding Data2}" 
+                  Grid.Row="3"                
+                  AutoGenerateColumns="True" Margin="5">
+        </DataGrid>
+        <!--<ListView ItemsSource="{Binding Data}" Margin="5" Grid.Row="6">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -62,7 +95,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <DatePicker SelectedDate="{Binding Path=OrderDate, Mode=TwoWay}" />
-                                <!--<TextBox Text="{Binding Path=OrderDate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>-->
+                                --><!--<TextBox Text="{Binding Path=OrderDate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>--><!--
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -96,17 +129,6 @@
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
-        </ListView>
-        <TextBlock Text="DataGrid in read-only mode, filled with Binding.oneWay" Grid.Row="2"/>
-        <DataGrid 
-                  ItemsSource="{Binding Data2}" 
-                  Grid.Row="3"                
-                  IsSynchronizedWithCurrentItem="True"
-                  AutoGenerateColumns="True" Margin="5">
-            <!--<DataGrid.Columns>
-                <DataGridTextColumn Header="Country" Binding="{Binding Country}" />
-                <DataGridTextColumn Header="Region" Binding="{Binding Region}" />
-            </DataGrid.Columns>-->
-        </DataGrid>
+        </ListView>-->
     </Grid>
 </Window>
