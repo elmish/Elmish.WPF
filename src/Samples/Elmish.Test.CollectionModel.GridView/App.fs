@@ -2,10 +2,12 @@
 
 open Elmish
 open Elmish.WPF
+open System
+open System.Windows
+open System.Collections.Generic
+open System.Collections.ObjectModel
 
 module Sale =
-    open System
-
     type SaleMessage =
         | CountryChanged of string
         | RegionChanged of string
@@ -16,19 +18,22 @@ module Sale =
         | UnitSoldChanged of int option
         | UnitPriceChanged of decimal option
         | RevenueChanged of decimal option
+    
 
     type SaleModel =
-        {   Id: int
-            Country: string
-            Region: string
-            ItemType: string
-            SaleChannel: string
-            OrderDate : DateTime
-            OrderID : int option
-            UnitSold : int option
-            UnitPrice: decimal option
-            Revenue: decimal option
-            }
+        {   Id          : int
+            Country     : string
+            Region      : string
+            ItemType    : string
+            SaleChannel : string
+            OrderDate   : DateTime
+            OrderID     : int option
+            UnitSold    : int option
+            UnitPrice   : decimal option
+            Revenue     : decimal option    }
+    with
+        static member Default(id) = { Id = id ; Country = "" ; Region = "" ; ItemType = "" ; SaleChannel = "" ; OrderDate = DateTime.Today ;
+                                   OrderID = None ; UnitSold = None ; UnitPrice = None ; Revenue  = None ;     }
 
     let update msg subModel =
         let subModel' = 
@@ -54,78 +59,66 @@ module Sale =
             "OrderID" |> Binding.twoWay (fun m -> m.OrderID) (fun v m -> OrderIDChanged v)
             "UnitSold" |> Binding.twoWay (fun m -> m.UnitSold) (fun v m -> UnitSoldChanged v)
             "UnitPrice" |> Binding.twoWay (fun m -> m.UnitPrice) (fun v m -> UnitPriceChanged v)
-            "Revenue" |> Binding.twoWay (fun m -> m.Revenue) (fun v m -> RevenueChanged v)
-            ]
+            "Revenue" |> Binding.twoWay (fun m -> m.Revenue) (fun v m -> RevenueChanged v)  ]
 
 module Sales =    
     open Sale
 
     type Message = 
-        | SomethingHappened
-        | RowChanged of IndexOrKey * SaleMessage
+        | RowChanged of int * SaleMessage
+        | RowDeleted of int
+        | InsertRow of int
+    type Model = ObservableCollection<SaleModel>
 
-    type Model = SaleModel list
-     
+    let uiDispatch (f: unit -> 'r) : 'r = Application.Current.Dispatcher.Invoke (f)
+
     let update msg (model:Model) =
-        let model' = 
-            match msg with
-            | SomethingHappened -> model
-            | RowChanged (i, m) -> 
-                model
-                |> List.mapi (fun j x -> if i = (Index j) then Sale.update m (model.[j]) else x)
+        match msg with
+        | RowChanged (i, m) -> uiDispatch (fun _ -> model.[i] <- Sale.update m (model.[i]))
+        | RowDeleted i -> uiDispatch (fun _ -> model.RemoveAt i |> ignore )
+        | InsertRow i -> uiDispatch (fun _ -> model.Insert (i, SaleModel.Default(model.Count)) |> ignore )
 
-        model', Cmd.none
-
-    let toBoxList model = 
-        model 
-        |> List.mapi (fun i r -> string i, box r) 
-        |> Map.ofList
-
-    let toModel i (model:Model) =
-        model.[i]
-    
-    let subModels (model:Model) = model |> Seq.ofList
-    let subModel (model:Model) (key:string) = model.[int key]
+        model, Cmd.none
 
     let view _ _ =
-        [  
-            "Data" |> Binding.collectionModel subModels (fun () -> Sale.view) (fun k msg -> RowChanged (k, msg))
-            "Data2" |> Binding.oneWay (fun m -> m)
+        [   
+            "Data" |> Binding.collectionModel (fun m -> m :> IEnumerable<SaleModel>) (fun () -> Sale.view) (fun i msg -> RowChanged (i, msg))
+            "DataMirror" |> Binding.oneWay (fun m -> m)
+            "DeleteRow" |> Binding.cmd (fun x _ -> RowDeleted (x :?> int))
+            "InsertRow" |> Binding.cmd (fun x _ -> InsertRow (x :?> int))
         ]
-
-open FSharp.Data
-
-type Data = CsvProvider<"./Resources/5000 Sales Records.csv">
 
 module DataAccess =
     open Sale
+    open FSharp.Data
+
+    type Data = CsvProvider<"./Resources/5000 Sales Records.csv">
 
     let extractData () =
         let data = Data.Load("./Resources/5000 Sales Records.csv")
 
+        let result = new ObservableCollection<_>()
         data.Rows
-        |> Seq.mapi (fun i r ->
-            {   Id=i
-                Country = r.Country
-                Region = r.Region
-                ItemType = r.``Item Type``
-                SaleChannel = r.``Sales Channel``
-                OrderDate = r.``Order Date``
-                OrderID = Some r.``Order ID``
-                UnitSold = Some r.``Units Sold``
-                UnitPrice = Some r.``Unit Price``
-                Revenue = Some r.``Total Revenue``})
-        |> Seq.toList                  
+        |> Seq.iteri (fun i r ->
+            result.Add {    Id = i
+                            Country = r.Country
+                            Region = r.Region
+                            ItemType = r.``Item Type``
+                            SaleChannel = r.``Sales Channel``
+                            OrderDate = r.``Order Date``
+                            OrderID = Some r.``Order ID``
+                            UnitSold = Some r.``Units Sold``
+                            UnitPrice = Some r.``Unit Price``
+                            Revenue = Some r.``Total Revenue``})
+        result
 
 module App =
-    open System
     open Sales
+
+    let init() = DataAccess.extractData(), Cmd.none
 
     [<EntryPoint;STAThread>]
     let main argv = 
-
-        let init() = DataAccess.extractData(), Cmd.none
-    
         Program.mkProgram init update view
         |> Program.withConsoleTrace
         |> Program.runWindow (MainWindow())

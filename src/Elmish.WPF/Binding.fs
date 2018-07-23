@@ -2,6 +2,8 @@
   
 open System
 open System.Windows.Input
+open System.Collections.Generic
+open System.Linq
 
 type IndexOrKey =
     | Index of int
@@ -38,11 +40,13 @@ and Variable<'model,'msg> =
     | BindModel of Getter<'model> * ViewBindings<'model,'msg>
     | BindMap of Getter<'model> * (obj -> obj)
     | BindCollectionTwoWay of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
-    | BindCollectionModel of ('model -> seq<obj>) * (IndexOrKey -> ViewBindings<'model,'msg>)
+    | BindCollectionModel of ('model -> IEnumerable<obj>) * (int -> ViewBindings<'model,'msg>)
     
 
 [<RequireQualifiedAccess>]
 module Binding =
+    open System.Collections
+    open System.Collections.ObjectModel
     
     // Maps a set of view bindings to its parent view bindings
     let rec private mapViewBinding<'model,'msg,'_model,'_msg> toModel toMsg (viewBinding: ViewBindings<'_model,'_msg>) : ViewBindings<'model,'msg> =
@@ -70,7 +74,7 @@ module Binding =
                 ((toModel >> listGetter), (toModel >> keyedGetter), (fun v m k -> keyedSetter v (toModel m) k |> toMsg))
                 |> BindCollectionTwoWay 
             | BindCollectionModel (listGetter, bindings) ->
-                ((toModel >> listGetter), fun (*m*) k -> bindings (*toModel m*) k |> mapViewBinding toModel toMsg)
+                ((toModel >> listGetter), fun i -> bindings i |> mapViewBinding toModel toMsg)
                 |> BindCollectionModel
 
         viewBinding
@@ -140,16 +144,27 @@ module Binding =
 
         name, BindCollectionTwoWay (listGetter >> unbox, (unwrapGetter keyedGetter), unwrapSetter keyedSetter)
 
+
     ///<summary>Sub-view binding</summary>
     ///<param name="getter">Gets the sub-model from the base model</param>
     ///<param name="viewBinding">Set of view bindings for the sub-view</param>
     ///<param name="toMsg">Maps sub-messages to the base message type</param>
     ///<param name="name">Binding name</param>
-    let collectionModel (getter:'model -> seq<'_model>) (viewBindings: unit -> ViewBindings<'_model,'_msg>)  (toMsg: IndexOrKey -> '_msg -> 'msg) name : ViewBinding<'model,'msg> = 
+    let collectionModel (getter:'model -> IEnumerable<'_model>) (viewBindings: unit -> ViewBindings<'_model,'_msg>)  (toMsg: int -> '_msg -> 'msg) name : ViewBinding<'model,'msg> = 
         
-        let unwrapViewBindings key =
-            match key with
-            | Index i -> viewBindings() |> mapViewBinding (fun m -> (getter m) |> Seq.item i) (toMsg <| Index i)
-            | Key _ -> failwith "?"
+        let getter' m =
+            let result = getter m
+            match result with
+            | :? ObservableCollection<'_model> as obsc -> (ObservableCollection.map (fun x -> box x) obsc) :> IEnumerable<obj>
+            | ienumerable -> ienumerable |> Seq.map box
+            
+        let getter'' m i =
+            let result = getter m
+            match result with
+            | :? ObservableCollection<'_model> as obsc -> obsc.[i]
+            | ienumerable -> ienumerable |> Seq.item i
 
-        name, BindCollectionModel(getter >> unbox,  unwrapViewBindings)
+        let unwrapViewBindings i =
+            viewBindings() |> mapViewBinding (fun m -> getter'' m i (*(getter m) |> Seq.item i*)) (toMsg i)
+
+        name, BindCollectionModel(getter' >> unbox,  unwrapViewBindings)

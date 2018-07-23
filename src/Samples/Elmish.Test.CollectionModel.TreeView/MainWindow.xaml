@@ -18,23 +18,35 @@
         <TreeView ItemsSource="{Binding Path=TreeData, Mode=TwoWay}" 
                   Grid.Column="0">
             <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate DataType="x:Type INotifyPropertyChanged" ItemsSource="{Binding Content}">
+                <HierarchicalDataTemplate DataType="x:Type Object" ItemsSource="{Binding Content}">
                     <StackPanel Orientation="Horizontal">
                         <TextBox Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" HorizontalAlignment="Stretch" />
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <!--<Setter Property="IsSelected" Value="{Binding IsSelected}" />-->
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
         </TreeView>
-        <TreeView ItemsSource="{Binding Path=TreeData}" Grid.Column="1">
+        <TreeView ItemsSource="{Binding Path=TreeDataMirror}" Grid.Column="1">
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate
-                        DataType="x:Type INotifyPropertyChanged"
+                        DataType="x:Type Object"
                         ItemsSource="{Binding Content, BindsDirectlyToSource=True}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding Title, BindsDirectlyToSource=True}" />
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <!--<Setter Property="IsSelected" Value="{Binding IsSelected}" />-->
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
         </TreeView>
         <TextBlock Text="{Binding RawTreeData}" Grid.Column="2" TextWrapping="Wrap" />
     </Grid>
