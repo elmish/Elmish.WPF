@@ -3,19 +3,12 @@
 open System
 open System.Windows.Input
 open System.Collections.Generic
-open System.Linq
-
-type IndexOrKey =
-    | Index of int
-    | Key of string
 
 type Getter<'model> = 'model -> obj
 type Setter<'model,'msg> = obj -> 'model -> 'msg
 type ValidSetter<'model,'msg> = obj -> 'model -> Result<'msg,string>
 type Execute<'model,'msg> = obj -> 'model -> 'msg
 type CanExecute<'model> = obj -> 'model -> bool
-type KeyedGetter<'model> = 'model -> IndexOrKey -> obj
-type KeyedSetter<'model,'msg> = obj -> 'model -> IndexOrKey -> 'msg
 
 type Command(execute, canExecute) as this =
     let canExecuteChanged = Event<EventHandler,EventArgs>()
@@ -39,7 +32,6 @@ and Variable<'model,'msg> =
     | BindCmd of Execute<'model,'msg> * CanExecute<'model>
     | BindModel of Getter<'model> * ViewBindings<'model,'msg>
     | BindMap of Getter<'model> * (obj -> obj)
-    | BindCollectionTwoWay of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
     | BindComplexModel of ('model -> IEnumerable<obj>) * (obj -> ViewBindings<'model,'msg>)
     
 
@@ -70,9 +62,6 @@ module Binding =
             | BindMap (getter,mapper) ->
                 ((toModel >> getter), mapper)
                 |> BindMap
-            | BindCollectionTwoWay (listGetter, keyedGetter, keyedSetter) ->
-                ((toModel >> listGetter), (toModel >> keyedGetter), (fun v m k -> keyedSetter v (toModel m) k |> toMsg))
-                |> BindCollectionTwoWay 
             | BindComplexModel (listGetter, bindings) ->
                 ((toModel >> listGetter), fun i -> bindings i |> mapViewBinding toModel toMsg)
                 |> BindComplexModel
@@ -132,17 +121,6 @@ module Binding =
     ///<param name="name">Binding name</param>
     let oneWayMap (getter: 'model -> 'a) (mapper: 'a -> 'b) name : ViewBinding<'model,'msg> =
         name, BindMap (getter >> unbox, unbox >> mapper >> unbox)
-
-    ///<summary>Either source to target or target to source when the source is a list (i.e. BindingMode.TwoWay)</summary>
-    ///<param name="getList">Gets list from the model</param>
-    ///<param name="getItem">Gets an item from the list from the model with a given index</param>
-    ///<param name="getList">Setter function, returns a message to dispatch, to set the value of an indexed item</param>
-    ///<param name="name">Binding name</param>
-    let collectionTwoWay (listGetter:'model -> seq<'a>) (keyedGetter:'model -> IndexOrKey -> 'a) (keyedSetter:'a -> 'model -> IndexOrKey -> 'msg) name : ViewBinding<'model,'msg> = 
-        let unwrapGetter getter = fun m k -> getter m k |> unbox
-        let unwrapSetter setter = fun v m -> setter (unbox v) m
-
-        name, BindCollectionTwoWay (listGetter >> unbox, (unwrapGetter keyedGetter), unwrapSetter keyedSetter)
 
     ///<summary>Sub-view binding</summary>
     ///<param name="getter">Gets the sub-models from the base model</param>

@@ -4,14 +4,8 @@ open System
 open System.ComponentModel
 open System.Dynamic
 open System.Windows
-open System.Collections
 open System.Collections.Generic
-
-open Elmish.WPF.CollectionViewModel      
 open System.Collections.ObjectModel
-open System.Windows.Data
-open System.Linq
-open System.Collections.Specialized
 
 type PropertyAccessor<'model,'msg> =
     | Get of Getter<'model>    
@@ -20,7 +14,6 @@ type PropertyAccessor<'model,'msg> =
     | Cmd of Command
     | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
-    | CollectionGetSet of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
     | ComplexModel of ('model -> IEnumerable<obj>) * (obj -> ViewBindings<'model,'msg>)
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
@@ -36,13 +29,10 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
     // Current model
     let mutable model : 'model = m
 
-    // For CollectionTwoWay : store two-way binders so they are not GC'd  
-    let twoWays = System.Collections.Generic.List<ListViewModel<'model,'msg>>()
-
     // For ComplexModel
-    // store raw submodels from properties bound to complex model
+    // store raw submodels from properties bound to some complex model
     let submodels = new Dictionary<string,ObservableCollection<obj>>()
-    // store viewmodels of submodels from properties bound to complex model
+    // store viewmodels of submodels from properties bound to some complex model
     let submodelBindings = Dictionary<string,ObservableCollection<ViewModelBase<'model,'msg>>>()
 
     // For INotifyPropertyChanged
@@ -84,7 +74,6 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
                 | BindModel (_, propMap) -> name, Model <| toSubView propMap
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
-                | BindCollectionTwoWay (mgetter, kgetter, ksetter) -> name, CollectionGetSet (mgetter, kgetter, ksetter) 
                 | BindComplexModel (getter, bindings) -> 
                     match getter model with
                     | :? ObservableCollection<obj> as obscol -> 
@@ -123,10 +112,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
             | Model m ->
                 m.UpdateModel other
                 None
-            | CollectionGetSet (listGetter, _, _) ->
-                if listGetter model <> listGetter other then Some name else None
-            | ComplexModel _ ->       
-                Some name 
+            | ComplexModel _ -> Some name 
             | _ -> None
         let diffs = 
             props
@@ -134,9 +120,6 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
             |> Seq.toList
         
         model <- other
-        
-        // clear 2-way binders list
-        twoWays.Clear() |> ignore
         
         notify (diffs)
    
@@ -153,13 +136,6 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | Cmd c -> unbox c
                 | Model m -> unbox m
                 | Map (getter,mapper) -> getter model |> mapper
-                | CollectionGetSet (listGetter, keyedGetter, keyedSetter) -> 
-                    let binder = ListViewModel(binder.Name, 
-                                               unbox<seq<obj>> (listGetter model),
-                                               keyedGetter model ,
-                                               (fun v k -> keyedSetter v model k |> dispatch))
-                    twoWays.Add binder
-                    box binder
                 | ComplexModel (getter, bindings) ->
                     match getter model with
                     | :? ObservableCollection<obj> as obscol -> ()  //  submodels.[binder.Name] <- obscol

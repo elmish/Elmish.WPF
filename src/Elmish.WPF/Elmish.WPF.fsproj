@@ -59,7 +59,6 @@
     </Compile>
     <Compile Include="ObservableCollection.fs" />
     <Compile Include="Binding.fs" />
-    <Compile Include="CollectionViewModel.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="Cmd.fs" />
     <Compile Include="Program.fs" />
