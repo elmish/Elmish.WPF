@@ -57,8 +57,10 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Converters.fs" />
-    <Resource Include="MainWindow.xaml" />
-    <Compile Include="MainWindow.xaml.fs" />
+    <Resource Include="MainWindowDataGrid.xaml" />
+    <Compile Include="MainWindowDataGrid.xaml.fs" />
+    <Resource Include="MainWindowListItem.xaml" />
+    <Compile Include="MainWindowListItem.xaml.fs" />
     <Compile Include="App.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />

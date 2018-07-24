@@ -18,7 +18,6 @@ module Sale =
         | UnitSoldChanged of int option
         | UnitPriceChanged of decimal option
         | RevenueChanged of decimal option
-    
 
     type SaleModel =
         {   Id          : int
@@ -32,8 +31,9 @@ module Sale =
             UnitPrice   : decimal option
             Revenue     : decimal option    }
     with
-        static member Default(id) = { Id = id ; Country = "" ; Region = "" ; ItemType = "" ; SaleChannel = "" ; OrderDate = DateTime.Today ;
-                                   OrderID = None ; UnitSold = None ; UnitPrice = None ; Revenue  = None ;     }
+        static member Default(id) =
+            {   Id = id ; Country = "" ; Region = "" ; ItemType = "" ; SaleChannel = "" ; OrderDate = DateTime.Today ;
+                OrderID = None ; UnitSold = None ; UnitPrice = None ; Revenue  = None ;     }
 
     let update msg subModel =
         let subModel' = 
@@ -65,28 +65,28 @@ module Sales =
     open Sale
 
     type Message = 
-        | RowChanged of int * SaleMessage
+        | RowChanged of SaleModel * SaleMessage
         | RowDeleted of int
         | InsertRow of int
+
     type Model = ObservableCollection<SaleModel>
 
-    let uiDispatch (f: unit -> 'r) : 'r = Application.Current.Dispatcher.Invoke (f)
+    let uiDispatch (f:unit-> unit) = Application.Current.Dispatcher.Invoke f
 
     let update msg (model:Model) =
         match msg with
-        | RowChanged (i, m) -> uiDispatch (fun _ -> model.[i] <- Sale.update m (model.[i]))
-        | RowDeleted i -> uiDispatch (fun _ -> model.RemoveAt i |> ignore )
-        | InsertRow i -> uiDispatch (fun _ -> model.Insert (i, SaleModel.Default(model.Count)) |> ignore )
-
+            | RowDeleted i -> uiDispatch (fun _ -> model.RemoveAt i)
+            | InsertRow i -> let newIndex = (model |> Seq.map (fun x -> x.Id) |> Seq.sortDescending |> Seq.item 0) + 1
+                             uiDispatch (fun _ -> model.Insert (i + 1, SaleModel.Default(newIndex)))
+            | RowChanged (submodel, msg') -> uiDispatch (fun _ -> model.[model.IndexOf submodel] <- Sale.update msg' submodel)
         model, Cmd.none
 
     let view _ _ =
-        [   
-            "Data" |> Binding.collectionModel (fun m -> m :> IEnumerable<SaleModel>) (fun () -> Sale.view) (fun i msg -> RowChanged (i, msg))
-            "DataMirror" |> Binding.oneWay (fun m -> m)
+        [   "Data" |> Binding.complexModel (fun m -> m :> IEnumerable<SaleModel>) (fun () -> Sale.view) RowChanged
+            "DataMirror" |> Binding.complexModel (fun m -> m :> IEnumerable<SaleModel>) (fun () -> Sale.view) RowChanged 
+            "DataMirrorSimple" |> Binding.oneWay (fun m -> m)
             "DeleteRow" |> Binding.cmd (fun x _ -> RowDeleted (x :?> int))
-            "InsertRow" |> Binding.cmd (fun x _ -> InsertRow (x :?> int))
-        ]
+            "InsertRow" |> Binding.cmd (fun x _ -> InsertRow (x :?> int))   ]
 
 module DataAccess =
     open Sale
@@ -99,6 +99,7 @@ module DataAccess =
 
         let result = new ObservableCollection<_>()
         data.Rows
+        //|> Seq.take 15
         |> Seq.iteri (fun i r ->
             result.Add {    Id = i
                             Country = r.Country
@@ -121,4 +122,5 @@ module App =
     let main argv = 
         Program.mkProgram init update view
         |> Program.withConsoleTrace
-        |> Program.runWindow (MainWindow())
+        |> Program.runWindow (MainWindowDataGrid())
+        //|> Program.runWindow (MainWindowListItem())

@@ -27,7 +27,7 @@ module Model =
     module LeafNode =
         type Message =
             | TitleModified of string
-            | ContentModified of int * Message
+            | ContentModified of TreeViewModel * Message
             | Expand of bool
 
         let rec update msg model =
@@ -36,9 +36,11 @@ module Model =
                 | TitleModified str, Expanded(_,content) -> Expanded(str, content)
                 | TitleModified str, Collapsed(_,content) -> Collapsed(str, content)
                 | TitleModified str, Leaf _ -> Leaf str
-                | ContentModified(i,msg'), Expanded(t,content) -> Expanded (t, content |> List.mapi (fun j n -> if i = j then update msg' n else n))
-                | ContentModified(i,msg'), Collapsed(t,content) -> Collapsed (t, content |> List.mapi (fun j n -> if i = j then update msg' n else n))
-                | ContentModified(i,msg'), Leaf t -> Leaf t
+                | ContentModified(node,msg'), Expanded(t,content) -> 
+                    Expanded (t, content |> List.map (fun node' -> if node' = node then update msg' node' else node'))
+                | ContentModified(node,msg'), Collapsed(t,content) -> 
+                    Collapsed (t, content |> List.map (fun node' -> if node' = node then update msg' node' else node'))
+                | ContentModified _, Leaf t -> Leaf t
                 | Expand true, Expanded (title,content) 
                 | Expand true, Collapsed (title,content)-> Expanded (title,content)
                 | Expand false, Expanded (title,content) 
@@ -48,11 +50,9 @@ module Model =
             model'
 
         let rec view() : ViewBindings<TreeViewModel,Message> =
-            [   
-                "IsExpanded" |> Binding.twoWay isExpanded (fun v _ -> Expand v)
+            [   "IsExpanded" |> Binding.twoWay isExpanded (fun v _ -> Expand v)
                 "Title" |> Binding.twoWay titleFrom (fun v m -> TitleModified v)
-                "Content" |> Binding.collectionModel (fun m -> contentFrom m |> Seq.ofList) (view) (fun k msg -> ContentModified (k, msg) )
-            ]
+                "Content" |> Binding.complexModel (fun m -> contentFrom m |> Seq.ofList) view ContentModified   ]
 
     let init() =
         let root =
@@ -69,20 +69,18 @@ module Model =
         [root], Cmd.none
 
     type Message = 
-        | LeafNodeModified of int * LeafNode.Message
+        | LeafNodeModified of TreeViewModel * LeafNode.Message
 
     let update msg (model:TreeViewModel list) =
         let model' =
             match msg with
-            | LeafNodeModified (i, msg') -> LeafNode.update msg' model.[i] 
+            | LeafNodeModified (node, msg') -> LeafNode.update msg' node
         [ model' ], Cmd.none
 
-    let view _ model : ViewBindings<TreeViewModel list,Message> =
-        [
-            "TreeData" |> Binding.collectionModel (fun m -> m |> Seq.ofList) (LeafNode.view) (fun k msg -> LeafNodeModified (k, msg))
-            "TreeDataMirror" |> Binding.collectionModel (fun m -> m |> Seq.ofList) (LeafNode.view) (fun k msg -> LeafNodeModified (k, msg))
-            "RawTreeData" |> Binding.oneWay (fun m -> m)
-        ]
+    let view _ _ : ViewBindings<TreeViewModel list,Message> =
+        [   "TreeData" |> Binding.complexModel (fun m -> m |> Seq.ofList) LeafNode.view LeafNodeModified
+            "TreeDataMirror" |> Binding.complexModel (fun m -> m |> Seq.ofList) LeafNode.view LeafNodeModified
+            "RawTreeData" |> Binding.oneWay (fun m -> m)    ]
 
 module App =    
     open Model

@@ -21,8 +21,7 @@ type PropertyAccessor<'model,'msg> =
     | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
     | CollectionGetSet of Getter<'model> * KeyedGetter<'model> * KeyedSetter<'model,'msg>
-    | CollectionModel of IEnumerable<ViewModelBase<'model,'msg>>
-                                                                
+    | ComplexModel of ('model -> IEnumerable<obj>) * (obj -> ViewBindings<'model,'msg>)
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
     inherit DynamicObject()
@@ -34,14 +33,17 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
     // Store all errors
     let errors = new System.Collections.Generic.Dictionary<string, string list>()
 
-    // Store two-way binders so they are not GC'd  
-    let twoWays = System.Collections.Generic.List<ListViewModel<'model,'msg>>()
-    //let models = System.Collections.Generic.Dictionary<string,ModelViewModel<'model,'msg>>()
-    let models = System.Collections.Generic.Dictionary<string,ObservableCollection<_>>()
-    //let models = System.Collections.Generic.Dictionary<string,IEnumerable<_>>()
-    
     // Current model
     let mutable model : 'model = m
+
+    // For CollectionTwoWay : store two-way binders so they are not GC'd  
+    let twoWays = System.Collections.Generic.List<ListViewModel<'model,'msg>>()
+
+    // For ComplexModel
+    // store raw submodels from properties bound to complex model
+    let submodels = new Dictionary<string,ObservableCollection<obj>>()
+    // store viewmodels of submodels from properties bound to complex model
+    let submodelBindings = Dictionary<string,ObservableCollection<ViewModelBase<'model,'msg>>>()
 
     // For INotifyPropertyChanged
 
@@ -68,11 +70,11 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     let errorsChanged = new DelegateEvent<System.EventHandler<DataErrorsChangedEventArgs>>()
 
+    let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap, debug)
 
     // Initialize bindings
     do
         let toCommand (exec, canExec) = Command((fun p -> exec p model |> dispatch), fun p -> canExec p model)
-        let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap, debug)
         let rec convert = 
             List.map (fun (name,binding) ->
                 match binding with
@@ -83,16 +85,16 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindModel (_, propMap) -> name, Model <| toSubView propMap
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
                 | BindCollectionTwoWay (mgetter, kgetter, ksetter) -> name, CollectionGetSet (mgetter, kgetter, ksetter) 
-                | BindCollectionModel (getter, bindings) -> 
-                    let bindings' = 
-                        match (getter model) with
-                        | :? ObservableCollection<obj> as obscol ->
-                            obscol
-                            |> ObservableCollection.map (fun m -> toSubView <| bindings (obscol.IndexOf m)) 
-                            :> IEnumerable<ViewModelBase<'model,'msg>>
-                        | models -> models |> Seq.mapi (fun i m -> toSubView <| bindings i)
-                        
-                    name, CollectionModel bindings'
+                | BindComplexModel (getter, bindings) -> 
+                    match getter model with
+                    | :? ObservableCollection<obj> as obscol -> 
+                        submodels.Add(name, obscol)
+                        submodelBindings.Add (name, obscol |> ObservableCollection.map (fun m -> toSubView <| bindings m))
+                    | _ -> 
+                        submodels.Add(name, null)
+                        submodelBindings.Add (name, null)
+
+                    name, ComplexModel (getter, bindings)
                 )
         
         convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
@@ -123,7 +125,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 None
             | CollectionGetSet (listGetter, _, _) ->
                 if listGetter model <> listGetter other then Some name else None
-            | CollectionModel _ ->       
+            | ComplexModel _ ->       
                 Some name 
             | _ -> None
         let diffs = 
@@ -158,19 +160,13 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                                                (fun v k -> keyedSetter v model k |> dispatch))
                     twoWays.Add binder
                     box binder
-                | CollectionModel viewmodels ->
-                    if not (models.ContainsKey binder.Name) then
-                        let viewmodels' =
-                            match viewmodels with
-                            | :? ObservableCollection<ViewModelBase<'model,'msg>> -> viewmodels :?> ObservableCollection<_>
-                            | _ -> new ObservableCollection<_>(viewmodels)
-                        models.Add (binder.Name, viewmodels')
-                    else
-                       match viewmodels with
-                            | :? ObservableCollection<ViewModelBase<'model,'msg>> as obscol -> models.[binder.Name] <- obscol
-                            | _ ->  models.[binder.Name].Clear()
-                                    viewmodels |> Seq.iter (fun vm -> models.[binder.Name].Add vm)
-                    box models.[binder.Name]
+                | ComplexModel (getter, bindings) ->
+                    match getter model with
+                    | :? ObservableCollection<obj> as obscol -> ()  //  submodels.[binder.Name] <- obscol
+                    | models -> submodels.[binder.Name] <- new ObservableCollection<_>(models |> Seq.toList)
+                                submodelBindings.[binder.Name] <- new ObservableCollection<_>(models |> Seq.map (fun m -> toSubView <| bindings m))
+                    
+                    box submodelBindings.[binder.Name]
             true
         else false
 
