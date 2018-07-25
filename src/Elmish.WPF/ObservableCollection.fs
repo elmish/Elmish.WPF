@@ -1,6 +1,6 @@
 ﻿namespace Elmish.WPF
 
-    
+// from this snippet : http://fssnip.net/dv/title/Map-for-ObservableCollection
 module ObservableCollection =
     open System.Collections.Specialized
     open System.Collections.ObjectModel
@@ -14,7 +14,7 @@ module ObservableCollection =
         let res = ObservableCollection<_>(Seq.map f oc)
         // Watch for changes in the source collection
         oc.CollectionChanged.Add(fun change ->
-          printfn "%A" change.Action
+          //printfn "%A" change.Action
           match change.Action with
           | NotifyCollectionChangedAction.Add ->
               // Apply 'f' to all new elements and add them to the result
