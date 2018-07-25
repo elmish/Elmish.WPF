@@ -1,16 +1,20 @@
 ﻿module Elmish.WPF.ViewModel
 
+open System
 open System.ComponentModel
 open System.Dynamic
 open System.Windows
+open System.Collections.Generic
+open System.Collections.ObjectModel
 
 type PropertyAccessor<'model,'msg> =
-    | Get of Getter<'model>
+    | Get of Getter<'model>    
     | GetSet of Getter<'model> * Setter<'model,'msg>
     | GetSetValidate of Getter<'model> * ValidSetter<'model,'msg>
     | Cmd of Command
     | Model of ViewModelBase<'model,'msg>
     | Map of Getter<'model> * (obj -> obj)
+    | ComplexModel of ('model -> IEnumerable<obj>) * (obj -> ViewBindings<'model,'msg>)
 
 and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
     inherit DynamicObject()
@@ -25,6 +29,12 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
     // Current model
     let mutable model : 'model = m
 
+    // For ComplexModel
+    // store raw submodels from properties bound to some complex model
+    let submodels = new Dictionary<string,ObservableCollection<obj>>()
+    // store viewmodels of submodels from properties bound to some complex model
+    let submodelBindings = Dictionary<string,ObservableCollection<ViewModelBase<'model,'msg>>>()
+
     // For INotifyPropertyChanged
 
     let propertyChanged = Event<PropertyChangedEventHandler,PropertyChangedEventArgs>()
@@ -33,6 +43,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         propertyChanged.Trigger(this,PropertyChangedEventArgs(name))
     let notify (p:string list) =
         p |> List.iter notifyPropertyChanged
+
         let raiseCanExecuteChanged =
             function
             | Cmd c ->
@@ -49,11 +60,11 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
 
     let errorsChanged = new DelegateEvent<System.EventHandler<DataErrorsChangedEventArgs>>()
 
+    let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap, debug)
 
     // Initialize bindings
     do
         let toCommand (exec, canExec) = Command((fun p -> exec p model |> dispatch), fun p -> canExec p model)
-        let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap, debug)
         let rec convert = 
             List.map (fun (name,binding) ->
                 match binding with
@@ -63,7 +74,17 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
                 | BindModel (_, propMap) -> name, Model <| toSubView propMap
                 | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
-            )
+                | BindComplexModel (getter, bindings) -> 
+                    match getter model with
+                    | :? ObservableCollection<obj> as obscol -> 
+                        submodels.Add(name, obscol)
+                        submodelBindings.Add (name, obscol |> ObservableCollection.map (fun m -> toSubView <| bindings m))
+                    | _ -> 
+                        submodels.Add(name, null)
+                        submodelBindings.Add (name, null)
+
+                    name, ComplexModel (getter, bindings)
+                )
         
         convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
 
@@ -91,17 +112,17 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
             | Model m ->
                 m.UpdateModel other
                 None
+            | ComplexModel _ -> Some name 
             | _ -> None
-
         let diffs = 
             props
             |> Seq.choose (fun (kvp) -> propDiff kvp.Key kvp.Value)
             |> Seq.toList
         
         model <- other
-        notify diffs
-
-
+        
+        notify (diffs)
+   
     // DynamicObject overrides
 
     override __.TryGetMember (binder, r) = 
@@ -109,12 +130,19 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
         if props.ContainsKey binder.Name then
             r <-
                 match props.[binder.Name] with 
-                | Get getter 
+                | Get getter                 
                 | GetSet (getter,_)
-                | GetSetValidate (getter,_) -> getter model
+                | GetSetValidate (getter,_) -> getter model                
                 | Cmd c -> unbox c
                 | Model m -> unbox m
                 | Map (getter,mapper) -> getter model |> mapper
+                | ComplexModel (getter, bindings) ->
+                    match getter model with
+                    | :? ObservableCollection<obj> as obscol -> ()  //  submodels.[binder.Name] <- obscol
+                    | models -> submodels.[binder.Name] <- new ObservableCollection<_>(models |> Seq.toList)
+                                submodelBindings.[binder.Name] <- new ObservableCollection<_>(models |> Seq.map (fun m -> toSubView <| bindings m))
+                    
+                    box submodelBindings.[binder.Name]
             true
         else false
 

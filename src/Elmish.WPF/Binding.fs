@@ -2,7 +2,7 @@
   
 open System
 open System.Windows.Input
-open System.Windows.Data
+open System.Collections.Generic
 
 type Getter<'model> = 'model -> obj
 type Setter<'model,'msg> = obj -> 'model -> 'msg
@@ -26,15 +26,19 @@ type Command(execute, canExecute) as this =
 type ViewBinding<'model,'msg> = string * Variable<'model,'msg>
 and ViewBindings<'model,'msg> = ViewBinding<'model,'msg> list
 and Variable<'model,'msg> =
-    | Bind of Getter<'model>
+    | Bind of Getter<'model>    
     | BindTwoWay of Getter<'model> * Setter<'model,'msg>
     | BindTwoWayValidation of Getter<'model> * ValidSetter<'model,'msg>
     | BindCmd of Execute<'model,'msg> * CanExecute<'model>
     | BindModel of Getter<'model> * ViewBindings<'model,'msg>
     | BindMap of Getter<'model> * (obj -> obj)
+    | BindComplexModel of ('model -> IEnumerable<obj>) * (obj -> ViewBindings<'model,'msg>)
+    
 
 [<RequireQualifiedAccess>]
 module Binding =
+    open System.Collections
+    open System.Collections.ObjectModel
     
     // Maps a set of view bindings to its parent view bindings
     let rec private mapViewBinding<'model,'msg,'_model,'_msg> toModel toMsg (viewBinding: ViewBindings<'_model,'_msg>) : ViewBindings<'model,'msg> =
@@ -58,6 +62,9 @@ module Binding =
             | BindMap (getter,mapper) ->
                 ((toModel >> getter), mapper)
                 |> BindMap
+            | BindComplexModel (listGetter, bindings) ->
+                ((toModel >> listGetter), fun i -> bindings i |> mapViewBinding toModel toMsg)
+                |> BindComplexModel
 
         viewBinding
         |> List.map (fun (n,v) -> n, mapVariable v)
@@ -114,3 +121,19 @@ module Binding =
     ///<param name="name">Binding name</param>
     let oneWayMap (getter: 'model -> 'a) (mapper: 'a -> 'b) name : ViewBinding<'model,'msg> =
         name, BindMap (getter >> unbox, unbox >> mapper >> unbox)
+
+    ///<summary>Sub-view binding</summary>
+    ///<param name="getter">Gets the sub-models from the base model</param>
+    ///<param name="viewBinding">Set of view bindings for the sub-view</param>
+    ///<param name="toMsg">Maps sub-messages to the base message type</param>
+    ///<param name="name">Binding name</param>
+    let complexModel (getter:'model -> IEnumerable<'_model>) (viewBindings: unit -> ViewBindings<'_model,'_msg>) (toMsg: ('_model * '_msg) -> 'msg) name : ViewBinding<'model,'msg> = 
+        let boxingGetter m =
+            match getter m with
+            | :? ObservableCollection<'_model> as obsc -> (ObservableCollection.map (fun x -> box x) obsc) :> IEnumerable<obj>
+            | ienumerable -> ienumerable |> Seq.map box
+            
+        let unwrapViewBindings submodel =
+            viewBindings() |> mapViewBinding (fun m -> unbox submodel) (fun _msg -> toMsg (unbox submodel, _msg))
+
+        name, BindComplexModel(boxingGetter >> unbox, unwrapViewBindings)

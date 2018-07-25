@@ -40,4 +40,4 @@ let runWindowWith<'t, 'model, 'msg> window (initialValue:'t) (program: Program<'
 /// Blocking function.
 /// Starts both Elmish and WPF dispatch loops.
 /// Enables debug console logging.
-let runDebugWindow window program = _run true window program
+let runDebugWindow window program = _run true window  Elmish.Program.run program
