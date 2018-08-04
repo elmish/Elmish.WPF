@@ -57,6 +57,7 @@
       <Paket>True</Paket>
       <Link>elmish/src/program.fs</Link>
     </Compile>
+    <Compile Include="Utils.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="Cmd.fs" />

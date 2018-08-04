@@ -62,7 +62,7 @@ and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model
                 | BindTwoWayValidation (getter,setter) -> name, GetSetValidate (getter,setter)
                 | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
                 | BindModel (_, propMap) -> name, Model <| toSubView propMap
-                | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
+                | BindMap (getter,mapper) -> name, Map <| (getter, memoizeSingle mapper)
             )
         
         convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
