@@ -1,0 +1,25 @@
+﻿<Window
+    x:Class="Elmish.WPF.Samples.OneWaySeq.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Single counter" Height="400" Width="400"
+    WindowStartupLocation="CenterScreen">
+  <StackPanel>
+    <TextBlock
+        Text="This sample shows the difference between Binding.oneWay and Binding.oneWaySeq. For oneWay, the whole ListView is re-rendered for every change. For oneWaySeq, only the new item is added."
+        Margin="10,20,10,10"
+        TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+      <StackPanel Margin="0,0,50,0">
+        <TextBlock Text="Binding.oneWay" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10" />
+        <Button Command="{Binding AddOneWayNumber}" Content="Add number" Width="150" Margin="0,0,0,20" />
+        <ListView ItemsSource="{Binding OneWayNumbers}" />
+      </StackPanel>
+      <StackPanel>
+        <TextBlock Text="Binding.oneWaySeq" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10" />
+        <Button Command="{Binding AddOneWaySeqNumber}" Content="Add number" Width="150" Margin="0,0,0,20" />
+        <ListView ItemsSource="{Binding OneWaySeqNumbers}" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</Window>

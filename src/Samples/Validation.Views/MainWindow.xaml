@@ -1,0 +1,44 @@
+﻿<Window
+    x:Class="Elmish.WPF.Samples.Validation.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Single counter" Height="300" Width="500"
+    WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <Style x:Key="textBoxInError" TargetType="Control">
+      <Setter Property="Validation.ErrorTemplate">
+        <Setter.Value>
+          <ControlTemplate>
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Foreground="Red" FontWeight="Bold">*</TextBlock>
+              <TextBlock Text="{Binding ErrorContent}" DockPanel.Dock="Bottom" Foreground="Red"/>
+              <Border BorderBrush="Red" BorderThickness="2">
+                <AdornedElementPlaceholder/>
+              </Border>
+            </DockPanel>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="Validation.HasError" Value="True">
+          <Setter Property="ToolTip"
+                        Value="{Binding RelativeSource={x:Static RelativeSource.Self},
+                    Path=(Validation.Errors)[0].ErrorContent}"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+  <StackPanel Margin="0,25,0,0">
+    <TextBlock
+        TextWrapping="Wrap"
+        Text="This input uses Binding.twoWayIfValid, which only dispatches messages when the input is valid. The model never knows about any invalid values in this field, and therefore it cannot easily be used in the button's canExecute."
+        Margin="10,0,10,5" />
+    <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Field1, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+    <TextBlock
+        TextWrapping="Wrap"
+        Text="This input uses Binding.twoWayValidate, and the model is updated for each change. It can easily be used in the button's canExecute."
+        Margin="10,0,10,5"/>
+    <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Field2, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+    <Button Command="{Binding Submit}" Content="Submit" Margin="0,5,10,5" Width="50" />
+  </StackPanel>
+</Window>

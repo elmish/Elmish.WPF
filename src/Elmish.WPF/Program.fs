@@ -2,43 +2,38 @@
 module Elmish.WPF.Program
 
 open System.Windows
-open Elmish.WPF.ViewModel
 open Elmish
+open Elmish.WPF.Internal
 
-let withMessageBoxErrorHandler program =
-    program 
-    |> Program.withErrorHandler (fun (_, ex) -> System.Windows.MessageBox.Show(ex.Message) |> ignore)
+let private run
+    (config: ElmConfig)
+    (window: Window)
+    (programRun: Program<'t, 'model, 'msg, BindingSpec<'model, 'msg> list> -> unit)
+    (program: Program<'t, 'model, 'msg, BindingSpec<'model, 'msg> list>) =
+  let mutable lastModel = None
 
-let private _run debug (window:Window) (programRun:Program<'t, 'model, 'msg, ViewBindings<'model,'msg>> -> unit) (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>) =
-    let mutable lastModel = None
-    let setState dispatch = 
-        let view = program.view dispatch
-        fun model ->
-            match lastModel with
-            | None -> 
-                let mapping = view model
-                let vm = ViewModelBase<'model,'msg>(model, dispatch, mapping, debug)
-                window.DataContext <- vm
-                lastModel <- Some vm
-            | Some vm ->
-                vm.UpdateModel model
-                  
-    // Start Elmish dispatch loop  
-    { program with setState = setState } 
-    |> programRun
-    
-    // Start WPF dispatch loop
-    let app = Application()
-    app.Run(window) //blocking
+  let setState model dispatch =
+    match lastModel with
+    | None ->
+        let mapping = program.view model dispatch
+        let vm = ViewModel<'model,'msg>(model, dispatch, mapping, config)
+        window.DataContext <- vm
+        lastModel <- Some vm
+    | Some vm ->
+        vm.UpdateModel model
 
+  // Start Elmish dispatch loop
+  programRun { program with setState = setState }
+
+  // Start WPF dispatch loop
+  let app = if isNull Application.Current then Application() else Application.Current
+  app.Run window
+
+/// Starts both Elmish and WPF dispatch loops. Blocking function.
+let runWindow window program =
+  run ElmConfig.Default window Elmish.Program.run program
+
+/// Starts both Elmish and WPF dispatch loops with the specified configuration.
 /// Blocking function.
-/// Starts both Elmish and WPF dispatch loops.
-let runWindow window program = _run false window Elmish.Program.run program
-
-let runWindowWith<'t, 'model, 'msg> window (initialValue:'t) (program: Program<'t, 'model, 'msg, ViewBindings<'model,'msg>>)  =
-    _run false window (Elmish.Program.runWith initialValue) program
-
-/// Blocking function.
-/// Starts both Elmish and WPF dispatch loops.
-/// Enables debug console logging.
-let runDebugWindow window program = _run true window program
+let runWindowWithConfig config window program =
+  run config window Elmish.Program.run program
