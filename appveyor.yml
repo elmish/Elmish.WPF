@@ -1,0 +1,7 @@
+build:
+  verbosity: detailed
+
+image: Visual Studio 2017
+
+build_script:
+  - cmd: build.cmd
