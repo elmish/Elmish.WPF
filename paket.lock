@@ -1,7 +1,6 @@
-GENERATE-LOAD-SCRIPTS: ON
 RESTRICTION: || (== net461) (== net471)
 NUGET
   remote: https://api.nuget.org/v3/index.json
     Elmish (2.0.0-beta-4)
       FSharp.Core (>= 4.5.2)
-    FSharp.Core (4.5.2)
+    FSharp.Core (4.5.2) - redirects: force
