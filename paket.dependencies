@@ -1,0 +1,4 @@
+source https://api.nuget.org/v3/index.json
+
+nuget Elmish 2.0.0-beta-4 prerelease
+nuget FSharp.Core 4.5.2

@@ -13,7 +13,7 @@
     <ProjectReference Include="..\..\Elmish.WPF\Elmish.WPF.fsproj" />
     <ProjectReference Include="..\SubModelCollection.Views\SubModelCollection.Views.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -22,9 +22,7 @@
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.5.2" />
-  </ItemGroup>
+
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 
 </Project>

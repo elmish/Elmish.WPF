@@ -14,17 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elmish" Version="2.0.0-beta-4" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.1.17" />
-  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 
 </Project>
