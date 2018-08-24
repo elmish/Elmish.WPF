@@ -3,37 +3,37 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2047
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Elmish.WPF", "src\Elmish.WPF\Elmish.WPF.fsproj", "{8C6E8D34-7205-4C57-9722-87E30E4FC5CE}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Elmish.WPF", "Elmish.WPF\Elmish.WPF.fsproj", "{8C6E8D34-7205-4C57-9722-87E30E4FC5CE}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SingleCounter", "src\Samples\SingleCounter\SingleCounter.fsproj", "{2DBB8062-2843-43A0-B73C-4777A30BD4FF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SingleCounter", "Samples\SingleCounter\SingleCounter.fsproj", "{2DBB8062-2843-43A0-B73C-4777A30BD4FF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{BBAFEB1E-93C0-4C7E-8E0A-026BB05C88EC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SingleCounter.Views", "src\Samples\SingleCounter.Views\SingleCounter.Views.csproj", "{55F79BA4-8265-4612-8354-D04F91BF9B03}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SingleCounter.Views", "Samples\SingleCounter.Views\SingleCounter.Views.csproj", "{55F79BA4-8265-4612-8354-D04F91BF9B03}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "UiBoundCmdParam", "src\Samples\UiBoundCmdParam\UiBoundCmdParam.fsproj", "{9581A1DE-70A6-4AC2-AF65-FD6E95F3A983}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "UiBoundCmdParam", "Samples\UiBoundCmdParam\UiBoundCmdParam.fsproj", "{9581A1DE-70A6-4AC2-AF65-FD6E95F3A983}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UiBoundCmdParam.Views", "src\Samples\UiBoundCmdParam.Views\UiBoundCmdParam.Views.csproj", "{574786BE-3A84-4A0F-99DE-0FB10ED4161F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UiBoundCmdParam.Views", "Samples\UiBoundCmdParam.Views\UiBoundCmdParam.Views.csproj", "{574786BE-3A84-4A0F-99DE-0FB10ED4161F}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Validation", "src\Samples\Validation\Validation.fsproj", "{69DED389-B4BB-4295-926D-1DFFB8995628}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Validation", "Samples\Validation\Validation.fsproj", "{69DED389-B4BB-4295-926D-1DFFB8995628}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validation.Views", "src\Samples\Validation.Views\Validation.Views.csproj", "{4BD0B0AF-C522-43F9-92BF-FB6205A9E2F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validation.Views", "Samples\Validation.Views\Validation.Views.csproj", "{4BD0B0AF-C522-43F9-92BF-FB6205A9E2F6}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModel", "src\Samples\SubModel\SubModel.fsproj", "{EA0640D2-D64B-4AE6-8876-5E33C53BD50E}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModel", "Samples\SubModel\SubModel.fsproj", "{EA0640D2-D64B-4AE6-8876-5E33C53BD50E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModel.Views", "src\Samples\SubModel.Views\SubModel.Views.csproj", "{A15C50F5-B4CF-45D3-A35B-DD385AEC5BB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModel.Views", "Samples\SubModel.Views\SubModel.Views.csproj", "{A15C50F5-B4CF-45D3-A35B-DD385AEC5BB7}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelCollection", "src\Samples\SubModelCollection\SubModelCollection.fsproj", "{F6261A48-3EF9-452B-98AD-15F5CD94B5E5}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelCollection", "Samples\SubModelCollection\SubModelCollection.fsproj", "{F6261A48-3EF9-452B-98AD-15F5CD94B5E5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelCollection.Views", "src\Samples\SubModelCollection.Views\SubModelCollection.Views.csproj", "{575F6F90-63B6-416D-A5F9-591F5F8659C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelCollection.Views", "Samples\SubModelCollection.Views\SubModelCollection.Views.csproj", "{575F6F90-63B6-416D-A5F9-591F5F8659C8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OneWaySeq.Views", "src\Samples\OneWaySeq.Views\OneWaySeq.Views.csproj", "{4A7B4B16-0FC3-4338-BE43-497F63818749}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OneWaySeq.Views", "Samples\OneWaySeq.Views\OneWaySeq.Views.csproj", "{4A7B4B16-0FC3-4338-BE43-497F63818749}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "OneWaySeq", "src\Samples\OneWaySeq\OneWaySeq.fsproj", "{E97A831B-0525-4248-8143-4E1114612071}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "OneWaySeq", "Samples\OneWaySeq\OneWaySeq.fsproj", "{E97A831B-0525-4248-8143-4E1114612071}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelOpt", "src\Samples\SubModelOpt\SubModelOpt.fsproj", "{47ADE238-C32B-4F19-9028-68EB8E09927C}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelOpt", "Samples\SubModelOpt\SubModelOpt.fsproj", "{47ADE238-C32B-4F19-9028-68EB8E09927C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelOpt.Views", "src\Samples\SubModelOpt.Views\SubModelOpt.Views.csproj", "{EB80831A-431C-4CEC-AC41-8E5163E4B857}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelOpt.Views", "Samples\SubModelOpt.Views\SubModelOpt.Views.csproj", "{EB80831A-431C-4CEC-AC41-8E5163E4B857}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
