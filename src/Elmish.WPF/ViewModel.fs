@@ -50,8 +50,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
   inherit DynamicObject()
 
   let log fmt =
-    let innerLog str =
-      if config.LogConsole then console.log str
+    let innerLog (str: string) =
+      if config.LogConsole then Console.WriteLine(str)
       if config.LogTrace then Diagnostics.Trace.WriteLine(str)
     Printf.kprintf innerLog fmt
 
