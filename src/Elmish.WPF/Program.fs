@@ -28,7 +28,7 @@ let private _run debug (window:Window) (programRun:Program<'t, 'model, 'msg, Vie
     |> programRun
     
     // Start WPF dispatch loop
-    let app = Application()
+    let app = if isNull Application.Current then Application() else Application.Current
     app.Run(window) //blocking
 
 /// Blocking function.
