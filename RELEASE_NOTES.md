@@ -1,6 +1,7 @@
 #### 2.0.0-beta-1
 
-* Migration to packaged elmish 2.0 core
+* Complete rewrite, several breaking changes
+* Removed bundled Elmish, use Elmish 2.0 as an external dependency
 
 #### 1.0.0-beta-7
 
