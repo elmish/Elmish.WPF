@@ -7,26 +7,28 @@ open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 
+let deployDir = "deploy"
+
+let release = File.read "RELEASE_NOTES.md" |> ReleaseNotes.parse
 
 Target.create "Clean" (fun _ ->
-    !! "src/**/bin"
-    ++ "src/**/obj"
-    |> Shell.cleanDirs
+  !! "src/**/bin"
+  ++ "src/**/obj"
+  |> Shell.cleanDirs
+  Shell.cleanDir deployDir
 )
 
 Target.create "Build" (fun _ ->
-    // Building XAML projects (such as the sample view projects) doesn't work
-    // yet using DotNet.build, so we skip those.
-    !! "src/Elmish.WPF/*.*proj"
-    |> Seq.iter (DotNet.build id)
+  // Building XAML projects (such as the sample view projects) doesn't work
+  // yet using DotNet.build, so we skip those.
+  !! "src/Elmish.WPF/*.*proj"
+  |> Seq.iter (DotNet.build id)
 )
-
-let release = File.read "RELEASE_NOTES.md" |> ReleaseNotes.parse
 
 Target.create "Pack" (fun _ ->
   Paket.pack(fun p ->
     { p with
-        OutputPath = "deploy"
+        OutputPath = deployDir
         Symbols = true
         Version = release.NugetVersion
         ReleaseNotes = String.toLines release.Notes})
