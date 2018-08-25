@@ -8,6 +8,7 @@ nuget FSharp.Core >= 4.1.17 redirects:force
 group Build
   source https://api.nuget.org/v3/index.json
   nuget Fake.DotNet.Cli
-  nuget Fake.DotNet.MSBuild
+  nuget Fake.DotNet.Paket
   nuget Fake.IO.FileSystem
   nuget Fake.Core.Target
+  nuget Fake.Core.ReleaseNotes
