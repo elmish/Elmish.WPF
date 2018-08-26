@@ -40,6 +40,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelOpt", "Samples\SubM
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelOpt.Views", "Samples\SubModelOpt.Views\SubModelOpt.Views.csproj", "{EB80831A-431C-4CEC-AC41-8E5163E4B857}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Elmish.WPF.Tests", "Elmish.WPF.Tests\Elmish.WPF.Tests.fsproj", "{54DFF909-F5DF-48A9-B57D-E57B0EE743FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,6 +108,10 @@ Global
 		{EB80831A-431C-4CEC-AC41-8E5163E4B857}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EB80831A-431C-4CEC-AC41-8E5163E4B857}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EB80831A-431C-4CEC-AC41-8E5163E4B857}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54DFF909-F5DF-48A9-B57D-E57B0EE743FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54DFF909-F5DF-48A9-B57D-E57B0EE743FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54DFF909-F5DF-48A9-B57D-E57B0EE743FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54DFF909-F5DF-48A9-B57D-E57B0EE743FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
