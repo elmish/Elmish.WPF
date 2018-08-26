@@ -12,6 +12,9 @@ environment:
 cache:
   - '%USERPROFILE%\.nuget\packages -> paket.lock'
 
+artifacts:
+  - path: '**\*.nupkg'
+
 build_script:
   - cmd: fake build
 
