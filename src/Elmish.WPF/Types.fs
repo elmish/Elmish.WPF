@@ -38,7 +38,6 @@ type BindingSpecData<'model, 'msg> =
       * getBindings: (unit -> BindingSpec<obj, obj> list)
       * toMsg: (obj * obj -> 'msg)
 
-// TODO: move away from Internal
 /// Represents all necessary data used to create a binding.
 and BindingSpec<'model, 'msg> =
   { Name: string
