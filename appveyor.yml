@@ -10,7 +10,7 @@ environment:
     secure: ZmAxRcwpr3xMuOXgn7SplJ9/QvSj1uPJ52HW9KuqzPrUdSinErdzn+4RKAnWfamj
 
 cache:
-  - %USERPROFILE%\.nuget\packages -> packet.lock
+  - "%USERPROFILE%\.nuget\packages" -> paket.lock
 
 build_script:
   - cmd: fake build
