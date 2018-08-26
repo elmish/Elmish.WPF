@@ -38,17 +38,25 @@ Target.create "Pack" (fun _ ->
         OutputPath = deployDir
         Symbols = true
         Version = release.NugetVersion
-        ReleaseNotes = String.toLines release.Notes})
+        ReleaseNotes = String.toLines release.Notes}
+  )
 )
 
-Target.create "All" ignore
+Target.create "Publish" (fun _ ->
+  Paket.push(fun p ->
+    { p with
+        WorkingDir = deployDir
+        ApiKey = Environment.environVarOrFail "NUGET_KEY" }
+  )
+)
+
+Target.create "Default" ignore
 
 "Clean"
   ==> "Build"
   ==> "Test"
-  ==> "All"
-
-"All"
   ==> "Pack"
+  ==> "Default"
+  ==> "Publish"
 
-Target.runOrDefault "All"
+Target.runOrDefault "Default"
