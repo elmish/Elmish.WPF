@@ -1,7 +1,7 @@
 WPF done the Elmish Way
 =======
 
-[![NuGet version](https://badge.fury.io/nu/Elmish.WPF.svg)](https://badge.fury.io/nu/Elmish.WPF)
+[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF/) [![Build status](https://ci.appveyor.com/api/projects/status/9fh1x55jwb05i12w/branch/master?svg=true)](https://ci.appveyor.com/project/cmeeren/elmish-wpf/branch/master)
 
 Never write a ViewModel class again!
 
