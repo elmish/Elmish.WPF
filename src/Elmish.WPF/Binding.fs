@@ -163,6 +163,7 @@ module Binding =
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings.
+  ///   You typically bind this to the DataContext of a UserControl or similar.
   /// </summary>
   /// <param name="getModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">
@@ -189,6 +190,7 @@ module Binding =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   may not exist. If it does not exist, bindings to this model will return null.
+  ///   You typically bind this to the DataContext of a UserControl or similar.
   /// </summary>
   /// <param name="getModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">
@@ -215,7 +217,8 @@ module Binding =
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by the getId function (as determined by the default
-  ///   equality comparer).
+  ///   equality comparer). You typically bind this to the ItemsSource of an
+  ///   ItemsControl, ListView, TreeView, etc.
   /// </summary>
   /// <param name="getModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
