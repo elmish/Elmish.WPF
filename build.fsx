@@ -38,7 +38,10 @@ Target.create "Pack" (fun _ ->
         OutputPath = deployDir
         Symbols = true
         Version = release.NugetVersion
-        ReleaseNotes = String.toLines release.Notes}
+        ReleaseNotes =
+          release.Notes
+          |> Seq.map (sprintf "- %s")
+          |> String.toLines}
   )
 )
 
