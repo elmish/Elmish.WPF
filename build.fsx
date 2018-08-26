@@ -25,6 +25,13 @@ Target.create "Build" (fun _ ->
   |> Seq.iter (DotNet.build id)
 )
 
+Target.create "Test" (fun _ ->
+  "src/Elmish.WPF.Tests"
+  |> DotNet.test (fun opt ->
+      { opt with Configuration = DotNet.BuildConfiguration.Release }
+  )
+)
+
 Target.create "Pack" (fun _ ->
   Paket.pack(fun p ->
     { p with
@@ -38,6 +45,7 @@ Target.create "All" ignore
 
 "Clean"
   ==> "Build"
+  ==> "Test"
   ==> "All"
 
 "All"
