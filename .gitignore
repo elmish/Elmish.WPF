@@ -33,6 +33,7 @@ run
 
 .vs
 paket-files/
+.paket/paket.bootstrapper.exe
 
 .idea/
 
