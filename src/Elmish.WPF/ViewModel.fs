@@ -153,7 +153,6 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | TwoWayIfValid (get, _) ->
         get currentModel <> get newModel
     | OneWayLazy (currentVal, get, map) ->
-        // TODO: use reference equality? we might be comparing large arrays...
         if get newModel = get currentModel then false
         else
           currentVal := lazy (newModel |> get |> map)
