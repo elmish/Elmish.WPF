@@ -7,7 +7,10 @@ open System.Windows.Input
 /// Represents all necessary data used to create the different binding types.
 type BindingSpecData<'model, 'msg> =
   | OneWaySpec of get: ('model -> obj)
-  | OneWayLazySpec of get: ('model -> obj) * map: (obj -> obj)
+  | OneWayLazySpec of
+      get: ('model -> obj)
+      * map: (obj -> obj)
+      * equals: (obj -> obj -> bool)
   | OneWaySeqSpec of
       get: ('model -> obj seq)
       * getId: (obj -> obj)
@@ -48,7 +51,7 @@ module BindingSpecData =
 
   let box : BindingSpecData<'model, 'msg> -> BindingSpecData<obj, obj> = function
   | OneWaySpec get -> OneWaySpec (unbox >> get)
-  | OneWayLazySpec (get, map) -> OneWayLazySpec (unbox >> get, map)
+  | OneWayLazySpec (get, map, equals) -> OneWayLazySpec (unbox >> get, map, equals)
   | OneWaySeqSpec (get, getId, equals) -> OneWaySeqSpec (unbox >> get, getId, equals)
   | TwoWaySpec (get, set) ->
       TwoWaySpec (unbox >> get, (fun v m -> set v (unbox m) |> box))

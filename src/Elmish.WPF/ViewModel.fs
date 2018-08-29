@@ -11,7 +11,11 @@ open Elmish.WPF
 /// Represents all necessary data used in an active binding.
 type Binding<'model, 'msg> =
   | OneWay of get: ('model -> obj)
-  | OneWayLazy of currentVal: Lazy<obj> ref * get: ('model -> obj) * map: (obj -> obj)
+  | OneWayLazy of
+      currentVal: Lazy<obj> ref
+      * get: ('model -> obj)
+      * map: (obj -> obj)
+      * equals: (obj -> obj -> bool)
   | OneWaySeq of
       vals: ObservableCollection<obj>
       * get: ('model -> obj seq)
@@ -87,8 +91,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
   let initializeBinding bindingSpec =
     match bindingSpec with
     | OneWaySpec get -> OneWay get
-    | OneWayLazySpec (get, map) ->
-        OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map)
+    | OneWayLazySpec (get, map, equals) ->
+        OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
     | OneWaySeqSpec (get, getId, equals) ->
         let vals = ObservableCollection(get initialModel)
         OneWaySeq (vals, get, getId, equals)
@@ -152,8 +156,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | TwoWayValidate (get, _, _)
     | TwoWayIfValid (get, _) ->
         get currentModel <> get newModel
-    | OneWayLazy (currentVal, get, map) ->
-        if get newModel = get currentModel then false
+    | OneWayLazy (currentVal, get, map, equals) ->
+        if equals (get newModel) (get currentModel) then false
         else
           currentVal := lazy (newModel |> get |> map)
           true
@@ -295,7 +299,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
           | TwoWayValidate (get, _, _)
           | TwoWayIfValid (get, _) ->
               get currentModel
-          | OneWayLazy (value, _, _) ->
+          | OneWayLazy (value, _, _, _) ->
               (!value).Value
           | OneWaySeq (vals, _, _, _) ->
               box vals
