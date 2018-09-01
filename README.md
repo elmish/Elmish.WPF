@@ -1,117 +1,117 @@
 WPF done the Elmish Way
-=======
+=======================
 
-[![NuGet version](https://badge.fury.io/nu/Elmish.WPF.svg)](https://badge.fury.io/nu/Elmish.WPF)
+[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://img.shields.io/appveyor/ci/cmeeren/elmish-wpf/master.svg?label=master)](https://ci.appveyor.com/project/cmeeren/elmish-wpf/branch/master)
 
 Never write a ViewModel class again!
 
-This library uses [fable-elmish](https://fable-elmish.github.io/), an Elm architecture implemented in F#, to build WPF applications. Fable-elmish was originally written for [Fable](https://github.com/fable-compiler) applications, however it was trimmed and packaged for .NET as well. It is highly recommended to have a look at the [elmish docs site](https://fable-elmish.github.io/elmish/) if you are not familiar with the Elm architecture.
+This library uses [Elmish](https://elmish.github.io/elmish), an Elm architecture implemented in F#, to build WPF applications. Elmish was originally written for [Fable](http://fable.io) applications, however it was trimmed and packaged for .NET as well.
+
+Recommended resources
+---------------------
+
+* The [Elmish docs site](https://elmish.github.io/elmish) explains the general Elm architecture and principles.
+* The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
+* The [official Elm guide](https://guide.elm-lang.org) may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings.
 
 Getting started with Elmish.WPF
-------
-* Create an F# Windows Application (or Console) project. This is where your Elmish model will live.
-* Add nuget package `Elmish.WPF` to to your Elmish project.
-* Create a WPF Class Library project. This is where your XAML views will live.
-* Reference your View project in your Elmish project.
+-------------------------------
 
-The Elmish Stuff
-------
-Here is an example of an Elmish model (`Model`) with a composite model inside of it (`ClockModel`) and the corresponding messages:
-```ocaml
-    type ClockMsg =
-        | Tick of DateTime
+See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are:
 
-    type ClockModel =
-        { Time: DateTime }
+1. Create an F# Console Application (you can create a Windows application, but the core Elmish logs are currently only written to the console).
 
-    type Msg =
-        | ClockMsg of ClockMsg
-        | Increment
-        | Decrement
-        | SetStepSize of int
+2. Define the model that describes your app’s state:
 
-    type Model = 
-        { Count: int
-          StepSize: int
-          Clock: ClockModel }
-```
-The init function returns your initial state, and each model gets an update function for message processing:
-```ocaml
-    let init() = { Count = 0; StepSize = 1; Clock = { Time = DateTime.Now }}
-    
-    let clockUpdate (model:ClockModel) = function
-        | Tick t -> { model with Time = t }
+   ```F#
+   type Model =
+     { Count: int
+       StepSize: int }
+   ```
 
-    let update (model:Model) = function
-        | Increment -> { model with Count = model.Count + model.StepSize }
-        | Decrement -> { model with Count = model.Count - model.StepSize }
-        | SetStepSize n -> { model with StepSize = n }
-        | ClockMsg m -> { model with Clock = clockUpdate m model.Clock }
-```
-Subscriptions, which are events sent from outside the view or the dispatch loop, are created using `Cmd.ofSub`. For example, dispatching events on a timer:
-```ocaml
-    let timerTick dispatch =
-        let timer = new System.Timers.Timer 1.
-        timer.Elapsed.Subscribe (fun _ -> dispatch (System.DateTime.Now |> Tick |> ClockMsg)) |> ignore
-        timer.Enabled <- true
-        timer.Start()
+3. Define the various messages that can change your model:
 
-    let subscribe model =
-        Cmd.ofSub timerTick
-```
+   ```F#
+   type Msg =
+     | Increment
+     | Decrement
+     | SetStepSize of int
+   ```
 
-Binding the Elmish to the XAML
-------
-Bindings in your XAML code will look like typical bindings, but a bit of extra code is needed to map those bindings to your Elmish model. These are the viewBindings, which expose parts of the model to the view. 
+4. Define an `update` function that takes a message and a model and returns an updated model:
 
-There are helper functions to create bindings located in the `Binding` module:
-* `oneWay`
-  * Basic source-to-view binding. Maps to `BindingMode.OneWay`.
-  * Takes a getter (`'model -> 'a`)
-* `twoWay`
-  * Binding from source to view, or view to source, and usually used for input controls. Maps to `BindingMode.TwoWay` or `BindingMode.OneWayToSource`.
-  * Takes a getter (`'model -> 'a`) and a setter (`'a -> 'model -> 'msg`) that returns a message.
-* `twoWayValidation`
-  * Binding from source to view, or view to source, and usually used for input controls. Maps to `BindingMode.TwoWay` or `BindingMode.OneWayToSource`. Setter will implement validation which is exposed to the view through typical `INotifyDataErrorInfo` properties.
-  * Takes a getter (`'model -> 'a`) and a setter (`'a -> 'model -> Result<'msg,string>`) that indicates whether the input is valid or not.
-* `cmd`
-  * Basic command binding
-  * Takes an execute function (`'model -> 'msg`)
-* `cmdIf`
-  * Conditional command binding
-  * Takes an execute function (`'model -> 'msg`) and a canExecute function (`'model -> bool`)
-* `vm`
-  * Composite model binding
-  * Takes a getter (`'model -> 'a`) and the composite model viewBindings, where `'a` is your composite model member. 
-* `oneWayMap`
-  * Basic source-to-view binding with a map function. This should be used for cases where it is desirable to have one type in your model and return a different type to the view. This will be more performant than mapping directly in the getter.
-  * Takes a getter (`'model -> 'a`) and a mapper (`'a -> 'b`).
+   ```F#
+   let update msg m =
+     match msg with
+     | Increment -> { m with Count = m.Count + m.StepSize }
+     | Decrement -> { m with Count = m.Count - m.StepSize }
+     | SetStepSize x -> { m with StepSize = x }
+   ```
 
-The last string argument to each binding is the name of the property as referenced in the XAML binding.
-```ocaml
-    let view _ _ = 
-        let clockViewBinding : ViewBindings<ClockModel,ClockMsg> =
-            [ "Time" |> Binding.oneWay (fun m -> m.Time) ]
+5. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`. In order to be compatible with Elmish it needs to have the same signature, but in many (most?) cases the `model` and `dispatch ` parameters will be unused:
 
-        [ "Increment" |> Binding.cmd (fun m -> Increment)
-          "Decrement" |> Binding.cmdIf (fun m -> Decrement) (fun m -> m.StepSize = 1)
-          "Count" |> Binding.oneWay (fun m -> m.Count)
-          "StepSize" |> Binding.twoWay (fun m -> (double m.StepSize)) (fun v m -> v |> int |> SetStepSize)
-          "Clock" |> Binding.vm (fun m -> m.Clock) clockViewBinding ClockMsg ]
-```
-Note:  A viewBinding created with `Binding.vm` would be bound to the DataContext of a user control.
+   ```F#
+   open Elmish.WPF
+   
+   let bindings model dispatch =
+     [
+       "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+       "Increment" |> Binding.cmd (fun m -> Increment)
+       "Decrement" |> Binding.cmd (fun m -> Decrement)
+       "StepSize" |> Binding.twoWay
+         (fun m -> float m.StepSize)
+         (fun newVal m -> int newVal |> SetStepSize)
+     ]
+   ```
 
-Tying it all together
------
-Pass an instance of your main window into `Program.runWindow`. The DataContext of this instance will be automatically set to your main model.
-```ocaml
-   [<EntryPoint;STAThread>]
-    let main argv = 
-        Program.mkSimple init update view
-        |> Program.withSubscription subscribe
-        |> Program.runWindow (Elmish.CounterViews.MainWindow())
-```
+   The strings identify the binding names to be used in the XAML views. The [Binding module](https://github.com/elmish/Elmish.WPF/blob/master/src/Elmish.WPF/Binding.fs) has many functions to create various types of bindings.
 
-Credits
------
-This library would not have been possible without the elmish engine, [fable-elmish](https://github.com/fable-elmish/elmish), written by [et1975](https://github.com/et1975). This project technically has no tie to [Fable](http://fable.io/), which is an F# to JavaScript transpiler that is definitely worth checking out.
+6. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
+
+   ```xaml
+   <Window
+       x:Class="MyNamespace.MainWindow"
+       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+     <StackPanel Orientation="Horizontal">
+       <TextBlock Text="{Binding CounterValue}" />
+       <Button Command="{Binding Decrement}" Content="-" />
+       <Button Command="{Binding Increment}" Content="+" />
+       <TextBlock Text="{Binding StepSize}" />
+       <Slider Value="{Binding StepSize}" TickFrequency="1" Minimum="1" Maximum="10" />
+     </StackPanel>
+   </Window>
+   ```
+
+7. Add the entry point to your console project:
+
+   ```F#
+   open System
+   open Elmish
+   
+   [<EntryPoint; STAThread>]
+   let main argv =
+     Program.mkSimple init update bindings
+     |> Program.runWindow (MainWindow())
+   ```
+
+   `Program.runWindow` will instantiate an `Application ` and set the window’s `DataContext` to the bindings you defined.
+
+8. Profit! :)
+
+For more complicated examples and other `Binding` functions, see the [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
+
+FAQ
+---
+
+#### Do I have to use the project structure outlined above?
+
+Not at all.
+
+#### Can I instantiate `Application` myself?
+
+Yes, just do it before calling `Program.runWindow` and it will automatically be used. You might need this if you have application-wide resources in a `ResourceDictionary`, which might require you to instantiate the application before instantiating the main window you pass to `Program.runWindow`.
+
+#### Can I open new windows/dialogs?
+
+Probably not; there is no explicit support for this in Elmish.WPF, and there is no simple way for users to set the `DataContext` of new windows in Elmish.WPF without explicit support. In any case, making use of anything not available through bindings (such as opening and closing windows) would mean that your UI would no longer be a simple function of your model, which is a central point of the Elm architecture. This would be a complication of your architecture, since it would need to be controlled outside the normal update loop. We instead recommend using custom-made dialogs; see the [SubModelOpt](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple example. This method also works great with libraries with ready-made MVVM-friendly dialogs, e.g. those in [Material Design In XAML Toolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit). That being said, if you come up with a good way to solve this, contributions are welcome!

@@ -1,16 +1,29 @@
-source https://www.nuget.org/api/v2
-framework: net47
-storage: none
-nuget FSharp.Core redirects:force
+framework: auto-detect
+
+source https://api.nuget.org/v3/index.json
+
 nuget Elmish prerelease
+nuget FSharp.Core >= 4.1.17 redirects: force
 
-group build
-framework: >= net45
-source https://www.nuget.org/api/v2
-nuget FAKE
-nuget FSharp.Core redirects:force
 
-group sample
-source https://www.nuget.org/api/v2
+group Build
 
-nuget FsXaml.Wpf
+  source https://api.nuget.org/v3/index.json
+
+  nuget Fake.Core.Target
+  nuget Fake.Core.ReleaseNotes
+  nuget Fake.DotNet.Cli
+  nuget Fake.DotNet.Paket
+  nuget Fake.IO.FileSystem
+
+
+group Test
+
+  source https://api.nuget.org/v3/index.json
+
+  nuget Hedgehog
+  nuget Hedgehog.Experimental
+  nuget Microsoft.NET.Test.Sdk
+  nuget Unquote
+  nuget xunit.core
+  nuget xunit.runner.visualstudio version_in_path: true

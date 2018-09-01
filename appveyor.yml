@@ -1,7 +1,26 @@
-build:
-  verbosity: detailed
+version: 1.0.{build}
 
 image: Visual Studio 2017
 
+build:
+  verbosity: detailed
+
+environment:
+  NUGET_KEY:
+    secure: ZmAxRcwpr3xMuOXgn7SplJ9/QvSj1uPJ52HW9KuqzPrUdSinErdzn+4RKAnWfamj
+
+cache:
+  - '%USERPROFILE%\.nuget\packages -> paket.lock'
+
+artifacts:
+  - path: 'deploy\*.nupkg'
+
 build_script:
-  - cmd: build.cmd
+  - cmd: fake build
+
+for:
+  - branches:
+      only:
+        - /stable-.*/
+    build_script:
+      - cmd: fake build -t Publish

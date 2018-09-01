@@ -1,140 +1,355 @@
-﻿module Elmish.WPF.ViewModel
+namespace Elmish.WPF.Internal
 
-open System.ComponentModel
+open System
 open System.Dynamic
+open System.Collections.Generic
+open System.Collections.ObjectModel
+open System.ComponentModel
 open System.Windows
+open Elmish.WPF
 
-type PropertyAccessor<'model,'msg> =
-    | Get of Getter<'model>
-    | GetSet of Getter<'model> * Setter<'model,'msg>
-    | GetSetValidate of Getter<'model> * ValidSetter<'model,'msg>
-    | Cmd of Command
-    | Model of ViewModelBase<'model,'msg>
-    | Map of Getter<'model> * (obj -> obj)
+/// Represents all necessary data used in an active binding.
+type Binding<'model, 'msg> =
+  | OneWay of get: ('model -> obj)
+  | OneWayLazy of
+      currentVal: Lazy<obj> ref
+      * get: ('model -> obj)
+      * map: (obj -> obj)
+      * equals: (obj -> obj -> bool)
+  | OneWaySeq of
+      vals: ObservableCollection<obj>
+      * get: ('model -> obj seq)
+      * getId: (obj -> obj)
+      * equals: (obj -> obj -> bool)
+  | TwoWay of get: ('model -> obj) * set: (obj -> 'model -> 'msg)
+  | TwoWayValidate of
+      get: ('model -> obj)
+      * set: (obj -> 'model -> 'msg)
+      * validate: ('model -> Result<obj, string>)
+  | TwoWayIfValid of
+      get: ('model -> obj)
+      * set: (obj -> 'model -> Result<'msg, string>)
+  | Cmd of cmd: Command * canExec: ('model -> bool)
+  | CmdIfValid of cmd: Command * exec: ('model -> Result<'msg, obj>)
+  | ParamCmd of cmd: Command
+  | SubModel of
+      model: ViewModel<obj, obj> option ref
+      * getModel: ('model -> obj option)
+      * getBindings: (unit -> BindingSpec<obj, obj> list)
+      * toMsg: (obj -> 'msg)
+  | SubModelSeq of
+      vms: ObservableCollection<ViewModel<obj, obj>>
+      * getModels: ('model -> obj seq)
+      * getId: (obj -> obj)
+      * getBindings: (unit -> BindingSpec<obj, obj> list)
+      * toMsg: (obj * obj -> 'msg)
 
-and ViewModelBase<'model, 'msg>(m:'model, dispatch, propMap: ViewBindings<'model,'msg>, debug:bool) as this =
-    inherit DynamicObject()
 
-    let log msg = if debug then console.log msg
-    
-    // Store all bound properties and their corresponding accessors
-    let props = new System.Collections.Generic.Dictionary<string, PropertyAccessor<'model,'msg>>()
-    // Store all errors
-    let errors = new System.Collections.Generic.Dictionary<string, string list>()
+and [<AllowNullLiteral>] ViewModel<'model, 'msg>
+      ( initialModel: 'model,
+        dispatch: 'msg -> unit,
+        bindingSpecs: BindingSpec<'model, 'msg> list,
+        config: ElmConfig )
+      as this =
+  inherit DynamicObject()
 
-    // Current model
-    let mutable model : 'model = m
+  let log fmt =
+    let innerLog (str: string) =
+      if config.LogConsole then Console.WriteLine(str)
+      if config.LogTrace then Diagnostics.Trace.WriteLine(str)
+    Printf.kprintf innerLog fmt
 
-    // For INotifyPropertyChanged
 
-    let propertyChanged = Event<PropertyChangedEventHandler,PropertyChangedEventArgs>()
-    let notifyPropertyChanged name = 
-        log <| sprintf "Notify %s" name
-        propertyChanged.Trigger(this,PropertyChangedEventArgs(name))
-    let notify (p:string list) =
-        p |> List.iter notifyPropertyChanged
-        let raiseCanExecuteChanged =
-            function
-            | Cmd c ->
-                if isNull Application.Current then ()
-                elif isNull Application.Current.Dispatcher then () else
-                fun _ -> c.RaiseCanExecuteChanged()
-                |> Application.Current.Dispatcher.Invoke
+  let mutable currentModel = initialModel
+
+  let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
+  let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
+
+  /// Error messages keyed by property name.
+  let errors = Dictionary<string, string>()
+
+  let notifyPropertyChanged propName =
+    log "[VM] Triggering PropertyChanged for binding %s" propName
+    propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
+
+  let raiseCanExecuteChanged (cmd: Command) =
+    Application.Current.Dispatcher.Invoke(cmd.RaiseCanExecuteChanged)
+
+  let setError error propName =
+    log "[VM] Setting error for binding %s to %s" propName error
+    match errors.TryGetValue propName with
+    | true, err when err = error -> ()
+    | _ ->
+        errors.[propName] <- error
+        errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
+
+  let removeError propName =
+    log "[VM] Removing error for binding %s" propName
+    if errors.Remove propName then
+      errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
+
+  let initializeBinding bindingSpec =
+    match bindingSpec with
+    | OneWaySpec get -> OneWay get
+    | OneWayLazySpec (get, map, equals) ->
+        OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
+    | OneWaySeqSpec (get, getId, equals) ->
+        let vals = ObservableCollection(get initialModel)
+        OneWaySeq (vals, get, getId, equals)
+    | TwoWaySpec (get, set) -> TwoWay (get, set)
+    | TwoWayValidateSpec (get, set, validate) -> TwoWayValidate (get, set, validate)
+    | TwoWayIfValidSpec (get, set) -> TwoWayIfValid (get, set)
+    | CmdSpec (exec, canExec) ->
+        let execute _ = exec currentModel |> dispatch
+        let canExecute _ = canExec currentModel
+        ParamCmd <| Command(execute, canExecute, false)
+    | CmdIfValidSpec exec ->
+        let execute _ = exec currentModel |> Result.iter dispatch
+        let canExecute _ = exec currentModel |> Result.isOk
+        CmdIfValid (Command(execute, canExecute, false), exec)
+    | ParamCmdSpec (exec, canExec, autoRequery) ->
+        let execute param = dispatch <| exec param currentModel
+        let canExecute param = canExec param currentModel
+        ParamCmd <| Command(execute, canExecute, autoRequery)
+    | SubModelSpec (getModel, getBindings, toMsg) ->
+        match getModel initialModel with
+        | None -> SubModel (ref None, getModel, getBindings, toMsg)
+        | Some m ->
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            SubModel (ref <| Some vm, getModel, getBindings, toMsg)
+    | SubModelSeqSpec (getModels, getId, getBindings, toMsg) ->
+        let vms =
+          getModels initialModel
+          |> Seq.map (fun m ->
+               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+          )
+          |> ObservableCollection
+        SubModelSeq (vms, getModels, getId, getBindings, toMsg)
+
+  let setInitialError name = function
+    | TwoWayValidate (_, _, validate) ->
+        match validate initialModel with
+        | Ok _ -> ()
+        | Error error -> setError error name
+    | TwoWayIfValid (get, set) ->
+        let initialValue = get initialModel
+        match set initialValue initialModel with
+        | Ok _ -> ()
+        | Error error -> setError error name
+    | _ -> ()
+
+  let bindings =
+    let dict = Dictionary<string, Binding<'model, 'msg>>()
+    for spec in bindingSpecs do
+      log "[VM] Initializing binding %s" spec.Name
+      let binding = initializeBinding spec.Data
+      dict.Add(spec.Name, binding)
+      setInitialError spec.Name binding
+    dict
+
+  /// Updates the binding value (for relevant bindings) and returns a value
+  /// indicating whether to trigger PropertyChanged for this binding
+  let updateValue newModel binding =
+    match binding with
+    | OneWay get
+    | TwoWay (get, _)
+    | TwoWayValidate (get, _, _)
+    | TwoWayIfValid (get, _) ->
+        get currentModel <> get newModel
+    | OneWayLazy (currentVal, get, map, equals) ->
+        if equals (get newModel) (get currentModel) then false
+        else
+          currentVal := lazy (newModel |> get |> map)
+          true
+    | OneWaySeq (vals, get, getId, equals) ->
+        let newVals = get newModel
+        Application.Current.Dispatcher.Invoke(fun () ->
+          // Prune and update existing values
+          let newLookup = Dictionary<_,_>()
+          for v in newVals do newLookup.Add(getId v, v)
+          for existingVal in vals |> Seq.toList do
+            match newLookup.TryGetValue (getId existingVal) with
+            | false, _ -> vals.Remove(existingVal) |> ignore
+            | true, newVal when not (equals newVal existingVal) ->
+                vals.Remove existingVal |> ignore
+                vals.Add newVal  // Will be sorted later
             | _ -> ()
-        //TODO only raise for cmds that depend on props in p
-        props |> List.ofSeq |> List.iter (fun kvp -> raiseCanExecuteChanged kvp.Value)
-    
-
-    // For INotifyDataErrorInfo
-
-    let errorsChanged = new DelegateEvent<System.EventHandler<DataErrorsChangedEventArgs>>()
-
-
-    // Initialize bindings
-    do
-        let toCommand (exec, canExec) = Command((fun p -> exec p model |> dispatch), fun p -> canExec p model)
-        let toSubView propMap = ViewModelBase<_,_>(model, dispatch, propMap, debug)
-        let rec convert = 
-            List.map (fun (name,binding) ->
-                match binding with
-                | Bind getter -> name, Get getter
-                | BindTwoWay (getter,setter) -> name, GetSet (getter,setter)
-                | BindTwoWayValidation (getter,setter) -> name, GetSetValidate (getter,setter)
-                | BindCmd (exec,canExec) -> name, Cmd <| toCommand (exec,canExec)
-                | BindModel (_, propMap) -> name, Model <| toSubView propMap
-                | BindMap (getter,mapper) -> name, Map <| (getter,mapper)
+          // Add new values that don't currently exist
+          let valuesToAdd =
+            newVals
+            |> Seq.filter (fun m ->
+                 vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
             )
-        
-        convert propMap |> List.iter (fun (n,a) -> props.Add(n,a))
-
-    interface INotifyPropertyChanged with
-        [<CLIEvent>]
-        member __.PropertyChanged = propertyChanged.Publish
-        
-    interface INotifyDataErrorInfo with
-        [<CLIEvent>]
-        member __.ErrorsChanged = errorsChanged.Publish
-        member __.HasErrors = errors.Count > 0
-        member __.GetErrors propName = 
-            log <| sprintf "Getting errors for %s" propName
-            match errors.TryGetValue propName with
-            | true, errs -> errs
-            | false, _ -> []
-            :> System.Collections.IEnumerable
-    
-    member __.UpdateModel other =
-        log <| sprintf "UpdateModel %A" (props.Keys |> Seq.toArray)
-        let propDiff name =
-            function
-            | Get getter | GetSet (getter,_) | GetSetValidate(getter,_) | Map (getter,_) ->
-                if getter model <> getter other then Some name else None
-            | Model m ->
-                m.UpdateModel other
-                None
-            | _ -> None
-
-        let diffs = 
-            props
-            |> Seq.choose (fun (kvp) -> propDiff kvp.Key kvp.Value)
-            |> Seq.toList
-        
-        model <- other
-        notify diffs
-
-
-    // DynamicObject overrides
-
-    override __.TryGetMember (binder, r) = 
-        log <| sprintf "TryGetMember %s" binder.Name
-        if props.ContainsKey binder.Name then
-            r <-
-                match props.[binder.Name] with 
-                | Get getter 
-                | GetSet (getter,_)
-                | GetSetValidate (getter,_) -> getter model
-                | Cmd c -> unbox c
-                | Model m -> unbox m
-                | Map (getter,mapper) -> getter model |> mapper
-            true
-        else false
-
-    override __.TrySetMember (binder, value) =
-        log <| sprintf "TrySetMember %s" binder.Name
-        if props.ContainsKey binder.Name then
-            match props.[binder.Name] with 
-            | GetSet (_,setter) -> try setter value model |> dispatch with | _ -> ()
-            | GetSetValidate (_,setter) -> 
-                let errorsChanged() = errorsChanged.Trigger([| unbox this; unbox <| DataErrorsChangedEventArgs(binder.Name) |])
-                try 
-                    match setter value model with
-                    | Ok msg -> 
-                        if errors.Remove(binder.Name) then errorsChanged()
-                        dispatch msg 
-                    | Error err ->
-                        match errors.TryGetValue binder.Name with
-                        | true, errs -> errors.[binder.Name] <- err :: errs
-                        | false, _ -> errors.Add(binder.Name, [err])
-                        errorsChanged()
-                with | _ -> ()
-            | _ -> invalidOp "Unable to set read-only member"
+          for m in valuesToAdd do vals.Add m
+          // Reorder according to new model list
+          for newIdx, newVal in newVals |> Seq.indexed do
+            let oldIdx =
+              vals
+              |> Seq.indexed
+              |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
+              |> fst
+            vals.Move(oldIdx, newIdx)
+        )
         false
+    | Cmd _
+    | CmdIfValid _
+    | ParamCmd _ ->
+        false
+    | SubModel ((vm: ViewModel<obj, obj> option ref), (getModel: 'model -> obj option), getBindings, toMsg) ->
+        match !vm, getModel newModel with
+        | None, None -> false
+        | Some _, None ->
+            vm := None
+            true
+        | None, Some m ->
+            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            true
+        | Some vm, Some m ->
+            vm.UpdateModel(m)
+            false
+    | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
+        let newSubModels = getModels newModel
+        Application.Current.Dispatcher.Invoke(fun () ->
+          // Prune and update existing models
+          let newLookup = Dictionary<_,_>()
+          for m in newSubModels do newLookup.Add(getId m, m)
+          for vm in vms |> Seq.toList do
+            match newLookup.TryGetValue (getId vm.CurrentModel) with
+            | false, _ -> vms.Remove(vm) |> ignore
+            | true, newSubModel -> vm.UpdateModel newSubModel
+          // Add new models that don't currently exist
+          let modelsToAdd =
+            newSubModels
+            |> Seq.filter (fun m ->
+                 vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
+            )
+          for m in modelsToAdd do
+            vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+          // Reorder according to new model list
+          for newIdx, newSubModel in newSubModels |> Seq.indexed do
+            let oldIdx =
+              vms
+              |> Seq.indexed
+              |> Seq.find (fun (_, vm) -> getId newSubModel = getId vm.CurrentModel)
+              |> fst
+            vms.Move(oldIdx, newIdx)
+        )
+        false
+
+  /// Returns the command associated with a command binding if the command's
+  /// CanExecuteChanged should be triggered.
+  let getCmdIfCanExecChanged newModel binding =
+    match binding with
+    | OneWay _
+    | OneWayLazy _
+    | OneWaySeq _
+    | TwoWay _
+    | TwoWayValidate _
+    | TwoWayIfValid _
+    | SubModel _
+    | SubModelSeq _ ->
+        None
+    | Cmd (cmd, canExec) ->
+        if canExec newModel = canExec currentModel then None else Some cmd
+    | CmdIfValid (cmd, exec) ->
+        match exec currentModel, exec newModel with
+        | Ok _, Error _ | Error _, Ok _ -> Some cmd
+        | _ -> None
+    | ParamCmd cmd -> Some cmd
+
+  /// Updates the validation status for a binding.
+  let updateValidationStatus name binding =
+    match binding with
+    | TwoWayValidate (_, _, validate) ->
+        match validate currentModel with
+        | Ok _ -> removeError name
+        | Error err -> setError err name
+    | _ -> ()
+
+  member __.CurrentModel : 'model = currentModel
+
+  member __.UpdateModel (newModel: 'model) : unit =
+    log "[VM] UpdateModel %s" typeof<'model>.FullName
+    let propsToNotify =
+      bindings
+      |> Seq.toList
+      |> List.filter (Kvp.value >> updateValue newModel)
+      |> List.map Kvp.key
+    let cmdsToNotify =
+      bindings
+      |> Seq.toList
+      |> List.choose (Kvp.value >> getCmdIfCanExecChanged newModel)
+    currentModel <- newModel
+    propsToNotify |> List.iter notifyPropertyChanged
+    cmdsToNotify |> List.iter raiseCanExecuteChanged
+    for Kvp (name, binding) in bindings do
+      updateValidationStatus name binding
+
+  override __.TryGetMember (binder, result) =
+    log "[VM] TryGetMember %s" binder.Name
+    match bindings.TryGetValue binder.Name with
+    | false, _ ->
+        log "[VM] TryGetMember FAILED: Property %s doesn't exist" binder.Name
+        false
+    | true, binding ->
+        result <-
+          match binding with
+          | OneWay get
+          | TwoWay (get, _)
+          | TwoWayValidate (get, _, _)
+          | TwoWayIfValid (get, _) ->
+              get currentModel
+          | OneWayLazy (value, _, _, _) ->
+              (!value).Value
+          | OneWaySeq (vals, _, _, _) ->
+              box vals
+          | Cmd (cmd, _)
+          | CmdIfValid (cmd, _)
+          | ParamCmd cmd ->
+              box cmd
+          | SubModel (vm, _, _, _) -> !vm |> Option.toObj |> box
+          | SubModelSeq (vms, _, _, _, _) -> box vms
+        true
+
+  override __.TrySetMember (binder, value) =
+    log "[VM] TrySetMember %s" binder.Name
+    match bindings.TryGetValue binder.Name with
+    | false, _ -> log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
+    | true, binding ->
+        match binding with
+        | TwoWay (_, set)
+        | TwoWayValidate (_, set, _) ->
+            dispatch <| set value currentModel
+        | TwoWayIfValid (_, set) ->
+            match set value currentModel with
+            | Ok msg ->
+                removeError binder.Name
+                dispatch msg
+            | Error err -> setError err binder.Name
+        | OneWay _
+        | OneWayLazy _
+        | OneWaySeq _
+        | Cmd _
+        | CmdIfValid _
+        | ParamCmd _
+        | SubModel _
+        | SubModelSeq _ ->
+            log "[VM] TrySetMember FAILED: Binding %s is read-only" binder.Name
+    // This function should always return false, otherwise the UI may execute a
+    // subsequent get which may may return the old value
+    false
+
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member __.PropertyChanged = propertyChanged.Publish
+
+  interface INotifyDataErrorInfo with
+    [<CLIEvent>]
+    member __.ErrorsChanged = errorsChanged.Publish
+    member __.HasErrors =
+      errors.Count > 0
+    member __.GetErrors propName =
+      log "[VM] GetErrors called for %s" propName
+      match errors.TryGetValue propName with
+      | true, err -> upcast [err]
+      | false, _ -> upcast []

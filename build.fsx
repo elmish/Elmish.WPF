@@ -1,88 +1,65 @@
-// include Fake lib
-#r "./packages/build/FAKE/tools/FakeLib.dll"
-open Fake
-open System
-open Fake.ReleaseNotesHelper
+#r "paket: groupref Build //"
+#load ".fake/build.fsx/intellisense.fsx"
+open Fake.Core
+open Fake.Core.TargetOperators
+open Fake.DotNet
+open Fake.IO
+open Fake.IO.FileSystemOperators
+open Fake.IO.Globbing.Operators
 
-let buildDir = "./build_output/"
+let deployDir = "deploy"
 
-let projects = !!"src/**/*.fsproj"
+let release = File.read "RELEASE_NOTES.md" |> ReleaseNotes.parse
 
-let dotnetcliVersion = DotNetCli.GetDotNetSDKVersionFromGlobalJson()
-let mutable dotnetExePath = "dotnet"
-
-let runDotnet workingDir =
-    DotNetCli.RunCommand (fun p -> { p with ToolPath = dotnetExePath
-                                            WorkingDir = workingDir } )
-
-Target "InstallDotNetCore" (fun _ ->
-   dotnetExePath <- DotNetCli.InstallDotNetSDK dotnetcliVersion
+Target.create "Clean" (fun _ ->
+  !! "src/**/bin"
+  ++ "src/**/obj"
+  |> Shell.cleanDirs
+  Shell.cleanDir deployDir
 )
 
-Target "Clean" (fun _ ->
-    projects
-    |> Seq.iter (IO.Path.GetDirectoryName >> sprintf "%s/obj" >> CleanDir)
-    CleanDir "build_output"
+Target.create "Build" (fun _ ->
+  // Building XAML projects (such as the sample view projects) doesn't work
+  // yet using DotNet.build, so we skip those.
+  !! "src/Elmish.WPF/*.*proj"
+  |> Seq.iter (DotNet.build id)
 )
 
-Target "Install" (fun _ ->
-    projects
-    |> Seq.iter (fun p -> let d = IO.Path.GetDirectoryName p in runDotnet d "restore")
+Target.create "Test" (fun _ ->
+  "src/Elmish.WPF.Tests"
+  |> DotNet.test (fun opt ->
+      { opt with Configuration = DotNet.BuildConfiguration.Release }
+  )
 )
 
-Target "Build" (fun _ ->
-    !! "src/*.sln"
-    |> MSBuildRelease buildDir "Build"
-    |> Log "AppBuild-Output: "
+Target.create "Pack" (fun _ ->
+  Paket.pack(fun p ->
+    { p with
+        OutputPath = deployDir
+        Symbols = true
+        Version = release.NugetVersion
+        ReleaseNotes =
+          release.Notes
+          |> Seq.map (sprintf "- %s")
+          |> String.toLines}
+  )
 )
 
-let release = LoadReleaseNotes "RELEASE_NOTES.md"
-
-Target "Meta" (fun _ ->
-    [ "<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">"
-      "<PropertyGroup>"
-      "<PackageProjectUrl>https://github.com/prolucid/Elmish.WPF</PackageProjectUrl>"
-      "<PackageLicenseUrl>https://raw.githubusercontent.com/prolucid/Elmish.WPF/master/LICENSE.md</PackageLicenseUrl>"
-      "<PackageIconUrl>https://raw.githubusercontent.com/prolucid/Elmish.WPF/master/docs/files/img/logo.png</PackageIconUrl>"
-      "<RepositoryUrl>https://github.com/prolucid/Elmish.WPF.git</RepositoryUrl>"
-      "<PackageTags>elmish;fsharp</PackageTags>"
-      sprintf "<PackageReleaseNotes>%s</PackageReleaseNotes>" (List.head release.Notes)
-      "<Authors>Justin Sacks</Authors>"
-      "<Description>F# bindings for using elmish in WPF</Description>"
-      sprintf "<Version>%s</Version>" (string release.SemVer)
-      "</PropertyGroup>"
-      "</Project>"]
-    |> WriteToFile false "Directory.Build.props"
+Target.create "Publish" (fun _ ->
+  Paket.push(fun p ->
+    { p with
+        WorkingDir = deployDir
+        ApiKey = Environment.environVarOrFail "NUGET_KEY" }
+  )
 )
 
-// Build a NuGet package
-Target "NuGet" (fun _ ->
-    Paket.Pack(fun p -> 
-        { p with
-            OutputPath = buildDir
-            TemplateFile = "paket.template"
-            Version = release.NugetVersion
-            ReleaseNotes = toLines release.Notes})
-)
-
-Target "PublishNuget" (fun _ ->
-    Paket.Push(fun p -> 
-        { p with
-            WorkingDir = buildDir })
-)
-
-Target "All" DoNothing
+Target.create "Default" ignore
 
 "Clean"
-  ==> "Meta"
-  ==> "Install"
   ==> "Build"
-  ==> "All"
+  ==> "Test"
+  ==> "Pack"
+  ==> "Default"
+  ==> "Publish"
 
-"All" 
-  ==> "NuGet"
-  ==> "PublishNuget"
-
-
-// start build
-RunTargetOrDefault "All"
+Target.runOrDefault "Default"

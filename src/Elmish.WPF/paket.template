@@ -1,0 +1,12 @@
+type project
+id Elmish.WPF
+authors  jsacks, cmeeren
+description
+  F# bindings for using Elmish in WPF
+tags
+  WPF F# fsharp Elmish Elm
+projectUrl
+  https://github.com/elmish/Elmish.WPF
+licenseUrl
+  https://github.com/elmish/Elmish.WPF/blob/master/LICENSE.md
+requireLicenseAcceptance false

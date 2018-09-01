@@ -1,6 +1,14 @@
 #### 2.0.0-beta-1
 
-* Migration to packaged elmish 2.0 core
+* Complete rewrite, several breaking changes and new features
+* `twoWayValidation` is called `twoWayIfValid` (because that’s what it is, and it clearly separates it from the new `twoWayValidate`)
+* `oneWayMap` is called `oneWayLazy` (its implementation has changed, and the use case has expanded, but is similar)
+* `cmd` and `cmdIf` have been renamed `paramCmd` and `paramCmdIf`, because the old names have new signatures/use-cases
+* `model` has been renamed `subModel` because it’s more clear, and consistent with the new `subModelOpt` and `subModelSeq`
+* `Program.runDebugWindow` has been removed in favour of `Program.runWindowWithConfig`
+* Bundled Elmish has been removed, and Elmish 2.0 is used as an external dependency
+* Any `Application ` instance instantiated before calling `Program.run...` will now be used
+* Several new functions in the `Binding` module; dot into it in your IDE or see the repository for samples or source code
 
 #### 1.0.0-beta-7
 
