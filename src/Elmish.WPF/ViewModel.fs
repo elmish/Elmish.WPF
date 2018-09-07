@@ -76,16 +76,16 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     Application.Current.Dispatcher.Invoke(cmd.RaiseCanExecuteChanged)
 
   let setError error propName =
-    log "[VM] Setting error for binding %s to %s" propName error
     match errors.TryGetValue propName with
     | true, err when err = error -> ()
     | _ ->
+        log "[VM] Setting error for binding %s to \"%s\"" propName error
         errors.[propName] <- error
         errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let removeError propName =
-    log "[VM] Removing error for binding %s" propName
     if errors.Remove propName then
+      log "[VM] Removing error for binding %s" propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let initializeBinding bindingSpec =
