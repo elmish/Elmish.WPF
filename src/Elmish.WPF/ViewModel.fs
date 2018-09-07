@@ -349,7 +349,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     member __.HasErrors =
       errors.Count > 0
     member __.GetErrors propName =
-      log "[VM] GetErrors called for %s" propName
+      log "[VM] GetErrors %s" (propName |> Option.ofObj |> Option.defaultValue "<null>")
       match errors.TryGetValue propName with
       | true, err -> upcast [err]
       | false, _ -> upcast []
