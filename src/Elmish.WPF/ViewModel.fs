@@ -269,7 +269,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
   member __.CurrentModel : 'model = currentModel
 
   member __.UpdateModel (newModel: 'model) : unit =
-    log "[VM] UpdateModel %s" typeof<'model>.FullName
+    log "[VM] UpdateModel %s" <| newModel.GetType().FullName
     let propsToNotify =
       bindings
       |> Seq.toList
