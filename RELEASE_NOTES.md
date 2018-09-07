@@ -1,3 +1,7 @@
+#### 2.0.0-beta-2
+
+* Improve log messages
+
 #### 2.0.0-beta-1
 
 * Complete rewrite, several breaking changes and new features
