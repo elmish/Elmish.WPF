@@ -5,10 +5,6 @@ image: Visual Studio 2017
 build:
   verbosity: detailed
 
-environment:
-  NUGET_KEY:
-    secure: ZmAxRcwpr3xMuOXgn7SplJ9/QvSj1uPJ52HW9KuqzPrUdSinErdzn+4RKAnWfamj
-
 cache:
   - '%USERPROFILE%\.nuget\packages -> paket.lock'
 
@@ -18,10 +14,9 @@ artifacts:
 build_script:
   - cmd: fake build
 
-for:
-  - branches:
-      only:
-        - /stable-.*/
-    skip_branch_with_pr: true
-    build_script:
-      - cmd: fake build -t Publish
+deploy:
+  - provider: NuGet
+    api_key:
+      secure: ZmAxRcwpr3xMuOXgn7SplJ9/QvSj1uPJ52HW9KuqzPrUdSinErdzn+4RKAnWfamj
+    on:
+      branch: /stable-.*/

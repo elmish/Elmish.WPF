@@ -45,16 +45,6 @@ Target.create "Pack" (fun _ ->
   )
 )
 
-Target.create "Publish" (fun _ ->
-  !! (sprintf "%s/*.nupkg" deployDir)
-  -- (sprintf "%s/*.symbols.nupkg" deployDir)
-  |> Paket.pushFiles (fun p ->
-      { p with
-          WorkingDir = deployDir
-          ApiKey = Environment.environVarOrFail "NUGET_KEY" }
-    )
-)
-
 Target.create "Default" ignore
 
 "Clean"
@@ -62,6 +52,5 @@ Target.create "Default" ignore
   ==> "Test"
   ==> "Pack"
   ==> "Default"
-  ==> "Publish"
 
 Target.runOrDefault "Default"
