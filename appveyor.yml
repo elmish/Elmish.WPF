@@ -22,5 +22,6 @@ for:
   - branches:
       only:
         - /stable-.*/
+    skip_branch_with_pr: true
     build_script:
       - cmd: fake build -t Publish
