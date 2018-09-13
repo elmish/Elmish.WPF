@@ -33,7 +33,7 @@ Target.create "Test" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-  Paket.pack(fun p ->
+  Paket.pack (fun p ->
     { p with
         OutputPath = deployDir
         Symbols = true
@@ -46,11 +46,13 @@ Target.create "Pack" (fun _ ->
 )
 
 Target.create "Publish" (fun _ ->
-  Paket.push(fun p ->
-    { p with
-        WorkingDir = deployDir
-        ApiKey = Environment.environVarOrFail "NUGET_KEY" }
-  )
+  !! (sprintf "%s/*.nupkg" deployDir)
+  -- (sprintf "%s/*.symbols.nupkg" deployDir)
+  |> Paket.pushFiles (fun p ->
+      { p with
+          WorkingDir = deployDir
+          ApiKey = Environment.environVarOrFail "NUGET_KEY" }
+    )
 )
 
 Target.create "Default" ignore
