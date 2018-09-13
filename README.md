@@ -106,7 +106,11 @@ FAQ
 
 #### Do I have to use the project structure outlined above?
 
-Not at all.
+Not at all. The above example, as well as the samples, keep everything in a single project for simplicity (the samples have the XAML definitions in separate projects for technical reasons). For more complex apps, you might want to consider a more clear separation of UI and core logic. An example would be the following structure:
+
+* A core library containing the model definitions and `update` functions. This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on certain WPF UI assemblies and has a UI-centred API (the `Binding` module). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. using Fable).
+* An entry point project that contains the `bindings` (or `view`) function and the call to `Program.runWindow`. This project would reference the core library and `Elmish.WPF`.
+* A view project containing the XAML-related stuff (windows, user controls, behaviors, etc.). This could also be part of the entry point project, but if you’re using the new project format (like the samples in this repo), this might not work properly until .NET Standard 3.0.
 
 #### Can I instantiate `Application` myself?
 
@@ -114,4 +118,16 @@ Yes, just do it before calling `Program.runWindow` and it will automatically be 
 
 #### Can I open new windows/dialogs?
 
-Probably not; there is no explicit support for this in Elmish.WPF, and there is no simple way for users to set the `DataContext` of new windows in Elmish.WPF without explicit support. In any case, making use of anything not available through bindings (such as opening and closing windows) would mean that your UI would no longer be a simple function of your model, which is a central point of the Elm architecture. This would be a complication of your architecture, since it would need to be controlled outside the normal update loop. We instead recommend using custom-made dialogs; see the [SubModelOpt](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple example. This method also works great with libraries with ready-made MVVM-friendly dialogs, e.g. those in [Material Design In XAML Toolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit). That being said, if you come up with a good way to solve this, contributions are welcome!
+The short version: Yes, but depending on the use-case, this may not play well with the Elmish architecture, and it is likely conceptually and architecturally clearer to stick with some kind of dialog in the main window, using bindings to control its visibility.
+
+The long version:
+
+You can easily open modeless windows (using `window.Show()`) in  command and set the binding context of the new window to the binding context of the main window. The [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) demonstrates this. It is then, from Elmish’s point of view, absolutely no difference between the windows; the bindings and message dispatches work exactly the same as if you had used multiple user controls in a single window, and you may close the new window without Elmish being affected by it.
+
+Note that the NewWindow sample (like the other samples) keep a very simple project structure where the views are directly accessible in the core logic, which allows for direct instantiation of new windows in the `update` function (or the commands it returns). If you want a clearer separation between UI and core logic as previously described, you would need to write some kind of navigation service abstraction and use inversion of control (such as dependency injection) to allow the core project to instantiate the new window indirectly using the navigation service without needing to reference the UI layer directly. Such architectural patterns of course go very much against the grain of Elmish and functional architecture in general.
+
+While modeless windows are possible, if not necessarily pleasant or idiomatic, you can not use the same method to open modal windows (using `window.ShowDialog()`). This will block the Elmish update loop, and all messages will be queued and only processed when the modal window is closed.
+
+Windows that semantically produce a result, even if you implement them as modeless, can be more difficult. An general example might be a window containing a data entry form used to create a business entity. In these cases, a “Submit” button may need to both dispatch a message containing the window’s result (done via `Binding.cmd` or similar), as well as close the window. This can be problematic, or at least cumbersome, when there is logic determining what actually happens when the “Submit” button is clicked (send the result, display validation errors, etc.). For more on this, see the discussion in [#24](https://github.com/elmish/Elmish.WPF/issues/24).
+
+The recommended approach is to stick to what is available via bindings in a single window. In the case of new windows, this means instead using in-window dialogs, similar to how most SPAs (single-page applications) created with Elm or Elmish would behave. This allows the UI to be a simple function of your model, which is a central point of the Elm architecture (whereas opening and closing windows are events that do not easily derive from any model state). The [SubModelOpt sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provides a very simple example of custom dialogs, and this method also works great with libraries with ready-made MVVM-friendly dialogs, e.g. those in [Material Design In XAML Toolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit).
