@@ -46,7 +46,7 @@ let bindings model dispatch =
     "Field1" |> Binding.twoWayIfValid
       (fun m -> string m.Field1Int)
       (fun v m ->
-        unbox v |> validateInt42 |> Result.map Field1Input)
+        v |> validateInt42 |> Result.map Field1Input)
     "Field2" |> Binding.twoWayValidate
       (fun m -> m.Field2Raw)
       (fun v m -> Field2Input v)
