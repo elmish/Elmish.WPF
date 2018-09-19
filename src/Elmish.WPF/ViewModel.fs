@@ -49,7 +49,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
         bindingSpecs: BindingSpec<'model, 'msg> list,
-        config: ElmConfig )
+        config: ElmConfig,
+        uiDispatch: (unit -> unit) -> unit )
       as this =
   inherit DynamicObject()
 
@@ -73,7 +74,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
 
   let raiseCanExecuteChanged (cmd: Command) =
-    Application.Current.Dispatcher.Invoke(cmd.RaiseCanExecuteChanged)
+    uiDispatch cmd.RaiseCanExecuteChanged
 
   let setError error propName =
     match errors.TryGetValue propName with
@@ -115,13 +116,13 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
         match getModel initialModel with
         | None -> SubModel (ref None, getModel, getBindings, toMsg)
         | Some m ->
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, uiDispatch)
             SubModel (ref <| Some vm, getModel, getBindings, toMsg)
     | SubModelSeqSpec (getModels, getId, getBindings, toMsg) ->
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
-               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, uiDispatch)
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
@@ -163,7 +164,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
           true
     | OneWaySeq (vals, get, getId, equals) ->
         let newVals = get newModel
-        Application.Current.Dispatcher.Invoke(fun () ->
+        uiDispatch (fun () ->
           // Prune and update existing values
           let newLookup = Dictionary<_,_>()
           for v in newVals do newLookup.Add(getId v, v)
@@ -202,14 +203,14 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
             vm := None
             true
         | None, Some m ->
-            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config, uiDispatch)
             true
         | Some vm, Some m ->
             vm.UpdateModel(m)
             false
     | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
         let newSubModels = getModels newModel
-        Application.Current.Dispatcher.Invoke(fun () ->
+        uiDispatch (fun () ->
           // Prune and update existing models
           let newLookup = Dictionary<_,_>()
           for m in newSubModels do newLookup.Add(getId m, m)
@@ -224,7 +225,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
                  vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
             )
           for m in modelsToAdd do
-            vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+            vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, uiDispatch)
           // Reorder according to new model list
           for newIdx, newSubModel in newSubModels |> Seq.indexed do
             let oldIdx =
