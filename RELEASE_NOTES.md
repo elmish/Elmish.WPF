@@ -1,3 +1,7 @@
+#### 2.0.0-beta-3
+
+* Add convenience function to create design-time VMs
+
 #### 2.0.0-beta-2
 
 * Improve log messages

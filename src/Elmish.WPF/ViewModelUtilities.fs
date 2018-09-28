@@ -27,3 +27,7 @@ let internal startLoop
 
   programRun { program with setState = setState }
 
+
+/// Creates a design-time view model using the given model and bindings.
+let designInstance (model: 'model) (bindings: BindingSpec<'model, 'msg> list) =
+  ViewModel(model, ignore, bindings, ElmConfig.Default, ignore)
