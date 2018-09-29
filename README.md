@@ -21,12 +21,16 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
 1. Create an F# Console Application (you can create a Windows application, but the core Elmish logs are currently only written to the console).
 
-2. Define the model that describes your app’s state:
+2. Define the model that describes your app’s state and a function that initializes it:
 
    ```F#
    type Model =
      { Count: int
        StepSize: int }
+   
+   let init () =
+     { Count = 0
+       StepSize = 1 }
    ```
 
 3. Define the various messages that can change your model:
