@@ -21,7 +21,11 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
 1. Create an F# Console Application (you can create a Windows application, but the core Elmish logs are currently only written to the console).
 
-2. Define the model that describes your app’s state and a function that initializes it:
+2. Add References to `PresentationCore`, `PresentationFramework`, and `WindowsBase`.
+
+3. Add NuGet reference to package `Elmish.WPF`.
+
+4. Define the model that describes your app’s state and a function that initializes it:
 
    ```F#
    type Model =
@@ -33,7 +37,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
        StepSize = 1 }
    ```
 
-3. Define the various messages that can change your model:
+5. Define the various messages that can change your model:
 
    ```F#
    type Msg =
@@ -42,7 +46,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize of int
    ```
 
-4. Define an `update` function that takes a message and a model and returns an updated model:
+6. Define an `update` function that takes a message and a model and returns an updated model:
 
    ```F#
    let update msg m =
@@ -52,7 +56,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize x -> { m with StepSize = x }
    ```
 
-5. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`. In order to be compatible with Elmish it needs to have the same signature, but in many (most?) cases the `model` and `dispatch ` parameters will be unused:
+7. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`. In order to be compatible with Elmish it needs to have the same signature, but in many (most?) cases the `model` and `dispatch ` parameters will be unused:
 
    ```F#
    open Elmish.WPF
@@ -70,7 +74,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    The strings identify the binding names to be used in the XAML views. The [Binding module](https://github.com/elmish/Elmish.WPF/blob/master/src/Elmish.WPF/Binding.fs) has many functions to create various types of bindings.
 
-6. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
+8. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
 
    ```xaml
    <Window
@@ -87,7 +91,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    </Window>
    ```
 
-7. Add the entry point to your console project:
+9. Add the entry point to your console project:
 
    ```F#
    open System
@@ -101,7 +105,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    `Program.runWindow` will instantiate an `Application ` and set the window’s `DataContext` to the bindings you defined.
 
-8. Profit! :)
+10. Profit! :)
 
 For more complicated examples and other `Binding` functions, see the [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
 
