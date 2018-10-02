@@ -22,7 +22,7 @@ module Binding =
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="get">Transforms the value into the final type.</param>
   /// <param name="name">The binding name.</param>
-  let oneWayLazyWith (equals: 'a -> 'a -> bool) (get: 'model -> 'a) (map: 'a -> 'b) (name: string) =
+  let oneWayLazyWith (get: 'model -> 'a) (equals: 'a -> 'a -> bool) (map: 'a -> 'b) (name: string) =
     { Name = name
       Data =
         OneWayLazySpec (
@@ -32,17 +32,18 @@ module Binding =
     }
 
   /// <summary>
-  ///   Alias for oneWayLazyWith (=). Creates a lazily evaluated one-way binding.
-  ///   The map function will be called only when first retrieved and only when
-  ///   the output of the get function changes. This may have better performance
-  ///   than oneWay for expensive computations (but may be less performant for
-  ///   non-expensive functions due to additional overhead).
+  ///   Same as oneWayLazyWith using the default equality comparison (=). Creates
+  ///   a lazily evaluated one-way binding. The map function will be called only
+  ///   when first retrieved and only when the output of the get function changes.
+  ///   This may have better performance than oneWay for expensive computations
+  ///   (but may be less performant for non-expensive functions due to additional
+  ///   overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="get">Transforms the value into the final type.</param>
   /// <param name="name">The binding name.</param>
   let oneWayLazy (get: 'model -> 'a) (map: 'a -> 'b) (name: string) =
-    oneWayLazyWith (=) get map name
+    oneWayLazyWith get (=) map name
 
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely identified

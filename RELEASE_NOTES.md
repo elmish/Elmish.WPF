@@ -1,5 +1,6 @@
 #### 2.0.0-beta-4
 
+* Breaking: Change order of arguments to `oneWayLazyWith`
 * Add `Binding.oneWaySeqLazyWith`
 
 #### 2.0.0-beta-3
