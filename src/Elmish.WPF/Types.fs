@@ -11,10 +11,12 @@ type BindingSpecData<'model, 'msg> =
       get: ('model -> obj)
       * map: (obj -> obj)
       * equals: (obj -> obj -> bool)
-  | OneWaySeqSpec of
-      get: ('model -> obj seq)
-      * getId: (obj -> obj)
+  | OneWaySeqLazySpec of
+      get: ('model -> obj)
+      * map: (obj -> obj seq)
       * equals: (obj -> obj -> bool)
+      * getId: (obj -> obj)
+      * itemEquals: (obj -> obj -> bool)
   | TwoWaySpec of get: ('model -> obj) * set: (obj -> 'model -> 'msg)
   | TwoWayValidateSpec of
       get: ('model -> obj)
@@ -52,7 +54,8 @@ module BindingSpecData =
   let box : BindingSpecData<'model, 'msg> -> BindingSpecData<obj, obj> = function
   | OneWaySpec get -> OneWaySpec (unbox >> get)
   | OneWayLazySpec (get, map, equals) -> OneWayLazySpec (unbox >> get, map, equals)
-  | OneWaySeqSpec (get, getId, equals) -> OneWaySeqSpec (unbox >> get, getId, equals)
+  | OneWaySeqLazySpec (get, map, equals, getId, elementEquals) ->
+      OneWaySeqLazySpec (unbox >> get, map, equals, getId, elementEquals)
   | TwoWaySpec (get, set) ->
       TwoWaySpec (unbox >> get, (fun v m -> set v (unbox m) |> box))
   | TwoWayValidateSpec (get, set, validate) ->

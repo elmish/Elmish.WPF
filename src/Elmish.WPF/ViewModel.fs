@@ -18,9 +18,11 @@ type Binding<'model, 'msg> =
       * equals: (obj -> obj -> bool)
   | OneWaySeq of
       vals: ObservableCollection<obj>
-      * get: ('model -> obj seq)
-      * getId: (obj -> obj)
+      * get: ('model -> obj)
+      * map: (obj -> obj seq)
       * equals: (obj -> obj -> bool)
+      * getId: (obj -> obj)
+      * itemEquals: (obj -> obj -> bool)
   | TwoWay of get: ('model -> obj) * set: (obj -> 'model -> 'msg)
   | TwoWayValidate of
       get: ('model -> obj)
@@ -94,9 +96,9 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | OneWaySpec get -> OneWay get
     | OneWayLazySpec (get, map, equals) ->
         OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
-    | OneWaySeqSpec (get, getId, equals) ->
-        let vals = ObservableCollection(get initialModel)
-        OneWaySeq (vals, get, getId, equals)
+    | OneWaySeqLazySpec (get, map, equals, getId, itemEquals) ->
+        let vals = ObservableCollection(initialModel |> get |> map)
+        OneWaySeq (vals, get, map, equals, getId, itemEquals)
     | TwoWaySpec (get, set) -> TwoWay (get, set)
     | TwoWayValidateSpec (get, set, validate) -> TwoWayValidate (get, set, validate)
     | TwoWayIfValidSpec (get, set) -> TwoWayIfValid (get, set)
@@ -162,35 +164,36 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
         else
           currentVal := lazy (newModel |> get |> map)
           true
-    | OneWaySeq (vals, get, getId, equals) ->
-        let newVals = get newModel
-        uiDispatch (fun () ->
-          // Prune and update existing values
-          let newLookup = Dictionary<_,_>()
-          for v in newVals do newLookup.Add(getId v, v)
-          for existingVal in vals |> Seq.toList do
-            match newLookup.TryGetValue (getId existingVal) with
-            | false, _ -> vals.Remove(existingVal) |> ignore
-            | true, newVal when not (equals newVal existingVal) ->
-                vals.Remove existingVal |> ignore
-                vals.Add newVal  // Will be sorted later
-            | _ -> ()
-          // Add new values that don't currently exist
-          let valuesToAdd =
-            newVals
-            |> Seq.filter (fun m ->
-                 vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
-            )
-          for m in valuesToAdd do vals.Add m
-          // Reorder according to new model list
-          for newIdx, newVal in newVals |> Seq.indexed do
-            let oldIdx =
-              vals
-              |> Seq.indexed
-              |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
-              |> fst
-            vals.Move(oldIdx, newIdx)
-        )
+    | OneWaySeq (vals, get', map, equals', getId, itemEquals) ->
+        if not <| equals' (get' newModel) (get' currentModel) then
+          let newVals = newModel |> get' |> map
+          uiDispatch (fun () ->
+            // Prune and update existing values
+            let newLookup = Dictionary<_,_>()
+            for v in newVals do newLookup.Add(getId v, v)
+            for existingVal in vals |> Seq.toList do
+              match newLookup.TryGetValue (getId existingVal) with
+              | false, _ -> vals.Remove(existingVal) |> ignore
+              | true, newVal when not (itemEquals newVal existingVal) ->
+                  vals.Remove existingVal |> ignore
+                  vals.Add newVal  // Will be sorted later
+              | _ -> ()
+            // Add new values that don't currently exist
+            let valuesToAdd =
+              newVals
+              |> Seq.filter (fun m ->
+                   vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
+              )
+            for m in valuesToAdd do vals.Add m
+            // Reorder according to new model list
+            for newIdx, newVal in newVals |> Seq.indexed do
+              let oldIdx =
+                vals
+                |> Seq.indexed
+                |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
+                |> fst
+              vals.Move(oldIdx, newIdx)
+          )
         false
     | Cmd _
     | CmdIfValid _
@@ -302,7 +305,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
               get currentModel
           | OneWayLazy (value, _, _, _) ->
               (!value).Value
-          | OneWaySeq (vals, _, _, _) ->
+          | OneWaySeq (vals, _, _, _, _, _) ->
               box vals
           | Cmd (cmd, _)
           | CmdIfValid (cmd, _)

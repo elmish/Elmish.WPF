@@ -46,9 +46,44 @@ module Binding =
 
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely identified
-  ///   by the value returned by the getId function (as determined by the default
-  ///   equality comparer). The binding is backed by a persistent ObservableCollection,
-  ///   so only changed items will be re-rendered.
+  ///   by the value returned by <paramref name="getId"/>. The binding
+  ///   is backed by a persistent ObservableCollection, so only changed items
+  ///   (as determined by <paramref name="equals"/>) will be replaced. If the
+  ///   items are complex and you want them updated instead of replaced, consider
+  ///   using subModelSeq.
+  /// </summary>
+  /// <param name="get">Gets the items from the model.</param>
+  /// <param name="getId">Gets a unique identifier for an item.</param>
+  /// <param name="itemEquals">
+  ///   A function that returns true if two items are equal. For standard equality
+  ///   comparison (e.g. for primitives or structural equality of records),
+  ///   you can use the default equality operator (=).
+  /// </param>
+  /// <param name="name">The binding name.</param>
+  let oneWaySeq
+      (get: 'model -> #seq<'a>)
+      (getId: 'a -> 'id)
+      (itemEquals: 'a -> 'a -> bool)
+      (name: string) =
+    let boxedItemEquals (x: obj) (y:obj) = itemEquals (unbox x) (unbox y)
+    { Name = name
+      Data =
+        OneWaySeqLazySpec (
+          id >> box,
+          unbox >> get >> Seq.map box,
+          (fun _ _ -> false),
+          unbox >> getId >> box,
+          boxedItemEquals)
+    }
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items. The binding will only
+  ///   be updated if the output of <paramref name="get" /> changes as determined
+  ///   by <paramref name="equals" />. Each item is uniquely identified by the
+  ///   value returned by <paramref name="getId"/>. The binding is backed by a
+  ///   persistent ObservableCollection, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are complex
+  ///   and you want them updated instead of replaced, consider using subModelSeq.
   /// </summary>
   /// <param name="get">Gets the items from the model.</param>
   /// <param name="getId">Gets a unique identifier for an item.</param>
@@ -58,14 +93,24 @@ module Binding =
   ///   you can use the default equality operator (=).
   /// </param>
   /// <param name="name">The binding name.</param>
-  let oneWaySeq
-      (get: 'model -> #seq<'a>)
-      (getId: 'a -> 'id)
+  let oneWaySeqLazyWith
+      (get: 'model -> 'a)
       (equals: 'a -> 'a -> bool)
+      (map: 'a -> #seq<'b>)
+      (getId: 'b -> 'id)
+      (itemEquals: 'b -> 'b -> bool)
       (name: string) =
     let boxedEquals (x: obj) (y:obj) = equals (unbox x) (unbox y)
+    let boxedItemEquals (x: obj) (y:obj) = itemEquals (unbox x) (unbox y)
     { Name = name
-      Data = OneWaySeqSpec ( get >> Seq.map box, unbox >> getId >> box, boxedEquals) }
+      Data =
+        OneWaySeqLazySpec (
+          get >> box,
+          unbox >> map >> Seq.map box,
+          boxedEquals,
+          unbox >> getId >> box,
+          boxedItemEquals)
+    }
 
   /// <summary>Creates a two-way binding.</summary>
   /// <param name="get">Gets the value from the model.</param>
