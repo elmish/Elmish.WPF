@@ -12,8 +12,8 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </Page>
-
     <Compile Update="**\*.xaml.cs" SubType="Code" DependentUpon="%(Filename)" />
+
     <!-- Recompile when XAML changed -->
     <!-- https://github.com/dotnet/project-system/issues/3138#issuecomment-358355449 -->
     <UpToDateCheckInput Include="**\*.xaml" />
