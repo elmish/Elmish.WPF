@@ -15,9 +15,6 @@
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <Import Project="..\..\..\.paket\Paket.Restore.targets" />
