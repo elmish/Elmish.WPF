@@ -20,7 +20,13 @@ module Binding =
   ///   overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
-  /// <param name="get">Transforms the value into the final type.</param>
+  /// <param name="equals">
+  ///   A function that returns true if the output of the get function and the
+  ///   current value are equal.
+  ///   For standard equality comparison (e.g. for primitives or structural equality of records),
+  ///   you can use the default equality operator (=).
+  /// </param>
+  /// <param name="map">Transforms the value into the final type.</param>
   /// <param name="name">The binding name.</param>
   let oneWayLazyWith (get: 'model -> 'a) (equals: 'a -> 'a -> bool) (map: 'a -> 'b) (name: string) =
     { Name = name
@@ -40,7 +46,7 @@ module Binding =
   ///   overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
-  /// <param name="get">Transforms the value into the final type.</param>
+  /// <param name="map">Transforms the value into the final type.</param>
   /// <param name="name">The binding name.</param>
   let oneWayLazy (get: 'model -> 'a) (map: 'a -> 'b) (name: string) =
     oneWayLazyWith get (=) map name
@@ -87,8 +93,15 @@ module Binding =
   ///   and you want them updated instead of replaced, consider using subModelSeq.
   /// </summary>
   /// <param name="get">Gets the items from the model.</param>
-  /// <param name="getId">Gets a unique identifier for an item.</param>
   /// <param name="equals">
+  ///   A function that returns true if the output of the get function and the
+  ///   current value are equal.
+  ///   For standard equality comparison (e.g. for primitives or structural equality of records),
+  ///   you can use the default equality operator (=).
+  /// </param>
+  /// <param name="map">Transforms the value into the final type.</param>
+  /// <param name="getId">Gets a unique identifier for an item.</param>
+  /// <param name="itemEquals">
   ///   A function that returns true if two items are equal. For standard equality
   ///   comparison (e.g. for primitives or structural equality of records),
   ///   you can use the default equality operator (=).
@@ -159,6 +172,7 @@ module Binding =
       Data = TwoWayIfValidSpec (get >> box, unbox >> set) }
 
   /// <summary>Creates a command binding that depends only on the model.</summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="name">The binding name.</param>
   let cmd (exec: 'model -> 'msg) (name: string) =
     { Name = name
