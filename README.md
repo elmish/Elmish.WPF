@@ -142,11 +142,13 @@ let myVm = ViewModel.designInstance myModel myBindings
 Then use the following attributes wherever you need a design VM:
 
 ```XAML
-xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-xmlns:vm="clr-namespace:Foo;assembly=Foo"
-mc:Ignorable="d"
-d:DataContext="{x:Static vm:DesignViewModels.myVm}"
+<Window
+    ...
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:Foo;assembly=Foo"
+    mc:Ignorable="d"
+    d:DataContext="{x:Static vm:DesignViewModels.myVm}">
 ```
 
 Project code must of course be enabled in the XAML designer for this to work.
