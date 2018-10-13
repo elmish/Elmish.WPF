@@ -124,6 +124,33 @@ Not at all. The above example, as well as the samples, keep everything in a sing
 
 Yes, just do it before calling `Program.runWindow` and it will automatically be used. You might need this if you have application-wide resources in a `ResourceDictionary`, which might require you to instantiate the application before instantiating the main window you pass to `Program.runWindow`.
 
+#### Can I use design-time view models?
+
+Yes. You need to structure your code so you have a place, e.g. a file, that satisfies the following requirements:
+
+* Must be able to instantiate a model and the associated bindings
+* Must be reachable by the XAML views
+
+There, open `Elmish.WPF.Utilities` and use `ViewModel.designInstance` to create a view model instance that your XAML can use at design-time:
+
+```F#
+module Foo.DesignViewModels
+open Elmish.WPF.Utilities
+let myVm = ViewModel.designInstance myModel myBindings
+```
+
+Then use the following attributes wherever you need a design VM:
+
+```XAML
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:vm="clr-namespace:Foo;assembly=Foo"
+mc:Ignorable="d"
+d:DataContext="{x:Static vm:DesignViewModels.myVm}"
+```
+
+Project code must of course be enabled in the XAML designer for this to work.
+
 #### Can I open new windows/dialogs?
 
 The short version: Yes, but depending on the use-case, this may not play well with the Elmish architecture, and it is likely conceptually and architecturally clearer to stick with some kind of dialog in the main window, using bindings to control its visibility.
