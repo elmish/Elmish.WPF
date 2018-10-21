@@ -192,7 +192,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
                 |> Seq.indexed
                 |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
                 |> fst
-              vals.Move(oldIdx, newIdx)
+              if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
           )
         false
     | Cmd _
@@ -236,7 +236,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
               |> Seq.indexed
               |> Seq.find (fun (_, vm) -> getId newSubModel = getId vm.CurrentModel)
               |> fst
-            vms.Move(oldIdx, newIdx)
+            if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
         )
         false
 
