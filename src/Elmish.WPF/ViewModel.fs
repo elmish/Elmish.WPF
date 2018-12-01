@@ -51,8 +51,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
         bindingSpecs: BindingSpec<'model, 'msg> list,
-        config: ElmConfig,
-        uiDispatch: (unit -> unit) -> unit )
+        config: ElmConfig)
       as this =
   inherit DynamicObject()
 
@@ -76,7 +75,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
 
   let raiseCanExecuteChanged (cmd: Command) =
-    uiDispatch cmd.RaiseCanExecuteChanged
+    cmd.RaiseCanExecuteChanged ()
 
   let setError error propName =
     match errors.TryGetValue propName with
@@ -118,13 +117,13 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
         match getModel initialModel with
         | None -> SubModel (ref None, getModel, getBindings, toMsg)
         | Some m ->
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, uiDispatch)
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config)
             SubModel (ref <| Some vm, getModel, getBindings, toMsg)
     | SubModelSeqSpec (getModels, getId, getBindings, toMsg) ->
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
-               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, uiDispatch)
+               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
@@ -167,33 +166,31 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | OneWaySeq (vals, get', map, equals', getId, itemEquals) ->
         if not <| equals' (get' newModel) (get' currentModel) then
           let newVals = newModel |> get' |> map
-          uiDispatch (fun () ->
-            // Prune and update existing values
-            let newLookup = Dictionary<_,_>()
-            for v in newVals do newLookup.Add(getId v, v)
-            for existingVal in vals |> Seq.toList do
-              match newLookup.TryGetValue (getId existingVal) with
-              | false, _ -> vals.Remove(existingVal) |> ignore
-              | true, newVal when not (itemEquals newVal existingVal) ->
-                  vals.Remove existingVal |> ignore
-                  vals.Add newVal  // Will be sorted later
-              | _ -> ()
-            // Add new values that don't currently exist
-            let valuesToAdd =
-              newVals
-              |> Seq.filter (fun m ->
-                   vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
-              )
-            for m in valuesToAdd do vals.Add m
-            // Reorder according to new model list
-            for newIdx, newVal in newVals |> Seq.indexed do
-              let oldIdx =
-                vals
-                |> Seq.indexed
-                |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
-                |> fst
-              if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
-          )
+          // Prune and update existing values
+          let newLookup = Dictionary<_,_>()
+          for v in newVals do newLookup.Add(getId v, v)
+          for existingVal in vals |> Seq.toList do
+            match newLookup.TryGetValue (getId existingVal) with
+            | false, _ -> vals.Remove(existingVal) |> ignore
+            | true, newVal when not (itemEquals newVal existingVal) ->
+                vals.Remove existingVal |> ignore
+                vals.Add newVal  // Will be sorted later
+            | _ -> ()
+          // Add new values that don't currently exist
+          let valuesToAdd =
+            newVals
+            |> Seq.filter (fun m ->
+                  vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
+            )
+          for m in valuesToAdd do vals.Add m
+          // Reorder according to new model list
+          for newIdx, newVal in newVals |> Seq.indexed do
+            let oldIdx =
+              vals
+              |> Seq.indexed
+              |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
+              |> fst
+            if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
         false
     | Cmd _
     | CmdIfValid _
@@ -206,38 +203,36 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
             vm := None
             true
         | None, Some m ->
-            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config, uiDispatch)
+            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config)
             true
         | Some vm, Some m ->
             vm.UpdateModel(m)
             false
     | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
         let newSubModels = getModels newModel
-        uiDispatch (fun () ->
-          // Prune and update existing models
-          let newLookup = Dictionary<_,_>()
-          for m in newSubModels do newLookup.Add(getId m, m)
-          for vm in vms |> Seq.toList do
-            match newLookup.TryGetValue (getId vm.CurrentModel) with
-            | false, _ -> vms.Remove(vm) |> ignore
-            | true, newSubModel -> vm.UpdateModel newSubModel
-          // Add new models that don't currently exist
-          let modelsToAdd =
-            newSubModels
-            |> Seq.filter (fun m ->
-                 vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
-            )
-          for m in modelsToAdd do
-            vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, uiDispatch)
-          // Reorder according to new model list
-          for newIdx, newSubModel in newSubModels |> Seq.indexed do
-            let oldIdx =
-              vms
-              |> Seq.indexed
-              |> Seq.find (fun (_, vm) -> getId newSubModel = getId vm.CurrentModel)
-              |> fst
-            if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
-        )
+        // Prune and update existing models
+        let newLookup = Dictionary<_,_>()
+        for m in newSubModels do newLookup.Add(getId m, m)
+        for vm in vms |> Seq.toList do
+          match newLookup.TryGetValue (getId vm.CurrentModel) with
+          | false, _ -> vms.Remove(vm) |> ignore
+          | true, newSubModel -> vm.UpdateModel newSubModel
+        // Add new models that don't currently exist
+        let modelsToAdd =
+          newSubModels
+          |> Seq.filter (fun m ->
+                vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
+          )
+        for m in modelsToAdd do
+          vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+        // Reorder according to new model list
+        for newIdx, newSubModel in newSubModels |> Seq.indexed do
+          let oldIdx =
+            vms
+            |> Seq.indexed
+            |> Seq.find (fun (_, vm) -> getId newSubModel = getId vm.CurrentModel)
+            |> fst
+          if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
         false
 
   /// Returns the command associated with a command binding if the command's

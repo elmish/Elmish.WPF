@@ -2,8 +2,8 @@ framework: auto-detect
 
 source https://api.nuget.org/v3/index.json
 
-nuget Elmish prerelease
-nuget FSharp.Core >= 4.1.17 redirects: force
+nuget Elmish >= 3 prerelease
+nuget FSharp.Core redirects: force, lowest_matching: true
 
 
 group Build

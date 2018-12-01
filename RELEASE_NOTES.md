@@ -1,3 +1,8 @@
+#### 2.0.0-beta-6
+
+* Update to Elmish 3
+* Dispatch on UI thread to block instead of getting weird UI behaviour from race conditions when updates take too long
+
 #### 2.0.0-beta-5
 
 * Fix `subModelSeq` items  being unselected during updates
