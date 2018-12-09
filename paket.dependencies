@@ -2,7 +2,7 @@ framework: auto-detect
 
 source https://api.nuget.org/v3/index.json
 
-nuget Elmish >= 3 prerelease
+nuget Elmish >= 3.0.0-beta-3
 nuget FSharp.Core redirects: force, lowest_matching: true
 
 

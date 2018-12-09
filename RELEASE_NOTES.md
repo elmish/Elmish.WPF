@@ -1,3 +1,7 @@
+#### 2.0.0-beta-7
+
+* Fix Elmish dependency version in nuget spec
+
 #### 2.0.0-beta-6
 
 * Update to Elmish 3
