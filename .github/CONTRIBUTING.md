@@ -3,7 +3,7 @@ Contributor guidelines
 
 First of all – thanks for taking the time to contribute!
 
-We welcome the contributions from non-members. That said, we’d like to do things right rather than fast. To make everyone's experience as enjoyable as possible, please keep the following things in mind:
+We welcome the contributions from non-members. That said, we’d like to do things right rather than fast. To make everyone's experience as enjoyable as possible, read [Don't "Push" Your Pull Requests](https://www.igvita.com/2011/12/19/dont-push-your-pull-requests/) and please keep the following things in mind:
 
 - Unless it's a trivial fix, consider opening an issue first to discuss it with the team.
 - For all pull requests, please follow the workflow described below.
