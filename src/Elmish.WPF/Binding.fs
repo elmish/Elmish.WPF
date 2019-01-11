@@ -280,10 +280,10 @@ module Binding =
       Data = SubModelSpec (getModel >> Option.map box, getBoxedBindings, unbox >> toMsg) }
 
   /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by the getId function (as determined by the default
-  ///   equality comparer). You typically bind this to the ItemsSource of an
-  ///   ItemsControl, ListView, TreeView, etc.
+  ///   Creates a binding to a sequence of sub-models/components, each uniquely
+  ///   identified by the value returned by the getId function (as determined
+  ///   by the default equality comparer). You typically bind this to the
+  ///   ItemsSource of an ItemsControl, ListView, TreeView, etc.
   /// </summary>
   /// <param name="getModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
@@ -314,4 +314,51 @@ module Binding =
             unbox >> getId >> box,
             getBoxedBindings,
             boxedToMsg )
+    }
+
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-items (but not sub-components),
+  ///   each uniquely identified by the value returned by the getId function
+  ///   (as determined by the default equality comparer). You typically bind
+  ///   this to the ItemsSource of an ItemsControl, ListView, TreeView, etc.
+  ///   Analogous to a real Elm architecture, the child bindings have access to
+  ///   the main model state along with the sub-item, and dispatch the top-level
+  ///   message type. The model in the sub-bindings is a tuple with the main model
+  ///   as the first element and the child item as the second element.
+  /// </summary>
+  /// <param name="getMainModel">
+  ///   Gets the main model from the current model. This is typically 'id' when
+  ///   called from top-level bindings, or 'fst' when called from sub-bindings
+  ///   at any level.
+  /// </param>
+  /// <param name="getSubItems">Gets the sub-items from the current model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-item.</param>
+  /// <param name="bindings">
+  ///   A function that returns the bindings for the sub-item.
+  /// </param>
+  /// <param name="name">The binding name.</param>
+  let subBindingSeq
+      (getMainModel: 'currentModel -> 'mainModel)
+      (getSubItems: 'currentModel -> #seq<'subModel>)
+      (getId: 'subModel -> 'id)
+      (bindings: unit -> BindingSpec<'mainModel * 'subModel, 'msg> list)
+      (name: string)
+      : BindingSpec<'currentModel, 'msg>
+      =
+    let getMainAndSubs currentModel =
+      currentModel |> getSubItems |> Seq.map (fun subModel -> getMainModel currentModel, subModel)
+    let getBoxedBindings () =
+      bindings ()
+      |> List.map (fun spec ->
+            { Name = spec.Name; Data = BindingSpecData.box spec.Data }
+      )
+    { Name = name
+      Data =
+        SubModelSeqSpec
+          ( getMainAndSubs >> Seq.map box,
+            unbox<'mainModel * 'subModel> >> snd >> getId >> box,
+            getBoxedBindings,
+            snd >> unbox )
     }
