@@ -19,7 +19,7 @@ Getting started with Elmish.WPF
 
 See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are:
 
-1. Create an F# Console Application (you can create a Windows application, but the core Elmish logs are currently only written to the console).
+1. Create an F# Console Application targeting .NET 4.6.1 or later (you can create a Windows application, but the core Elmish logs are currently only written to the console).
 
 2. Add References to `PresentationCore`, `PresentationFramework`, and `WindowsBase`.
 
