@@ -1,3 +1,7 @@
+#### 2.0.0-beta-8
+
+* Add new binding `subBindingSeq`, see readme for details.
+
 #### 2.0.0-beta-7
 
 * Fix Elmish dependency version in nuget spec
