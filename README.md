@@ -12,7 +12,12 @@ Recommended resources
 
 * The [Elmish docs site](https://elmish.github.io/elmish) explains the general Elm architecture and principles.
 * The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
-* The [official Elm guide](https://guide.elm-lang.org) may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings.
+* Elm resources may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings.
+  * [Official Elm guide](https://guide.elm-lang.org)
+  * Two talks: [Summarising Elm scaling strategy](https://dev.to/elmupdate/summarising-elm-scaling-strategy-1bjn)
+  * Reddit: [Resources regarding scaling Elm apps](https://www.reddit.com/r/elm/comments/65s0g4/resources_regarding_scaling_elm_apps/)
+  * Reddit: [How to structure Elm with multiple models](https://www.reddit.com/r/elm/comments/5jd2xn/how_to_structure_elm_with_multiple_models/dbuu0m4/)
+  * Reddit: [Elm Architecture with a Redux-like store pattern](https://www.reddit.com/r/elm/comments/5xdl9z/elm_architecture_with_a_reduxlike_store_pattern/)
 
 Getting started with Elmish.WPF
 -------------------------------
@@ -111,6 +116,12 @@ For more complicated examples and other `Binding` functions, see the [samples](h
 
 FAQ
 ---
+
+#### Which binding should I prefer for collections, `subBindingSeq` or `subModelSeq`?
+
+Generally you should prefer `subBindingSeq`. The reasons for this are detailed in [#70](https://github.com/elmish/Elmish.WPF/issues/70) as well as in the previously linked resources on scaling Elm. In short, `subBindingSeq` it requires no state duplication and less boilerplate and is closer to an idiomatic Elm architecture. See the [SubBindings](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for example usage.
+
+The other collection binding, `subModelSeq`, was created first and was for a long time the only option for collection bindings, requiring more boilerplate as well as state duplication. It’s still the way to go if you really need full Elmish components (separate model, message, update, view) that are completely independent of the parent model, but for most purposes `subBindingSeq` should be preferred.
 
 #### Do I have to use the project structure outlined above?
 
