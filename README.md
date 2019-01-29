@@ -119,7 +119,7 @@ FAQ
 
 #### Which binding should I prefer for collections, `subBindingSeq` or `subModelSeq`?
 
-Generally you should prefer `subBindingSeq`. The reasons for this are detailed in [#70](https://github.com/elmish/Elmish.WPF/issues/70) as well as in the previously linked resources on scaling Elm. In short, `subBindingSeq` it requires no state duplication and less boilerplate and is closer to an idiomatic Elm architecture. See the [SubBindings](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for example usage.
+Generally you should prefer `subBindingSeq`. The reasons for this are detailed in [#70](https://github.com/elmish/Elmish.WPF/issues/70) as well as in the previously linked resources on scaling Elm. In short, `subBindingSeq` requires no state duplication and less boilerplate and is closer to an idiomatic Elm architecture. See the [SubBindings](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for example usage.
 
 The other collection binding, `subModelSeq`, was created first and was for a long time the only option for collection bindings, requiring more boilerplate as well as state duplication. It’s still the way to go if you really need full Elmish components (separate model, message, update, view) that are completely independent of the parent model, but for most purposes `subBindingSeq` should be preferred.
 
