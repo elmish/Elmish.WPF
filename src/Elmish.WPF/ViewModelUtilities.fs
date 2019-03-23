@@ -17,7 +17,7 @@ let internal startLoop
   let setState model dispatch =
     match lastModel with
     | None ->
-        let mapping = program.view model dispatch
+        let mapping = Program.view program model dispatch
         let vm = ViewModel<'model,'msg>(model, dispatch, mapping, config)
         element.DataContext <- box vm
         lastModel <- Some vm
@@ -27,7 +27,10 @@ let internal startLoop
   let uiDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
     fun msg -> element.Dispatcher.Invoke(fun () -> innerDispatch msg)
 
-  programRun { program with setState = setState; syncDispatch = uiDispatch }
+  program
+  |> Program.withSetState setState
+  |> Program.withSyncDispatch uiDispatch
+  |> programRun
 
 
 /// Creates a design-time view model using the given model and bindings.
