@@ -24,11 +24,10 @@ module Binding =
 
   /// <summary>
   ///   Creates a lazily evaluated one-way binding. The map function will be
-  ///   called only when first retrieved and only when the output of the get
-  ///   function changes, as determined by the specified equality function.
-  ///   This may have better performance than oneWay for expensive computations
-  ///   (but may be less performant for non-expensive functions due to additional
-  ///   overhead).
+  ///   called only when the output of <paramref name="get" /> changes, as
+  ///   determined by the <paramref name="equals" />. This may have better
+  ///   performance than oneWay for expensive computations (but may be less
+  ///   performant for non-expensive functions due to additional overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="equals">
