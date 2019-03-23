@@ -1,3 +1,8 @@
+#### 2.0.0-beta-9
+
+* Add new bindings `oneWayOpt` and `twoWayOpt` ([#75](https://github.com/elmish/Elmish.WPF/issues/75))
+* Update to Elmish 3.0.0-beta-7
+
 #### 2.0.0-beta-8
 
 * Add new binding `subBindingSeq`, see readme for details.
