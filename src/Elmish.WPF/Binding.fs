@@ -12,6 +12,17 @@ module Binding =
       Data = OneWaySpec (get >> box) }
 
   /// <summary>
+  ///   Creates a one-way binding to an optional value. The getter automatically
+  ///   converts between Option on the source side and a raw (possibly null)
+  ///   value on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="name">The binding name.</param>
+  let oneWayOpt (get: 'model -> 'a option) (name: string) =
+    oneWay (get >> Option.map box >> Option.toObj) name
+
+  /// <summary>
   ///   Creates a lazily evaluated one-way binding. The map function will be
   ///   called only when first retrieved and only when the output of the get
   ///   function changes, as determined by the specified equality function.
@@ -119,6 +130,20 @@ module Binding =
   let twoWay (get: 'model -> 'a) (set: 'a -> 'model -> 'msg) (name: string) =
     { Name = name
       Data = TwoWaySpec (get >> box, unbox >> set) }
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value. The getter/setter
+  ///   automatically converts between Option on the source side and a raw
+  ///   (possibly null) value on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="name">The binding name.</param>
+  let twoWayOpt (get: 'model -> 'a option) (set: 'a option -> 'model -> 'msg) (name: string) =
+    twoWay
+      (get >> Option.map box >> Option.toObj)
+      (Option.ofObj >> Option.map unbox >> set)
+      name
 
   /// <summary>
   ///   Creates a two-way binding that uses a separate validation function to
