@@ -313,18 +313,22 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
   override __.TrySetMember (binder, value) =
     log "[VM] TrySetMember %s" binder.Name
     match bindings.TryGetValue binder.Name with
-    | false, _ -> log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
+    | false, _ ->
+      log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
+      false
     | true, binding ->
         match binding with
         | TwoWay (_, set)
         | TwoWayValidate (_, set, _) ->
             dispatch <| set value currentModel
+            true
         | TwoWayIfValid (_, set) ->
             match set value currentModel with
             | Ok msg ->
                 removeError binder.Name
                 dispatch msg
             | Error err -> setError err binder.Name
+            true
         | OneWay _
         | OneWayLazy _
         | OneWaySeq _
@@ -334,9 +338,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
         | SubModel _
         | SubModelSeq _ ->
             log "[VM] TrySetMember FAILED: Binding %s is read-only" binder.Name
-    // This function should always return false, otherwise the UI may execute a
-    // subsequent get which may may return the old value
-    false
+            true
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
