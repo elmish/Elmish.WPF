@@ -338,7 +338,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
         | SubModel _
         | SubModelSeq _ ->
             log "[VM] TrySetMember FAILED: Binding %s is read-only" binder.Name
-            true
+            false
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
