@@ -314,8 +314,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     log "[VM] TrySetMember %s" binder.Name
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-      log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
-      false
+        log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
+        false
     | true, binding ->
         match binding with
         | TwoWay (_, set)
