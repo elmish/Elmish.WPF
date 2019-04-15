@@ -1,3 +1,8 @@
+#### 2.0.0-beta-10
+
+* Fix checkboxes erroneously being shown as failing validation (#78) by @BillHally
+* The above fix also fixes binding warnings for two-way bindings
+
 #### 2.0.0-beta-9
 
 * Add new bindings `oneWayOpt` and `twoWayOpt` ([#75](https://github.com/elmish/Elmish.WPF/issues/75))
