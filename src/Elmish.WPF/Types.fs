@@ -42,6 +42,10 @@ type BindingSpecData<'model, 'msg> =
       * getId: (obj -> obj)
       * getBindings: (unit -> BindingSpec<obj, obj> list)
       * toMsg: (obj * obj -> 'msg)
+  | SubModelSelectedItemSpec of
+      get: ('model -> obj option)
+      * set: (obj option -> 'model -> 'msg)
+      * subBindingSeqName: string
 
 /// Represents all necessary data used to create a binding.
 and BindingSpec<'model, 'msg> =
@@ -74,6 +78,8 @@ module BindingSpecData =
       SubModelSpec (unbox >> getModel, getBindings, toMsg >> unbox)
   | SubModelSeqSpec (getModel, isSame, getBindings, toMsg) ->
       SubModelSeqSpec (unbox >> getModel, isSame, getBindings, toMsg >> unbox)
+  | SubModelSelectedItemSpec (get, set, subBindingSeqName) ->
+      SubModelSelectedItemSpec (unbox >> get, (fun v m -> set v (unbox m) |> box), subBindingSeqName)
 
 
 /// A command that optionally hooks into CommandManager.RequerySuggested to

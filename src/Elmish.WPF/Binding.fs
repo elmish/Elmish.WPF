@@ -340,8 +340,6 @@ module Binding =
             boxedToMsg )
     }
 
-
-
   /// <summary>
   ///   Creates a binding to a sequence of sub-items (but not sub-components),
   ///   each uniquely identified by the value returned by the getId function
@@ -385,4 +383,39 @@ module Binding =
             unbox<'mainModel * 'subModel> >> snd >> getId >> box,
             getBoxedBindings,
             snd >> unbox )
+    }
+
+  /// <summary>
+  ///   Creates a two-way binding to a SelectedItem-like property where the
+  ///   ItemsSource-like property is a subBindingSeq or subModelSeq. Automatically
+  ///   converts the dynamically created Elmish.WPF view models to/from their
+  ///   corresponding IDs, so the Elmish user code only has to work with the IDs.
+  ///   
+  ///   Only use this if you are unable to use some kind of SelectedValue or
+  ///   SelectedIndex property with a normal twoWay binding. This binding is
+  ///   less type-safe and will throw at runtime if itemsSourceBindingName does
+  ///   not correspond to a subBindingSeq or subModelSeq binding, or if the
+  ///   inferred 'id type does not match the actual ID type used in that binding.
+  /// </summary>
+  /// <param name="itemsSourceBindingName">
+  ///   The name of the ItemsSource-like binding, which must be created using
+  ///   subBindingSeq or subModelSeq.
+  /// </param>
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+  /// <param name="set">
+  ///   Returns the message to dispatch on selections/deselections.
+  /// </param>
+  /// <param name="name">The binding name.</param>
+  let subModelSelectedItem
+      (itemsSourceBindingName: string)
+      (get: 'model -> 'id option)
+      (set: 'id option -> 'model -> 'msg)
+      (name: string)
+      =
+    { Name = name
+      Data =
+        SubModelSelectedItemSpec
+          ( get >> Option.map box,
+            Option.map unbox >> set,
+            itemsSourceBindingName )
     }

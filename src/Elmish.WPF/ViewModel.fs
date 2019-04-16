@@ -45,6 +45,11 @@ type Binding<'model, 'msg> =
       * getId: (obj -> obj)
       * getBindings: (unit -> BindingSpec<obj, obj> list)
       * toMsg: (obj * obj -> 'msg)
+  | SubModelSelectedItem of
+      selected: ViewModel<obj, obj> option option ref
+      * get: ('model -> obj option)
+      * set: (obj option -> 'model -> 'msg)
+      * subBindingSeqName: string
 
 
 and [<AllowNullLiteral>] ViewModel<'model, 'msg>
@@ -127,6 +132,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
+    | SubModelSelectedItemSpec (get, set, subBindingSeqName) ->
+        SubModelSelectedItem (ref None, get, set, subBindingSeqName)
 
   let setInitialError name = function
     | TwoWayValidate (_, _, validate) ->
@@ -148,6 +155,11 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
       dict.Add(spec.Name, binding)
       setInitialError spec.Name binding
     dict
+
+  let getSelectedSubModel model vms getSelectedId getSubModelId =
+      vms
+      |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
+          getSelectedId model = Some (getSubModelId vm.CurrentModel))
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
@@ -234,6 +246,14 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
             |> fst
           if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
         false
+    | SubModelSelectedItem (vm, getSelectedId, _, name) ->
+        match bindings.TryGetValue name with
+        | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
+            let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
+            log "[VM] Setting selected VM to %A" (v |> Option.map (fun v -> v.CurrentModel))
+            vm := Some v
+        | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" name
+        true
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
@@ -246,7 +266,8 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | TwoWayValidate _
     | TwoWayIfValid _
     | SubModel _
-    | SubModelSeq _ ->
+    | SubModelSeq _
+    | SubModelSelectedItem _ ->
         None
     | Cmd (cmd, canExec) ->
         if canExec newModel = canExec currentModel then None else Some cmd
@@ -308,6 +329,18 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
               box cmd
           | SubModel (vm, _, _, _) -> !vm |> Option.toObj |> box
           | SubModelSeq (vms, _, _, _, _) -> box vms
+          | SubModelSelectedItem (vm, getSelectedId, _, name) ->
+              match !vm with
+              | Some x -> x |> Option.toObj |> box
+              | None ->
+                  // No computed value, must perform initial computation
+                  match bindings.TryGetValue name with
+                  | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
+                      let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
+                      vm := Some selected
+                      selected |> Option.toObj |> box
+                  | _ ->
+                    failwithf "subModelSelectedItem binding '%s' referenced binding '%s', but no compatible binding was found with that name" binder.Name name
         true
 
   override __.TrySetMember (binder, value) =
@@ -329,6 +362,17 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
                 dispatch msg
             | Error err -> setError err binder.Name
             true
+        | SubModelSelectedItem (_, _, set, name) ->
+            match bindings.TryGetValue name with
+            | true, SubModelSeq (_, _, getSubModelId, _, _) ->
+                let value =
+                  (value :?> ViewModel<obj, obj>)
+                  |> Option.ofObj
+                  |> Option.map (fun vm -> getSubModelId vm.CurrentModel)
+                set value currentModel |> dispatch
+                true
+            | _ ->
+                failwithf "subModelSelectedItem binding '%s' referenced binding '%s', but no compatible binding was found with that name" binder.Name name
         | OneWay _
         | OneWayLazy _
         | OneWaySeq _
