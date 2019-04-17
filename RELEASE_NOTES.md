@@ -1,3 +1,7 @@
+#### 2.0.0-beta-11
+
+* Add Binding.subModelSelectedItem
+
 #### 2.0.0-beta-10
 
 * Fix checkboxes erroneously being shown as failing validation (#78) by @BillHally
