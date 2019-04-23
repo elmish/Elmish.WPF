@@ -1,3 +1,7 @@
+#### 2.0.0
+
+* No changes, but updated for Elmish 3.0 so the package can finally move out of beta
+
 #### 2.0.0-beta-11
 
 * Add Binding.subModelSelectedItem
