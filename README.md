@@ -7,6 +7,12 @@ Never write a ViewModel class again!
 
 This library uses [Elmish](https://elmish.github.io/elmish), an Elm architecture implemented in F#, to build WPF applications. Elmish was originally written for [Fable](http://fable.io) applications, however it was trimmed and packaged for .NET as well.
 
+### Sponsor
+
+[![JetBrains logo](jetbrains.svg)](https://www.jetbrains.com/?from=Elmish.WPF)
+
+Thanks to JetBrains for sponsoring Elmish.WPF with OSS licenses!
+
 Recommended resources
 ---------------------
 
