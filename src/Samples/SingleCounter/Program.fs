@@ -25,21 +25,20 @@ let update msg m =
   | SetStepSize x -> { m with StepSize = x }
   | Reset -> init ()
 
-let bindings model dispatch =
-  [
-    "CounterValue" |> Binding.oneWay (fun m -> m.Count)
-    "Increment" |> Binding.cmd (fun m -> Increment)
-    "Decrement" |> Binding.cmd (fun m -> Decrement)
-    "StepSize" |> Binding.twoWay
-      (fun m -> float m.StepSize)
-      (fun v m -> int v |> SetStepSize)
-    "Reset" |> Binding.cmdIf (fun _ -> Reset) (fun m -> m <> init ())
-  ]
+let bindings () = [
+  "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+  "Increment" |> Binding.cmd (fun m -> Increment)
+  "Decrement" |> Binding.cmd (fun m -> Decrement)
+  "StepSize" |> Binding.twoWay
+    (fun m -> float m.StepSize)
+    (fun v m -> int v |> SetStepSize)
+  "Reset" |> Binding.cmdIf (fun _ -> Reset) (fun m -> m <> init ())
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimple init update (fun _ _ -> bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

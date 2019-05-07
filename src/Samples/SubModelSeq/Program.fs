@@ -165,50 +165,48 @@ module Bindings =
 
   open App
 
-  let rec counterBindings () =
-    [
-      "CounterIdText" |> Binding.oneWay (fun (m, { Id = CounterId cid}) -> cid)
-      "CounterId" |> Binding.oneWay (fun (m, c) -> c.Id)
-      "CounterValue" |> Binding.oneWay (fun (m, c) -> c.CounterValue)
-      "Increment" |> Binding.cmd (fun (m, c) -> Increment c.Id)
-      "Decrement" |> Binding.cmd (fun (m, c) -> Decrement c.Id)
-      "StepSize" |> Binding.twoWay
-        (fun (m, c) -> float c.StepSize)
-        (fun v (m, c) -> SetStepSize (c.Id, int v))
-      "Reset" |> Binding.cmd (fun (m, c) -> Reset c.Id)
-      "Remove" |> Binding.cmd (fun (m, c) -> Remove c.Id)
-      "AddChild" |> Binding.cmd (fun (m, c) -> AddCounter (Some c.Id))
-      "MoveUp" |> Binding.cmdIf
-        (fun (m, c) -> MoveUp c.Id)
-        (fun (m, c) -> m |> getSiblings c.Id |> List.tryHead <> Some c)
-      "MoveDown" |> Binding.cmdIf
-        (fun (m, c) -> MoveDown c.Id)
-        (fun (m, c) -> m |> getSiblings c.Id |> List.tryLast <> Some c)
-      "GlobalState" |> Binding.oneWay (fun (m, c) -> m.SomeGlobalState)
-      "ChildCounters" |> Binding.subModelSeq
-        (fun (m, c) -> childrenOf c.Id m)
-        (fun ((m, parentCounter), childCounter) -> (m, childCounter))
-        (fun (m, c) -> c.Id)
-        snd
-        counterBindings
-    ]
+  let rec counterBindings () = [
+    "CounterIdText" |> Binding.oneWay (fun (m, { Id = CounterId cid}) -> cid)
+    "CounterId" |> Binding.oneWay (fun (m, c) -> c.Id)
+    "CounterValue" |> Binding.oneWay (fun (m, c) -> c.CounterValue)
+    "Increment" |> Binding.cmd (fun (m, c) -> Increment c.Id)
+    "Decrement" |> Binding.cmd (fun (m, c) -> Decrement c.Id)
+    "StepSize" |> Binding.twoWay
+      (fun (m, c) -> float c.StepSize)
+      (fun v (m, c) -> SetStepSize (c.Id, int v))
+    "Reset" |> Binding.cmd (fun (m, c) -> Reset c.Id)
+    "Remove" |> Binding.cmd (fun (m, c) -> Remove c.Id)
+    "AddChild" |> Binding.cmd (fun (m, c) -> AddCounter (Some c.Id))
+    "MoveUp" |> Binding.cmdIf
+      (fun (m, c) -> MoveUp c.Id)
+      (fun (m, c) -> m |> getSiblings c.Id |> List.tryHead <> Some c)
+    "MoveDown" |> Binding.cmdIf
+      (fun (m, c) -> MoveDown c.Id)
+      (fun (m, c) -> m |> getSiblings c.Id |> List.tryLast <> Some c)
+    "GlobalState" |> Binding.oneWay (fun (m, c) -> m.SomeGlobalState)
+    "ChildCounters" |> Binding.subModelSeq
+      (fun (m, c) -> childrenOf c.Id m)
+      (fun ((m, parentCounter), childCounter) -> (m, childCounter))
+      (fun (m, c) -> c.Id)
+      snd
+      counterBindings
+  ]
 
-  let rootBindings model dispatch =
-    [
-      "Counters" |> Binding.subModelSeq
-        (fun m -> topLevelCounters m)
-        id
-        (fun (m, c) -> c.Id)
-        snd
-        counterBindings
-      "ToggleGlobalState" |> Binding.cmd (fun m -> ToggleGlobalState)
-      "AddCounter" |> Binding.cmd (fun m -> AddCounter None)
-    ]
+  let rootBindings () = [
+    "Counters" |> Binding.subModelSeq
+      (fun m -> topLevelCounters m)
+      id
+      (fun (m, c) -> c.Id)
+      snd
+      counterBindings
+    "ToggleGlobalState" |> Binding.cmd (fun m -> ToggleGlobalState)
+    "AddCounter" |> Binding.cmd (fun m -> AddCounter None)
+  ]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple App.init App.update Bindings.rootBindings
+  Program.mkSimple App.init App.update (fun _ _ -> Bindings.rootBindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

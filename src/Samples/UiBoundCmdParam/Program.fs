@@ -22,22 +22,21 @@ let update msg m =
   | SetLimit x -> { m with EnabledMaxLimit = x }
   | Command -> m
 
-let bindings model dispatch =
-  [
-    "Numbers" |> Binding.oneWay (fun m -> m.Numbers)
-    "Limit" |> Binding.twoWay
-      (fun m -> float m.EnabledMaxLimit)
-      (fun v m -> int v |> SetLimit)
-    "Command" |> Binding.paramCmdIf
-      (fun p m -> Command)
-      (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit)
-      true
-  ]
+let bindings () = [
+  "Numbers" |> Binding.oneWay (fun m -> m.Numbers)
+  "Limit" |> Binding.twoWay
+    (fun m -> float m.EnabledMaxLimit)
+    (fun v m -> int v |> SetLimit)
+  "Command" |> Binding.paramCmdIf
+    (fun p m -> Command)
+    (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit)
+    true
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimple init update (fun _ _ -> bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

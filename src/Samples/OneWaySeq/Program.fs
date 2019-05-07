@@ -22,18 +22,17 @@ let update msg m =
   | AddOneWaySeqNumber -> { m with OneWaySeqNumbers = m.OneWaySeqNumbers.Head + 1 :: m.OneWaySeqNumbers }
   | AddOneWayNumber -> { m with OneWayNumbers = m.OneWayNumbers.Head + 1 :: m.OneWayNumbers }
 
-let bindings model dispatch =
-  [ 
-    "OneWaySeqNumbers" |> Binding.oneWaySeq (fun m -> m.OneWaySeqNumbers) id (=)
-    "OneWayNumbers" |> Binding.oneWay (fun m -> m.OneWayNumbers)
-    "AddOneWaySeqNumber" |> Binding.cmd (fun m -> AddOneWaySeqNumber)
-    "AddOneWayNumber" |> Binding.cmd (fun m -> AddOneWayNumber)
-  ]
+let bindings () = [ 
+  "OneWaySeqNumbers" |> Binding.oneWaySeq (fun m -> m.OneWaySeqNumbers) id (=)
+  "OneWayNumbers" |> Binding.oneWay (fun m -> m.OneWayNumbers)
+  "AddOneWaySeqNumber" |> Binding.cmd (fun m -> AddOneWaySeqNumber)
+  "AddOneWayNumber" |> Binding.cmd (fun m -> AddOneWayNumber)
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimple init update (fun _ _ -> bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

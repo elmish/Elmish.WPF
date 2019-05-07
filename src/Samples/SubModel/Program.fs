@@ -24,12 +24,11 @@ module Clock =
     | Tick t -> { m with Time = t }
     | ToggleUtc -> { m with UseUtc = not m.UseUtc }
 
-  let bindings () =
-    [
-      "Time" |> Binding.oneWay
-        (fun m -> if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime)
-      "ToggleUtc" |> Binding.cmd (fun m -> ToggleUtc)
-    ]
+  let bindings () = [
+    "Time" |> Binding.oneWay
+      (fun m -> if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime)
+    "ToggleUtc" |> Binding.cmd (fun m -> ToggleUtc)
+  ]
 
 
 module CounterWithClock =
@@ -59,26 +58,25 @@ module CounterWithClock =
     | Reset -> { m with Count = 0; StepSize = 1 }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
-  let bindings () =
-    [
-      "CounterValue" |> Binding.oneWay (fun m -> m.Count)
-      "Increment" |> Binding.cmd (fun m -> Increment)
-      "Decrement" |> Binding.cmd (fun m -> Decrement)
-      "StepSize" |> Binding.twoWay
-        (fun m -> float m.StepSize)
-        (fun v m -> int v |> SetStepSize)
-      "Reset" |> Binding.cmdIf
-        (fun m -> Reset)
-        (fun m ->
-          let i = init ()
-          m.Count <> i.Count || m.StepSize <> i.StepSize
-        )
-      "Clock" |> Binding.subModel
-        (fun m -> m.Clock)
-        snd
-        ClockMsg
-        Clock.bindings
-    ]
+  let bindings () = [
+    "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+    "Increment" |> Binding.cmd (fun m -> Increment)
+    "Decrement" |> Binding.cmd (fun m -> Decrement)
+    "StepSize" |> Binding.twoWay
+      (fun m -> float m.StepSize)
+      (fun v m -> int v |> SetStepSize)
+    "Reset" |> Binding.cmdIf
+      (fun m -> Reset)
+      (fun m ->
+        let i = init ()
+        m.Count <> i.Count || m.StepSize <> i.StepSize
+      )
+    "Clock" |> Binding.subModel
+      (fun m -> m.Clock)
+      snd
+      ClockMsg
+      Clock.bindings
+  ]
 
 
 module App =
@@ -102,7 +100,7 @@ module App =
     | ClockCounter2Msg msg ->
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
-  let bindings model dispatch = [
+  let bindings () = [
     "ClockCounter1" |> Binding.subModel
       (fun m -> m.ClockCounter1)
       snd
@@ -132,7 +130,7 @@ let timerTick dispatch =
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple App.init App.update App.bindings
+  Program.mkSimple App.init App.update (fun _ _ -> App.bindings ())
   |> Program.withSubscription (fun m -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig

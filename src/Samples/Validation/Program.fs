@@ -41,24 +41,23 @@ let update msg m =
   | Field2Input x -> { m with Field2Raw = x }
   | Submit x -> m
 
-let bindings model dispatch =
-  [
-    "Field1" |> Binding.twoWayIfValid
-      (fun m -> string m.Field1Int)
-      (fun v m ->
-        v |> validateInt42 |> Result.map Field1Input)
-    "Field2" |> Binding.twoWayValidate
-      (fun m -> m.Field2Raw)
-      (fun v m -> Field2Input v)
-      (fun m ->  validateInt42 m.Field2Raw)
-    "Submit" |> Binding.cmdIfValid
-      (fun m -> validateInt42 m.Field2Raw |> Result.map Submit)
-  ]
+let bindings = [
+  "Field1" |> Binding.twoWayIfValid
+    (fun m -> string m.Field1Int)
+    (fun v m ->
+      v |> validateInt42 |> Result.map Field1Input)
+  "Field2" |> Binding.twoWayValidate
+    (fun m -> m.Field2Raw)
+    (fun v m -> Field2Input v)
+    (fun m ->  validateInt42 m.Field2Raw)
+  "Submit" |> Binding.cmdIfValid
+    (fun m -> validateInt42 m.Field2Raw |> Result.map Submit)
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimple init update (fun _ _ -> bindings)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

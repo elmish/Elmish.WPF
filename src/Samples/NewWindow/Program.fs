@@ -21,8 +21,9 @@ module Win1 =
     match msg with
     | TextInput s -> { m with Text = s }
 
-  let bindings () =
-    [ "Text" |> Binding.twoWay (fun m -> m.Text) (fun v m -> TextInput v) ]
+  let bindings () = [
+    "Text" |> Binding.twoWay (fun m -> m.Text) (fun v m -> TextInput v)
+  ]
 
 
 module Win2 =
@@ -44,11 +45,10 @@ module Win2 =
     | Text1Input s -> { m with Input1 = s }
     | Text2Input s -> { m with Input2 = s }
 
-  let bindings () =
-    [
-      "Input1" |> Binding.twoWay (fun m -> m.Input1) (fun v m -> Text1Input v)
-      "Input2" |> Binding.twoWay (fun m -> m.Input2) (fun v m -> Text2Input v)
-    ]
+  let bindings () = [
+    "Input1" |> Binding.twoWay (fun m -> m.Input1) (fun v m -> Text1Input v)
+    "Input2" |> Binding.twoWay (fun m -> m.Input2) (fun v m -> Text2Input v)
+  ]
 
 
 module App =
@@ -89,26 +89,25 @@ module App =
     | Win1Msg msg' -> { m with Win1 = Win1.update msg' m.Win1 }, Cmd.none
     | Win2Msg msg' -> { m with Win2 = Win2.update msg' m.Win2 }, Cmd.none
 
-  let bindings model dispatch =
-    [
-      "ShowWin1" |> Binding.cmd (fun m -> ShowWin1)
-      "ShowWin2" |> Binding.cmd (fun m -> ShowWin2)
-      "Win1" |> Binding.subModel
-        (fun m -> m.Win1)
-        snd
-        Win1Msg
-        Win1.bindings
-      "Win2" |> Binding.subModel
-        (fun m -> m.Win2)
-        snd
-        Win2Msg
-        Win2.bindings
-    ]
+  let bindings () = [
+    "ShowWin1" |> Binding.cmd (fun m -> ShowWin1)
+    "ShowWin2" |> Binding.cmd (fun m -> ShowWin2)
+    "Win1" |> Binding.subModel
+      (fun m -> m.Win1)
+      snd
+      Win1Msg
+      Win1.bindings
+    "Win2" |> Binding.subModel
+      (fun m -> m.Win2)
+      snd
+      Win2Msg
+      Win2.bindings
+  ]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkProgram App.init App.update App.bindings
+  Program.mkProgram App.init App.update (fun _ _ -> App.bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }
