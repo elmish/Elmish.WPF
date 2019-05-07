@@ -60,7 +60,7 @@ module Domain =
       { c with StepSize = step }
 
     let reset c =
-      create ()
+      { create () with Id = c.Id }
 
 
 
