@@ -68,25 +68,11 @@ module App =
     | Win1Msg of Win1.Msg
     | Win2Msg of Win2.Msg
 
-  let showWin1 () =
-    Application.Current.Dispatcher.Invoke(fun () ->
-      let win1 = Window1()
-      win1.DataContext <- Application.Current.MainWindow.DataContext
-      win1.Show()
-    )
-
-  let showWin2 () =
-    Application.Current.Dispatcher.Invoke(fun () ->
-      let win2 = Window2()
-      win2.DataContext <- Application.Current.MainWindow.DataContext
-      win2.Show()
-    )
-
 
   let update msg m =
     match msg with
-    | ShowWin1 -> m, Cmd.OfFunc.attempt showWin1 () raise
-    | ShowWin2 -> m, Cmd.OfFunc.attempt showWin2 () raise
+    | ShowWin1 -> m, Cmd.showWindow Window1
+    | ShowWin2 -> m, Cmd.showWindow Window2
     | Win1Msg msg' -> { m with Win1 = Win1.update msg' m.Win1 }, Cmd.none
     | Win2Msg msg' -> { m with Win2 = Win2.update msg' m.Win2 }, Cmd.none
 
