@@ -1,36 +1,28 @@
 ﻿[<AutoOpen>]
-module internal Elmish.WPF.Utils
+module Elmish.WPF.Utils
 
 
-[<AutoOpen>]
-module Patterns =
+/// Reference/physical equality for reference types. Alias for
+/// LanguagePrimitives.PhysicalEquality. Also see elmEq.
+let refEq = LanguagePrimitives.PhysicalEquality
 
-  open System.Collections.Generic
-
-  /// Deconstructs a KeyValuePair into a tuple.
-  let (|Kvp|) (kvp: KeyValuePair<_,_>) =
-    Kvp (kvp.Key, kvp.Value)
-
-
-[<RequireQualifiedAccess>]
-module Kvp =
-
-  open System.Collections.Generic
-
-  let key (kvp: KeyValuePair<_,_>) =
-    kvp.Key
-
-  let value (kvp: KeyValuePair<_,_>) =
-    kvp.Value
-
-
-[<RequireQualifiedAccess>]
-module Result =
-
-  let isOk = function
-    | Ok _ -> true
-    | Error _ -> false
-
-  let iter f = function
-    | Ok x -> f x
-    | Error _ -> ()
+/// Memberwise equality where value-typed members and string members are
+/// compared using structural comparison, and reference-typed members
+/// (except strings) are compared using reference equality. This is a useful
+/// default for oneWayLazy etc. since all parts of the Elmish model (i.e., all
+/// members of the arguments to this function) are normally immutable. For a direct
+/// reference equality check (not memberwise), see refEq (which should be used when
+/// passing a single non-string object from the model).
+let elmEq<'a> : 'a -> 'a -> bool =
+  let gettersAndEq =
+    typeof<'a>.GetProperties()
+    |> Array.map (fun pi ->
+        let getter = buildUntypedGetter pi
+        let eq =
+          if pi.PropertyType.IsValueType || pi.PropertyType = typeof<string>
+          then (fun (a, b) -> a = b)
+          else obj.ReferenceEquals
+        getter, eq
+    )
+  fun x1 x2 ->
+    gettersAndEq |> Array.forall (fun (get, eq) -> eq (get (box x1), get (box x2)))
