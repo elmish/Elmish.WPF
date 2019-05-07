@@ -25,7 +25,7 @@ let update msg m =
   | SetStepSize x -> { m with StepSize = x }
   | Reset -> init ()
 
-let bindings () = [
+let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
   "Increment" |> Binding.cmd (fun m -> Increment)
   "Decrement" |> Binding.cmd (fun m -> Decrement)

@@ -22,7 +22,7 @@ let update msg m =
   | SetLimit x -> { m with EnabledMaxLimit = x }
   | Command -> m
 
-let bindings () = [
+let bindings () : Binding<Model, Msg> list = [
   "Numbers" |> Binding.oneWay (fun m -> m.Numbers)
   "Limit" |> Binding.twoWay
     (fun m -> float m.EnabledMaxLimit)

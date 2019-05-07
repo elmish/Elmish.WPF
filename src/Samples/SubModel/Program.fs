@@ -24,7 +24,7 @@ module Clock =
     | Tick t -> { m with Time = t }
     | ToggleUtc -> { m with UseUtc = not m.UseUtc }
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "Time" |> Binding.oneWay
       (fun m -> if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime)
     "ToggleUtc" |> Binding.cmd (fun m -> ToggleUtc)
@@ -58,7 +58,7 @@ module CounterWithClock =
     | Reset -> { m with Count = 0; StepSize = 1 }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "CounterValue" |> Binding.oneWay (fun m -> m.Count)
     "Increment" |> Binding.cmd (fun m -> Increment)
     "Decrement" |> Binding.cmd (fun m -> Decrement)
@@ -100,7 +100,7 @@ module App =
     | ClockCounter2Msg msg ->
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "ClockCounter1" |> Binding.subModel
       (fun m -> m.ClockCounter1)
       snd

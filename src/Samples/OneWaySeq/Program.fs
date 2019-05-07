@@ -22,7 +22,7 @@ let update msg m =
   | AddOneWaySeqNumber -> { m with OneWaySeqNumbers = m.OneWaySeqNumbers.Head + 1 :: m.OneWaySeqNumbers }
   | AddOneWayNumber -> { m with OneWayNumbers = m.OneWayNumbers.Head + 1 :: m.OneWayNumbers }
 
-let bindings () = [ 
+let bindings () : Binding<Model, Msg> list = [ 
   "OneWaySeqNumbers" |> Binding.oneWaySeq (fun m -> m.OneWaySeqNumbers) id (=)
   "OneWayNumbers" |> Binding.oneWay (fun m -> m.OneWayNumbers)
   "AddOneWaySeqNumber" |> Binding.cmd (fun m -> AddOneWaySeqNumber)

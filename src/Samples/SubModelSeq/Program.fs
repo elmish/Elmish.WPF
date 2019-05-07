@@ -165,7 +165,7 @@ module Bindings =
 
   open App
 
-  let rec counterBindings () = [
+  let rec counterBindings () : Binding<Model * Counter, Msg> list = [
     "CounterIdText" |> Binding.oneWay (fun (m, { Id = CounterId cid}) -> cid)
     "CounterId" |> Binding.oneWay (fun (m, c) -> c.Id)
     "CounterValue" |> Binding.oneWay (fun (m, c) -> c.CounterValue)
@@ -192,7 +192,7 @@ module Bindings =
       counterBindings
   ]
 
-  let rootBindings () = [
+  let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq
       (fun m -> topLevelCounters m)
       id

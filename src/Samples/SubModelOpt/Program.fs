@@ -22,7 +22,7 @@ module Form1 =
     | TextInput s -> { m with Text = s }
     | Submit -> m  // handled by parent
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "Text" |> Binding.twoWay (fun m -> m.Text) (fun v m -> TextInput v)
     "Submit" |> Binding.cmd (fun m -> Submit)
   ]
@@ -49,7 +49,7 @@ module Form2 =
     | Text2Input s -> { m with Input2 = s }
     | Submit -> m  // handled by parent
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "Input1" |> Binding.twoWay (fun m -> m.Input1) (fun v m -> Text1Input v)
     "Input2" |> Binding.twoWay (fun m -> m.Input2) (fun v m -> Text2Input v)
     "Submit" |> Binding.cmd (fun m -> Submit)
@@ -89,7 +89,7 @@ module App =
         | Some (Form2 m') -> { m with Dialog = Form2.update msg' m' |> Form2 |> Some }
         | _ -> m
 
-  let bindings () = [
+  let bindings () : Binding<Model, Msg> list = [
     "ShowForm1" |> Binding.cmd (fun m -> ShowForm1)
     "ShowForm2" |> Binding.cmd (fun m -> ShowForm2)
     "DialogVisible" |> Binding.oneWay

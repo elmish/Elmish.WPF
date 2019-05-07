@@ -41,7 +41,7 @@ let update msg m =
   | Field2Input x -> { m with Field2Raw = x }
   | Submit x -> m
 
-let bindings = [
+let bindings : Binding<Model, Msg> list = [
   "Field1" |> Binding.twoWayIfValid
     (fun m -> string m.Field1Int)
     (fun v m ->
