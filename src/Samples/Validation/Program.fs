@@ -42,10 +42,6 @@ let update msg m =
   | Submit x -> m
 
 let bindings : Binding<Model, Msg> list = [
-  "Field1" |> Binding.twoWayIfValid
-    (fun m -> string m.Field1Int)
-    (fun v m ->
-      v |> validateInt42 |> Result.map Field1Input)
   "Field2" |> Binding.twoWayValidate
     (fun m -> m.Field2Raw)
     (fun v m -> Field2Input v)

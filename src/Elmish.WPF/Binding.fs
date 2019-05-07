@@ -19,9 +19,6 @@ type internal BindingData<'model, 'msg> =
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
       * validate: ('model -> Result<obj, string>)
-  | TwoWayIfValidData of
-      get: ('model -> obj)
-      * set: (obj -> 'model -> Result<'msg, string>)
   | CmdData of
       exec: ('model -> 'msg)
       * canExec: ('model -> bool)
@@ -66,9 +63,6 @@ module internal BindingData =
     | TwoWayValidateData (get, set, validate) ->
         let boxedSet v m = set v (unbox m) |> box
         TwoWayValidateData (unbox >> get, boxedSet, unbox >> validate)
-    | TwoWayIfValidData (get, set) ->
-        let boxedSet v m = set v (unbox m) |> Result.map box
-        TwoWayIfValidData (unbox >> get, boxedSet)
     | CmdData (exec, canExec) -> CmdData (unbox >> exec >> box, unbox >> canExec)
     | CmdIfValidData exec -> CmdIfValidData (unbox >> exec >> Result.map box)
     | ParamCmdData (exec, canExec, autoRequery) ->
@@ -275,25 +269,6 @@ module Binding =
       : Binding<'model, 'msg> =
     { Name = name
       Data = TwoWayValidateData (get >> box, unbox >> set, validate >> Result.map box) }
-
-
-  /// <summary>
-  ///   Creates a two-way binding that uses a validating setter to set validation
-  ///   status for the binding target using INotifyDataErrorInfo. Messages are only
-  ///   dispatced for valid input (the model will never know about invalid values).
-  /// </summary>
-  /// <param name="get">Gets the value from the model.</param>
-  /// <param name="set">
-  ///   Returns the message to dispatch or an error message to display.
-  /// </param>
-  /// <param name="name">The binding name.</param>
-  let twoWayIfValid
-      (get: 'model -> 'a)
-      (set: 'a -> 'model -> Result<'msg, string>)
-      (name: string)
-      : Binding<'model, 'msg> =
-    { Name = name
-      Data = TwoWayIfValidData (get >> box, unbox >> set) }
 
 
   /// <summary>Creates a command binding that depends only on the model.</summary>

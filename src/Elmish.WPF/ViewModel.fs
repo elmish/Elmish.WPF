@@ -28,9 +28,6 @@ type internal VmBinding<'model, 'msg> =
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
       * validate: ('model -> Result<obj, string>)
-  | TwoWayIfValid of
-      get: ('model -> obj)
-      * set: (obj -> 'model -> Result<'msg, string>)
   | Cmd of cmd: Command * canExec: ('model -> bool)
   | CmdIfValid of cmd: Command * exec: ('model -> Result<'msg, obj>)
   | ParamCmd of cmd: Command
@@ -106,7 +103,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         OneWaySeq (vals, get, map, equals, getId, itemEquals)
     | TwoWayData (get, set) -> TwoWay (get, set)
     | TwoWayValidateData (get, set, validate) -> TwoWayValidate (get, set, validate)
-    | TwoWayIfValidData (get, set) -> TwoWayIfValid (get, set)
     | CmdData (exec, canExec) ->
         let execute _ = exec currentModel |> dispatch
         let canExecute _ = canExec currentModel
@@ -141,11 +137,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match validate initialModel with
         | Ok _ -> ()
         | Error error -> setError error name
-    | TwoWayIfValid (get, set) ->
-        let initialValue = get initialModel
-        match set initialValue initialModel with
-        | Ok _ -> ()
-        | Error error -> setError error name
     | _ -> ()
 
   let bindings =
@@ -168,8 +159,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     match binding with
     | OneWay get
     | TwoWay (get, _)
-    | TwoWayValidate (get, _, _)
-    | TwoWayIfValid (get, _) ->
+    | TwoWayValidate (get, _, _) ->
         get currentModel <> get newModel
     | OneWayLazy (currentVal, get, map, equals) ->
         if equals (get newModel) (get currentModel) then false
@@ -267,7 +257,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeq _
     | TwoWay _
     | TwoWayValidate _
-    | TwoWayIfValid _
     | SubModel _
     | SubModelSeq _
     | SubModelSelectedItem _ ->
@@ -319,8 +308,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           match binding with
           | OneWay get
           | TwoWay (get, _)
-          | TwoWayValidate (get, _, _)
-          | TwoWayIfValid (get, _) ->
+          | TwoWayValidate (get, _, _) ->
               get currentModel
           | OneWayLazy (value, _, _, _) ->
               (!value).Value
@@ -357,13 +345,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | TwoWay (_, set)
         | TwoWayValidate (_, set, _) ->
             dispatch <| set value currentModel
-            true
-        | TwoWayIfValid (_, set) ->
-            match set value currentModel with
-            | Ok msg ->
-                removeError binder.Name
-                dispatch msg
-            | Error err -> setError err binder.Name
             true
         | SubModelSelectedItem (_, _, set, name) ->
             match bindings.TryGetValue name with
