@@ -154,6 +154,9 @@ module App =
             ParentChild = m.ParentChild |> List.filter (fun (pid, cid) ->
               not <| idsToRemove.Contains pid && not <| idsToRemove.Contains cid)
         }
+    // TODO: moving up/down must be done at the correct level of hierarchy;
+    // currently if the hierarchy is A (B, C), D (where B and C are children of A)
+    // then D must be moved up three times before it's placed before A
     | MoveUp cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveUp }
     | MoveDown cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveDown }
 
@@ -182,19 +185,21 @@ module Bindings =
         (fun (m, c) -> MoveDown c.Id)
         (fun (m, c) -> m |> getSiblings c.Id |> List.tryLast <> Some c)
       "GlobalState" |> Binding.oneWay (fun (m, c) -> m.SomeGlobalState)
-      "ChildCounters" |> Binding.subBindingSeq
-        fst
+      "ChildCounters" |> Binding.subModelSeq
         (fun (m, c) -> childrenOf c.Id m)
-        (fun c -> c.Id)
+        (fun ((m, parentCounter), childCounter) -> (m, childCounter))
+        (fun (m, c) -> c.Id)
+        snd
         counterBindings
     ]
 
   let rootBindings model dispatch =
     [
-      "Counters" |> Binding.subBindingSeq
-        id
+      "Counters" |> Binding.subModelSeq
         (fun m -> topLevelCounters m)
-        (fun c -> c.Id)
+        id
+        (fun (m, c) -> c.Id)
+        snd
         counterBindings
       "ToggleGlobalState" |> Binding.cmd (fun m -> ToggleGlobalState)
       "AddCounter" |> Binding.cmd (fun m -> AddCounter None)

@@ -28,10 +28,11 @@ let bindings model dispatch =
     "SelectRandom" |> Binding.cmd
       (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
     "Deselect" |> Binding.cmd (fun _ -> Select None)
-    "Entities" |> Binding.subBindingSeq
-      id
+    "Entities" |> Binding.subModelSeq
       (fun m -> m.Entities)
-      (fun e -> e.Id)
+      id
+      (fun (m, e) -> e.Id)
+      snd
       (fun () -> [
         "Name" |> Binding.oneWay (fun (_, e) -> e.Name)
         "SelectedLabel" |> Binding.oneWay (fun (m, e) -> if m.Selected = Some e.Id then " - SELECTED" else "")

@@ -104,9 +104,10 @@ module RecCounter =
         false
       "ChildCounters" |> Binding.subModelSeq
         (fun m -> m.ChildCounters)
+        snd
         (fun m -> m.CounterId)
-        bindings
         ChildMsg
+        bindings
     ]
 
 
@@ -143,9 +144,10 @@ module App =
     [
       "Counters" |> Binding.subModelSeq
         (fun m -> m.Counters)
+        snd
         (fun cm -> cm.CounterId)
-        (fun () -> RecCounter.bindings ())
         CounterMsg
+        (fun () -> RecCounter.bindings ())
       "AddCounter" |> Binding.cmd (fun m -> AddCounter)
       /// TODO: Remove, MoveUp, and MoveDown don't work because I'm not sure how
       /// to set up the bindings from XAML. https://stackoverflow.com/q/51843492/2978652

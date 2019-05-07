@@ -1,4 +1,4 @@
-namespace Elmish.WPF.Internal
+namespace Elmish.WPF
 
 open System
 open System.Dynamic
@@ -6,10 +6,10 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
-open Elmish.WPF
+
 
 /// Represents all necessary data used in an active binding.
-type Binding<'model, 'msg> =
+type internal VmBinding<'model, 'msg> =
   | OneWay of get: ('model -> obj)
   | OneWayLazy of
       currentVal: Lazy<obj> ref
@@ -37,13 +37,14 @@ type Binding<'model, 'msg> =
   | SubModel of
       model: ViewModel<obj, obj> option ref
       * getModel: ('model -> obj option)
-      * getBindings: (unit -> BindingSpec<obj, obj> list)
+      * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj -> 'msg)
+      * sticky: bool
   | SubModelSeq of
       vms: ObservableCollection<ViewModel<obj, obj>>
       * getModels: ('model -> obj seq)
       * getId: (obj -> obj)
-      * getBindings: (unit -> BindingSpec<obj, obj> list)
+      * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj * obj -> 'msg)
   | SubModelSelectedItem of
       selected: ViewModel<obj, obj> option option ref
@@ -52,10 +53,10 @@ type Binding<'model, 'msg> =
       * subBindingSeqName: string
 
 
-and [<AllowNullLiteral>] ViewModel<'model, 'msg>
+and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
-        bindingSpecs: BindingSpec<'model, 'msg> list,
+        bindings: Binding<'model, 'msg> list,
         config: ElmConfig)
       as this =
   inherit DynamicObject()
@@ -95,36 +96,36 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
       log "[VM] Removing error for binding %s" propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let initializeBinding bindingSpec =
-    match bindingSpec with
-    | OneWaySpec get -> OneWay get
-    | OneWayLazySpec (get, map, equals) ->
+  let initializeBinding bindingData =
+    match bindingData with
+    | OneWayData get -> OneWay get
+    | OneWayLazyData (get, map, equals) ->
         OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
-    | OneWaySeqLazySpec (get, map, equals, getId, itemEquals) ->
+    | OneWaySeqLazyData (get, map, equals, getId, itemEquals) ->
         let vals = ObservableCollection(initialModel |> get |> map)
         OneWaySeq (vals, get, map, equals, getId, itemEquals)
-    | TwoWaySpec (get, set) -> TwoWay (get, set)
-    | TwoWayValidateSpec (get, set, validate) -> TwoWayValidate (get, set, validate)
-    | TwoWayIfValidSpec (get, set) -> TwoWayIfValid (get, set)
-    | CmdSpec (exec, canExec) ->
+    | TwoWayData (get, set) -> TwoWay (get, set)
+    | TwoWayValidateData (get, set, validate) -> TwoWayValidate (get, set, validate)
+    | TwoWayIfValidData (get, set) -> TwoWayIfValid (get, set)
+    | CmdData (exec, canExec) ->
         let execute _ = exec currentModel |> dispatch
         let canExecute _ = canExec currentModel
         ParamCmd <| Command(execute, canExecute, false)
-    | CmdIfValidSpec exec ->
+    | CmdIfValidData exec ->
         let execute _ = exec currentModel |> Result.iter dispatch
         let canExecute _ = exec currentModel |> Result.isOk
         CmdIfValid (Command(execute, canExecute, false), exec)
-    | ParamCmdSpec (exec, canExec, autoRequery) ->
+    | ParamCmdData (exec, canExec, autoRequery) ->
         let execute param = dispatch <| exec param currentModel
         let canExecute param = canExec param currentModel
         ParamCmd <| Command(execute, canExecute, autoRequery)
-    | SubModelSpec (getModel, getBindings, toMsg) ->
+    | SubModelData (getModel, getBindings, toMsg, sticky) ->
         match getModel initialModel with
-        | None -> SubModel (ref None, getModel, getBindings, toMsg)
+        | None -> SubModel (ref None, getModel, getBindings, toMsg, sticky)
         | Some m ->
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config)
-            SubModel (ref <| Some vm, getModel, getBindings, toMsg)
-    | SubModelSeqSpec (getModels, getId, getBindings, toMsg) ->
+            SubModel (ref <| Some vm, getModel, getBindings, toMsg, sticky)
+    | SubModelSeqData (getModels, getId, getBindings, toMsg) ->
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
@@ -132,7 +133,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
-    | SubModelSelectedItemSpec (get, set, subBindingSeqName) ->
+    | SubModelSelectedItemData (get, set, subBindingSeqName) ->
         SubModelSelectedItem (ref None, get, set, subBindingSeqName)
 
   let setInitialError name = function
@@ -148,12 +149,12 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | _ -> ()
 
   let bindings =
-    let dict = Dictionary<string, Binding<'model, 'msg>>()
-    for spec in bindingSpecs do
-      log "[VM] Initializing binding %s" spec.Name
-      let binding = initializeBinding spec.Data
-      dict.Add(spec.Name, binding)
-      setInitialError spec.Name binding
+    let dict = Dictionary<string, VmBinding<'model, 'msg>>()
+    for b in bindings do
+      log "[VM] Initializing binding %s" b.Name
+      let binding = initializeBinding b.Data
+      dict.Add(b.Name, binding)
+      setInitialError b.Name binding
     dict
 
   let getSelectedSubModel model vms getSelectedId getSubModelId =
@@ -208,12 +209,14 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
     | CmdIfValid _
     | ParamCmd _ ->
         false
-    | SubModel ((vm: ViewModel<obj, obj> option ref), (getModel: 'model -> obj option), getBindings, toMsg) ->
+    | SubModel ((vm: ViewModel<obj, obj> option ref), (getModel: 'model -> obj option), getBindings, toMsg, sticky) ->
         match !vm, getModel newModel with
         | None, None -> false
         | Some _, None ->
-            vm := None
-            true
+            if sticky then false
+            else
+              vm := None
+              true
         | None, Some m ->
             vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config)
             true
@@ -327,7 +330,7 @@ and [<AllowNullLiteral>] ViewModel<'model, 'msg>
           | CmdIfValid (cmd, _)
           | ParamCmd cmd ->
               box cmd
-          | SubModel (vm, _, _, _) -> !vm |> Option.toObj |> box
+          | SubModel (vm, _, _, _, _) -> !vm |> Option.toObj |> box
           | SubModelSeq (vms, _, _, _, _) -> box vms
           | SubModelSelectedItem (vm, getSelectedId, _, name) ->
               match !vm with

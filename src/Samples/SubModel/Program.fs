@@ -25,8 +25,8 @@ module Clock =
     | ToggleUtc -> { m with UseUtc = not m.UseUtc }
 
   let bindings () =
-    [ 
-      "Time" |> Binding.oneWay 
+    [
+      "Time" |> Binding.oneWay
         (fun m -> if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime)
       "ToggleUtc" |> Binding.cmd (fun m -> ToggleUtc)
     ]
@@ -64,7 +64,7 @@ module CounterWithClock =
       "CounterValue" |> Binding.oneWay (fun m -> m.Count)
       "Increment" |> Binding.cmd (fun m -> Increment)
       "Decrement" |> Binding.cmd (fun m -> Decrement)
-      "StepSize" |> Binding.twoWay 
+      "StepSize" |> Binding.twoWay
         (fun m -> float m.StepSize)
         (fun v m -> int v |> SetStepSize)
       "Reset" |> Binding.cmdIf
@@ -73,7 +73,11 @@ module CounterWithClock =
           let i = init ()
           m.Count <> i.Count || m.StepSize <> i.StepSize
         )
-      "Clock" |> Binding.subModel (fun m -> m.Clock) Clock.bindings ClockMsg
+      "Clock" |> Binding.subModel
+        (fun m -> m.Clock)
+        snd
+        ClockMsg
+        Clock.bindings
     ]
 
 
@@ -98,18 +102,24 @@ module App =
     | ClockCounter2Msg msg ->
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
-  let bindings model dispatch =
-    [
-      "ClockCounter1" |> Binding.subModel
-        (fun m -> m.ClockCounter1) CounterWithClock.bindings ClockCounter1Msg
-      "ClockCounter2" |> Binding.subModel
-        (fun m -> m.ClockCounter2) CounterWithClock.bindings ClockCounter2Msg
-    ]
+  let bindings model dispatch = [
+    "ClockCounter1" |> Binding.subModel
+      (fun m -> m.ClockCounter1)
+      snd
+      ClockCounter1Msg
+      CounterWithClock.bindings
+
+    "ClockCounter2" |> Binding.subModel
+      (fun m -> m.ClockCounter2)
+      snd
+      ClockCounter2Msg
+      CounterWithClock.bindings
+  ]
 
 
 let timerTick dispatch =
   let timer = new System.Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ -> 
+  timer.Elapsed.Add (fun _ ->
     let clockMsg =
       DateTimeOffset.Now
       |> Clock.Tick

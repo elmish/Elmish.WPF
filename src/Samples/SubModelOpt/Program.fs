@@ -103,12 +103,14 @@ module App =
         (fun m -> match m.Dialog with Some (Form2 _) -> true | _ -> false)
       "Form1" |> Binding.subModelOpt
         (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None)
-        Form1.bindings
+        snd
         Form1Msg
+        Form1.bindings
       "Form2" |> Binding.subModelOpt
         (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None)
-        Form2.bindings
+        snd
         Form2Msg
+        Form2.bindings
     ]
 
 
