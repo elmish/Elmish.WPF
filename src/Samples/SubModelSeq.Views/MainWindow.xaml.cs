@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace Elmish.WPF.Samples.SubModelCollection
+namespace Elmish.WPF.Samples.SubModelSeq
 {
     public partial class MainWindow : Window
     {

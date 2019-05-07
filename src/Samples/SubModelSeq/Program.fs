@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.SubBindings.Program
+﻿module Elmish.WPF.Samples.SubModelSeq.Program
 
 open System
 open Elmish
