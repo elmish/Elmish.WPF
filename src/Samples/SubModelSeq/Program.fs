@@ -136,16 +136,23 @@ module App =
   let update msg m =
     match msg with
     | ToggleGlobalState -> { m with SomeGlobalState = not m.SomeGlobalState }
+
     | AddCounter None -> { m with AllCounters = m.AllCounters @ [ Counter.create () ] }
+
     | AddCounter (Some parentId) ->
         let child = Counter.create ()
         { m with
             AllCounters = m.AllCounters @ [child]
             ParentChild = m.ParentChild @ [ (parentId, child.Id) ] }
+
     | Increment cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.increment }
+
     | Decrement cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.decrement }
+
     | SetStepSize (cid, step) -> { m with AllCounters = m.AllCounters |> mapCounter cid (Counter.setStepSize step) }
+
     | Reset cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.reset }
+
     | Remove cid ->
         let childIds = recursiveChildrenOf cid m |> List.map (fun c -> c.Id)
         let idsToRemove = cid :: childIds |> Set.ofList
@@ -154,6 +161,7 @@ module App =
             ParentChild = m.ParentChild |> List.filter (fun (pid, cid) ->
               not <| idsToRemove.Contains pid && not <| idsToRemove.Contains cid)
         }
+
     // TODO: moving up/down must be done at the correct level of hierarchy;
     // currently if the hierarchy is A (B, C), D (where B and C are children of A)
     // then D must be moved up three times before it's placed before A
@@ -167,23 +175,35 @@ module Bindings =
 
   let rec counterBindings () : Binding<Model * Counter, Msg> list = [
     "CounterIdText" |> Binding.oneWay (fun (m, { Id = CounterId cid}) -> cid)
+
     "CounterId" |> Binding.oneWay (fun (m, c) -> c.Id)
+
     "CounterValue" |> Binding.oneWay (fun (m, c) -> c.CounterValue)
+
     "Increment" |> Binding.cmd (fun (m, c) -> Increment c.Id)
+
     "Decrement" |> Binding.cmd (fun (m, c) -> Decrement c.Id)
+
     "StepSize" |> Binding.twoWay
       (fun (m, c) -> float c.StepSize)
       (fun v (m, c) -> SetStepSize (c.Id, int v))
+
     "Reset" |> Binding.cmd (fun (m, c) -> Reset c.Id)
+
     "Remove" |> Binding.cmd (fun (m, c) -> Remove c.Id)
+
     "AddChild" |> Binding.cmd (fun (m, c) -> AddCounter (Some c.Id))
+
     "MoveUp" |> Binding.cmdIf
       (fun (m, c) -> MoveUp c.Id)
       (fun (m, c) -> m |> getSiblings c.Id |> List.tryHead <> Some c)
+
     "MoveDown" |> Binding.cmdIf
       (fun (m, c) -> MoveDown c.Id)
       (fun (m, c) -> m |> getSiblings c.Id |> List.tryLast <> Some c)
+
     "GlobalState" |> Binding.oneWay (fun (m, c) -> m.SomeGlobalState)
+
     "ChildCounters" |> Binding.subModelSeq
       (fun (m, c) -> childrenOf c.Id m)
       (fun ((m, parentCounter), childCounter) -> (m, childCounter))
@@ -192,6 +212,7 @@ module Bindings =
       counterBindings
   ]
 
+
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq
       (fun m -> topLevelCounters m)
@@ -199,7 +220,9 @@ module Bindings =
       (fun (m, c) -> c.Id)
       snd
       counterBindings
+
     "ToggleGlobalState" |> Binding.cmd (fun m -> ToggleGlobalState)
+
     "AddCounter" |> Binding.cmd (fun m -> AddCounter None)
   ]
 

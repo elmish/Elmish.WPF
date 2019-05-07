@@ -91,18 +91,24 @@ module App =
 
   let bindings () : Binding<Model, Msg> list = [
     "ShowForm1" |> Binding.cmd (fun m -> ShowForm1)
+
     "ShowForm2" |> Binding.cmd (fun m -> ShowForm2)
+
     "DialogVisible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some _ -> true | None -> false)
+
     "Form1Visible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some (Form1 _) -> true | _ -> false)
+
     "Form2Visible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some (Form2 _) -> true | _ -> false)
+
     "Form1" |> Binding.subModelOpt
       (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None)
       snd
       Form1Msg
       Form1.bindings
+
     "Form2" |> Binding.subModelOpt
       (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None)
       snd

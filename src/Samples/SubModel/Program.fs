@@ -60,17 +60,22 @@ module CounterWithClock =
 
   let bindings () : Binding<Model, Msg> list = [
     "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+
     "Increment" |> Binding.cmd (fun m -> Increment)
+
     "Decrement" |> Binding.cmd (fun m -> Decrement)
+
     "StepSize" |> Binding.twoWay
       (fun m -> float m.StepSize)
       (fun v m -> int v |> SetStepSize)
+
     "Reset" |> Binding.cmdIf
       (fun m -> Reset)
       (fun m ->
         let i = init ()
         m.Count <> i.Count || m.StepSize <> i.StepSize
       )
+
     "Clock" |> Binding.subModel
       (fun m -> m.Clock)
       snd

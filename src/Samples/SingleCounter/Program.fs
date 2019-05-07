@@ -27,11 +27,15 @@ let update msg m =
 
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+
   "Increment" |> Binding.cmd (fun m -> Increment)
+
   "Decrement" |> Binding.cmd (fun m -> Decrement)
+
   "StepSize" |> Binding.twoWay
     (fun m -> float m.StepSize)
     (fun v m -> int v |> SetStepSize)
+
   "Reset" |> Binding.cmdIf (fun _ -> Reset) (fun m -> m <> init ())
 ]
 

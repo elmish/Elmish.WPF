@@ -26,7 +26,9 @@ let update msg m =
 let bindings () : Binding<Model, Msg> list = [
   "SelectRandom" |> Binding.cmd
     (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
+
   "Deselect" |> Binding.cmd (fun _ -> Select None)
+
   "Entities" |> Binding.subModelSeq
     (fun m -> m.Entities)
     id
@@ -36,6 +38,7 @@ let bindings () : Binding<Model, Msg> list = [
       "Name" |> Binding.oneWay (fun (_, e) -> e.Name)
       "SelectedLabel" |> Binding.oneWay (fun (m, e) -> if m.Selected = Some e.Id then " - SELECTED" else "")
     ])
+
   "SelectedEntity" |> Binding.subModelSelectedItem
     "Entities"
     (fun m -> m.Selected)

@@ -82,6 +82,7 @@ module App =
       win2.Show()
     )
 
+
   let update msg m =
     match msg with
     | ShowWin1 -> m, Cmd.OfFunc.attempt showWin1 () raise
@@ -89,14 +90,18 @@ module App =
     | Win1Msg msg' -> { m with Win1 = Win1.update msg' m.Win1 }, Cmd.none
     | Win2Msg msg' -> { m with Win2 = Win2.update msg' m.Win2 }, Cmd.none
 
+
   let bindings () : Binding<Model, Msg> list = [
     "ShowWin1" |> Binding.cmd (fun m -> ShowWin1)
+
     "ShowWin2" |> Binding.cmd (fun m -> ShowWin2)
+
     "Win1" |> Binding.subModel
       (fun m -> m.Win1)
       snd
       Win1Msg
       Win1.bindings
+
     "Win2" |> Binding.subModel
       (fun m -> m.Win2)
       snd
