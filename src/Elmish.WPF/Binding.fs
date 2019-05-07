@@ -43,7 +43,7 @@ type internal BindingData<'model, 'msg> =
   | SubModelSelectedItemData of
       get: ('model -> obj option)
       * set: (obj option -> 'model -> 'msg)
-      * subBindingSeqName: string
+      * subModelSeqBindingName: string
 
 
 /// Represents all necessary data used to create a binding.
@@ -79,8 +79,8 @@ module internal BindingData =
         SubModelData (unbox >> getModel, getBindings, toMsg >> unbox, sticky)
     | SubModelSeqData (getModel, isSame, getBindings, toMsg) ->
         SubModelSeqData (unbox >> getModel, isSame, getBindings, toMsg >> unbox)
-    | SubModelSelectedItemData (get, set, subBindingSeqName) ->
-        SubModelSelectedItemData (unbox >> get, (fun v m -> set v (unbox m) |> box), subBindingSeqName)
+    | SubModelSelectedItemData (get, set, subModelSeqBindingName) ->
+        SubModelSelectedItemData (unbox >> get, (fun v m -> set v (unbox m) |> box), subModelSeqBindingName)
 
 
 
@@ -578,12 +578,12 @@ module Binding =
   ///   Only use this if you are unable to use some kind of SelectedValue or
   ///   SelectedIndex property with a normal twoWay binding. This binding is
   ///   less type-safe and will throw at runtime if itemsSourceBindingName does
-  ///   not correspond to a subBindingSeq or subModelSeq binding, or if the
-  ///   inferred 'id type does not match the actual ID type used in that binding.
+  ///   not correspond to a subModelSeq binding, or if the inferred 'id type does
+  ///   not match the actual ID type used in that binding.
   /// </summary>
   /// <param name="itemsSourceBindingName">
   ///   The name of the ItemsSource-like binding, which must be created using
-  ///   subBindingSeq or subModelSeq.
+  ///   subModelSeq.
   /// </param>
   /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
   /// <param name="set">

@@ -50,7 +50,7 @@ type internal VmBinding<'model, 'msg> =
       selected: ViewModel<obj, obj> option option ref
       * get: ('model -> obj option)
       * set: (obj option -> 'model -> 'msg)
-      * subBindingSeqName: string
+      * subModelSeqBindingName: string
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -133,8 +133,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
-    | SubModelSelectedItemData (get, set, subBindingSeqName) ->
-        SubModelSelectedItem (ref None, get, set, subBindingSeqName)
+    | SubModelSelectedItemData (get, set, subModelSeqBindingName) ->
+        SubModelSelectedItem (ref None, get, set, subModelSeqBindingName)
 
   let setInitialError name = function
     | TwoWayValidate (_, _, validate) ->
