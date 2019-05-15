@@ -54,7 +54,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
         bindings: Binding<'model, 'msg> list,
-        config: ElmConfig)
+        config: ElmConfig,
+        propNameChain: string)
       as this =
   inherit DynamicObject()
 
@@ -73,8 +74,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Error messages keyed by property name.
   let errors = Dictionary<string, string>()
 
+  let getPropChainFor bindingName =
+    sprintf "%s.%s" propNameChain bindingName
+
+  let getPropChainForItem collectionBindingName itemId =
+    sprintf "%s.%s.%s" propNameChain collectionBindingName itemId
+
   let notifyPropertyChanged propName =
-    log "[VM] Triggering PropertyChanged for binding %s" propName
+    log "[%s] PropertyChanged \"%s\"" propNameChain propName
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
 
   let raiseCanExecuteChanged (cmd: Command) =
@@ -84,52 +91,97 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     match errors.TryGetValue propName with
     | true, err when err = error -> ()
     | _ ->
-        log "[VM] Setting error for binding %s to \"%s\"" propName error
+        log "[%s] ErrorsChanged \"%s\"" propNameChain propName
         errors.[propName] <- error
         errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let removeError propName =
     if errors.Remove propName then
-      log "[VM] Removing error for binding %s" propName
+      log "[%s] ErrorsChanged \"%s\"" propNameChain propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let initializeBinding bindingData =
+  let measure name callName f =
+    if not config.Measure then f
+    else
+      fun x ->
+        let sw = System.Diagnostics.Stopwatch.StartNew ()
+        let r = f x
+        sw.Stop ()
+        if sw.ElapsedMilliseconds > 0L then
+          log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
+        r
+
+
+  let initializeBinding name bindingData =
     match bindingData with
-    | OneWayData get -> OneWay get
+    | OneWayData get ->
+        let get = measure name "get" get
+        OneWay get
     | OneWayLazyData (get, map, equals) ->
+        let get = measure name "get" get
+        let map = measure name "map" map
+        let equals = measure name "equals" equals
         OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
     | OneWaySeqLazyData (get, map, equals, getId, itemEquals) ->
+        let get = measure name "get" get
+        let map = measure name "map" map
+        let equals = measure name "equals" equals
+        let getId = measure name "getId" getId
+        let itemEquals = measure name "itemEquals" itemEquals
         let vals = ObservableCollection(initialModel |> get |> map)
         OneWaySeq (vals, get, map, equals, getId, itemEquals)
-    | TwoWayData (get, set) -> TwoWay (get, set)
-    | TwoWayValidateData (get, set, validate) -> TwoWayValidate (get, set, validate)
+    | TwoWayData (get, set) ->
+        let get = measure name "get" get
+        let set = measure name "set" set
+        TwoWay (get, set)
+    | TwoWayValidateData (get, set, validate) ->
+        let get = measure name "get" get
+        let set = measure name "set" set
+        let validate = measure name "validate" validate
+        TwoWayValidate (get, set, validate)
     | CmdData (exec, canExec) ->
+        let exec = measure name "exec" exec
+        let canExec = measure name "canExec" canExec
         let execute _ = exec currentModel |> dispatch
         let canExecute _ = canExec currentModel
         ParamCmd <| Command(execute, canExecute, false)
     | CmdIfValidData exec ->
+        let exec = measure name "exec" exec
         let execute _ = exec currentModel |> Result.iter dispatch
         let canExecute _ = exec currentModel |> Result.isOk
         CmdIfValid (Command(execute, canExecute, false), exec)
     | ParamCmdData (exec, canExec, autoRequery) ->
+        let exec = measure name "exec" exec
+        let canExec = measure name "canExec" canExec
         let execute param = dispatch <| exec param currentModel
         let canExecute param = canExec param currentModel
         ParamCmd <| Command(execute, canExecute, autoRequery)
     | SubModelData (getModel, getBindings, toMsg, sticky) ->
+        let getModel = measure name "getSubModel" getModel
+        let getBindings = measure name "bindings" getBindings
+        let toMsg = measure name "toMsg" toMsg
         match getModel initialModel with
         | None -> SubModel (ref None, getModel, getBindings, toMsg, sticky)
         | Some m ->
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            let chain = getPropChainFor name
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
             SubModel (ref <| Some vm, getModel, getBindings, toMsg, sticky)
     | SubModelSeqData (getModels, getId, getBindings, toMsg) ->
+        let getModels = measure name "getSubModels" getModels
+        let getId = measure name "getId" getId
+        let getBindings = measure name "bindings" getBindings
+        let toMsg = measure name "toMsg" toMsg
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
-               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+               let chain = getPropChainForItem name (getId m |> string)
+               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
     | SubModelSelectedItemData (get, set, subModelSeqBindingName) ->
+        let get = measure name "get" get
+        let set = measure name "set" set
         SubModelSelectedItem (ref None, get, set, subModelSeqBindingName)
 
   let setInitialError name = function
@@ -140,10 +192,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | _ -> ()
 
   let bindings =
+    log "[%s] Initializing bindings" propNameChain
     let dict = Dictionary<string, VmBinding<'model, 'msg>>()
     for b in bindings do
-      log "[VM] Initializing binding %s" b.Name
-      let binding = initializeBinding b.Data
+      let binding = initializeBinding b.Name b.Data
       dict.Add(b.Name, binding)
       setInitialError b.Name binding
     dict
@@ -155,7 +207,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
-  let updateValue newModel binding =
+  let updateValue bindingName newModel binding =
     match binding with
     | OneWay get
     | TwoWay (get, _)
@@ -208,7 +260,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               vm := None
               true
         | None, Some m ->
-            vm := Some <| ViewModel(m, toMsg >> dispatch, getBindings (), config)
+            vm := Some <| ViewModel(
+              m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
             true
         | Some vm, Some m ->
             vm.UpdateModel(m)
@@ -229,7 +282,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
           )
         for m in modelsToAdd do
-          vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config)
+          let chain = getPropChainForItem bindingName (getId m |> string)
+          vms.Add <| ViewModel(
+            m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
         // Reorder according to new model list
         for newIdx, newSubModel in newSubModels |> Seq.indexed do
           let oldIdx =
@@ -243,7 +298,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match bindings.TryGetValue name with
         | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-            log "[VM] Setting selected VM to %A" (v |> Option.map (fun v -> v.CurrentModel))
+            log "[%s] Setting selected VM to %A" propNameChain (v |> Option.map (fun v -> getSubModelId v.CurrentModel))
             vm := Some v
         | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" name
         true
@@ -281,11 +336,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member __.CurrentModel : 'model = currentModel
 
   member __.UpdateModel (newModel: 'model) : unit =
-    log "[VM] UpdateModel %s" <| newModel.GetType().FullName
     let propsToNotify =
       bindings
       |> Seq.toList
-      |> List.filter (Kvp.value >> updateValue newModel)
+      |> List.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
       |> List.map Kvp.key
     let cmdsToNotify =
       bindings
@@ -298,10 +352,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       updateValidationStatus name binding
 
   override __.TryGetMember (binder, result) =
-    log "[VM] TryGetMember %s" binder.Name
+    log "[%s] TryGetMember %s" propNameChain binder.Name
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log "[VM] TryGetMember FAILED: Property %s doesn't exist" binder.Name
+        log "[%s] TryGetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
         false
     | true, binding ->
         result <-
@@ -335,10 +389,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         true
 
   override __.TrySetMember (binder, value) =
-    log "[VM] TrySetMember %s" binder.Name
+    log "[%s] TrySetMember %s" propNameChain binder.Name
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log "[VM] TrySetMember FAILED: Property %s doesn't exist" binder.Name
+        log "[%s] TrySetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
         false
     | true, binding ->
         match binding with
@@ -365,7 +419,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ParamCmd _
         | SubModel _
         | SubModelSeq _ ->
-            log "[VM] TrySetMember FAILED: Binding %s is read-only" binder.Name
+            log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name
             false
 
   interface INotifyPropertyChanged with
@@ -378,7 +432,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.HasErrors =
       errors.Count > 0
     member __.GetErrors propName =
-      log "[VM] GetErrors %s" (propName |> Option.ofObj |> Option.defaultValue "<null>")
+      log "[%s] GetErrors %s" propNameChain (propName |> Option.ofObj |> Option.defaultValue "<null>")
       match errors.TryGetValue propName with
       | true, err -> upcast [err]
       | false, _ -> upcast []

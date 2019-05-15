@@ -17,7 +17,7 @@ let internal startLoop
     match lastModel with
     | None ->
         let mapping = Program.view program model dispatch
-        let vm = ViewModel<'model,'msg>(model, dispatch, mapping, config)
+        let vm = ViewModel<'model,'msg>(model, dispatch, mapping, config, "main")
         element.DataContext <- box vm
         lastModel <- Some vm
     | Some vm ->
