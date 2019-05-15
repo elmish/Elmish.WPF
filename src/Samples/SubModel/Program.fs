@@ -139,5 +139,5 @@ let main argv =
   |> Program.withSubscription (fun m -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())

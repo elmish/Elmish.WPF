@@ -101,5 +101,5 @@ let main argv =
   Program.mkProgram App.init App.update (fun _ _ -> App.bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())

@@ -232,5 +232,5 @@ let main argv =
   Program.mkSimple App.init App.update (fun _ _ -> Bindings.rootBindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())

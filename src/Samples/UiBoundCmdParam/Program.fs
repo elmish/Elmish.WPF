@@ -39,5 +39,5 @@ let main argv =
   Program.mkSimple init update (fun _ _ -> bindings ())
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())
