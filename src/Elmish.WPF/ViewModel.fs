@@ -111,6 +111,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
         r
 
+  let measure2 name callName f =
+    if not config.Measure then f
+    else
+      fun x y ->
+        let sw = System.Diagnostics.Stopwatch.StartNew ()
+        let r = f x y
+        sw.Stop ()
+        if sw.ElapsedMilliseconds > 0L then
+          log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
+        r
+
 
   let initializeBinding name bindingData =
     match bindingData with
@@ -120,23 +131,23 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWayLazyData (get, map, equals) ->
         let get = measure name "get" get
         let map = measure name "map" map
-        let equals = measure name "equals" equals
+        let equals = measure2 name "equals" equals
         OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
     | OneWaySeqLazyData (get, map, equals, getId, itemEquals) ->
         let get = measure name "get" get
         let map = measure name "map" map
-        let equals = measure name "equals" equals
+        let equals = measure2 name "equals" equals
         let getId = measure name "getId" getId
-        let itemEquals = measure name "itemEquals" itemEquals
+        let itemEquals = measure2 name "itemEquals" itemEquals
         let vals = ObservableCollection(initialModel |> get |> map)
         OneWaySeq (vals, get, map, equals, getId, itemEquals)
     | TwoWayData (get, set) ->
         let get = measure name "get" get
-        let set = measure name "set" set
+        let set = measure2 name "set" set
         TwoWay (get, set)
     | TwoWayValidateData (get, set, validate) ->
         let get = measure name "get" get
-        let set = measure name "set" set
+        let set = measure2 name "set" set
         let validate = measure name "validate" validate
         TwoWayValidate (get, set, validate)
     | CmdData (exec, canExec) ->
@@ -151,8 +162,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let canExecute _ = exec currentModel |> Result.isOk
         CmdIfValid (Command(execute, canExecute, false), exec)
     | ParamCmdData (exec, canExec, autoRequery) ->
-        let exec = measure name "exec" exec
-        let canExec = measure name "canExec" canExec
+        let exec = measure2 name "exec" exec
+        let canExec = measure2 name "canExec" canExec
         let execute param = dispatch <| exec param currentModel
         let canExecute param = canExec param currentModel
         ParamCmd <| Command(execute, canExecute, autoRequery)
@@ -181,7 +192,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
     | SubModelSelectedItemData (get, set, subModelSeqBindingName) ->
         let get = measure name "get" get
-        let set = measure name "set" set
+        let set = measure2 name "set" set
         SubModelSelectedItem (ref None, get, set, subModelSeqBindingName)
 
   let setInitialError name = function
