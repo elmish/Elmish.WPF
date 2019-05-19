@@ -23,14 +23,12 @@ let update msg m =
   | Command -> m
 
 let bindings () : Binding<Model, Msg> list = [
-  "Numbers" |> Binding.oneWay (fun m -> m.Numbers)
-  "Limit" |> Binding.twoWay
-    (fun m -> float m.EnabledMaxLimit)
-    (fun v m -> int v |> SetLimit)
-  "Command" |> Binding.paramCmdIf
-    (fun p m -> Command)
-    (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit)
-    true
+  "Numbers" |> Binding.oneWay(fun m -> m.Numbers)
+  "Limit" |> Binding.twoWay((fun m -> float m.EnabledMaxLimit), int >> SetLimit)
+  "Command" |> Binding.cmdParamIf(
+    (fun p m -> Command),
+    (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
+    true)
 ]
 
 

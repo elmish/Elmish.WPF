@@ -23,8 +23,8 @@ module Form1 =
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Text" |> Binding.twoWay (fun m -> m.Text) (fun v m -> TextInput v)
-    "Submit" |> Binding.cmd (fun m -> Submit)
+    "Text" |> Binding.twoWay ((fun m -> m.Text), TextInput)
+    "Submit" |> Binding.cmd Submit
   ]
 
 
@@ -50,9 +50,9 @@ module Form2 =
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Input1" |> Binding.twoWay (fun m -> m.Input1) (fun v m -> Text1Input v)
-    "Input2" |> Binding.twoWay (fun m -> m.Input2) (fun v m -> Text2Input v)
-    "Submit" |> Binding.cmd (fun m -> Submit)
+    "Input1" |> Binding.twoWay ((fun m -> m.Input1), Text1Input)
+    "Input2" |> Binding.twoWay ((fun m -> m.Input2), Text2Input)
+    "Submit" |> Binding.cmd Submit
   ]
 
 
@@ -90,12 +90,11 @@ module App =
         | _ -> m
 
   let bindings () : Binding<Model, Msg> list = [
-    "ShowForm1" |> Binding.cmd (fun m -> ShowForm1)
+    "ShowForm1" |> Binding.cmd ShowForm1
 
-    "ShowForm2" |> Binding.cmd (fun m -> ShowForm2)
+    "ShowForm2" |> Binding.cmd ShowForm2
 
-    "DialogVisible" |> Binding.oneWay
-      (fun m -> match m.Dialog with Some _ -> true | None -> false)
+    "DialogVisible" |> Binding.oneWay (fun m -> m.Dialog.IsSome)
 
     "Form1Visible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some (Form1 _) -> true | _ -> false)
@@ -103,17 +102,17 @@ module App =
     "Form2Visible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some (Form2 _) -> true | _ -> false)
 
-    "Form1" |> Binding.subModelOpt
-      (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None)
-      snd
-      Form1Msg
-      Form1.bindings
+    "Form1" |> Binding.subModelOpt(
+      (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None),
+      snd,
+      Form1Msg,
+      Form1.bindings)
 
-    "Form2" |> Binding.subModelOpt
-      (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None)
-      snd
-      Form2Msg
-      Form2.bindings
+    "Form2" |> Binding.subModelOpt(
+      (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None),
+      snd,
+      Form2Msg,
+      Form2.bindings)
   ]
 
 

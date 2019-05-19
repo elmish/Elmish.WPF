@@ -5,7 +5,6 @@ open System.Windows
 open Elmish
 open Elmish.WPF
 
-
 module Win1 =
 
   type Model =
@@ -22,7 +21,7 @@ module Win1 =
     | TextInput s -> { m with Text = s }
 
   let bindings () : Binding<Model, Msg> list = [
-    "Text" |> Binding.twoWay (fun m -> m.Text) (fun v m -> TextInput v)
+    "Text" |> Binding.twoWay((fun m -> m.Text), TextInput)
   ]
 
 
@@ -46,8 +45,8 @@ module Win2 =
     | Text2Input s -> { m with Input2 = s }
 
   let bindings () : Binding<Model, Msg> list = [
-    "Input1" |> Binding.twoWay (fun m -> m.Input1) (fun v m -> Text1Input v)
-    "Input2" |> Binding.twoWay (fun m -> m.Input2) (fun v m -> Text2Input v)
+    "Input1" |> Binding.twoWay((fun m -> m.Input1), Text1Input)
+    "Input2" |> Binding.twoWay((fun m -> m.Input2), Text2Input)
   ]
 
 
@@ -78,21 +77,10 @@ module App =
 
 
   let bindings () : Binding<Model, Msg> list = [
-    "ShowWin1" |> Binding.cmd (fun m -> ShowWin1)
-
-    "ShowWin2" |> Binding.cmd (fun m -> ShowWin2)
-
-    "Win1" |> Binding.subModel
-      (fun m -> m.Win1)
-      snd
-      Win1Msg
-      Win1.bindings
-
-    "Win2" |> Binding.subModel
-      (fun m -> m.Win2)
-      snd
-      Win2Msg
-      Win2.bindings
+    "ShowWin1" |> Binding.cmd ShowWin1
+    "ShowWin2" |> Binding.cmd ShowWin2
+    "Win1" |> Binding.subModel((fun m -> m.Win1), snd, Win1Msg, Win1.bindings)
+    "Win2" |> Binding.subModel((fun m -> m.Win2), snd, Win2Msg, Win2.bindings)
   ]
 
 

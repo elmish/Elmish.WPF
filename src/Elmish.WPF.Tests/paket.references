@@ -1,4 +1,5 @@
 group Test
+  FSharp.Interop.Dynamic
   Hedgehog
   Hedgehog.Experimental
   Microsoft.NET.Test.Sdk

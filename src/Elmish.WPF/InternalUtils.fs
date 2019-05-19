@@ -54,3 +54,23 @@ module Result =
   let iter f = function
     | Ok x -> f x
     | Error _ -> ()
+
+
+[<RequireQualifiedAccess>]
+module ValueOption =
+
+  let ofOption = function
+    | Some x -> ValueSome x
+    | None -> ValueNone
+
+  let toOption = function
+  | ValueSome x -> Some x
+  | ValueNone -> None
+
+  let ofError = function
+    | Ok _ -> ValueNone
+    | Error x -> ValueSome x
+
+  let ofOk = function
+  | Ok x -> ValueSome x
+  | Error _ -> ValueNone

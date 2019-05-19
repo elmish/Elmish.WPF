@@ -21,6 +21,7 @@ group Test
 
   source https://api.nuget.org/v3/index.json
 
+  nuget FSharp.Interop.Dynamic
   nuget Hedgehog
   nuget Hedgehog.Experimental
   nuget Microsoft.NET.Test.Sdk

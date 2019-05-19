@@ -10,7 +10,8 @@ open System.Windows
 
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
-  | OneWay of get: ('model -> obj)
+  | OneWay of
+      get: ('model -> obj)
   | OneWayLazy of
       currentVal: Lazy<obj> ref
       * get: ('model -> obj)
@@ -23,17 +24,20 @@ type internal VmBinding<'model, 'msg> =
       * equals: (obj -> obj -> bool)
       * getId: (obj -> obj)
       * itemEquals: (obj -> obj -> bool)
-  | TwoWay of get: ('model -> obj) * set: (obj -> 'model -> 'msg)
+  | TwoWay of
+      get: ('model -> obj)
+      * set: (obj -> 'model -> 'msg)
   | TwoWayValidate of
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
-      * validate: ('model -> Result<obj, string>)
-  | Cmd of cmd: Command * canExec: ('model -> bool)
-  | CmdIfValid of cmd: Command * exec: ('model -> Result<'msg, obj>)
-  | ParamCmd of cmd: Command
+      * validate: ('model -> string voption)
+  | Cmd of
+      cmd: Command
+      * canExec: ('model -> bool)
+  | CmdParam of cmd: Command
   | SubModel of
-      model: ViewModel<obj, obj> option ref
-      * getModel: ('model -> obj option)
+      model: ViewModel<obj, obj> voption ref
+      * getModel: ('model -> obj voption)
       * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj -> 'msg)
       * sticky: bool
@@ -44,9 +48,9 @@ type internal VmBinding<'model, 'msg> =
       * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj * obj -> 'msg)
   | SubModelSelectedItem of
-      selected: ViewModel<obj, obj> option option ref
-      * get: ('model -> obj option)
-      * set: (obj option -> 'model -> 'msg)
+      selected: ViewModel<obj, obj> voption voption ref
+      * get: ('model -> obj voption)
+      * set: (obj voption -> 'model -> 'msg)
       * subModelSeqBindingName: string
 
 
@@ -125,63 +129,58 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let initializeBinding name bindingData =
     match bindingData with
-    | OneWayData get ->
-        let get = measure name "get" get
+    | OneWayData d ->
+        let get = measure name "get" d.Get
         OneWay get
-    | OneWayLazyData (get, map, equals) ->
-        let get = measure name "get" get
-        let map = measure name "map" map
-        let equals = measure2 name "equals" equals
+    | OneWayLazyData d ->
+        let get = measure name "get" d.Get
+        let map = measure name "map" d.Map
+        let equals = measure2 name "equals" d.Equals
         OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
-    | OneWaySeqLazyData (get, map, equals, getId, itemEquals) ->
-        let get = measure name "get" get
-        let map = measure name "map" map
-        let equals = measure2 name "equals" equals
-        let getId = measure name "getId" getId
-        let itemEquals = measure2 name "itemEquals" itemEquals
+    | OneWaySeqLazyData d ->
+        let get = measure name "get" d.Get
+        let map = measure name "map" d.Map
+        let equals = measure2 name "equals" d.Equals
+        let getId = measure name "getId" d.GetId
+        let itemEquals = measure2 name "itemEquals" d.ItemEquals
         let vals = ObservableCollection(initialModel |> get |> map)
         OneWaySeq (vals, get, map, equals, getId, itemEquals)
-    | TwoWayData (get, set) ->
-        let get = measure name "get" get
-        let set = measure2 name "set" set
+    | TwoWayData d ->
+        let get = measure name "get" d.Get
+        let set = measure2 name "set" d.Set
         TwoWay (get, set)
-    | TwoWayValidateData (get, set, validate) ->
-        let get = measure name "get" get
-        let set = measure2 name "set" set
-        let validate = measure name "validate" validate
+    | TwoWayValidateData d ->
+        let get = measure name "get" d.Get
+        let set = measure2 name "set" d.Set
+        let validate = measure name "validate" d.Validate
         TwoWayValidate (get, set, validate)
-    | CmdData (exec, canExec) ->
-        let exec = measure name "exec" exec
-        let canExec = measure name "canExec" canExec
-        let execute _ = exec currentModel |> dispatch
+    | CmdData d ->
+        let exec = measure name "exec" d.Exec
+        let canExec = measure name "canExec" d.CanExec
+        let execute _ = exec currentModel |> ValueOption.iter dispatch
         let canExecute _ = canExec currentModel
-        ParamCmd <| Command(execute, canExecute, false)
-    | CmdIfValidData exec ->
-        let exec = measure name "exec" exec
-        let execute _ = exec currentModel |> Result.iter dispatch
-        let canExecute _ = exec currentModel |> Result.isOk
-        CmdIfValid (Command(execute, canExecute, false), exec)
-    | ParamCmdData (exec, canExec, autoRequery) ->
-        let exec = measure2 name "exec" exec
-        let canExec = measure2 name "canExec" canExec
-        let execute param = dispatch <| exec param currentModel
+        Cmd (Command(execute, canExecute, false), canExec)
+    | CmdParamData d ->
+        let exec = measure2 name "exec" d.Exec
+        let canExec = measure2 name "canExec" d.CanExec
+        let execute param = exec param currentModel |> ValueOption.iter dispatch
         let canExecute param = canExec param currentModel
-        ParamCmd <| Command(execute, canExecute, autoRequery)
-    | SubModelData (getModel, getBindings, toMsg, sticky) ->
-        let getModel = measure name "getSubModel" getModel
-        let getBindings = measure name "bindings" getBindings
-        let toMsg = measure name "toMsg" toMsg
+        CmdParam <| Command(execute, canExecute, d.AutoRequery)
+    | SubModelData d ->
+        let getModel = measure name "getSubModel" d.GetModel
+        let getBindings = measure name "bindings" d.GetBindings
+        let toMsg = measure name "toMsg" d.ToMsg
         match getModel initialModel with
-        | None -> SubModel (ref None, getModel, getBindings, toMsg, sticky)
-        | Some m ->
+        | ValueNone -> SubModel (ref ValueNone, getModel, getBindings, toMsg, d.Sticky)
+        | ValueSome m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
-            SubModel (ref <| Some vm, getModel, getBindings, toMsg, sticky)
-    | SubModelSeqData (getModels, getId, getBindings, toMsg) ->
-        let getModels = measure name "getSubModels" getModels
-        let getId = measure name "getId" getId
-        let getBindings = measure name "bindings" getBindings
-        let toMsg = measure name "toMsg" toMsg
+            SubModel (ref <| ValueSome vm, getModel, getBindings, toMsg, d.Sticky)
+    | SubModelSeqData d ->
+        let getModels = measure name "getSubModels" d.GetModels
+        let getId = measure name "getId" d.GetId
+        let getBindings = measure name "bindings" d.GetBindings
+        let toMsg = measure name "toMsg" d.ToMsg
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
@@ -190,22 +189,23 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           )
           |> ObservableCollection
         SubModelSeq (vms, getModels, getId, getBindings, toMsg)
-    | SubModelSelectedItemData (get, set, subModelSeqBindingName) ->
-        let get = measure name "get" get
-        let set = measure2 name "set" set
-        SubModelSelectedItem (ref None, get, set, subModelSeqBindingName)
+    | SubModelSelectedItemData d ->
+        let get = measure name "get" d.Get
+        let set = measure2 name "set" d.Set
+        SubModelSelectedItem (ref ValueNone, get, set, d.SubModelSeqBindingName)
 
   let setInitialError name = function
     | TwoWayValidate (_, _, validate) ->
         match validate initialModel with
-        | Ok _ -> ()
-        | Error error -> setError error name
+        | ValueNone -> ()
+        | ValueSome error -> setError error name
     | _ -> ()
 
   let bindings =
     log "[%s] Initializing bindings" propNameChain
     let dict = Dictionary<string, VmBinding<'model, 'msg>>()
     for b in bindings do
+      if dict.ContainsKey b.Name then failwithf "Binding name '%s' is duplicated" b.Name
       let binding = initializeBinding b.Name b.Data
       dict.Add(b.Name, binding)
       setInitialError b.Name binding
@@ -214,7 +214,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let getSelectedSubModel model vms getSelectedId getSubModelId =
       vms
       |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-          getSelectedId model = Some (getSubModelId vm.CurrentModel))
+          getSelectedId model = ValueSome (getSubModelId vm.CurrentModel))
+      |> ValueOption.ofOption
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
@@ -259,22 +260,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
         false
     | Cmd _
-    | CmdIfValid _
-    | ParamCmd _ ->
+    | CmdParam _ ->
         false
-    | SubModel ((vm: ViewModel<obj, obj> option ref), (getModel: 'model -> obj option), getBindings, toMsg, sticky) ->
+    | SubModel ((vm: ViewModel<obj, obj> voption ref), (getModel: 'model -> obj voption), getBindings, toMsg, sticky) ->
         match !vm, getModel newModel with
-        | None, None -> false
-        | Some _, None ->
+        | ValueNone, ValueNone -> false
+        | ValueSome _, ValueNone ->
             if sticky then false
             else
-              vm := None
+              vm := ValueNone
               true
-        | None, Some m ->
-            vm := Some <| ViewModel(
+        | ValueNone, ValueSome m ->
+            vm := ValueSome <| ViewModel(
               m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
             true
-        | Some vm, Some m ->
+        | ValueSome vm, ValueSome m ->
             vm.UpdateModel(m)
             false
     | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
@@ -309,8 +309,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match bindings.TryGetValue name with
         | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-            log "[%s] Setting selected VM to %A" propNameChain (v |> Option.map (fun v -> getSubModelId v.CurrentModel))
-            vm := Some v
+            log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
+            vm := ValueSome v
         | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" name
         true
 
@@ -329,19 +329,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         None
     | Cmd (cmd, canExec) ->
         if canExec newModel = canExec currentModel then None else Some cmd
-    | CmdIfValid (cmd, exec) ->
-        match exec currentModel, exec newModel with
-        | Ok _, Error _ | Error _, Ok _ -> Some cmd
-        | _ -> None
-    | ParamCmd cmd -> Some cmd
+    | CmdParam cmd -> Some cmd
 
   /// Updates the validation status for a binding.
   let updateValidationStatus name binding =
     match binding with
     | TwoWayValidate (_, _, validate) ->
         match validate currentModel with
-        | Ok _ -> removeError name
-        | Error err -> setError err name
+        | ValueNone -> removeError name
+        | ValueSome err -> setError err name
     | _ -> ()
 
   member __.CurrentModel : 'model = currentModel
@@ -380,21 +376,20 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | OneWaySeq (vals, _, _, _, _, _) ->
               box vals
           | Cmd (cmd, _)
-          | CmdIfValid (cmd, _)
-          | ParamCmd cmd ->
+          | CmdParam cmd ->
               box cmd
-          | SubModel (vm, _, _, _, _) -> !vm |> Option.toObj |> box
+          | SubModel (vm, _, _, _, _) -> !vm |> ValueOption.toObj |> box
           | SubModelSeq (vms, _, _, _, _) -> box vms
           | SubModelSelectedItem (vm, getSelectedId, _, name) ->
               match !vm with
-              | Some x -> x |> Option.toObj |> box
-              | None ->
+              | ValueSome x -> x |> ValueOption.toObj |> box
+              | ValueNone ->
                   // No computed value, must perform initial computation
                   match bindings.TryGetValue name with
                   | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
                       let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
-                      vm := Some selected
-                      selected |> Option.toObj |> box
+                      vm := ValueSome selected
+                      selected |> ValueOption.toObj |> box
                   | _ ->
                     failwithf "subModelSelectedItem binding '%s' referenced binding '%s', but no compatible binding was found with that name" binder.Name name
         true
@@ -416,8 +411,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             | true, SubModelSeq (_, _, getSubModelId, _, _) ->
                 let value =
                   (value :?> ViewModel<obj, obj>)
-                  |> Option.ofObj
-                  |> Option.map (fun vm -> getSubModelId vm.CurrentModel)
+                  |> ValueOption.ofObj
+                  |> ValueOption.map (fun vm -> getSubModelId vm.CurrentModel)
                 set value currentModel |> dispatch
                 true
             | _ ->
@@ -426,8 +421,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | OneWayLazy _
         | OneWaySeq _
         | Cmd _
-        | CmdIfValid _
-        | ParamCmd _
+        | CmdParam _
         | SubModel _
         | SubModelSeq _ ->
             log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name

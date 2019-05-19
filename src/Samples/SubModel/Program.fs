@@ -15,6 +15,9 @@ module Clock =
     { Time = DateTimeOffset.Now
       UseUtc = false }
 
+  let getTime m =
+    if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime
+
   type Msg =
     | Tick of DateTimeOffset
     | ToggleUtc
@@ -25,9 +28,8 @@ module Clock =
     | ToggleUtc -> { m with UseUtc = not m.UseUtc }
 
   let bindings () : Binding<Model, Msg> list = [
-    "Time" |> Binding.oneWay
-      (fun m -> if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime)
-    "ToggleUtc" |> Binding.cmd (fun m -> ToggleUtc)
+    "Time" |> Binding.oneWay getTime
+    "ToggleUtc" |> Binding.cmd ToggleUtc
   ]
 
 
@@ -38,10 +40,13 @@ module CounterWithClock =
       StepSize: int
       Clock: Clock.Model }
 
-  let init () =
+  let init =
     { Count = 0
       StepSize = 1
       Clock = Clock.init () }
+
+  let canReset m =
+    m.Count <> init.Count || m.StepSize <> init.StepSize
 
   type Msg =
     | Increment
@@ -60,27 +65,11 @@ module CounterWithClock =
 
   let bindings () : Binding<Model, Msg> list = [
     "CounterValue" |> Binding.oneWay (fun m -> m.Count)
-
-    "Increment" |> Binding.cmd (fun m -> Increment)
-
-    "Decrement" |> Binding.cmd (fun m -> Decrement)
-
-    "StepSize" |> Binding.twoWay
-      (fun m -> float m.StepSize)
-      (fun v m -> int v |> SetStepSize)
-
-    "Reset" |> Binding.cmdIf
-      (fun m -> Reset)
-      (fun m ->
-        let i = init ()
-        m.Count <> i.Count || m.StepSize <> i.StepSize
-      )
-
-    "Clock" |> Binding.subModel
-      (fun m -> m.Clock)
-      snd
-      ClockMsg
-      Clock.bindings
+    "Increment" |> Binding.cmd Increment
+    "Decrement" |> Binding.cmd Decrement
+    "StepSize" |> Binding.twoWay((fun m -> float m.StepSize), int >> SetStepSize)
+    "Reset" |> Binding.cmdIf(Reset, canReset)
+    "Clock" |> Binding.subModel((fun m -> m.Clock), snd, ClockMsg, Clock.bindings)
   ]
 
 
@@ -91,8 +80,8 @@ module App =
       ClockCounter2: CounterWithClock.Model }
 
   let init () =
-    { ClockCounter1 = CounterWithClock.init ()
-      ClockCounter2 = CounterWithClock.init () }
+    { ClockCounter1 = CounterWithClock.init
+      ClockCounter2 = CounterWithClock.init }
 
   type Msg =
     | ClockCounter1Msg of CounterWithClock.Msg
@@ -106,17 +95,17 @@ module App =
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
   let bindings () : Binding<Model, Msg> list = [
-    "ClockCounter1" |> Binding.subModel
-      (fun m -> m.ClockCounter1)
-      snd
-      ClockCounter1Msg
-      CounterWithClock.bindings
+    "ClockCounter1" |> Binding.subModel(
+      (fun m -> m.ClockCounter1),
+      snd,
+      ClockCounter1Msg,
+      CounterWithClock.bindings)
 
-    "ClockCounter2" |> Binding.subModel
-      (fun m -> m.ClockCounter2)
-      snd
-      ClockCounter2Msg
-      CounterWithClock.bindings
+    "ClockCounter2" |> Binding.subModel(
+      (fun m -> m.ClockCounter2),
+      snd,
+      ClockCounter2Msg,
+      CounterWithClock.bindings)
   ]
 
 
