@@ -12,6 +12,11 @@
       <Button Command="{Binding ToggleGlobalState}" Content="Toggle global state" Width="150" Margin="10,0,10,20" />
     </StackPanel>
     <TreeView ItemsSource="{Binding Counters}">
+      <TreeView.ItemContainerStyle>
+        <Style TargetType="{x:Type TreeViewItem}">
+          <Setter Property="IsExpanded" Value="True"/>
+        </Style>
+      </TreeView.ItemContainerStyle>
       <TreeView.ItemTemplate>
         <HierarchicalDataTemplate ItemsSource="{Binding ChildCounters}">
           <StackPanel Orientation="Horizontal">
