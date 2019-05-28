@@ -1,7 +1,7 @@
 RESTRICTION: || (== net461) (== net471)
 NUGET
   remote: https://api.nuget.org/v3/index.json
-    Elmish (3.0)
+    Elmish (3.0.1)
       FSharp.Core (>= 4.6.2)
     FSharp.Core (4.6.2) - redirects: force
 
