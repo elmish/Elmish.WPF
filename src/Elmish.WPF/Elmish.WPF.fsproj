@@ -5,12 +5,15 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Utils.fs" />
-    <Compile Include="Types.fs" />
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="InternalUtils.fs" />
+    <Compile Include="InternalTypes.fs" />
     <Compile Include="Config.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />
-    <Compile Include="ViewModelUtilities.fs" />
+    <Compile Include="ViewModelModule.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="Cmd.fs" />
     <Compile Include="Program.fs" />
     <None Include="paket.references" />
   </ItemGroup>

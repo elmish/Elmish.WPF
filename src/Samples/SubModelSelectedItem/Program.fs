@@ -23,30 +23,28 @@ let update msg m =
   match msg with
   | Select entityId -> { m with Selected = entityId }
 
-let bindings model dispatch =
-  [
-    "SelectRandom" |> Binding.cmd
-      (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
-    "Deselect" |> Binding.cmd (fun _ -> Select None)
-    "Entities" |> Binding.subBindingSeq
-      id
-      (fun m -> m.Entities)
-      (fun e -> e.Id)
-      (fun () -> [
-        "Name" |> Binding.oneWay (fun (_, e) -> e.Name)
-        "SelectedLabel" |> Binding.oneWay (fun (m, e) -> if m.Selected = Some e.Id then " - SELECTED" else "")
-      ])
-    "SelectedEntity" |> Binding.subModelSelectedItem
-      "Entities"
-      (fun m -> m.Selected)
-      (fun id m -> Select id)
-  ]
+let bindings () : Binding<Model, Msg> list = [
+  "SelectRandom" |> Binding.cmd
+    (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
+
+  "Deselect" |> Binding.cmd(Select None)
+
+  "Entities" |> Binding.subModelSeq(
+    (fun m -> m.Entities),
+    (fun e -> e.Id),
+    (fun () -> [
+      "Name" |> Binding.oneWay (fun (_, e) -> e.Name)
+      "SelectedLabel" |> Binding.oneWay (fun (m, e) -> if m.Selected = Some e.Id then " - SELECTED" else "")
+    ]))
+
+  "SelectedEntity" |> Binding.subModelSelectedItem("Entities", (fun m -> m.Selected), Select)
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())

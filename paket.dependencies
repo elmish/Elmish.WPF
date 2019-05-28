@@ -3,7 +3,7 @@ framework: auto-detect
 source https://api.nuget.org/v3/index.json
 
 nuget Elmish ~> 3
-nuget FSharp.Core ~> 4.6.2 redirects: force, lowest_matching: true
+nuget FSharp.Core ~> 4.6 redirects: force, lowest_matching: true
 
 
 group Build
@@ -21,6 +21,7 @@ group Test
 
   source https://api.nuget.org/v3/index.json
 
+  nuget FSharp.Interop.Dynamic
   nuget Hedgehog
   nuget Hedgehog.Experimental
   nuget Microsoft.NET.Test.Sdk

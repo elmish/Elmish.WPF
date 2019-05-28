@@ -23,43 +23,34 @@ let validateInt42 =
 
 
 type Model =
-  { Field1Int: int
-    Field2Raw: string }
+  { RawValue: string }
 
 let init () =
-  { Field1Int = 0
-    Field2Raw = "" }
+  { RawValue = "" }
 
 type Msg =
-  | Field1Input of int
-  | Field2Input of string
+  | Input of string
   | Submit of int
 
 let update msg m =
   match msg with
-  | Field1Input x -> { m with Field1Int = x }
-  | Field2Input x -> { m with Field2Raw = x }
+  | Input x -> { m with RawValue = x }
   | Submit x -> m
 
-let bindings model dispatch =
-  [
-    "Field1" |> Binding.twoWayIfValid
-      (fun m -> string m.Field1Int)
-      (fun v m ->
-        v |> validateInt42 |> Result.map Field1Input)
-    "Field2" |> Binding.twoWayValidate
-      (fun m -> m.Field2Raw)
-      (fun v m -> Field2Input v)
-      (fun m ->  validateInt42 m.Field2Raw)
-    "Submit" |> Binding.cmdIfValid
-      (fun m -> validateInt42 m.Field2Raw |> Result.map Submit)
-  ]
+let bindings () : Binding<Model, Msg> list = [
+  "RawValue" |> Binding.twoWayValidate(
+    (fun m -> m.RawValue),
+    Input,
+    (fun m ->  validateInt42 m.RawValue))
+  "Submit" |> Binding.cmdIf(
+    fun m -> validateInt42 m.RawValue |> Result.map Submit)
+]
 
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update bindings
+  Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true }
+      { ElmConfig.Default with LogConsole = true; Measure = true }
       (MainWindow())

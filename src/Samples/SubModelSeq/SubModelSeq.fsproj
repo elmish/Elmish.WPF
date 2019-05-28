@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Elmish.WPF\Elmish.WPF.fsproj" />
-    <ProjectReference Include="..\SubModelCollection.Views\SubModelCollection.Views.csproj" />
+    <ProjectReference Include="..\SubModelSeq.Views\SubModelSeq.Views.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />

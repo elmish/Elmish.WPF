@@ -1,16 +1,26 @@
 ﻿<Window
-    x:Class="Elmish.WPF.Samples.SubModelCollection.MainWindow"
+    x:Class="Elmish.WPF.Samples.SubModelSeq.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Single counter" Height="800" Width="1000"
+    Title="SubModelSeq" Height="800" Width="1100"
     WindowStartupLocation="CenterScreen">
-<StackPanel Margin="0,20,0,10">
-    <Button Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="0,0,0,20" />
+  <StackPanel Margin="0,20,0,10">
+    <StackPanel
+        Orientation="Horizontal"
+        HorizontalAlignment="Center">
+      <Button Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="10,0,10,20" />
+      <Button Command="{Binding ToggleGlobalState}" Content="Toggle global state" Width="150" Margin="10,0,10,20" />
+    </StackPanel>
     <TreeView ItemsSource="{Binding Counters}">
+      <TreeView.ItemContainerStyle>
+        <Style TargetType="{x:Type TreeViewItem}">
+          <Setter Property="IsExpanded" Value="True"/>
+        </Style>
+      </TreeView.ItemContainerStyle>
       <TreeView.ItemTemplate>
         <HierarchicalDataTemplate ItemsSource="{Binding ChildCounters}">
           <StackPanel Orientation="Horizontal">
-            <TextBlock Text="{Binding CounterId}" Width="250" Margin="10,5,10,5" />
+            <TextBlock Text="{Binding CounterIdText}" Width="250" Margin="10,5,10,5" />
             <TextBlock Text="{Binding CounterValue, StringFormat='Counter value: {0}'}" Width="100" Margin="0,5,10,5" />
             <Button Command="{Binding Decrement}" Content="-" Margin="0,5,10,5" Width="30" />
             <Button Command="{Binding Increment}" Content="+" Margin="0,5,10,5" Width="30" />
@@ -19,17 +29,19 @@
             <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
             <Button Command="{Binding AddChild}" Content="Add child" Margin="0,5,10,5" />
             <Button
-                Command="{Binding DataContext.Remove, RelativeSource={RelativeSource AncestorType={x:Type TreeViewItem}, AncestorLevel=2}}"
-                CommandParameter="{Binding CounterId}"
+                Command="{Binding Remove}"
                 Content="×" Margin="0,5,10,5" Width="20" />
             <Button
-                Command="{Binding DataContext.MoveUp, RelativeSource={RelativeSource AncestorType={x:Type TreeViewItem}, AncestorLevel=2}}"
+                Command="{Binding MoveUp}"
                 CommandParameter="{Binding CounterId}"
                 Content="↑" Margin="0,5,10,5" Width="20" />
             <Button
-                Command="{Binding DataContext.MoveDown, RelativeSource={RelativeSource AncestorType={x:Type TreeViewItem}, AncestorLevel=2}}"
+                Command="{Binding MoveDown}"
                 CommandParameter="{Binding CounterId}"
                 Content="↓" Margin="0,5,10,5" Width="20"/>
+            <TextBlock
+                Text="{Binding GlobalState, StringFormat='Global state: {0}'}"
+                Margin="10,5,10,5" />
           </StackPanel>
         </HierarchicalDataTemplate>
       </TreeView.ItemTemplate>

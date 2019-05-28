@@ -1,3 +1,24 @@
+#### 3.0.0
+
+* The most massive (and hopefully useful) update yet!
+* Breaking: Overload-based syntax for `Binding`. The old `Binding` module is deprecated and renamed to `BindingFn`.  The new `Binding` is a static class with static methods, providing many overloads for flexibility. To migrate, replace all occurrences of `Binding.` with `BindingFn.` and follow the deprecation warnings.
+* Breaking: The `Elmish.WPF.Internal` namespace has been removed and everything in it that should actually be internal has been marked `internal`. This includes `ViewModel`.
+* Breaking: `Elmish.WPF.Internal.BindingSpec<_,_>` has been moved/renamed to `Elmish.WPF.Binding<_,_>`. It should thus be more pleasant to use in type annotations.
+* Breaking: `Elmish.WPF.Utilities.ViewModel.designInstance` has been moved to `Elmish.WPF.ViewModel`. Furthermore, it returns `obj` since `ViewModel` is internal.
+* Breaking: Removed `twoWayIfValid`. It hasn’t worked for a while due to core Elmish internals, and was of suspect utility anyway.
+* New: Many more helpful `Binding` signatures available due to the new overload-based syntax.
+* New: More general `Binding.subModel` and `Binding.subModelSeq` overloads that allow a more idiomatic Elm architecture even with static views. For background information, see [#86](https://github.com/elmish/Elmish.WPF/issues/86) (the issue is otherwise outdated).
+* New: Sticky `subModelOpt` bindings that returns the last non-null model when model is `None` (useful when animating out stuff)
+* New: `elmEq` and `refEq` as useful equality defaults for lazy bindings. `elmEq` efficiently uses reflection to do a comparison for each member that is referential for reference types except strings, and structural for strings and value types.
+* New: `Program.mkSimpleWpf` and `Program.mkProgramWpf` with more WPF-friendly signatures.
+* New: `Program.mkProgramWpfWithCmdMsg` for easily following the `CmdMsg` pattern to allow testable commands. See the FAQ in the readme for details.
+* New: `Cmd.showWindow` helper to open a new window.
+* New: Slow calls can be logged (configurable threshold).
+* New: Made available `Program.startElmishLoop` which is a low-level function that starts an Elmish loop given an Elmish `Program` and a WPF `FrameworkElement`. You probably won’t need it.
+* Improvement: Logs now indicate the binding path.
+* Improvement: Possibly better performance due to internals now using `ValueOption` instead of `Option`.
+* Improvement: Finally added (lots of) unit tests, so confidence of correct functionality is higher. (No critical bugs were found when creating the tests.)
+
 #### 2.0.0
 
 * No changes, but updated for Elmish 3.0 so the package can finally move out of beta

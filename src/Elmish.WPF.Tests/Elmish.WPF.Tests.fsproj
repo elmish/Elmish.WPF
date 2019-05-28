@@ -4,7 +4,9 @@
     <TargetFramework>net461</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TestStub.fs" />
+    <Compile Include="ViewModelTests.fs" />
+    <Compile Include="BindingTests.fs" />
+    <Compile Include="UtilsTests.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
