@@ -32,7 +32,7 @@ let bindings () : Binding<Model, Msg> list = [
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update (fun _ _ -> bindings ())
+  Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true }

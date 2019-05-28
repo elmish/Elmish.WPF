@@ -86,7 +86,7 @@ module App =
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkProgram App.init App.update (fun _ _ -> App.bindings ())
+  Program.mkProgramWpf App.init App.update App.bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true; Measure = true }

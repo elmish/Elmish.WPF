@@ -41,7 +41,7 @@ let update msg m =
   | Field2Input x -> { m with Field2Raw = x }
   | Submit x -> m
 
-let bindings : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg> list = [
   "Field2" |> Binding.twoWayValidate(
     (fun m -> m.Field2Raw),
     Field2Input,
@@ -53,7 +53,7 @@ let bindings : Binding<Model, Msg> list = [
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple init update (fun _ _ -> bindings)
+  Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
       { ElmConfig.Default with LogConsole = true; Measure = true }

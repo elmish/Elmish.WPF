@@ -124,7 +124,7 @@ let timerTick dispatch =
 
 [<EntryPoint; STAThread>]
 let main argv =
-  Program.mkSimple App.init App.update (fun _ _ -> App.bindings ())
+  Program.mkSimpleWpf App.init App.update App.bindings
   |> Program.withSubscription (fun m -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig

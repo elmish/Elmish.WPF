@@ -5,20 +5,21 @@ open System.Windows
 open Elmish
 
 
-/// Start Elmish dispatch loop
-let internal startLoop
+/// Starts the Elmish dispatch loop, setting the bindings as the DataContext
+/// for the specified FrameworkElement. Non-blocking. This is a low-level function;
+/// for normal usage, see runWindow and runWindowWithConfig.
+let startElmishLoop
     (config: ElmConfig)
     (element: FrameworkElement)
-    (programRun: Program<'t, 'model, 'msg, Binding<'model, 'msg> list> -> unit)
-    (program: Program<'t, 'model, 'msg, Binding<'model, 'msg> list>) =
+    (program: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>) =
   let mutable lastModel = None
 
   let setState model dispatch =
     match lastModel with
     | None ->
-        let mapping = Program.view program model dispatch
-        let vm = ViewModel<'model,'msg>(model, dispatch, mapping, config, "main")
-        element.DataContext <- box vm
+        let bindings = Program.view program model dispatch
+        let vm = ViewModel<'model,'msg>(model, dispatch, bindings, config, "main")
+        element.DataContext <- vm
         lastModel <- Some vm
     | Some vm ->
         vm.UpdateModel model
@@ -29,23 +30,62 @@ let internal startLoop
   program
   |> Program.withSetState setState
   |> Program.withSyncDispatch uiDispatch
-  |> programRun
+  |> Program.run
 
 
-/// Start WPF dispatch loop. Blocking function.
+/// Starts the WPF dispatch loop. Will instantiate Application if it is not
+/// already running, and then run the specified window. This is a blocking function.
 let private startApp window =
-  let app = if isNull Application.Current then Application() else Application.Current
-  app.Run window
+  if isNull Application.Current then Application () |> ignore
+  Application.Current.Run window
 
 
-/// Starts both Elmish and WPF dispatch loops. Blocking function.
+/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
+/// if it is not already running, and then run the specified window. This is
+/// a blocking function.
 let runWindow window program =
-  startLoop ElmConfig.Default window Elmish.Program.run program
+  startElmishLoop ElmConfig.Default window program
   startApp window
 
 
-/// Starts both Elmish and WPF dispatch loops with the specified configuration.
-/// Blocking function.
+/// Starts the Elmish and WPF dispatch loops with the specified configuration.
+/// Will instantiate Application if it is not already running, and then run the
+/// specified window. This is a blocking function.
 let runWindowWithConfig config window program =
-  startLoop config window Elmish.Program.run program
+  startElmishLoop config window program
   startApp window
+
+
+/// Same as mkSimple, but with a signature adapted for Elmish.WPF.
+let mkSimpleWpf
+    (init: unit -> 'model)
+    (update: 'msg  -> 'model -> 'model)
+    (bindings: unit -> Binding<'model, 'msg> list) =
+  Program.mkSimple init update (fun _ _ -> bindings ())
+
+
+/// Same as mkProgram, but with a signature adapted for Elmish.WPF.
+let mkProgramWpf
+    (init: unit -> 'model * Cmd<'msg>)
+    (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
+    (bindings: unit -> Binding<'model, 'msg> list) =
+  Program.mkProgram init update (fun _ _ -> bindings ())
+
+
+/// Same as mkProgramWpf, except that init and update doesn't return Cmd<'msg>
+/// directly, but instead return a CmdMsg discriminated union that is converted
+/// to Cmd<'msg> using toCmd. This means that the init and update functions
+/// return only data, and thus are easier to unit test. The CmdMsg pattern is
+/// general; this is just a trivial convenience function that automatically
+/// converts CmdMsg to Cmd<'msg> for you in inint and update
+let mkProgramWpfWithCmdMsg
+    (init: unit -> 'model * 'cmdMsg list)
+    (update: 'msg -> 'model -> 'model * 'cmdMsg list)
+    (bindings: unit -> Binding<'model, 'msg> list)
+    (toCmd: 'cmdMsg -> Cmd<'msg>) =
+  let convert (model, cmdMsgs) =
+    model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
+  mkProgramWpf
+    (init >> convert)
+    (fun msg model -> update msg model |> convert)
+    bindings
