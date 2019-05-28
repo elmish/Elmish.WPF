@@ -23,31 +23,27 @@ let validateInt42 =
 
 
 type Model =
-  { Field1Int: int
-    Field2Raw: string }
+  { RawValue: string }
 
 let init () =
-  { Field1Int = 0
-    Field2Raw = "" }
+  { RawValue = "" }
 
 type Msg =
-  | Field1Input of int
-  | Field2Input of string
+  | Input of string
   | Submit of int
 
 let update msg m =
   match msg with
-  | Field1Input x -> { m with Field1Int = x }
-  | Field2Input x -> { m with Field2Raw = x }
+  | Input x -> { m with RawValue = x }
   | Submit x -> m
 
 let bindings () : Binding<Model, Msg> list = [
-  "Field2" |> Binding.twoWayValidate(
-    (fun m -> m.Field2Raw),
-    Field2Input,
-    (fun m ->  validateInt42 m.Field2Raw))
+  "RawValue" |> Binding.twoWayValidate(
+    (fun m -> m.RawValue),
+    Input,
+    (fun m ->  validateInt42 m.RawValue))
   "Submit" |> Binding.cmdIf(
-    fun m -> validateInt42 m.Field2Raw |> Result.map Submit)
+    fun m -> validateInt42 m.RawValue |> Result.map Submit)
 ]
 
 

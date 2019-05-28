@@ -21,15 +21,16 @@
       </Setter>
       <Style.Triggers>
         <Trigger Property="Validation.HasError" Value="True">
-          <Setter Property="ToolTip"
-                        Value="{Binding RelativeSource={x:Static RelativeSource.Self},
-                    Path=(Validation.Errors)[0].ErrorContent}"/>
+          <Setter
+            Property="ToolTip"
+            Value="{Binding RelativeSource={x:Static RelativeSource.Self},
+            Path=(Validation.Errors)/ErrorContent}" />
         </Trigger>
       </Style.Triggers>
     </Style>
   </Window.Resources>
   <StackPanel Margin="0,25,0,0">
-    <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Field2, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+    <TextBox Style="{StaticResource textBoxInError}" Text="{Binding RawValue, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
     <Button Command="{Binding Submit}" Content="Submit" Margin="0,5,10,5" Width="50" />
   </StackPanel>
 </Window>
