@@ -1,3 +1,7 @@
+#### 3.1.0
+
+* Added `Program.withDebugTrace` which is similar to `withConsoleTrace` but writes using `System.Diagnostics.Debug.WriteLine` (e.g. to the VS output window)
+
 #### 3.0.0
 
 * The most massive (and hopefully useful) update yet!
