@@ -89,3 +89,11 @@ let mkProgramWpfWithCmdMsg
     (init >> convert)
     (fun msg model -> update msg model |> convert)
     bindings
+
+
+/// Traces all updates using System.Diagnostics.Debug.WriteLine.
+let withDebugTrace program =
+  program |> Program.withTrace (fun msg model ->
+    System.Diagnostics.Debug.WriteLine(sprintf "New message: %A" msg)
+    System.Diagnostics.Debug.WriteLine(sprintf "Updated state: %A" model)
+  )
