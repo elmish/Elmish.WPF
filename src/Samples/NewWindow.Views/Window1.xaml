@@ -3,12 +3,26 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Width="400"
-    Height="150"
+    Height="400"
     Title="Window 1">
-  <StackPanel DataContext="{Binding Win1}" VerticalAlignment="Center" Width="300">
-    <TextBlock Text="Enter text:" />
+  <StackPanel VerticalAlignment="Center" Width="300">
+    <TextBlock
+        TextWrapping="Wrap">
+      This window deliberately does not react to external close requests, so
+      Alt+F4, System Menu -> Close, or the Close (X) button does nothing. It can
+      only be opened/closed using the buttons in the main window.
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="0 5 0 0">
+      Note the interplay between the hidden/visible state of this window and the
+      main window's binding to the text entered below. The state is always kept
+      in the model, even after close, but when the window is closed (not just
+      hidden), the submodel binding returns null.
+    </TextBlock>
+    <TextBlock Text="Enter text:" Margin="0 10 0 0" />
     <TextBox
-        Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+        Text="{Binding Input, UpdateSourceTrigger=PropertyChanged}"
         TextWrapping="Wrap"
         AcceptsReturn="True"
         Height="80"

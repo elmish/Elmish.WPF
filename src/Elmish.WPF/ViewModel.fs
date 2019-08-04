@@ -36,11 +36,21 @@ type internal VmBinding<'model, 'msg> =
       * canExec: ('model -> bool)
   | CmdParam of cmd: Command
   | SubModel of
-      model: ViewModel<obj, obj> voption ref
+      vm: ViewModel<obj, obj> voption ref
       * getModel: ('model -> obj voption)
       * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj -> 'msg)
       * sticky: bool
+  | SubModelWin of
+      vmWinState: WindowState<ViewModel<obj, obj>> ref
+      * getState: ('model -> WindowState<obj>)
+      * getBindings: (unit -> Binding<obj, obj> list)
+      * toMsg: (obj -> 'msg)
+      * getWindow: (unit -> Window)
+      * isModal: bool
+      * onCloseRequested: 'msg voption
+      * preventClose: bool ref
+      * windowRef: WeakReference<Window>
   | SubModelSeq of
       vms: ObservableCollection<ViewModel<obj, obj>>
       * getModels: ('model -> obj seq)
@@ -126,6 +136,35 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
         r
 
+  let showNewWindow
+      (winRef: WeakReference<Window>)
+      (getWindow: unit -> Window)
+      dataContext
+      isDialog
+      (onCloseRequested: 'msg voption)
+      (preventClose: bool ref)
+      initialVisibility
+      dispatch =
+    Application.Current.Dispatcher.Invoke(fun () ->
+      let guiCtx = System.Threading.SynchronizationContext.Current
+      async {
+        let win = getWindow ()
+        winRef.SetTarget win
+        win.DataContext <- dataContext
+        win.Closing.Add(fun ev ->
+          ev.Cancel <- !preventClose
+          async {
+            do! Async.SwitchToThreadPool()
+            onCloseRequested |> ValueOption.iter dispatch
+          } |> Async.StartImmediate
+        )
+        do! Async.SwitchToContext guiCtx
+        if isDialog then win.ShowDialog () |> ignore
+        else
+          win.Visibility <- initialVisibility
+      } |> Async.StartImmediate
+    )
+
 
   let initializeBinding name bindingData =
     match bindingData with
@@ -176,6 +215,62 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
             SubModel (ref <| ValueSome vm, getModel, getBindings, toMsg, d.Sticky)
+    | SubModelWinData d ->
+        let getState = measure name "getState" d.GetState
+        let getBindings = measure name "bindings" d.GetBindings
+        let toMsg = measure name "toMsg" d.ToMsg
+        match getState initialModel with
+        | WindowState.Closed ->
+            SubModelWin (
+              ref WindowState.Closed,
+              getState,
+              getBindings,
+              toMsg,
+              d.GetWindow,
+              d.IsModal,
+              d.OnCloseRequested,
+              ref true,
+              WeakReference<_>(null))
+        | WindowState.Hidden m ->
+            let chain = getPropChainFor name
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
+            let winRef = WeakReference<_>(null)
+            let preventClose = ref true
+            log "[%s] Creating hidden window" chain
+            showNewWindow
+              winRef d.GetWindow vm d.IsModal d.OnCloseRequested
+              preventClose Visibility.Hidden dispatch
+            SubModelWin (
+              ref <| WindowState.Hidden vm,
+              getState,
+              getBindings,
+              toMsg,
+              d.GetWindow,
+              d.IsModal,
+              d.OnCloseRequested,
+              preventClose,
+              winRef
+            )
+        | WindowState.Visible m ->
+            let chain = getPropChainFor name
+            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
+            let winRef = WeakReference<_>(null)
+            let preventClose = ref true
+            log "[%s] Creating and opening window" chain
+            showNewWindow
+              winRef d.GetWindow vm d.IsModal d.OnCloseRequested
+              preventClose Visibility.Visible dispatch
+            SubModelWin (
+              ref <| WindowState.Visible vm,
+              getState,
+              getBindings,
+              toMsg,
+              d.GetWindow,
+              d.IsModal,
+              d.OnCloseRequested,
+              preventClose,
+              winRef
+            )
     | SubModelSeqData d ->
         let getModels = measure name "getSubModels" d.GetModels
         let getId = measure name "getId" d.GetId
@@ -263,19 +358,97 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | CmdParam _ ->
         false
     | SubModel ((vm: ViewModel<obj, obj> voption ref), (getModel: 'model -> obj voption), getBindings, toMsg, sticky) ->
-        match !vm, getModel newModel with
-        | ValueNone, ValueNone -> false
-        | ValueSome _, ValueNone ->
-            if sticky then false
-            else
-              vm := ValueNone
-              true
-        | ValueNone, ValueSome m ->
-            vm := ValueSome <| ViewModel(
-              m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
+      match !vm, getModel newModel with
+      | ValueNone, ValueNone -> false
+      | ValueSome _, ValueNone ->
+          if sticky then false
+          else
+            vm := ValueNone
             true
-        | ValueSome vm, ValueSome m ->
-            vm.UpdateModel(m)
+      | ValueNone, ValueSome m ->
+          vm := ValueSome <| ViewModel(
+            m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
+          true
+      | ValueSome vm, ValueSome m ->
+          vm.UpdateModel m
+          false
+    | SubModelWin
+        ( vmWinState, getState, getBindings, toMsg,
+          getWindow, isModal, onCloseRequested, preventClose, winRef) ->
+
+        let winPropChain = getPropChainFor bindingName
+
+        let close () =
+          preventClose := false
+          match winRef.TryGetTarget () with
+          | false, _ ->
+              log "[%s] Attempted to close window, but did not find window reference" winPropChain
+          | true, w ->
+              log "[%s] Closing window" winPropChain
+              winRef.SetTarget null
+              w.Close ()
+          winRef.SetTarget null
+
+        let hide () =
+          match winRef.TryGetTarget () with
+          | false, _ ->
+              log "[%s] Attempted to hide window, but did not find window reference" winPropChain
+          | true, w ->
+              log "[%s] Hiding window" winPropChain
+              w.Visibility <- Visibility.Hidden
+
+        let showHidden () =
+          match winRef.TryGetTarget () with
+          | false, _ ->
+              log "[%s] Attempted to show existing hidden window, but did not find window reference" winPropChain
+          | true, w ->
+              log "[%s] Showing existing hidden window" winPropChain
+              w.Visibility <- Visibility.Visible
+
+        let showNew vm initialVisibility =
+          preventClose := true
+          showNewWindow
+            winRef getWindow vm isModal onCloseRequested
+            preventClose initialVisibility dispatch
+
+        let newVm model =
+          ViewModel(model, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
+
+        match !vmWinState, getState newModel with
+        | WindowState.Closed, WindowState.Closed ->
+            false
+        | WindowState.Hidden _, WindowState.Closed
+        | WindowState.Visible _, WindowState.Closed ->
+            close ()
+            vmWinState := WindowState.Closed
+            true
+        | WindowState.Closed, WindowState.Hidden m ->
+            let vm = newVm m
+            log "[%s] Creating hidden window" winPropChain
+            showNew vm Visibility.Hidden
+            vmWinState := WindowState.Hidden vm
+            true
+        | WindowState.Hidden vm, WindowState.Hidden m ->
+            vm.UpdateModel m
+            false
+        | WindowState.Visible vm, WindowState.Hidden m ->
+            hide ()
+            vm.UpdateModel m
+            vmWinState := WindowState.Hidden vm
+            false
+        | WindowState.Closed, WindowState.Visible m ->
+            let vm = newVm m
+            log "[%s] Creating and opening window" winPropChain
+            showNew vm Visibility.Visible
+            vmWinState := WindowState.Visible vm
+            true
+        | WindowState.Hidden vm, WindowState.Visible m ->
+            vm.UpdateModel m
+            showHidden ()
+            vmWinState := WindowState.Visible vm
+            false
+        | WindowState.Visible vm, WindowState.Visible m ->
+            vm.UpdateModel m
             false
     | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
         let newSubModels = getModels newModel
@@ -324,6 +497,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWay _
     | TwoWayValidate _
     | SubModel _
+    | SubModelWin _
     | SubModelSeq _
     | SubModelSelectedItem _ ->
         None
@@ -379,6 +553,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | CmdParam cmd ->
               box cmd
           | SubModel (vm, _, _, _, _) -> !vm |> ValueOption.toObj |> box
+          | SubModelWin (vm, _, _, _, _, _, _, _, _) ->
+              match !vm with
+              | WindowState.Closed -> null
+              | WindowState.Hidden vm | WindowState.Visible vm -> box vm
           | SubModelSeq (vms, _, _, _, _) -> box vms
           | SubModelSelectedItem (vm, getSelectedId, _, name) ->
               match !vm with
@@ -423,6 +601,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | Cmd _
         | CmdParam _
         | SubModel _
+        | SubModelWin _
         | SubModelSeq _ ->
             log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name
             false
