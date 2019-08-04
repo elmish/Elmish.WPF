@@ -12,5 +12,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Elmish.WPF\Elmish.WPF.fsproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
