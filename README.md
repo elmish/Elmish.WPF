@@ -3,9 +3,28 @@ WPF done the Elmish Way
 
 [![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://img.shields.io/appveyor/ci/cmeeren/elmish-wpf/master.svg?label=master)](https://ci.appveyor.com/project/cmeeren/elmish-wpf/branch/master)
 
-Never write a ViewModel class again!
+**The good parts of MVVM (the data bindings) with the simplicity and robustness of an MVU architecture for the rest of your app. Never write a ViewModel class again!**
 
-This library uses [Elmish](https://elmish.github.io/elmish), an Elm architecture implemented in F#, to build WPF applications. Elmish was originally written for [Fable](http://fable.io) applications, however it was trimmed and packaged for .NET as well.
+### Elevator pitch
+
+Elmish.WPF is a **production-ready** library that allows you to write WPF apps with the robust, simple, well-known, and battle-tested MVU architecture, while still allowing you to use all your XAML knowledge and tooling to create UIs.
+
+Some benefits of MVU you’ll get with Elmish.WPF is:
+
+* Simple-to-understand, unidirectional data flow
+* Single source of truth for all the state in your app
+* Simple async/IO
+* Immutable data
+* Pure functions
+* Great testability
+* Simple optimization
+* 78% more rockets 🚀
+
+Even with static views, your central model/update code can follow an idiomatic Elmish/MVU architecture. You could, if you wanted, use the same model/update code to implement an app using a dynamic UI library such as [Fabulous](https://github.com/fsprojects/Fabulous) or [Fable.React](https://github.com/fable-compiler/fable-react), by just rewriting the “U” part of MVU.
+
+**Static XAML views is a feature, not a limitation. See the FAQ for several unique benefits to this approach!**
+
+Elmish.WPF uses [Elmish](https://github.com/elmish/elmish), an F# implementation of the MVU message loop.
 
 ### Sponsor
 
@@ -122,6 +141,22 @@ For more complicated examples and other `Binding` functions, see the [samples](h
 
 FAQ
 ---
+
+#### Static views? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
+
+Not at all! 🙂
+
+It’s true that static views aren’t as composable as dynamic views. It’s also true that at the time of writing, there are no solid, production-ready dynamic UI libraries for WPF (though there are no lack of half-finished attempts or proof-of-concepts: [Elmish.WPF.Dynamic](https://github.com/cmeeren/Elmish.WPF.Dynamic), [Skylight](https://github.com/gerardtoconnor/Skylight), [Uil](https://github.com/elmish/Uil)). Heck, it’s even true that Elmish.WPF was originally created with static views due to the difficulty of creating a dynamic UI library, as described in [issue #1](https://github.com/elmish/Elmish.WPF/issues/1).
+
+However, Elmish.WPF’s static-view-based solution has several unique benefits:
+
+- You can use your existing XAML and MVVM knowledge (that is, the best part of MVVM – the UI bindings – without having to deal with `NavigationService`s, `ViewModelLocator`s, state synchronization, `INotifyPropertyChanged`, etc.)
+- Huge mindshare – there are tons of relevant XAML and MVVM resources on the net which can help with the UI and data binding part if you get stuck
+- Automatic support for all 3rd party WPF UI libraries like [MaterialDesignInXamlToolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit), since it just uses XAML and bindings (support for 3rd party libraries is commonly a major pain point for dynamic UI solutions)
+- You can use the XAML designer (including design-time data binding)
+- Automatically puts all the power of WPF at your fingertips, whereas dynamic UI solutions have [inherent limitations](https://github.com/cmeeren/Elmish.WPF.Dynamic/tree/e9f04b6e330754f045df093368fa4917c892399d#current-limitations) that are not easy to work around
+
+In short, for WPF apps, a solution based on static XAML views is currently the way to go.
 
 #### Do I have to use the project structure outlined above?
 
