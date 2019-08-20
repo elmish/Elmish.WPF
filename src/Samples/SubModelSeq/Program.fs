@@ -162,9 +162,6 @@ module App =
               not <| idsToRemove.Contains pid && not <| idsToRemove.Contains cid)
         }
 
-    // TODO: moving up/down must be done at the correct level of hierarchy;
-    // currently if the hierarchy is A (B, C), D (where B and C are children of A)
-    // then D must be moved up three times before it's placed before A
     | MoveUp cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveUp }
     | MoveDown cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveDown }
 
