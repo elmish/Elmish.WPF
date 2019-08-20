@@ -174,7 +174,7 @@ Not at all. The above example, as well as the samples, keep everything in a sing
 Since the commands (`Cmd<Msg>`) returned by `update` and `init` are just lists of functions, they are not particularly testable. A general pattern you can use to get around this, is to replace the commands with pure data that are transformed to the actual commands elsewhere:
 
 * Create a a `CmdMsg` union type with cases for each command you want to execute in the app
-* Make `update` and `init` return `model * CmdMsg list`  instead of `model * Cmd<Msg>`. Since `update` and `init` now returns just data, they are much easier to test.
+* Make `update` and `init` return `model * CmdMsg list`  instead of `model * Cmd<Msg>`. Since `update` and `init` now return just data, they are much easier to test.
 * Create a trivial/too-boring-to-test `cmdMsgToCmd` function that transforms a `CmdMsg` to the corresponding `Cmd`.
 * Finally, create “normal” versions of `init` and `update` that you can use when creating `Program`. Elmish.WPF provides `Program.mkProgramWpfWithCmdMsg` that does this for you (but there’s no magic going on – it’s really easy to do yourself).
 
