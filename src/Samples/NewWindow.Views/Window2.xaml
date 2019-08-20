@@ -2,13 +2,75 @@
     x:Class="Elmish.WPF.Samples.NewWindow.Window2"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Width="400"
-    Height="150"
+    Width="500"
+    Height="500"
     Title="Window 2">
-  <StackPanel DataContext="{Binding Win2}" VerticalAlignment="Center" Width="300">
-    <TextBlock Text="Input 1:" />
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+  </Window.Resources>
+  <StackPanel VerticalAlignment="Center" Width="400">
+    <TextBlock
+        TextWrapping="Wrap">
+      This window is shown modally and blocks the main window until it's closed.
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="0 5 0 0">
+      Furthermore, it shows how submit/cancel/close just uses normal messages
+      and how user code can fully control the closing behaviour, for example to
+      show a message to the user (you could, for example, display form
+      validation errors when submit is clicked.)
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="0 5 0 0" >
+      The window can be closed in three ways:
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="15 0 0 0">
+      – Clicking Submit (or Enter, since the button has IsDefault=true)
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="15 0 0 0">
+      – Clicking Cancel (or Esc, since the button has IsCancel=true)
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="15 0 0 0" >
+      – Externally: Close (X) button, Alt+F4, or System Menu -> Close
+    </TextBlock>
+    <TextBlock
+        TextWrapping="Wrap"
+        Margin="0 5 0 0">
+      Note the interplay between the visible/closed state of this window and the
+      main window's binding to the state controlled by the inputs below. The
+      input state in the model is None when the window is closed, so it's reset
+      each time the window is shown.
+    </TextBlock>
+    <TextBlock Text="Input 1:" Margin="0 10 0 0" />
     <TextBox Text="{Binding Input1, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,5" />
     <TextBlock Text="Input 2:" />
     <TextBox Text="{Binding Input2, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,5" />
+    <TextBlock
+        Visibility="{Binding SubmitMsgVisible, Converter={StaticResource BoolToVisibility}}"
+        Foreground="Red">
+      Submit clicked, repeat to submit
+    </TextBlock>
+    <TextBlock
+        Visibility="{Binding CancelMsgVisible, Converter={StaticResource BoolToVisibility}}"
+        Foreground="Red">
+      Cancel clicked, repeat to cancel
+    </TextBlock>
+    <TextBlock
+        Visibility="{Binding CloseRequestedMsgVisible, Converter={StaticResource BoolToVisibility}}"
+        Foreground="Red">
+      External close requested, repeat to close
+    </TextBlock>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 0 0">
+      <Button Command="{Binding Cancel}" IsCancel="true" Width="60" Margin="0 0 10 0">Cancel</Button>
+      <Button Command="{Binding Submit}" IsDefault="true" Width="60">Submit</Button>
+    </StackPanel>
   </StackPanel>
 </Window>

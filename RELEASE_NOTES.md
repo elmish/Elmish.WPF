@@ -1,3 +1,8 @@
+#### 3.2.0
+
+- Added proper dialog/window support using `Binding.subModelWin`. See [the readme](https://github.com/elmish/Elmish.WPF/tree/feature-windows-binding#can-i-open-new-windowsdialogs) for more and the [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) for an example.
+- Deprecated `Cmd.showWindow` (use `Binding.subModelWin` instead)
+
 #### 3.1.0
 
 * Added `Program.withDebugTrace` which is similar to `withConsoleTrace` but writes using `System.Diagnostics.Debug.WriteLine` (e.g. to the VS output window)
