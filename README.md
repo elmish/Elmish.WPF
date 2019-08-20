@@ -171,7 +171,7 @@ Not at all. The above example, as well as the samples, keep everything in a sing
 
 #### How can I test commands? What is the CmdMsg pattern?
 
-Since the commands (`Cmd<Msg>`) returned by `update` and `init` are just lists of functions, they are not particularly testable. A general pattern you can use to get around this, is to replace the commands with pure data that are transformed to the actual commands elsewhere:
+Since the commands (`Cmd<Msg>`) returned by `update` and `init` are just lists of functions, they are not particularly testable. A general pattern you can use to get around this is to replace the commands with pure data that are transformed to the actual commands elsewhere:
 
 * Create a a `CmdMsg` union type with cases for each command you want to execute in the app
 * Make `update` and `init` return `model * CmdMsg list`  instead of `model * Cmd<Msg>`. Since `update` and `init` now return just data, they are much easier to test.
