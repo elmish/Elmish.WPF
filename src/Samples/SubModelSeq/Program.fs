@@ -63,49 +63,65 @@ module Domain =
       { create () with Id = c.Id }
 
 
+module Tree =
+
+  type Node<'a> =
+    { Data: 'a
+      Children: Node<'a> list }
+
+  let asLeaf a =
+    { Data = a
+      Children = [] }
+
+  let rec mapData f n =
+    { Data = n.Data |> f
+      Children = n.Children |> List.map (mapData f) }
+
+  let rec mapChildren f n =
+    { Data = n.Data
+      Children = n.Children |> f |> List.map (mapChildren f)}
+
+  let rec preorderFlatten n =
+    n :: List.collect preorderFlatten n.Children
 
 module App =
 
   type Model =
     { SomeGlobalState: bool
-      AllCounters: Counter list
-      ParentChild: (CounterId * CounterId) list }
+      Counters: Tree.Node<Counter> list }
 
   let init () =
     { SomeGlobalState = false
-      AllCounters = [ Counter.create () ]
-      ParentChild = [] }
+      Counters = [ Counter.create() |> Tree.asLeaf ] }
 
-  /// Indicates whether the counter is a child counter.
-  let isChild m c =
-    m.ParentChild
-    |> List.exists (fun (pid, cid) -> cid = c.Id)
+  let allPreorderFlatten m =
+    m.Counters |> List.collect Tree.preorderFlatten
+
+  let allCounters m =
+    m |> allPreorderFlatten |> List.map (fun n -> n.Data)
+
+  let parentChild m =
+    m |> allPreorderFlatten |> List.collect (fun pn -> pn.Children |> List.map (fun cn -> (pn.Data.Id, cn.Data.Id)))
 
   /// Returns all top-level counters.
   let topLevelCounters m =
-    m.AllCounters
-    |> List.filter (not << isChild m)
+    m.Counters |> List.map (fun c -> c.Data)
 
   /// Returns all immediate child counters of the specified parent counter ID.
   let childrenOf parentId m =
-    m.AllCounters
-    |> List.filter (fun child -> m.ParentChild |> List.contains (parentId, child.Id))
-
-  /// Returns all recursive child counters of the specified parent counter ID.
-  let rec recursiveChildrenOf parentId m =
-    let immediateChildren = childrenOf parentId m
-    immediateChildren @ (immediateChildren |> List.collect (fun c -> recursiveChildrenOf c.Id m))
+    match parentId with
+    | Some pid -> m |> allCounters |> List.filter (fun child -> m |> parentChild |> List.contains (pid, child.Id))
+    | None     -> topLevelCounters m
 
   /// Returns the parent counter ID of the specified child counter ID.
   let parentIdOf childId m =
-    m.ParentChild
+    m |> parentChild
     |> List.tryPick (function (pid, cid) when cid = childId -> Some pid | _ -> None)
 
   /// Returns the sibling counters of the specified counter ID.
-  let getSiblings counterId m =
-    match parentIdOf counterId m with
-    | None -> topLevelCounters m
-    | Some pid -> childrenOf pid m
+  let childrenOfParentOf cid m =
+    let pid = m |> parentIdOf cid
+    m |> childrenOf pid
 
   type Msg =
     | ToggleGlobalState
@@ -137,36 +153,44 @@ module App =
     match msg with
     | ToggleGlobalState -> { m with SomeGlobalState = not m.SomeGlobalState }
 
-    | AddCounter None -> { m with AllCounters = m.AllCounters @ [ Counter.create () ] }
+    | AddCounter None -> { m with Counters = (Counter.create () |> Tree.asLeaf) :: m.Counters }
 
     | AddCounter (Some parentId) ->
-        let child = Counter.create ()
-        { m with
-            AllCounters = m.AllCounters @ [child]
-            ParentChild = m.ParentChild @ [ (parentId, child.Id) ] }
+        let child = Counter.create () |> Tree.asLeaf
+        let rec f =
+          fun (n:Tree.Node<Counter>) ->
+            if n.Data.Id = parentId
+            then { n with Children = child :: n.Children }
+            else { n with Children = n.Children |> List.map f }
+        { m with Counters = m.Counters |> List.map f }
 
-    | Increment cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.increment }
+    | Increment cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.increment)) }
 
-    | Decrement cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.decrement }
+    | Decrement cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.decrement)) }
 
-    | SetStepSize (cid, step) -> { m with AllCounters = m.AllCounters |> mapCounter cid (Counter.setStepSize step) }
+    | SetStepSize (cid, step) -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid (Counter.setStepSize step))) }
 
-    | Reset cid -> { m with AllCounters = m.AllCounters |> mapCounter cid Counter.reset }
+    | Reset cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.reset)) }
 
     | Remove cid ->
-        let childIds = recursiveChildrenOf cid m |> List.map (fun c -> c.Id)
-        let idsToRemove = cid :: childIds |> Set.ofList
-        { m with
-            AllCounters = m.AllCounters |> List.filter (fun c -> not <| idsToRemove.Contains c.Id)
-            ParentChild = m.ParentChild |> List.filter (fun (pid, cid) ->
-              not <| idsToRemove.Contains pid && not <| idsToRemove.Contains cid)
-        }
+        let f (ns:Tree.Node<Counter> list) = ns |> List.filter (fun n -> n.Data.Id <> cid)
+        { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
 
-    // TODO: moving up/down must be done at the correct level of hierarchy;
-    // currently if the hierarchy is A (B, C), D (where B and C are children of A)
-    // then D must be moved up three times before it's placed before A
-    | MoveUp cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveUp }
-    | MoveDown cid -> { m with AllCounters = m.AllCounters |> moveCounter cid moveDown }
+    | MoveUp id ->
+      let f (ns:Tree.Node<Counter> list) : Tree.Node<Counter> list =
+        let oi = ns |> List.tryFindIndex (fun n -> n.Data.Id = id)
+        match oi with
+        | Some i -> (ns |> List.take (i - 1)) @ [ns |> List.item i] @ [ns |> List.item (i - 1)] @ (ns |> List.skip (i + 1))
+        | None -> ns
+      { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
+
+    | MoveDown id ->
+      let f (ns:Tree.Node<Counter> list) =
+        let oi = ns |> List.tryFindIndex (fun n -> n.Data.Id = id)
+        match oi with
+        | Some i -> (ns |> List.take i) @ [ns |> List.item (i + 1)] @ [ns |> List.item i] @ (ns |> List.skip (i + 2))
+        | None -> ns
+      { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
 
 
 module Bindings =
@@ -195,19 +219,19 @@ module Bindings =
     "AddChild" |> Binding.cmd(fun (m, c) -> AddCounter (Some c.Id))
 
     "MoveUp" |> Binding.cmdIf(
-      (fun (m, c) -> MoveUp c.Id),
-      (fun (m, c) -> m |> getSiblings c.Id |> List.tryHead <> Some c))
+      (fun (_, c) -> MoveUp c.Id),
+      (fun (m, c) -> m |> childrenOfParentOf c.Id |> List.tryHead <> Some c))
 
     "MoveDown" |> Binding.cmdIf(
       (fun (m, c) -> MoveDown c.Id),
-      (fun (m, c) -> m |> getSiblings c.Id |> List.tryLast <> Some c))
+      (fun (m, c) -> m |> childrenOfParentOf c.Id |> List.tryLast <> Some c))
 
     "GlobalState" |> Binding.oneWay(fun (m, c) -> m.SomeGlobalState)
 
     "ChildCounters" |> Binding.subModelSeq(
-      (fun (m, c) -> childrenOf c.Id m),
-      (fun ((m, parentCounter), childCounter) -> (m, childCounter)),
-      (fun (m, c) -> c.Id),
+      (fun (m, c) -> childrenOf (Some c.Id) m),
+      (fun ((m, _), childCounter) -> (m, childCounter)),
+      (fun (_, c) -> c.Id),
       snd,
       counterBindings)
   ]
