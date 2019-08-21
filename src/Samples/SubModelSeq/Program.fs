@@ -4,35 +4,6 @@ open System
 open Elmish
 open Elmish.WPF
 
-
-[<AutoOpen>]
-module Utils =
-
-  /// Returns a list where the item with the specified index is moved up one index
-  /// unless it is already the first item in the list. Throws if the index does not
-  /// exist in the list.
-  let moveUp idx list =
-    if idx = 0 then list
-    else
-      let array = List.toArray list
-      let el = array.[idx]
-      array.[idx] <- array.[idx-1]
-      array.[idx-1] <- el
-      Array.toList array
-
-  /// Returns a list where the item with the specified index is moved up one index
-  /// unless it is already the last item in the list. Throws if the index does not
-  /// exist in the list.
-  let moveDown idx list =
-    if idx = List.length list - 1 then list
-    else
-      let array = List.toArray list
-      let el = array.[idx]
-      array.[idx] <- array.[idx+1]
-      array.[idx+1] <- el
-      Array.toList array
-
-
 [<AutoOpen>]
 module Domain =
 
@@ -73,13 +44,12 @@ module Tree =
     { Data = a
       Children = [] }
 
+  let rec map f n =
+    n |> f |> (fun nn -> { nn with Children = nn.Children |> List.map (map f) } )
+
   let rec mapData f n =
     { Data = n.Data |> f
       Children = n.Children |> List.map (mapData f) }
-
-  let rec mapChildren f n =
-    { Data = n.Data
-      Children = n.Children |> f |> List.map (mapChildren f)}
 
   let rec preorderFlatten n =
     n :: List.collect preorderFlatten n.Children
@@ -88,14 +58,18 @@ module App =
 
   type Model =
     { SomeGlobalState: bool
-      Counters: Tree.Node<Counter> list }
+      DummyRoot: Tree.Node<Counter> }
+
+  let asDummyRoot ns : Tree.Node<Counter> =
+    { Data = Counter.create() // Placeholder data to satisfy type system. User never sees this.
+      Children = ns }
 
   let init () =
     { SomeGlobalState = false
-      Counters = [ Counter.create() |> Tree.asLeaf ] }
+      DummyRoot = [ Counter.create() |> Tree.asLeaf ] |> asDummyRoot }
 
   let allPreorderFlatten m =
-    m.Counters |> List.collect Tree.preorderFlatten
+    m.DummyRoot |> Tree.preorderFlatten |> List.skip 1
 
   let allCounters m =
     m |> allPreorderFlatten |> List.map (fun n -> n.Data)
@@ -105,7 +79,7 @@ module App =
 
   /// Returns all top-level counters.
   let topLevelCounters m =
-    m.Counters |> List.map (fun c -> c.Data)
+    m.DummyRoot.Children |> List.map (fun c -> c.Data)
 
   /// Returns all immediate child counters of the specified parent counter ID.
   let childrenOf parentId m =
@@ -125,7 +99,7 @@ module App =
 
   type Msg =
     | ToggleGlobalState
-    | AddCounter of parent: CounterId option
+    | AddCounter of parent: CounterId
     | Increment of CounterId
     | Decrement of CounterId
     | SetStepSize of CounterId * int
@@ -153,44 +127,41 @@ module App =
     match msg with
     | ToggleGlobalState -> { m with SomeGlobalState = not m.SomeGlobalState }
 
-    | AddCounter None -> { m with Counters = (Counter.create () |> Tree.asLeaf) :: m.Counters }
+    | AddCounter parentId ->
+        let f (n:Tree.Node<Counter>) =
+          if n.Data.Id = parentId
+          then { n with Children = (Counter.create () |> Tree.asLeaf) :: n.Children}
+          else n
+        { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
-    | AddCounter (Some parentId) ->
-        let child = Counter.create () |> Tree.asLeaf
-        let rec f =
-          fun (n:Tree.Node<Counter>) ->
-            if n.Data.Id = parentId
-            then { n with Children = child :: n.Children }
-            else { n with Children = n.Children |> List.map f }
-        { m with Counters = m.Counters |> List.map f }
+    | Increment cid -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (updateCounter cid Counter.increment) }
 
-    | Increment cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.increment)) }
+    | Decrement cid -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (updateCounter cid Counter.decrement) }
 
-    | Decrement cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.decrement)) }
+    | SetStepSize (cid, step) -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (updateCounter cid (Counter.setStepSize step)) }
 
-    | SetStepSize (cid, step) -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid (Counter.setStepSize step))) }
-
-    | Reset cid -> { m with Counters = m.Counters |> List.map (Tree.mapData (updateCounter cid Counter.reset)) }
+    | Reset cid -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (updateCounter cid Counter.reset) }
 
     | Remove cid ->
-        let f (ns:Tree.Node<Counter> list) = ns |> List.filter (fun n -> n.Data.Id <> cid)
-        { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
+        let f (n:Tree.Node<Counter>) =
+          { n with Children = n.Children |> List.filter (fun n -> n.Data.Id <> cid) }
+        { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveUp id ->
-      let f (ns:Tree.Node<Counter> list) : Tree.Node<Counter> list =
-        let oi = ns |> List.tryFindIndex (fun n -> n.Data.Id = id)
+      let f (n:Tree.Node<Counter>) =
+        let oi = n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id)
         match oi with
-        | Some i -> (ns |> List.take (i - 1)) @ [ns |> List.item i] @ [ns |> List.item (i - 1)] @ (ns |> List.skip (i + 1))
-        | None -> ns
-      { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
+        | Some i -> { n with Children = (n.Children |> List.take (i - 1)) @ [n.Children |> List.item i] @ [n.Children |> List.item (i - 1)] @ (n.Children |> List.skip (i + 1)) }
+        | None -> n
+      { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveDown id ->
-      let f (ns:Tree.Node<Counter> list) =
-        let oi = ns |> List.tryFindIndex (fun n -> n.Data.Id = id)
+      let f (n:Tree.Node<Counter>) =
+        let oi = n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id)
         match oi with
-        | Some i -> (ns |> List.take i) @ [ns |> List.item (i + 1)] @ [ns |> List.item i] @ (ns |> List.skip (i + 2))
-        | None -> ns
-      { m with Counters = m.Counters |> f |> List.map (Tree.mapChildren f) }
+        | Some i -> { n with Children = (n.Children |> List.take i) @ [n.Children |> List.item (i + 1)] @ [n.Children |> List.item i] @ (n.Children |> List.skip (i + 2)) }
+        | None -> n
+      { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
 
 module Bindings =
@@ -216,7 +187,7 @@ module Bindings =
 
     "Remove" |> Binding.cmd(fun (m, c) -> Remove c.Id)
 
-    "AddChild" |> Binding.cmd(fun (m, c) -> AddCounter (Some c.Id))
+    "AddChild" |> Binding.cmd(fun (m, c) -> AddCounter c.Id)
 
     "MoveUp" |> Binding.cmdIf(
       (fun (_, c) -> MoveUp c.Id),
@@ -245,7 +216,7 @@ module Bindings =
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
-    "AddCounter" |> Binding.cmd (AddCounter None)
+    "AddCounter" |> Binding.cmd(fun m -> AddCounter m.DummyRoot.Data.Id)
   ]
 
 
