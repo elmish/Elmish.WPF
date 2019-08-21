@@ -4,6 +4,16 @@ open System
 open Elmish
 open Elmish.WPF
 
+module List =
+
+  let swap i j =
+    List.permute
+      (function
+       | a when a = i -> j
+       | a when a = j -> i
+       | a -> a)
+
+
 [<AutoOpen>]
 module Domain =
 
@@ -151,7 +161,7 @@ module App =
       let f (n:Tree.Node<Counter>) =
         let oi = n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id)
         match oi with
-        | Some i -> { n with Children = (n.Children |> List.take (i - 1)) @ [n.Children |> List.item i] @ [n.Children |> List.item (i - 1)] @ (n.Children |> List.skip (i + 1)) }
+        | Some i -> { n with Children = n.Children |> List.swap i (i - 1) }
         | None -> n
       { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
@@ -159,7 +169,7 @@ module App =
       let f (n:Tree.Node<Counter>) =
         let oi = n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id)
         match oi with
-        | Some i -> { n with Children = (n.Children |> List.take i) @ [n.Children |> List.item (i + 1)] @ [n.Children |> List.item i] @ (n.Children |> List.skip (i + 2)) }
+        | Some i -> { n with Children = n.Children |> List.swap i (i + 1) }
         | None -> n
       { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
