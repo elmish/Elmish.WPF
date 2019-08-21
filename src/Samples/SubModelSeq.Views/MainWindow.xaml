@@ -27,8 +27,8 @@
             <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
             <Button Command="{Binding AddChild}" Content="Add child" Margin="0,5,10,5" />
             <Button Command="{Binding Remove}" Content="×" Margin="0,5,10,5" Width="20" />
-            <Button Command="{Binding MoveUp}" CommandParameter="{Binding CounterId}" Content="↑" Margin="0,5,10,5" Width="20" />
-            <Button Command="{Binding MoveDown}" CommandParameter="{Binding CounterId}" Content="↓" Margin="0,5,10,5" Width="20"/>
+            <Button Command="{Binding MoveUp}" Content="↑" Margin="0,5,10,5" Width="20" />
+            <Button Command="{Binding MoveDown}" Content="↓" Margin="0,5,10,5" Width="20"/>
             <TextBlock Text="{Binding GlobalState, StringFormat='Global state: {0}'}" Margin="10,5,10,5" />
           </StackPanel>
         </HierarchicalDataTemplate>
