@@ -5,9 +5,7 @@
     Title="SubModelSeq" Height="800" Width="1100"
     WindowStartupLocation="CenterScreen">
   <StackPanel Margin="0,20,0,10">
-    <StackPanel
-        Orientation="Horizontal"
-        HorizontalAlignment="Center">
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
       <Button Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="10,0,10,20" />
       <Button Command="{Binding ToggleGlobalState}" Content="Toggle global state" Width="150" Margin="10,0,10,20" />
     </StackPanel>
@@ -28,20 +26,10 @@
             <TextBlock Text="{Binding StepSize, StringFormat='Step size: {0}'}" Margin="0,5,10,5" />
             <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
             <Button Command="{Binding AddChild}" Content="Add child" Margin="0,5,10,5" />
-            <Button
-                Command="{Binding Remove}"
-                Content="×" Margin="0,5,10,5" Width="20" />
-            <Button
-                Command="{Binding MoveUp}"
-                CommandParameter="{Binding CounterId}"
-                Content="↑" Margin="0,5,10,5" Width="20" />
-            <Button
-                Command="{Binding MoveDown}"
-                CommandParameter="{Binding CounterId}"
-                Content="↓" Margin="0,5,10,5" Width="20"/>
-            <TextBlock
-                Text="{Binding GlobalState, StringFormat='Global state: {0}'}"
-                Margin="10,5,10,5" />
+            <Button Command="{Binding Remove}" Content="×" Margin="0,5,10,5" Width="20" />
+            <Button Command="{Binding MoveUp}" CommandParameter="{Binding CounterId}" Content="↑" Margin="0,5,10,5" Width="20" />
+            <Button Command="{Binding MoveDown}" CommandParameter="{Binding CounterId}" Content="↓" Margin="0,5,10,5" Width="20"/>
+            <TextBlock Text="{Binding GlobalState, StringFormat='Global state: {0}'}" Margin="10,5,10,5" />
           </StackPanel>
         </HierarchicalDataTemplate>
       </TreeView.ItemTemplate>
