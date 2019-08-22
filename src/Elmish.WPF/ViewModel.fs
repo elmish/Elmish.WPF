@@ -121,7 +121,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let sw = System.Diagnostics.Stopwatch.StartNew ()
         let r = f x
         sw.Stop ()
-        if sw.ElapsedMilliseconds > 0L then
+        if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
           log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
         r
 
@@ -132,7 +132,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let sw = System.Diagnostics.Stopwatch.StartNew ()
         let r = f x y
         sw.Stop ()
-        if sw.ElapsedMilliseconds > 0L then
+        if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
           log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
         r
 
