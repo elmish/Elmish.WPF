@@ -1,7 +1,11 @@
+#### 3.2.1
+
+* Fixed `ElmConfig.MeasureLimitMs` not being used
+
 #### 3.2.0
 
-- Added proper dialog/window support using `Binding.subModelWin`. See [the readme](https://github.com/elmish/Elmish.WPF/tree/feature-windows-binding#can-i-open-new-windowsdialogs) for more and the [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) for an example.
-- Deprecated `Cmd.showWindow` (use `Binding.subModelWin` instead)
+* Added proper dialog/window support using `Binding.subModelWin`. See [the readme](https://github.com/elmish/Elmish.WPF/tree/feature-windows-binding#can-i-open-new-windowsdialogs) for more and the [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) for an example.
+* Deprecated `Cmd.showWindow` (use `Binding.subModelWin` instead)
 
 #### 3.1.0
 
