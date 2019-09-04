@@ -46,7 +46,7 @@ This ensures that your history is “clean”, with one branch off from master c
 
 If you have pushed your branch to GitHub and you need to rebase like this (including after you have created a pull request), you need to use `git push -f` to force rewrite the remote branch.
 
-Also considering cleaning your commit history by squashing commits in an interactive rebase.
+Also consider cleaning your commit history by squashing commits in an interactive rebase (not mandatory).
 
 More on rebasing and squashing can be found in [this guide](https://robots.thoughtbot.com/git-interactive-rebase-squash-amend-rewriting-history).
 
