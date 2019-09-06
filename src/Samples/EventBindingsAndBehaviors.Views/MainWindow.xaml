@@ -1,0 +1,50 @@
+﻿<Window
+    x:Class="Elmish.WPF.Samples.EventBindingsAndBehaviors.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+    xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
+    Title="EventBindings" Height="200" Width="350"
+    WindowStartupLocation="CenterScreen">
+  <StackPanel Margin="15" HorizontalAlignment="Center">
+    <TextBlock Text="Switch focus between these two inputs." Margin="0,0,0,10" TextAlignment="Center" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+      <StackPanel>
+        <TextBox Width="100" Margin="0,0,25,0" IsReadOnly="True" IsReadOnlyCaretVisible="True">
+          <i:Interaction.Triggers>
+            <i:EventTrigger EventName="GotFocus">
+              <i:InvokeCommandAction Command="{Binding GotFocus1}"/>
+            </i:EventTrigger>
+            <i:EventTrigger EventName="LostFocus">
+              <i:InvokeCommandAction Command="{Binding LostFocus1}"/>
+            </i:EventTrigger>
+          </i:Interaction.Triggers>
+        </TextBox>
+        <TextBlock Text="{Binding Msg1}" Margin="0,0,25,0" TextAlignment="Center" />
+      </StackPanel>
+      <StackPanel>
+        <TextBox Width="100" Margin="0,0,0,0"  IsReadOnly="True" IsReadOnlyCaretVisible="True">
+          <i:Interaction.Triggers>
+            <i:EventTrigger EventName="GotFocus">
+              <i:InvokeCommandAction Command="{Binding GotFocus2}"/>
+            </i:EventTrigger>
+            <i:EventTrigger EventName="LostFocus">
+              <i:InvokeCommandAction Command="{Binding LostFocus2}"/>
+            </i:EventTrigger>
+          </i:Interaction.Triggers>
+        </TextBox>
+        <TextBlock Text="{Binding Msg2}" Margin="0,0,25,0" TextAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+    <TextBlock
+        Text="This input will receive focus automatically when the window is displayed."
+        TextWrapping="Wrap"
+        Margin="0,10,0,10"
+        TextAlignment="Center"  />
+    <TextBox Width="100" Margin="0,0,0,0"  IsReadOnly="True" IsReadOnlyCaretVisible="True">
+      <i:Interaction.Behaviors>
+        <local:FocusWhenVisibleBehavior />
+      </i:Interaction.Behaviors>
+    </TextBox>
+  </StackPanel>
+</Window>

@@ -215,3 +215,7 @@ Project code must of course be enabled in the XAML designer for this to work.
 #### Can I open new windows/dialogs?
 
 Sure! Just use `Binding.subModelWin`. It works like `Binding.subModel`, but has a `WindowState` wrapper around the returned model to control whether the window is closed, hidden, or visible. You can use both modal and non-modal windows/dialogs, and everything is a part of the Elmish core loop. Check out the [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
+
+#### Can I bind to events and use behaviors?
+
+Sure! Check out the [EventBindingsAndBehaviors sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). Note that you have to install the NuGet packages `MicrosoftExpressionInteractions` and `System.Windows.Interactivity.WPF`.

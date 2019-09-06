@@ -8,6 +8,15 @@ nuget Elmish ~> 3 >= 3.0.3
 nuget FSharp.Core ~> 4.6 redirects: force, lowest_matching: true
 
 
+group Samples
+
+  framework: auto-detect
+  source https://api.nuget.org/v3/index.json
+
+  nuget MicrosoftExpressionInteractions
+  nuget System.Windows.Interactivity.WPF
+
+
 group Build
 
   source https://api.nuget.org/v3/index.json
