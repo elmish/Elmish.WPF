@@ -5,6 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Logging.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InternalUtils.fs" />
     <Compile Include="InternalTypes.fs" />
