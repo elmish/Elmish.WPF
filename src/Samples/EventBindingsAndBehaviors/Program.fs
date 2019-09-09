@@ -3,21 +3,30 @@
 open System
 open Elmish
 open Elmish.WPF
+open System.Windows
 
 
 type Model =
   { Msg1: string
-    Msg2: string }
+    Msg2: string
+    ButtonText: string
+    Visibility: Visibility }
+
+let visibleButtonText = "Hide text box"
+let hiddenButonText = "Show text box"
 
 let init () =
   { Msg1 = ""
-    Msg2 = "" }
+    Msg2 = ""
+    ButtonText = visibleButtonText
+    Visibility = Visibility.Visible }
 
 type Msg =
   | GotFocus1
   | GotFocus2
   | LostFocus1
   | LostFocus2
+  | ToggleVisibility
 
 let update msg m =
   match msg with
@@ -25,6 +34,11 @@ let update msg m =
   | GotFocus2 -> { m with Msg2 = "Focused" }
   | LostFocus1 -> { m with Msg1 = "Not focused" }
   | LostFocus2 -> { m with Msg2 = "Not focused" }
+  | ToggleVisibility ->
+    if m.Visibility = Visibility.Visible
+    then { m with Visibility = Visibility.Hidden; ButtonText = hiddenButonText }
+    else { m with Visibility = Visibility.Visible; ButtonText = visibleButtonText }
+
 
 let bindings () : Binding<Model, Msg> list = [
   "Msg1" |> Binding.oneWay (fun m -> m.Msg1)
@@ -33,6 +47,9 @@ let bindings () : Binding<Model, Msg> list = [
   "GotFocus2" |> Binding.cmd GotFocus2
   "LostFocus1" |> Binding.cmd LostFocus1
   "LostFocus2" |> Binding.cmd LostFocus2
+  "ToggleVisibility" |> Binding.cmd ToggleVisibility
+  "ButtonText" |> Binding.oneWay (fun m -> m.ButtonText)
+  "TextBoxVisibility" |> Binding.oneWay (fun m -> m.Visibility)
 ]
 
 
