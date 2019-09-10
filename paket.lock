@@ -966,8 +966,7 @@ GROUP Samples
 RESTRICTION: || (== net461) (== net471)
 NUGET
   remote: https://api.nuget.org/v3/index.json
-    MicrosoftExpressionInteractions (3.0.40218)
-    System.Windows.Interactivity.WPF (2.0.20525)
+    Microsoft.Xaml.Behaviors.Wpf (1.0.1)
 
 GROUP Test
 NUGET

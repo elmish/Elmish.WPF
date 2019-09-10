@@ -218,4 +218,4 @@ Sure! Just use `Binding.subModelWin`. It works like `Binding.subModel`, but has 
 
 #### Can I bind to events and use behaviors?
 
-Sure! Check out the [EventBindingsAndBehaviors sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). Note that you have to install the NuGet packages `MicrosoftExpressionInteractions` and `System.Windows.Interactivity.WPF`.
+Sure! Check out the [EventBindingsAndBehaviors sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). Note that you have to install the NuGet package `Microsoft.Xaml.Behaviors.Wpf`.

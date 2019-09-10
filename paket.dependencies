@@ -13,8 +13,7 @@ group Samples
   framework: auto-detect
   source https://api.nuget.org/v3/index.json
 
-  nuget MicrosoftExpressionInteractions
-  nuget System.Windows.Interactivity.WPF
+  nuget Microsoft.Xaml.Behaviors.Wpf
 
 
 group Build

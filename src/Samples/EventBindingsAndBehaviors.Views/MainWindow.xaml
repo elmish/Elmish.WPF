@@ -2,7 +2,7 @@
     x:Class="Elmish.WPF.Samples.EventBindingsAndBehaviors.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
     Title="EventBindings" Height="240" Width="400"
     WindowStartupLocation="CenterScreen">

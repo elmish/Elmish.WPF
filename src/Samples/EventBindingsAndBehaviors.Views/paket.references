@@ -1,3 +1,2 @@
 group Samples
-  MicrosoftExpressionInteractions
-  System.Windows.Interactivity.WPF
+  Microsoft.Xaml.Behaviors.Wpf
