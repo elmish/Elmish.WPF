@@ -128,7 +128,7 @@ module App =
     | ToggleGlobalState -> { m with SomeGlobalState = not m.SomeGlobalState }
 
     | AddCounter pid ->
-        let f (n:Tree.Node<Counter>) =
+        let f (n: Tree.Node<Counter>) =
           if n.Data.Id = pid
           then { n with Children = (Counter.create () |> Tree.asLeaf) :: n.Children}
           else n
@@ -143,19 +143,19 @@ module App =
     | Reset id -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (resetCounter id ) }
 
     | Remove id ->
-        let f (n:Tree.Node<Counter>) =
+        let f (n: Tree.Node<Counter>) =
           { n with Children = n.Children |> List.filter (fun n -> n.Data.Id <> id) }
         { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveUp id ->
-      let f (n:Tree.Node<Counter>) =
+      let f (n: Tree.Node<Counter>) =
         match n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id) with
         | Some i -> { n with Children = n.Children |> List.swap i (i - 1) }
         | None -> n
       { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveDown id ->
-      let f (n:Tree.Node<Counter>) =
+      let f (n: Tree.Node<Counter>) =
         match n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id) with
         | Some i -> { n with Children = n.Children |> List.swap i (i + 1) }
         | None -> n

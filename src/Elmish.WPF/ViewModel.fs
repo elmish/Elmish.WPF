@@ -76,7 +76,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let logger =
     seq {
-      if config.LogConsole then yield (fun (s:string) -> Console.WriteLine s)
+      if config.LogConsole then yield (fun (s: string) -> Console.WriteLine s)
       if config.LogTrace then yield Diagnostics.Trace.WriteLine
     } |> compositeLogger
 
