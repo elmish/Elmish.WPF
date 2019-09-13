@@ -98,7 +98,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     sprintf "%s.%s.%s" propNameChain collectionBindingName itemId
 
   let notifyPropertyChanged propName =
-    logTrace <| PropertyChangedData {
+    logTrace <| PropertyChanged {
       PropertyNameChain = propNameChain
       PropertyName = propName }
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
@@ -110,7 +110,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     match errors.TryGetValue propName with
     | true, err when err = error -> ()
     | _ ->
-        logTrace <| ValidationErrorsChangedData {
+        logTrace <| ValidationErrorsChanged {
           PropertyNameChain = propNameChain
           PropertyName = propName }
         errors.[propName] <- error
@@ -118,7 +118,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let removeError propName =
     if errors.Remove propName then
-      logTrace <| ValidationErrorsChangedData { // TODO: use new ValidationErrorsRemovedData
+      logTrace <| ValidationErrorsChanged { // TODO: use new ValidationErrorsRemovedData
         PropertyNameChain = propNameChain
         PropertyName = propName }
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
@@ -131,7 +131,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let r = f x
         sw.Stop ()
         if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
-          logTrace <| TimingData {
+          logTrace <| Timing {
              PropertyNameChain = propNameChain
              PropertyName = name
              BindingDataFunctionName = callName
@@ -147,7 +147,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let r = f x y
         sw.Stop ()
         if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
-          logTrace <| TimingData {
+          logTrace <| Timing {
              PropertyNameChain = propNameChain
              PropertyName = name
              BindingDataFunctionName = callName
@@ -255,7 +255,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            logTrace <| CreatingHiddenWindowData { PropertyNameChain = chain }
+            logTrace <| CreatingHiddenWindow { PropertyNameChain = chain }
             showNewWindow
               winRef d.GetWindow vm d.IsModal d.OnCloseRequested
               preventClose Visibility.Hidden dispatch
@@ -275,7 +275,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            logTrace <| CreatingVisibleWindowData { PropertyNameChain = chain }
+            logTrace <| CreatingVisibleWindow { PropertyNameChain = chain }
             showNewWindow
               winRef d.GetWindow vm d.IsModal d.OnCloseRequested
               preventClose Visibility.Visible dispatch
@@ -316,7 +316,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | _ -> ()
 
   let bindings =
-    logTrace <| InitializingBindingsData { PropertyNameChain = propNameChain }
+    logTrace <| InitializingBindings { PropertyNameChain = propNameChain }
     let dict = Dictionary<string, VmBinding<'model, 'msg>>()
     for b in bindings do
       if dict.ContainsKey b.Name then failwithf "Binding name '%s' is duplicated" b.Name
@@ -401,9 +401,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           preventClose := false
           match winRef.TryGetTarget () with
           | false, _ ->
-              logError <| WindowToCloseMissingData { PropertyNameChain = winPropChain }
+              logError <| WindowToCloseMissing { PropertyNameChain = winPropChain }
           | true, w ->
-              logTrace <| ClosingWindowData { PropertyNameChain = winPropChain }
+              logTrace <| ClosingWindow { PropertyNameChain = winPropChain }
               winRef.SetTarget null
               w.Close ()
           winRef.SetTarget null
@@ -411,15 +411,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let hide () =
           match winRef.TryGetTarget () with
           | false, _ ->
-              logError <| WindowToHideMissingData { PropertyNameChain = winPropChain }
+              logError <| WindowToHideMissing { PropertyNameChain = winPropChain }
           | true, w ->
-              logTrace <| HindingWindowData { PropertyNameChain = winPropChain }
+              logTrace <| HindingWindow { PropertyNameChain = winPropChain }
               w.Visibility <- Visibility.Hidden
 
         let showHidden () =
           match winRef.TryGetTarget () with
           | false, _ ->
-              logError <| WindowToShowMissingData { PropertyNameChain = winPropChain }
+              logError <| WindowToShowMissing { PropertyNameChain = winPropChain }
           | true, w ->
               logTrace <| ShowingHiddenWindow { PropertyNameChain = winPropChain }
               w.Visibility <- Visibility.Visible
@@ -443,7 +443,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             true
         | WindowState.Closed, WindowState.Hidden m ->
             let vm = newVm m
-            logTrace <| CreatingHiddenWindowData { PropertyNameChain = winPropChain }
+            logTrace <| CreatingHiddenWindow { PropertyNameChain = winPropChain }
             showNew vm Visibility.Hidden
             vmWinState := WindowState.Hidden vm
             true
@@ -457,7 +457,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             false
         | WindowState.Closed, WindowState.Visible m ->
             let vm = newVm m
-            logTrace <| CreatingVisibleWindowData { PropertyNameChain = winPropChain }
+            logTrace <| CreatingVisibleWindow { PropertyNameChain = winPropChain }
             showNew vm Visibility.Visible
             vmWinState := WindowState.Visible vm
             true
@@ -501,7 +501,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match bindings.TryGetValue name with
         | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-            logTrace <| NewSubModelSelectedItemSelectionData {
+            logTrace <| NewSubModelSelectedItemSelection {
               PropertyNameChain = propNameChain
               NewSelection = (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
             }
@@ -555,13 +555,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       updateValidationStatus name binding
 
   override __.TryGetMember (binder, result) =
-    logTrace <| TryGetMemberCalledData {
+    logTrace <| TryGetMemberCalled {
       PropertyNameChain = propNameChain
       PropertyName = binder.Name
     }
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        logError <| TryGetMemberMissingBindingData {
+        logError <| TryGetMemberMissingBinding {
           PropertyNameChain = propNameChain
           PropertyName = binder.Name
         }
@@ -601,13 +601,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         true
 
   override __.TrySetMember (binder, value) =
-    logTrace <| TrySetMemberCalledData {
+    logTrace <| TrySetMemberCalled {
       PropertyNameChain = propNameChain
       PropertyName = binder.Name
     }
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        logError <| TrySetMemberMissingBindingData {
+        logError <| TrySetMemberMissingBinding {
           PropertyNameChain = propNameChain
           PropertyName = binder.Name
         }
@@ -637,7 +637,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | SubModel _
         | SubModelWin _
         | SubModelSeq _ ->
-            logError <| TrySetMemberReadOnlyBindingData {
+            logError <| TrySetMemberReadOnlyBinding {
               PropertyNameChain = propNameChain
               PropertyName = binder.Name
             }
@@ -653,7 +653,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.HasErrors =
       errors.Count > 0
     member __.GetErrors propName =
-      logTrace <| GettingErrorsData {
+      logTrace <| GettingErrors {
         PropertyNameChain = propNameChain
         PropertyName = propName |> Option.ofObj
       }
