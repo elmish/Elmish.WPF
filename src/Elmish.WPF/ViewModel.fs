@@ -501,7 +501,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match bindings.TryGetValue name with
         | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-            logTrace <| NewSubModelSelectedItemSelection {
+            logTrace <| NewSubModelSelected {
               PropertyNameChain = propNameChain
               NewSelection = (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
             }

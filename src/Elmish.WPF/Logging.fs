@@ -37,7 +37,7 @@ type HidingWindowData =
 type ShowingHiddenWindow =
   { PropertyNameChain: string }
 
-type NewSubModelSelectedItemSelectionData =
+type NewSubModelSelectedData =
   { PropertyNameChain: string
     NewSelection: obj voption }
 
@@ -64,7 +64,7 @@ type TraceLogData =
   | ClosingWindow of ClosingWindowData
   | HidingWindow of HidingWindowData
   | ShowingHiddenWindow of ShowingHiddenWindow
-  | NewSubModelSelectedItemSelection of NewSubModelSelectedItemSelectionData
+  | NewSubModelSelected of NewSubModelSelectedData
   | TryGetMemberCalled of TryGetMemberCalledData
   | TrySetMemberCalled of TrySetMemberCalledData
   | GettingErrors of GettingErrorsData
@@ -82,7 +82,7 @@ let logTraceWith logger data =
   | ClosingWindow d -> log "[%s] Closing window" d.PropertyNameChain
   | HidingWindow d -> log "[%s] Hiding window" d.PropertyNameChain
   | ShowingHiddenWindow d -> log "[%s] Showing existing hidden window" d.PropertyNameChain
-  | NewSubModelSelectedItemSelection d -> log "[%s] Setting selected VM to %A" d.PropertyNameChain d.NewSelection
+  | NewSubModelSelected d -> log "[%s] Setting selected VM to %A" d.PropertyNameChain d.NewSelection
   | TryGetMemberCalled d -> log "[%s] TryGetMember %s" d.PropertyNameChain d.PropertyName
   | TrySetMemberCalled d -> log "[%s] TrySetMember %s" d.PropertyNameChain d.PropertyName
   | GettingErrors d -> log "[%s] GetErrors %s" d.PropertyNameChain (d.PropertyName |> Option.defaultValue "<null>")
