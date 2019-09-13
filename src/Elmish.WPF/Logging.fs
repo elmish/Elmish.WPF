@@ -1,60 +1,60 @@
-﻿module Elmish.WPF.Logging
+﻿module internal Elmish.WPF.Logging
 
 
-let internal compositeLogger loggers s =
+let compositeLogger loggers s =
   loggers |> Seq.iter (fun logger -> logger s)
 
 
-type internal PropertyChangedData =
+type PropertyChangedData =
   { PropertyNameChain: string
     PropertyName: string }
 
-type internal ValidationErrorsChangedData =
+type ValidationErrorsChangedData =
   { PropertyNameChain: string
     PropertyName: string }  // TODO: add Errors
 
-type internal TimingData =
+type TimingData =
   { PropertyNameChain: string
     PropertyName: string
     BindingDataFunctionName: string
     ElapsedMilliseconds: int64 }
 
-type internal CreatingHiddenWindowData =
+type CreatingHiddenWindowData =
   { PropertyNameChain: string }
 
-type internal CreatingVisibleWindowData =
+type CreatingVisibleWindowData =
   { PropertyNameChain: string }
 
-type internal InitializingBindingsData =
+type InitializingBindingsData =
   { PropertyNameChain: string }
 
-type internal ClosingWindowData =
+type ClosingWindowData =
   { PropertyNameChain: string }
 
-type internal HindingWindowData =
+type HindingWindowData =
   { PropertyNameChain: string }
 
-type internal ShowingHiddenWindow =
+type ShowingHiddenWindow =
   { PropertyNameChain: string }
 
-type internal NewSubModelSelectedItemSelectionData =
+type NewSubModelSelectedItemSelectionData =
   { PropertyNameChain: string
     NewSelection: obj voption }
 
-type internal TryGetMemberCalledData =
+type TryGetMemberCalledData =
   { PropertyNameChain: string
     PropertyName: string }
 
-type internal TrySetMemberCalledData =
+type TrySetMemberCalledData =
   { PropertyNameChain: string
     PropertyName: string }
 
-type internal GettingErrorsData =
+type GettingErrorsData =
   { PropertyNameChain: string
     PropertyName: string option }
 
 
-type internal TraceLogData =
+type TraceLogData =
   | PropertyChangedData of PropertyChangedData
   | ValidationErrorsChangedData of ValidationErrorsChangedData // TODO: Split by adding ValidationErrorsRemovedData
   | TimingData of TimingData
@@ -70,7 +70,7 @@ type internal TraceLogData =
   | GettingErrorsData of GettingErrorsData
 
 
-let internal logTraceWith logger data =
+let logTraceWith logger data =
   let log fmt = Printf.kprintf logger fmt
   match data with
   | PropertyChangedData d -> log "[%s] PropertyChanged \"%s\"" d.PropertyNameChain d.PropertyName
@@ -88,29 +88,29 @@ let internal logTraceWith logger data =
   | GettingErrorsData d -> log "[%s] GetErrors %s" d.PropertyNameChain (d.PropertyName |> Option.defaultValue "<null>")
   
 
-type internal WindowToCloseMissingData =
+type WindowToCloseMissingData =
   { PropertyNameChain: string }
 
-type internal WindowToHideMissingData =
+type WindowToHideMissingData =
   { PropertyNameChain: string }
 
-type internal WindowToShowMissingData =
+type WindowToShowMissingData =
   { PropertyNameChain: string }
 
-type internal TryGetMemberMissingBindingData =
+type TryGetMemberMissingBindingData =
   { PropertyNameChain: string
     PropertyName: string }
 
-type internal TrySetMemberMissingBindingData =
+type TrySetMemberMissingBindingData =
   { PropertyNameChain: string
     PropertyName: string }
 
-type internal TrySetMemberReadOnlyBindingData =
+type TrySetMemberReadOnlyBindingData =
   { PropertyNameChain: string
     PropertyName: string }
 
 
-type internal ErrorLogData =
+type ErrorLogData =
   | WindowToCloseMissingData of WindowToCloseMissingData
   | WindowToHideMissingData of WindowToHideMissingData
   | WindowToShowMissingData of WindowToShowMissingData
@@ -119,7 +119,7 @@ type internal ErrorLogData =
   | TrySetMemberReadOnlyBindingData of TrySetMemberReadOnlyBindingData
 
 
-let internal logErrorWith logger data =
+let logErrorWith logger data =
   let log fmt = Printf.kprintf logger fmt
   match data with
   | WindowToCloseMissingData d -> log "[%s] Attempted to close window, but did not find window reference" d.PropertyNameChain
