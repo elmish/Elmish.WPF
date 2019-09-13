@@ -413,7 +413,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | false, _ ->
               logError <| WindowToHideMissing { PropertyNameChain = winPropChain }
           | true, w ->
-              logTrace <| HindingWindow { PropertyNameChain = winPropChain }
+              logTrace <| HidingWindow { PropertyNameChain = winPropChain }
               w.Visibility <- Visibility.Hidden
 
         let showHidden () =

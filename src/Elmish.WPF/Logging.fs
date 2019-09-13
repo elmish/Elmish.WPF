@@ -31,7 +31,7 @@ type InitializingBindingsData =
 type ClosingWindowData =
   { PropertyNameChain: string }
 
-type HindingWindowData =
+type HidingWindowData =
   { PropertyNameChain: string }
 
 type ShowingHiddenWindow =
@@ -62,7 +62,7 @@ type TraceLogData =
   | CreatingVisibleWindow of CreatingVisibleWindowData
   | InitializingBindings of InitializingBindingsData
   | ClosingWindow of ClosingWindowData
-  | HindingWindow of HindingWindowData
+  | HidingWindow of HidingWindowData
   | ShowingHiddenWindow of ShowingHiddenWindow
   | NewSubModelSelectedItemSelection of NewSubModelSelectedItemSelectionData
   | TryGetMemberCalled of TryGetMemberCalledData
@@ -80,7 +80,7 @@ let logTraceWith logger data =
   | CreatingVisibleWindow d -> log "[%s] Creating and opening window" d.PropertyNameChain
   | InitializingBindings d -> log "[%s] Initializing bindings" d.PropertyNameChain
   | ClosingWindow d -> log "[%s] Closing window" d.PropertyNameChain
-  | HindingWindow d -> log "[%s] Hiding window" d.PropertyNameChain
+  | HidingWindow d -> log "[%s] Hiding window" d.PropertyNameChain
   | ShowingHiddenWindow d -> log "[%s] Showing existing hidden window" d.PropertyNameChain
   | NewSubModelSelectedItemSelection d -> log "[%s] Setting selected VM to %A" d.PropertyNameChain d.NewSelection
   | TryGetMemberCalled d -> log "[%s] TryGetMember %s" d.PropertyNameChain d.PropertyName
