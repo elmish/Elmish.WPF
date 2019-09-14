@@ -48,7 +48,7 @@ type internal VmBinding<'model, 'msg> =
       * toMsg: (obj -> 'msg)
       * getWindow: (unit -> Window)
       * isModal: bool
-      * onCloseRequested: 'msg voption
+      * onCloseRequested: (unit -> unit)
       * preventClose: bool ref
       * windowRef: WeakReference<Window>
   | SubModelSeq of
@@ -127,24 +127,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let measure2 name callName f =
     if not config.Measure then f
-    else
-      fun x y ->
-        let sw = System.Diagnostics.Stopwatch.StartNew ()
-        let r = f x y
-        sw.Stop ()
-        if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
-          log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
-        r
+    else fun x -> measure name callName (f x)
 
   let showNewWindow
       (winRef: WeakReference<Window>)
       (getWindow: unit -> Window)
       dataContext
       isDialog
-      (onCloseRequested: 'msg voption)
+      (onCloseRequested: unit -> unit)
       (preventClose: bool ref)
-      initialVisibility
-      dispatch =
+      initialVisibility =
     Application.Current.Dispatcher.Invoke(fun () ->
       let guiCtx = System.Threading.SynchronizationContext.Current
       async {
@@ -155,13 +147,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ev.Cancel <- !preventClose
           async {
             do! Async.SwitchToThreadPool()
-            onCloseRequested |> ValueOption.iter dispatch
+            onCloseRequested ()
           } |> Async.StartImmediate
         )
         do! Async.SwitchToContext guiCtx
-        if isDialog then win.ShowDialog () |> ignore
-        else
-          win.Visibility <- initialVisibility
+        if isDialog
+        then win.ShowDialog () |> ignore
+        else win.Visibility <- initialVisibility
       } |> Async.StartImmediate
     )
 
@@ -210,7 +202,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let getBindings = measure name "bindings" d.GetBindings
         let toMsg = measure name "toMsg" d.ToMsg
         match getModel initialModel with
-        | ValueNone -> SubModel (ref ValueNone, getModel, getBindings, toMsg, d.Sticky)
+        | ValueNone ->
+            SubModel (ref ValueNone, getModel, getBindings, toMsg, d.Sticky)
         | ValueSome m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
@@ -219,6 +212,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let getState = measure name "getState" d.GetState
         let getBindings = measure name "bindings" d.GetBindings
         let toMsg = measure name "toMsg" d.ToMsg
+        let onCloseRequested = fun () -> d.OnCloseRequested |> ValueOption.iter dispatch
         match getState initialModel with
         | WindowState.Closed ->
             SubModelWin (
@@ -228,9 +222,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               toMsg,
               d.GetWindow,
               d.IsModal,
-              d.OnCloseRequested,
+              onCloseRequested,
               ref true,
-              WeakReference<_>(null))
+              WeakReference<_>(null)
+            )
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
@@ -238,8 +233,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let preventClose = ref true
             log "[%s] Creating hidden window" chain
             showNewWindow
-              winRef d.GetWindow vm d.IsModal d.OnCloseRequested
-              preventClose Visibility.Hidden dispatch
+              winRef d.GetWindow vm d.IsModal onCloseRequested
+              preventClose Visibility.Hidden
             SubModelWin (
               ref <| WindowState.Hidden vm,
               getState,
@@ -247,7 +242,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               toMsg,
               d.GetWindow,
               d.IsModal,
-              d.OnCloseRequested,
+              onCloseRequested,
               preventClose,
               winRef
             )
@@ -258,8 +253,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let preventClose = ref true
             log "[%s] Creating and opening window" chain
             showNewWindow
-              winRef d.GetWindow vm d.IsModal d.OnCloseRequested
-              preventClose Visibility.Visible dispatch
+              winRef d.GetWindow vm d.IsModal onCloseRequested
+              preventClose Visibility.Visible
             SubModelWin (
               ref <| WindowState.Visible vm,
               getState,
@@ -267,7 +262,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               toMsg,
               d.GetWindow,
               d.IsModal,
-              d.OnCloseRequested,
+              onCloseRequested,
               preventClose,
               winRef
             )
@@ -357,7 +352,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | Cmd _
     | CmdParam _ ->
         false
-    | SubModel ((vm: ViewModel<obj, obj> voption ref), (getModel: 'model -> obj voption), getBindings, toMsg, sticky) ->
+    | SubModel (vm, getModel, getBindings, toMsg, sticky) ->
       match !vm, getModel newModel with
       | ValueNone, ValueNone -> false
       | ValueSome _, ValueNone ->
@@ -366,16 +361,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm := ValueNone
             true
       | ValueNone, ValueSome m ->
-          vm := ValueSome <| ViewModel(
-            m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
+          vm := ValueSome <| ViewModel(m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
           false
-    | SubModelWin
-        ( vmWinState, getState, getBindings, toMsg,
-          getWindow, isModal, onCloseRequested, preventClose, winRef) ->
-
+    | SubModelWin (vmWinState, getState, getBindings, toMsg, getWindow, isModal, onCloseRequested, preventClose, winRef) ->
         let winPropChain = getPropChainFor bindingName
 
         let close () =
@@ -409,7 +400,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           preventClose := true
           showNewWindow
             winRef getWindow vm isModal onCloseRequested
-            preventClose initialVisibility dispatch
+            preventClose initialVisibility
 
         let newVm model =
           ViewModel(model, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
@@ -467,8 +458,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           )
         for m in modelsToAdd do
           let chain = getPropChainForItem bindingName (getId m |> string)
-          vms.Add <| ViewModel(
-            m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
+          vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
         // Reorder according to new model list
         for newIdx, newSubModel in newSubModels |> Seq.indexed do
           let oldIdx =
@@ -502,8 +492,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSelectedItem _ ->
         None
     | Cmd (cmd, canExec) ->
-        if canExec newModel = canExec currentModel then None else Some cmd
-    | CmdParam cmd -> Some cmd
+        if canExec newModel = canExec currentModel
+        then None
+        else Some cmd
+    | CmdParam cmd ->
+        Some cmd
 
   /// Updates the validation status for a binding.
   let updateValidationStatus name binding =
@@ -582,7 +575,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match binding with
         | TwoWay (_, set)
         | TwoWayValidate (_, set, _) ->
-            dispatch <| set value currentModel
+            set value currentModel |> dispatch
             true
         | SubModelSelectedItem (_, _, set, name) ->
             match bindings.TryGetValue name with
