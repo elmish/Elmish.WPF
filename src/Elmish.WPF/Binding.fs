@@ -2,6 +2,7 @@
 
 open System.Windows
 
+open Elmish
 
 [<RequireQualifiedAccess>]
 type WindowState<'model> =
@@ -52,23 +53,27 @@ and internal OneWaySeqLazyData<'model> = {
 and internal TwoWayData<'model, 'msg> = {
   Get: 'model -> obj
   Set: obj -> 'model -> 'msg
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 and internal TwoWayValidateData<'model, 'msg> = {
   Get: 'model -> obj
   Set: obj -> 'model -> 'msg
   Validate: 'model -> string voption
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 and internal CmdData<'model, 'msg> = {
   Exec: 'model -> 'msg voption
   CanExec: 'model -> bool
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 and internal CmdParamData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 and internal SubModelData<'model, 'msg> = {
@@ -98,6 +103,7 @@ and internal SubModelSelectedItemData<'model, 'msg> = {
   Get: 'model -> obj voption
   Set: obj voption -> 'model -> 'msg
   SubModelSeqBindingName: string
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 
@@ -125,6 +131,16 @@ and Binding<'model, 'msg> =
 
 module internal BindingData =
 
+  let boxDispatch (strongDispatch: Dispatch<'msg>) : Dispatch<obj> =
+    unbox<'msg> >> strongDispatch
+
+  let unboxDispatch (weakDispatch: Dispatch<obj>) : Dispatch<'msg> =
+    box >> weakDispatch
+
+  let boxWrapDispatch (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>) : Dispatch<obj> -> Dispatch<obj> =
+    fun (weakDispatch: Dispatch<obj>) ->
+      weakDispatch |> unboxDispatch |> strongWrapDispatch |> boxDispatch
+
   let box : BindingData<'model, 'msg> -> BindingData<obj, obj> = function
     | OneWayData d -> OneWayData {
         Get = unbox >> d.Get
@@ -144,20 +160,24 @@ module internal BindingData =
     | TwoWayData d -> TwoWayData {
         Get = unbox >> d.Get
         Set = fun v m -> d.Set v (unbox m) |> box
+        WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
     | TwoWayValidateData d -> TwoWayValidateData {
         Get = unbox >> d.Get
         Set = fun v m -> d.Set v (unbox m) |> box
         Validate = unbox >> d.Validate
+        WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
     | CmdData d -> CmdData {
         Exec = unbox >> d.Exec >> ValueOption.map box
         CanExec = unbox >> d.CanExec
+        WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
     | CmdParamData d -> CmdParamData {
         Exec = fun p m -> d.Exec p (unbox m) |> ValueOption.map box
         CanExec = fun p m -> d.CanExec p (unbox m)
         AutoRequery = d.AutoRequery
+        WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
     | SubModelData d -> SubModelData {
         GetModel = unbox >> d.GetModel
@@ -183,6 +203,7 @@ module internal BindingData =
         Get = unbox >> d.Get
         Set = fun v m -> d.Set v (unbox m) |> box
         SubModelSeqBindingName = d.SubModelSeqBindingName
+        WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
 
 
@@ -391,13 +412,19 @@ type Binding private () =
   /// <summary>Creates a two-way binding.</summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWay
       (get: 'model -> 'a,
-       set: 'a -> 'model -> 'msg)
+       set: 'a -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayData {
       Get = get >> box
       Set = unbox<'a> >> set
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -408,13 +435,19 @@ type Binding private () =
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOpt
       (get: 'model -> 'a option,
-       set: 'a option -> 'model -> 'msg)
+       set: 'a option -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayData {
       Get = get >> Option.map box >> Option.toObj
       Set = Option.ofObj >> Option.map unbox<'a> >> set
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -425,13 +458,19 @@ type Binding private () =
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOpt
       (get: 'model -> 'a voption,
-       set: 'a voption -> 'model -> 'msg)
+       set: 'a voption -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayData {
       Get = get >> ValueOption.map box >> ValueOption.toObj
       Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -443,15 +482,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> string voption)
+       validate: 'model -> string voption,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> box
       Set = unbox<'a> >> set
       Validate = validate
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -463,15 +508,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> string option)
+       validate: 'model -> string option,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> box
       Set = unbox<'a> >> set
       Validate = validate >> ValueOption.ofOption
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -483,15 +534,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<'ignored, string>,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> box
       Set = unbox<'a> >> set
       Validate = validate >> ValueOption.ofError
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -506,15 +563,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> string voption)
+       validate: 'model -> string voption,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> ValueOption.map box >> ValueOption.toObj
       Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
       Validate = validate
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -529,15 +592,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> string option)
+       validate: 'model -> string option,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> ValueOption.map box >> ValueOption.toObj
       Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
       Validate = validate >> ValueOption.ofOption
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -552,15 +621,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<'ignored, string>,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> ValueOption.map box >> ValueOption.toObj
       Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
       Validate = validate >> ValueOption.ofError
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -575,15 +650,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> string voption)
+       validate: 'model -> string voption,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> Option.map box >> Option.toObj
       Set = Option.ofObj >> Option.map unbox<'a> >> set
       Validate = validate
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -598,15 +679,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> string option)
+       validate: 'model -> string option,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> Option.map box >> Option.toObj
       Set = Option.ofObj >> Option.map unbox<'a> >> set
       Validate = validate >> ValueOption.ofOption
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -621,15 +708,21 @@ type Binding private () =
   /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<'ignored, string>,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
       Get = get >> Option.map box >> Option.toObj
       Set = Option.ofObj >> Option.map unbox<'a> >> set
       Validate = validate >> ValueOption.ofError
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -638,12 +731,18 @@ type Binding private () =
   ///   <c>CommandParameter</c>) and can always execute.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmd
-      (exec: 'model -> 'msg)
+      (exec: 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdData {
       Exec = exec >> ValueSome
       CanExec = fun _ -> true
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -654,13 +753,19 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="canExec">Indicates whether the command can execute.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdIf
       (exec: 'model -> 'msg,
-       canExec: 'model -> bool)
+       canExec: 'model -> bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdData {
       Exec = exec >> ValueSome
       CanExec = canExec
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -670,12 +775,18 @@ type Binding private () =
   ///   returns <c>ValueSome</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdIf
-      (exec: 'model -> 'msg voption)
+      (exec: 'model -> 'msg voption,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdData {
       Exec = exec
       CanExec = exec >> ValueOption.isSome
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -685,12 +796,18 @@ type Binding private () =
   ///   returns <c>Some</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdIf
-      (exec: 'model -> 'msg option)
+      (exec: 'model -> 'msg option,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdData {
       Exec = exec >> ValueOption.ofOption
       CanExec = exec >> Option.isSome
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -703,12 +820,18 @@ type Binding private () =
   ///   for inputs and commands.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdIf
-      (exec: 'model -> Result<'msg, 'ignored>)
+      (exec: 'model -> Result<'msg, 'ignored>,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdData {
       Exec = exec >> ValueOption.ofOk
       CanExec = exec >> Result.isOk
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -717,13 +840,19 @@ type Binding private () =
   ///   and can always execute.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdParam
-      (exec: obj -> 'model -> 'msg)
+      (exec: obj -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
       Exec = fun p model -> exec p model |> ValueSome
       CanExec = fun _ _ -> true
       AutoRequery = false
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -739,15 +868,21 @@ type Binding private () =
   ///   to execute. This will likely lead to many more triggers than necessary,
   ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg,
        canExec: obj -> 'model -> bool,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
       Exec = fun p m -> exec p m |> ValueSome
       CanExec = canExec
       AutoRequery = defaultArg uiBoundCmdParam false
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -762,14 +897,20 @@ type Binding private () =
   ///   to execute. This will likely lead to many more triggers than necessary,
   ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
       Exec = exec
       CanExec = fun p m -> exec p m |> ValueOption.isSome
       AutoRequery = defaultArg uiBoundCmdParam false
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -784,14 +925,20 @@ type Binding private () =
   ///   to execute. This will likely lead to many more triggers than necessary,
   ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
       Exec = fun p m -> exec p m |> ValueOption.ofOption
       CanExec = fun p m -> exec p m |> Option.isSome
       AutoRequery = defaultArg uiBoundCmdParam false
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -809,14 +956,20 @@ type Binding private () =
   ///   to execute. This will likely lead to many more triggers than necessary,
   ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
       Exec = fun p m -> exec p m |> ValueOption.ofOk
       CanExec = fun p m -> exec p m |> Result.isOk
       AutoRequery = defaultArg uiBoundCmdParam false
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -1386,15 +1539,21 @@ type Binding private () =
   /// <param name="set">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
        get: 'model -> 'id voption,
-       set: 'id voption -> 'model -> 'msg)
+       set: 'id voption -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     SubModelSelectedItemData {
       Get = get >> ValueOption.map box
       Set = ValueOption.map unbox<'id> >> set
       SubModelSeqBindingName = subModelSeqBindingName
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -1418,15 +1577,21 @@ type Binding private () =
   /// <param name="set">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior,
+  ///   such as throttling, debouncing, or limiting.
+  /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
        get: 'model -> 'id option,
-       set: 'id option -> 'model -> 'msg)
+       set: 'id option -> 'model -> 'msg,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     SubModelSelectedItemData {
       Get = get >> ValueOption.ofOption >> ValueOption.map box
       Set = ValueOption.map unbox<'id> >> ValueOption.toOption >> set
       SubModelSeqBindingName = subModelSeqBindingName
+      WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
 
 
@@ -1440,13 +1605,19 @@ module Extensions =
     /// <summary>Creates a two-way binding.</summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWay
         (get: 'model -> 'a,
-         set: 'a -> 'msg)
+         set: 'a -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayData {
         Get = get >> box
         Set = fun p _ -> p |> unbox<'a> |> set
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1457,13 +1628,19 @@ module Extensions =
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOpt
         (get: 'model -> 'a option,
-         set: 'a option -> 'msg)
+         set: 'a option -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1474,13 +1651,19 @@ module Extensions =
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOpt
         (get: 'model -> 'a voption,
-         set: 'a voption -> 'msg)
+         set: 'a voption -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1492,15 +1675,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> string voption)
+         validate: 'model -> string voption,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p _ -> p |> unbox<'a> |> set
         Validate = validate
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1512,15 +1701,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> string option)
+         validate: 'model -> string option,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p  _ -> p |> unbox<'a> |> set
         Validate = validate >> ValueOption.ofOption
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1532,15 +1727,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<'ignored, string>,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p _ -> p |> unbox<'a> |> set
         Validate = validate >> ValueOption.ofError
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1555,15 +1756,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> string voption)
+         validate: 'model -> string voption,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
         Validate = validate
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1578,15 +1785,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> string option)
+         validate: 'model -> string option,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
         Validate = validate >> ValueOption.ofOption
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1601,15 +1814,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<'ignored, string>,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
         Validate = validate >> ValueOption.ofError
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1624,15 +1843,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> string voption)
+         validate: 'model -> string voption,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
         Validate = validate
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1647,15 +1872,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> string option)
+         validate: 'model -> string option,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
         Validate = validate >> ValueOption.ofOption
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1670,15 +1901,21 @@ module Extensions =
     /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<'ignored, string>,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
         Validate = validate >> ValueOption.ofError
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1687,12 +1924,18 @@ module Extensions =
     ///   and can always execute.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmd
-        (exec: 'msg)
+        (exec: 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdData {
         Exec = fun _ -> exec |> ValueSome
         CanExec = fun _ -> true
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1702,13 +1945,19 @@ module Extensions =
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="canExec">Indicates whether the command can execute.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdIf
         (exec: 'msg,
-         canExec: 'model -> bool)
+         canExec: 'model -> bool,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdData {
         Exec = fun _ -> exec |> ValueSome
         CanExec = canExec
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1717,13 +1966,19 @@ module Extensions =
     ///   and can always execute.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdParam
-        (exec: obj -> 'msg)
+        (exec: obj -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
         Exec = fun p _ -> exec p |> ValueSome
         CanExec = fun _ _ -> true
         AutoRequery = false
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1738,14 +1993,20 @@ module Extensions =
     ///   to execute. This will likely lead to many more triggers than necessary,
     ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg voption,
-         ?uiBoundCmdParam: bool)
+         ?uiBoundCmdParam: bool,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
         Exec = fun p m -> exec p
         CanExec = fun p m -> exec p |> ValueOption.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1760,14 +2021,20 @@ module Extensions =
     ///   to execute. This will likely lead to many more triggers than necessary,
     ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg option,
-         ?uiBoundCmdParam: bool)
+         ?uiBoundCmdParam: bool,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
         Exec = fun p m -> exec p |> ValueOption.ofOption
         CanExec = fun p m -> exec p |> Option.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1785,14 +2052,20 @@ module Extensions =
     ///   to execute. This will likely lead to many more triggers than necessary,
     ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdParamIf
         (exec: obj -> Result<'msg, 'ignored>,
-         ?uiBoundCmdParam: bool)
+         ?uiBoundCmdParam: bool,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
         Exec = fun p m -> exec p |> ValueOption.ofOk
         CanExec = fun p m -> exec p |> Result.isOk
         AutoRequery = defaultArg uiBoundCmdParam false
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1808,15 +2081,21 @@ module Extensions =
     ///   to execute. This will likely lead to many more triggers than necessary,
     ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg,
          canExec: obj -> bool,
-         ?uiBoundCmdParam: bool)
+         ?uiBoundCmdParam: bool,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
         Exec = fun p m -> exec p |> ValueSome
         CanExec = fun p m -> canExec p
         AutoRequery = defaultArg uiBoundCmdParam false
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1840,15 +2119,21 @@ module Extensions =
     /// <param name="set">
     ///   Returns the message to dispatch on selections/de-selections.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member subModelSelectedItem
         (subModelSeqBindingName: string,
          get: 'model -> 'id voption,
-         set: 'id voption -> 'msg)
+         set: 'id voption -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       SubModelSelectedItemData {
         Get = get >> ValueOption.map box
         Set = fun id _ -> id |> ValueOption.map unbox<'id> |> set
         SubModelSeqBindingName = subModelSeqBindingName
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
@@ -1872,15 +2157,21 @@ module Extensions =
     /// <param name="set">
     ///   Returns the message to dispatch on selections/de-selections.
     /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior,
+    ///   such as throttling, debouncing, or limiting.
+    /// </param>
     static member subModelSelectedItem
         (subModelSeqBindingName: string,
          get: 'model -> 'id option,
-         set: 'id option -> 'msg)
+         set: 'id option -> 'msg,
+         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       SubModelSelectedItemData {
         Get = get >> ValueOption.ofOption >> ValueOption.map box
         Set = fun id _ -> id |> ValueOption.map unbox<'id> |> ValueOption.toOption |> set
         SubModelSeqBindingName = subModelSeqBindingName
+        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
