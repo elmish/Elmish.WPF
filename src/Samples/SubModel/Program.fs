@@ -4,6 +4,39 @@ open System
 open Elmish
 open Elmish.WPF
 
+module Counter =
+
+  type Model =
+    { Count: int
+      StepSize: int }
+  
+  let init () =
+    { Count = 0
+      StepSize = 1 }
+  
+  type Msg =
+    | Increment
+    | Decrement
+    | SetStepSize of int
+    | Reset
+    
+  let update msg m =
+    match msg with
+    | Increment -> { m with Count = m.Count + m.StepSize }
+    | Decrement -> { m with Count = m.Count - m.StepSize }
+    | SetStepSize x -> { m with StepSize = x }
+    | Reset -> init ()
+  
+  let bindings () : Binding<Model, Msg> list = [
+    "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+    "Increment" |> Binding.cmd Increment
+    "Decrement" |> Binding.cmd Decrement
+    "StepSize" |> Binding.twoWay(
+      (fun m -> float m.StepSize),
+      int >> SetStepSize)
+    "Reset" |> Binding.cmdIf(Reset, (<>) (init ()))
+  ]
+
 
 module Clock =
 
@@ -36,39 +69,24 @@ module Clock =
 module CounterWithClock =
 
   type Model =
-    { Count: int
-      StepSize: int
+    { Counter: Counter.Model
       Clock: Clock.Model }
 
   let init =
-    { Count = 0
-      StepSize = 1
+    { Counter = Counter.init ()
       Clock = Clock.init () }
 
-  let canReset m =
-    m.Count <> init.Count || m.StepSize <> init.StepSize
-
   type Msg =
-    | Increment
-    | Decrement
-    | SetStepSize of int
-    | Reset
+    | CounterMsg of Counter.Msg
     | ClockMsg of Clock.Msg
 
   let update msg m =
     match msg with
-    | Increment -> { m with Count = m.Count + m.StepSize }
-    | Decrement -> { m with Count = m.Count - m.StepSize }
-    | SetStepSize x -> { m with StepSize = x }
-    | Reset -> { m with Count = 0; StepSize = 1 }
+    | CounterMsg msg -> { m with Counter = Counter.update msg m.Counter }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
   let bindings () : Binding<Model, Msg> list = [
-    "CounterValue" |> Binding.oneWay (fun m -> m.Count)
-    "Increment" |> Binding.cmd Increment
-    "Decrement" |> Binding.cmd Decrement
-    "StepSize" |> Binding.twoWay((fun m -> float m.StepSize), int >> SetStepSize)
-    "Reset" |> Binding.cmdIf(Reset, canReset)
+    "Counter" |> Binding.subModel((fun m -> m.Counter), snd, CounterMsg, Counter.bindings)
     "Clock" |> Binding.subModel((fun m -> m.Clock), snd, ClockMsg, Clock.bindings)
   ]
 
