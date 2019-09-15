@@ -7,6 +7,7 @@ open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
 
+open Elmish
 
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
@@ -27,10 +28,12 @@ type internal VmBinding<'model, 'msg> =
   | TwoWay of
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
+      * dispatch: Dispatch<'msg>
   | TwoWayValidate of
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
       * validate: ('model -> string voption)
+      * dispatch: Dispatch<'msg>
   | Cmd of
       cmd: Command
       * canExec: ('model -> bool)
@@ -62,6 +65,7 @@ type internal VmBinding<'model, 'msg> =
       * get: ('model -> obj voption)
       * set: (obj voption -> 'model -> 'msg)
       * subModelSeqBindingName: string
+      * dispatch: Dispatch<'msg>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -179,22 +183,26 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
-        TwoWay (get, set)
+        let dispatch' = d.WrapDispatch dispatch
+        TwoWay (get, set, dispatch')
     | TwoWayValidateData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
         let validate = measure name "validate" d.Validate
-        TwoWayValidate (get, set, validate)
+        let dispatch' = d.WrapDispatch dispatch
+        TwoWayValidate (get, set, validate, dispatch')
     | CmdData d ->
         let exec = measure name "exec" d.Exec
         let canExec = measure name "canExec" d.CanExec
-        let execute _ = exec currentModel |> ValueOption.iter dispatch
+        let dispatch' = d.WrapDispatch dispatch
+        let execute _ = exec currentModel |> ValueOption.iter dispatch'
         let canExecute _ = canExec currentModel
         Cmd (Command(execute, canExecute, false), canExec)
     | CmdParamData d ->
         let exec = measure2 name "exec" d.Exec
         let canExec = measure2 name "canExec" d.CanExec
-        let execute param = exec param currentModel |> ValueOption.iter dispatch
+        let dispatch' = d.WrapDispatch dispatch
+        let execute param = exec param currentModel |> ValueOption.iter dispatch'
         let canExecute param = canExec param currentModel
         CmdParam <| Command(execute, canExecute, d.AutoRequery)
     | SubModelData d ->
@@ -282,10 +290,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSelectedItemData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
-        SubModelSelectedItem (ref ValueNone, get, set, d.SubModelSeqBindingName)
+        let dispatch' = d.WrapDispatch dispatch
+        SubModelSelectedItem (ref ValueNone, get, set, d.SubModelSeqBindingName, dispatch')
 
   let setInitialError name = function
-    | TwoWayValidate (_, _, validate) ->
+    | TwoWayValidate (_, _, validate, _) ->
         match validate initialModel with
         | ValueNone -> ()
         | ValueSome error -> setError error name
@@ -312,8 +321,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let updateValue bindingName newModel binding =
     match binding with
     | OneWay get
-    | TwoWay (get, _)
-    | TwoWayValidate (get, _, _) ->
+    | TwoWay (get, _, _)
+    | TwoWayValidate (get, _, _, _) ->
         get currentModel <> get newModel
     | OneWayLazy (currentVal, get, map, equals) ->
         if equals (get newModel) (get currentModel) then false
@@ -468,7 +477,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> fst
           if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
         false
-    | SubModelSelectedItem (vm, getSelectedId, _, name) ->
+    | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
         match bindings.TryGetValue name with
         | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
@@ -501,7 +510,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the validation status for a binding.
   let updateValidationStatus name binding =
     match binding with
-    | TwoWayValidate (_, _, validate) ->
+    | TwoWayValidate (_, _, validate, _) ->
         match validate currentModel with
         | ValueNone -> removeError name
         | ValueSome err -> setError err name
@@ -535,8 +544,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         result <-
           match binding with
           | OneWay get
-          | TwoWay (get, _)
-          | TwoWayValidate (get, _, _) ->
+          | TwoWay (get, _, _)
+          | TwoWayValidate (get, _, _, _) ->
               get currentModel
           | OneWayLazy (value, _, _, _) ->
               (!value).Value
@@ -551,7 +560,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               | WindowState.Closed -> null
               | WindowState.Hidden vm | WindowState.Visible vm -> box vm
           | SubModelSeq (vms, _, _, _, _) -> box vms
-          | SubModelSelectedItem (vm, getSelectedId, _, name) ->
+          | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
               match !vm with
               | ValueSome x -> x |> ValueOption.toObj |> box
               | ValueNone ->
@@ -573,11 +582,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         match binding with
-        | TwoWay (_, set)
-        | TwoWayValidate (_, set, _) ->
+        | TwoWay (_, set, dispatch)
+        | TwoWayValidate (_, set, _, dispatch) ->
             set value currentModel |> dispatch
             true
-        | SubModelSelectedItem (_, _, set, name) ->
+        | SubModelSelectedItem (_, _, set, name, dispatch) ->
             match bindings.TryGetValue name with
             | true, SubModelSeq (_, _, getSubModelId, _, _) ->
                 let value =
