@@ -1,3 +1,7 @@
+#### 3.3.0
+
+* Added optional dispatch wrapper to two-way bindings and command bindings, which allows dispatches to be throttled/debounced etc.
+
 #### 3.2.1
 
 * Fixed `ElmConfig.MeasureLimitMs` not being used
