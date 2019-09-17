@@ -36,13 +36,13 @@ type internal OneWayData<'model> = {
   Get: 'model -> obj
 }
 
-and internal OneWayLazyData<'model> = {
+type internal OneWayLazyData<'model> = {
   Get: 'model -> obj
   Map: obj -> obj
   Equals: obj -> obj -> bool
 }
 
-and internal OneWaySeqLazyData<'model> = {
+type internal OneWaySeqLazyData<'model> = {
   Get: 'model -> obj
   Map: obj -> obj seq
   Equals: obj -> obj -> bool
@@ -50,33 +50,40 @@ and internal OneWaySeqLazyData<'model> = {
   ItemEquals: obj -> obj -> bool
 }
 
-and internal TwoWayData<'model, 'msg> = {
+type internal TwoWayData<'model, 'msg> = {
   Get: 'model -> obj
   Set: obj -> 'model -> 'msg
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-and internal TwoWayValidateData<'model, 'msg> = {
+type internal TwoWayValidateData<'model, 'msg> = {
   Get: 'model -> obj
   Set: obj -> 'model -> 'msg
   Validate: 'model -> string voption
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-and internal CmdData<'model, 'msg> = {
+type internal CmdData<'model, 'msg> = {
   Exec: 'model -> 'msg voption
   CanExec: 'model -> bool
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-and internal CmdParamData<'model, 'msg> = {
+type internal CmdParamData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-and internal SubModelData<'model, 'msg> = {
+type internal SubModelSelectedItemData<'model, 'msg> = {
+  Get: 'model -> obj voption
+  Set: obj voption -> 'model -> 'msg
+  SubModelSeqBindingName: string
+  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
+}
+
+type internal SubModelData<'model, 'msg> = {
   GetModel: 'model -> obj voption
   GetBindings: unit -> Binding<obj, obj> list
   ToMsg: obj -> 'msg
@@ -97,13 +104,6 @@ and internal SubModelSeqData<'model, 'msg> = {
   GetId: obj -> obj
   GetBindings: unit -> Binding<obj, obj> list
   ToMsg: obj * obj -> 'msg
-}
-
-and internal SubModelSelectedItemData<'model, 'msg> = {
-  Get: 'model -> obj voption
-  Set: obj voption -> 'model -> 'msg
-  SubModelSeqBindingName: string
-  WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
 
