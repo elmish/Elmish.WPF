@@ -40,6 +40,9 @@ module Domain =
     let setStepSize step c =
       { c with StepSize = step }
 
+    let canReset c =
+      c.CounterValue <> 0 || c.StepSize <> 1
+
     let reset c =
       { create () with Id = c.Id }
 
@@ -181,7 +184,7 @@ module Bindings =
       (fun (_, c) -> float c.StepSize),
       (fun v (_, c) -> SetStepSize (c.Id, int v)))
 
-    "Reset" |> Binding.cmd(fun (_, c) -> Reset c.Id)
+    "Reset" |> Binding.cmdIf((fun (_, c) -> Reset c.Id), (fun (_, c) -> Counter.canReset c))
 
     "Remove" |> Binding.cmd(fun (_, c) -> Remove c.Id)
 
