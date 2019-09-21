@@ -138,8 +138,7 @@ module internal BindingData =
     box >> weakDispatch
 
   let boxWrapDispatch (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>) : Dispatch<obj> -> Dispatch<obj> =
-    fun (weakDispatch: Dispatch<obj>) ->
-      weakDispatch |> unboxDispatch |> strongWrapDispatch |> boxDispatch
+    unboxDispatch >> strongWrapDispatch >> boxDispatch
 
   let box : BindingData<'model, 'msg> -> BindingData<obj, obj> = function
     | OneWayData d -> OneWayData {
