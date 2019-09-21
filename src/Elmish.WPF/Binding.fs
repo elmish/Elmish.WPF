@@ -264,7 +264,7 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a lazily evaluated one-way binding. <paramref name="map" />
-  //    will be called only when the output of <paramref name="get" /> changes,
+  ///   will be called only when the output of <paramref name="get" /> changes,
   ///   as determined by <paramref name="equals" />. This may have better
   ///   performance than <see cref="oneWay" /> for expensive computations
   ///   (but may be less performant for non-expensive functions due to additional overhead).
