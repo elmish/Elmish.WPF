@@ -32,33 +32,33 @@ module WindowState =
     | ValueNone -> WindowState.Closed
 
 
-type internal OneWayData<'model> = {
-  Get: 'model -> obj
+type internal OneWayData<'model, 'a> = {
+  Get: 'model -> 'a
 }
 
-type internal OneWayLazyData<'model> = {
-  Get: 'model -> obj
-  Map: obj -> obj
-  Equals: obj -> obj -> bool
+type internal OneWayLazyData<'model, 'a, 'b> = {
+  Get: 'model -> 'a
+  Map: 'a -> 'b
+  Equals: 'a -> 'a -> bool
 }
 
-type internal OneWaySeqLazyData<'model> = {
-  Get: 'model -> obj
-  Map: obj -> obj seq
-  Equals: obj -> obj -> bool
-  GetId: obj -> obj
-  ItemEquals: obj -> obj -> bool
+type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
+  Get: 'model -> 'a
+  Map: 'a -> 'b seq
+  Equals: 'a -> 'a -> bool
+  GetId: 'a -> 'id
+  ItemEquals: 'b -> 'b -> bool
 }
 
-type internal TwoWayData<'model, 'msg> = {
-  Get: 'model -> obj
-  Set: obj -> 'model -> 'msg
+type internal TwoWayData<'model, 'msg, 'a> = {
+  Get: 'model -> 'a
+  Set: 'a -> 'model -> 'msg
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-type internal TwoWayValidateData<'model, 'msg> = {
-  Get: 'model -> obj
-  Set: obj -> 'model -> 'msg
+type internal TwoWayValidateData<'model, 'msg, 'a> = {
+  Get: 'model -> 'a
+  Set: 'a -> 'model -> 'msg
   Validate: 'model -> string voption
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
@@ -76,50 +76,50 @@ type internal CmdParamData<'model, 'msg> = {
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-type internal SubModelSelectedItemData<'model, 'msg> = {
-  Get: 'model -> obj voption
-  Set: obj voption -> 'model -> 'msg
+type internal SubModelSelectedItemData<'model, 'msg, 'id> = {
+  Get: 'model -> 'id voption
+  Set: 'id voption -> 'model -> 'msg
   SubModelSeqBindingName: string
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-type internal SubModelData<'model, 'msg> = {
-  GetModel: 'model -> obj voption
-  GetBindings: unit -> Binding<obj, obj> list
-  ToMsg: obj -> 'msg
+type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  GetModel: 'model -> 'bindingModel voption
+  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  ToMsg: 'bindingMsg -> 'msg
   Sticky: bool
 }
 
-and internal SubModelWinData<'model, 'msg> = {
-  GetState: 'model -> WindowState<obj>
-  GetBindings: unit -> Binding<obj, obj> list
-  ToMsg: obj -> 'msg
+and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  GetState: 'model -> WindowState<'bindingModel>
+  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  ToMsg: 'bindingMsg -> 'msg
   GetWindow: unit -> Window
   IsModal: bool
   OnCloseRequested: 'msg voption
 }
 
-and internal SubModelSeqData<'model, 'msg> = {
-  GetModels: 'model -> obj seq
-  GetId: obj -> obj
-  GetBindings: unit -> Binding<obj, obj> list
-  ToMsg: obj * obj -> 'msg
+and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+  GetModels: 'model -> 'bindingModel seq
+  GetId: 'bindingModel -> 'id
+  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  ToMsg: 'id * 'bindingMsg -> 'msg
 }
 
 
 /// Represents all necessary data used to create the different binding types.
 and internal BindingData<'model, 'msg> =
-  | OneWayData of OneWayData<'model>
-  | OneWayLazyData of OneWayLazyData<'model>
-  | OneWaySeqLazyData of OneWaySeqLazyData<'model>
-  | TwoWayData of TwoWayData<'model, 'msg>
-  | TwoWayValidateData of TwoWayValidateData<'model, 'msg>
+  | OneWayData of OneWayData<'model, obj>
+  | OneWayLazyData of OneWayLazyData<'model, obj, obj>
+  | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
+  | TwoWayData of TwoWayData<'model, 'msg, obj>
+  | TwoWayValidateData of TwoWayValidateData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
   | CmdParamData of CmdParamData<'model, 'msg>
-  | SubModelData of SubModelData<'model, 'msg>
-  | SubModelWinData of SubModelWinData<'model, 'msg>
-  | SubModelSeqData of SubModelSeqData<'model, 'msg>
-  | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg>
+  | SubModelData of SubModelData<'model, 'msg, obj, obj>
+  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
+  | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
+  | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
 
 /// Represents all necessary data used to create a binding.
