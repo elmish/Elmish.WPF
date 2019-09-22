@@ -9,9 +9,9 @@ module List =
   let swap i j =
     List.permute
       (function
-       | a when a = i -> j
-       | a when a = j -> i
-       | a -> a)
+        | a when a = i -> j
+        | a when a = j -> i
+        | a -> a)
 
 
 [<AutoOpen>]
@@ -102,8 +102,8 @@ module App =
     |> List.find (fun n -> n |> Tree.dataOfChildren |> List.map (fun d -> d.Id) |> List.contains cid)
 
   /// Returns the sibling counters of the specified counter ID.
-  let childrenCountersOfParentOf cid m =
-    m |> parentOf cid |> Tree.dataOfChildren
+  let childrenCountersOfParentOf cid =
+    parentOf cid >> Tree.dataOfChildren
 
   type Msg =
     | ToggleGlobalState
@@ -131,7 +131,7 @@ module App =
     | ToggleGlobalState -> { m with SomeGlobalState = not m.SomeGlobalState }
 
     | AddCounter pid ->
-        let f (n:Tree.Node<Counter>) =
+        let f (n: Tree.Node<Counter>) =
           if n.Data.Id = pid
           then { n with Children = (Counter.create () |> Tree.asLeaf) :: n.Children}
           else n
@@ -146,19 +146,19 @@ module App =
     | Reset id -> { m with DummyRoot = m.DummyRoot |> Tree.mapData (resetCounter id ) }
 
     | Remove id ->
-        let f (n:Tree.Node<Counter>) =
+        let f (n: Tree.Node<Counter>) =
           { n with Children = n.Children |> List.filter (fun n -> n.Data.Id <> id) }
         { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveUp id ->
-      let f (n:Tree.Node<Counter>) =
+      let f (n: Tree.Node<Counter>) =
         match n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id) with
         | Some i -> { n with Children = n.Children |> List.swap i (i - 1) }
         | None -> n
       { m with DummyRoot = m.DummyRoot |> Tree.map f }
 
     | MoveDown id ->
-      let f (n:Tree.Node<Counter>) =
+      let f (n: Tree.Node<Counter>) =
         match n.Children |> List.tryFindIndex (fun nn -> nn.Data.Id = id) with
         | Some i -> { n with Children = n.Children |> List.swap i (i + 1) }
         | None -> n
@@ -171,8 +171,6 @@ module Bindings =
 
   let rec counterBindings () : Binding<Model * Counter, Msg> list = [
     "CounterIdText" |> Binding.oneWay(fun (_, { Id = CounterId id }) -> id)
-
-    "CounterId" |> Binding.oneWay(fun (_, c) -> c.Id)
 
     "CounterValue" |> Binding.oneWay(fun (_, c) -> c.CounterValue)
 
@@ -226,5 +224,5 @@ let main _ =
   Program.mkSimpleWpf App.init App.update Bindings.rootBindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true; Measure = true }
-      (MainWindow())
+    { ElmConfig.Default with LogConsole = true; Measure = true }
+    (MainWindow())

@@ -10,7 +10,7 @@ module Counter =
     { Count: int
       StepSize: int }
   
-  let init () =
+  let init =
     { Count = 0
       StepSize = 1 }
   
@@ -25,7 +25,7 @@ module Counter =
     | Increment -> { m with Count = m.Count + m.StepSize }
     | Decrement -> { m with Count = m.Count - m.StepSize }
     | SetStepSize x -> { m with StepSize = x }
-    | Reset -> init ()
+    | Reset -> init
   
   let bindings () : Binding<Model, Msg> list = [
     "CounterValue" |> Binding.oneWay (fun m -> m.Count)
@@ -34,7 +34,7 @@ module Counter =
     "StepSize" |> Binding.twoWay(
       (fun m -> float m.StepSize),
       int >> SetStepSize)
-    "Reset" |> Binding.cmdIf(Reset, (<>) (init ()))
+    "Reset" |> Binding.cmdIf(Reset, (<>) init)
   ]
 
 
@@ -73,7 +73,7 @@ module CounterWithClock =
       Clock: Clock.Model }
 
   let init =
-    { Counter = Counter.init ()
+    { Counter = Counter.init
       Clock = Clock.init () }
 
   type Msg =
@@ -146,5 +146,5 @@ let main argv =
   |> Program.withSubscription (fun m -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true; Measure = true }
-      (MainWindow())
+    { ElmConfig.Default with LogConsole = true; Measure = true }
+    (MainWindow())

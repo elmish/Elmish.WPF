@@ -54,9 +54,9 @@ let bindings () : Binding<Model, Msg> list = [
 
 
 [<EntryPoint; STAThread>]
-let main argv =
+let main _ =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true; Measure = true }
-      (MainWindow())
+     { ElmConfig.Default with LogConsole = true; Measure = true }
+     (MainWindow())

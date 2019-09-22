@@ -26,8 +26,7 @@ module App =
   let init () =
     { Win1State = WindowState.Closed
       Win1Input = ""
-      Win2 = None },
-    Cmd.none
+      Win2 = None }
 
   type Msg =
     | ShowWin1
@@ -43,48 +42,40 @@ module App =
 
   let update msg m =
     match msg with
-    | ShowWin1 -> { m with Win1State = WindowState.Visible "" }, Cmd.none
-    | HideWin1 -> { m with Win1State = WindowState.Hidden "" }, Cmd.none
-    | CloseWin1 -> { m with Win1State = WindowState.Closed }, Cmd.none
+    | ShowWin1 -> { m with Win1State = WindowState.Visible "" }
+    | HideWin1 -> { m with Win1State = WindowState.Hidden "" }
+    | CloseWin1 -> { m with Win1State = WindowState.Closed }
     | ShowWin2 ->
         let win2 = { Input1 = ""; Input2 = ""; ConfirmState = None }
-        { m with Win2 = Some win2 }, Cmd.none
-    | Win1Input s -> { m with Win1Input = s }, Cmd.none
+        { m with Win2 = Some win2 }
+    | Win1Input s -> { m with Win1Input = s }
     | Win2Input1 s ->
         { m with
             Win2 =
               m.Win2
               |> Option.map (fun m' -> { m' with Input1 = s })
-          },
-        Cmd.none
+          }
     | Win2Input2 s ->
         { m with
             Win2 =
               m.Win2
               |> Option.map (fun m' -> { m' with Input2 = s })
-            },
-        Cmd.none
+            }
     | Win2Submit ->
-        let newM =
-          match m.Win2 with
-          | Some { ConfirmState = Some SubmitClicked } -> { m with Win2 = None }
-          | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some SubmitClicked } }
-          | None -> m
-        newM, Cmd.none
+        match m.Win2 with
+        | Some { ConfirmState = Some SubmitClicked } -> { m with Win2 = None }
+        | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some SubmitClicked } }
+        | None -> m
     | Win2ButtonCancel ->
-        let newM =
-          match m.Win2 with
-          | Some { ConfirmState = Some CancelClicked } -> { m with Win2 = None }
-          | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some CancelClicked } }
-          | None -> m
-        newM, Cmd.none
+        match m.Win2 with
+        | Some { ConfirmState = Some CancelClicked } -> { m with Win2 = None }
+        | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some CancelClicked } }
+        | None -> m
     | Win2CloseRequested -> 
-        let newM =
-          match m.Win2 with
-          | Some { ConfirmState = Some CloseRequested } -> { m with Win2 = None }
-          | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some CloseRequested } }
-          | None -> m
-        newM, Cmd.none
+        match m.Win2 with
+        | Some { ConfirmState = Some CloseRequested } -> { m with Win2 = None }
+        | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some CloseRequested } }
+        | None -> m
 
 
   let bindings () : Binding<Model, Msg> list = [
@@ -118,9 +109,9 @@ module App =
 
 
 [<EntryPoint; STAThread>]
-let main argv =
-  Program.mkProgramWpf App.init App.update App.bindings
+let main _ =
+  Program.mkSimpleWpf App.init App.update App.bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
-      { ElmConfig.Default with LogConsole = true; Measure = true }
-      (MainWindow())
+    { ElmConfig.Default with LogConsole = true; Measure = true }
+    (MainWindow())
