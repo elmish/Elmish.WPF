@@ -181,13 +181,13 @@ module internal BindingData =
     | SubModelData d -> SubModelData {
         GetModel = unbox >> d.GetModel
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> unbox
+        ToMsg = d.ToMsg >> box
         Sticky = d.Sticky
       }
     | SubModelWinData d -> SubModelWinData {
         GetState = unbox >> d.GetState
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> unbox
+        ToMsg = d.ToMsg >> box
         GetWindow = d.GetWindow
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map box
@@ -196,7 +196,7 @@ module internal BindingData =
         GetModels = unbox >> d.GetModels
         GetId = d.GetId
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> unbox
+        ToMsg = d.ToMsg >> box
       }
     | SubModelSelectedItemData d -> SubModelSelectedItemData {
         Get = unbox >> d.Get
