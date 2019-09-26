@@ -1,3 +1,7 @@
+#### 3.4.1
+
+* Corrected type parameter of `getId` in `oneWaySeqLazy`
+
 #### 3.4.0
 
 * Make model/dispatch available to `getWindow` in `Binding.subModelWin`
