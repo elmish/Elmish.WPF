@@ -189,8 +189,7 @@ module internal BindingData =
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> box
         GetWindow =
-          let getWin = d.GetWindow  // No idea why this is needed
-          fun (m: obj) (d: Dispatch<obj>) -> getWin (unbox m) (unboxDispatch d)
+          fun (m: obj) (disp: Dispatch<obj>) -> d.GetWindow (unbox m) (unboxDispatch disp)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map box
       }
