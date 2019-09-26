@@ -46,7 +46,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
   Get: 'model -> 'a
   Map: 'a -> 'b seq
   Equals: 'a -> 'a -> bool
-  GetId: 'a -> 'id
+  GetId: 'b -> 'id
   ItemEquals: 'b -> 'b -> bool
 }
 
