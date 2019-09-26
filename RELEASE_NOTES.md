@@ -1,3 +1,7 @@
+#### 3.4.0
+
+* Make model/dispatch available to `getWindow` in `Binding.subModelWin`
+
 #### 3.3.0
 
 * Added optional dispatch wrapper to two-way bindings and command bindings, which allows dispatches to be throttled/debounced etc.
