@@ -15,6 +15,10 @@
     <Version>3.4.0</Version>
     <PackageReleaseNotes>Make model/dispatch available to getWindow in Binding.subModelWin</PackageReleaseNotes>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
+    <DisableImplicitSystemValueTupleReference>true</DisableImplicitSystemValueTupleReference>
+  </PropertyGroup>
   
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
