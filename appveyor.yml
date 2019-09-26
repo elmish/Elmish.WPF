@@ -7,7 +7,7 @@ artifacts:
   - path: /src/**/*.nupkg
 
 build_script:
-  - cmd: dotnet build -c Release
+  - cmd: dotnet build src/Elmish.WPF -c Release
 
 deploy:
   - provider: NuGet
