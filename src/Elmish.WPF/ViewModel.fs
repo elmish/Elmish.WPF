@@ -49,7 +49,7 @@ type internal VmBinding<'model, 'msg> =
       * getState: ('model -> WindowState<obj>)
       * getBindings: (unit -> Binding<obj, obj> list)
       * toMsg: (obj -> 'msg)
-      * getWindow: (unit -> Window)
+      * getWindow: ('model -> Dispatch<'msg> -> Window)
       * isModal: bool
       * onCloseRequested: (unit -> unit)
       * preventClose: bool ref
@@ -135,7 +135,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let showNewWindow
       (winRef: WeakReference<Window>)
-      (getWindow: unit -> Window)
+      (getWindow: 'model -> Dispatch<'msg> -> Window)
       dataContext
       isDialog
       (onCloseRequested: unit -> unit)
@@ -144,7 +144,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     Application.Current.Dispatcher.Invoke(fun () ->
       let guiCtx = System.Threading.SynchronizationContext.Current
       async {
-        let win = getWindow ()
+        let win = getWindow currentModel dispatch
         winRef.SetTarget win
         win.DataContext <- dataContext
         win.Closing.Add(fun ev ->

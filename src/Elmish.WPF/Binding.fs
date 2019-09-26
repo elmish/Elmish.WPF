@@ -94,7 +94,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'bindingMsg -> 'msg
-  GetWindow: unit -> Window
+  GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
   OnCloseRequested: 'msg voption
 }
@@ -188,7 +188,8 @@ module internal BindingData =
         GetState = unbox >> d.GetState
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> box
-        GetWindow = d.GetWindow
+        GetWindow =
+          fun (m: obj) (disp: Dispatch<obj>) -> d.GetWindow (unbox m) (unboxDispatch disp)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map box
       }
@@ -1298,8 +1299,69 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="getWindow">
-  ///   The function used to get the window. Can be a simple window constructor,
-  ///   or a function that also configures the window (setting owner etc.).
+  ///   The function used to get and configure the window.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on external close attempts (the Close/X
+  ///   button, Alt+F4, or System Menu -> Close).
+  /// </param>
+  /// <param name="isModal">
+  ///   Specifies whether the window will be shown modally (using
+  ///   window.ShowDialog, blocking the rest of the app) or non-modally (using
+  ///   window.Show).
+  /// </param>
+  static member subModelWin
+      (getState: 'model -> WindowState<'subModel>,
+       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
+       getWindow: 'model -> Dispatch<'msg> -> #Window,
+       ?onCloseRequested: 'msg,
+       ?isModal: bool)
+      : string -> Binding<'model, 'msg> =
+    SubModelWinData {
+      GetState = fun m ->
+        getState m |> WindowState.map (fun sub -> toBindingModel (m, sub) |> box)
+      GetBindings = bindings >> List.map boxBinding
+      ToMsg = unbox<'bindingMsg> >> toMsg
+      GetWindow = fun m d -> upcast getWindow m d
+      IsModal = defaultArg isModal false
+      OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
+    } |> createBinding
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The window can only be closed/hidden by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts (the Close/X button, Alt+F4, or System
+  ///   Menu -> Close) will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
+  ///   supply <paramref name="onCloseRequested" /> and react to this in a
+  ///   manner that will not confuse a user trying to close the window (e.g. by
+  ///   closing it, or displaying relevant feedback to the user.)
+  ///
+  ///   If you don't nead a sub-model, you can use
+  ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
+  ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
+  /// </summary>
+  /// <param name="getState">Gets the window state and a sub-model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getWindow">
+  ///   The function used to get and configure the window.
   /// </param>
   /// <param name="onCloseRequested">
   ///   The message to be dispatched on external close attempts (the Close/X
@@ -1319,12 +1381,66 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
+    Binding.subModelWin(
+      getState,
+      toBindingModel,
+      toMsg,
+      bindings,
+      (fun _ _ -> getWindow ()),
+      ?onCloseRequested = onCloseRequested,
+      ?isModal = isModal
+    )
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The window can only be closed/hidden by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts (the Close/X button, Alt+F4, or System
+  ///   Menu -> Close) will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
+  ///   supply <paramref name="onCloseRequested" /> and react to this in a
+  ///   manner that will not confuse a user trying to close the window (e.g. by
+  ///   closing it, or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the window state and a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getWindow">
+  ///   The function used to get and configure the window.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on external close attempts (the Close/X
+  ///   button, Alt+F4, or System Menu -> Close).
+  /// </param>
+  /// <param name="isModal">
+  ///   Specifies whether the window will be shown modally (using
+  ///   window.ShowDialog, blocking the rest of the app) or non-modally (using
+  ///   window.Show).
+  /// </param>
+  static member subModelWin
+      (getState: 'model -> WindowState<'subModel>,
+       toMsg: 'subMsg -> 'msg,
+       bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
+       getWindow: 'model -> Dispatch<'msg> -> #Window,
+       ?onCloseRequested: 'msg,
+       ?isModal: bool)
+      : string -> Binding<'model, 'msg> =
     SubModelWinData {
       GetState = fun m ->
-        getState m |> WindowState.map (fun sub -> toBindingModel (m, sub) |> box)
+        getState m |> WindowState.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'bindingMsg> >> toMsg
-      GetWindow = fun () -> upcast getWindow ()
+      ToMsg = unbox<'subMsg> >> toMsg
+      GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
       OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
     } |> createBinding
@@ -1354,8 +1470,7 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="getWindow">
-  ///   The function used to get the window. Can be a simple window constructor,
-  ///   or a function that also configures the window (setting owner etc.).
+  ///   The function used to get and configure the window.
   /// </param>
   /// <param name="onCloseRequested">
   ///   The message to be dispatched on external close attempts (the Close/X
@@ -1374,12 +1489,60 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
+    Binding.subModelWin(
+      getState,
+      toMsg,
+      bindings,
+      (fun _ _ -> getWindow ()),
+      ?onCloseRequested = onCloseRequested,
+      ?isModal = isModal
+    )
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The window can only be closed/hidden by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts (the Close/X button, Alt+F4, or System
+  ///   Menu -> Close) will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
+  ///   supply <paramref name="onCloseRequested" /> and react to this in a
+  ///   manner that will not confuse a user trying to close the window (e.g. by
+  ///   closing it, or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the window state and a sub-model.</param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getWindow">
+  ///   The function used to get and configure the window.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on external close attempts (the Close/X
+  ///   button, Alt+F4, or System Menu -> Close).
+  /// </param>
+  /// <param name="isModal">
+  ///   Specifies whether the window will be shown modally (using
+  ///   window.ShowDialog, blocking the rest of the app) or non-modally (using
+  ///   window.Show).
+  /// </param>
+  static member subModelWin
+      (getState: 'model -> WindowState<'subModel>,
+       bindings: unit -> Binding<'model * 'subModel, 'msg> list,
+       getWindow: 'model -> Dispatch<'msg> -> #Window,
+       ?onCloseRequested: 'msg,
+       ?isModal: bool)
+      : string -> Binding<'model, 'msg> =
     SubModelWinData {
       GetState = fun m ->
         getState m |> WindowState.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
-      GetWindow = fun () -> upcast getWindow ()
+      ToMsg = unbox<'msg>
+      GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
       OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
     } |> createBinding
@@ -1405,8 +1568,7 @@ type Binding private () =
   /// <param name="getState">Gets the window state and a sub-model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="getWindow">
-  ///   The function used to get the window. Can be a simple window constructor,
-  ///   or a function that also configures the window (setting owner etc.).
+  ///   The function used to get and configure the window.
   /// </param>
   /// <param name="onCloseRequested">
   ///   The message to be dispatched on external close attempts (the Close/X
@@ -1424,15 +1586,13 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelWinData {
-      GetState = fun m ->
-        getState m |> WindowState.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'msg>
-      GetWindow = fun () -> upcast getWindow ()
-      IsModal = defaultArg isModal false
-      OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
-    } |> createBinding
+    Binding.subModelWin(
+      getState,
+      bindings,
+      (fun _ _ -> getWindow ()),
+      ?onCloseRequested = onCloseRequested,
+      ?isModal = isModal
+    )
 
 
   /// <summary>
