@@ -9,6 +9,9 @@ artifacts:
 build_script:
   - cmd: dotnet build src/Elmish.WPF -c Release
 
+test_script:
+  - cmd: dotnet test src/Elmish.WPF.Tests -c Release
+
 deploy:
   - provider: NuGet
     api_key:
