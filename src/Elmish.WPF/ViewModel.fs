@@ -329,32 +329,32 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         else
           currentVal := lazy (newModel |> get |> map)
           true
-    | OneWaySeq (vals, get', map, equals', getId, itemEquals) ->
-        if not <| equals' (get' newModel) (get' currentModel) then
-          let newVals = newModel |> get' |> map
+    | OneWaySeq (vals, get, map, equals, getId, itemEquals) ->
+        if not <| equals (get newModel) (get currentModel) then
+          let newVals = newModel |> get |> map
           // Prune and update existing values
-          let newLookup = Dictionary<_,_>()
-          for v in newVals do newLookup.Add(getId v, v)
-          for existingVal in vals |> Seq.toList do
-            match newLookup.TryGetValue (getId existingVal) with
-            | false, _ -> vals.Remove(existingVal) |> ignore
-            | true, newVal when not (itemEquals newVal existingVal) ->
-                vals.Remove existingVal |> ignore
+          let newValsById = Dictionary<_,_>()
+          for newVal in newVals do newValsById.Add(getId newVal, newVal)
+          for oldVal in vals |> Seq.toList do
+            match newValsById.TryGetValue (getId oldVal) with
+            | false, _ -> vals.Remove(oldVal) |> ignore
+            | true, newVal when not (itemEquals newVal oldVal) ->
+                vals.Remove oldVal |> ignore
                 vals.Add newVal  // Will be sorted later
             | _ -> ()
           // Add new values that don't currently exist
-          let valuesToAdd =
+          let newValsToAdd =
             newVals
-            |> Seq.filter (fun m ->
-                  vals |> Seq.exists (fun existingVal -> getId m = getId existingVal) |> not
+            |> Seq.filter (fun newVal ->
+                  vals |> Seq.exists (fun oldVal -> getId newVal = getId oldVal) |> not
             )
-          for m in valuesToAdd do vals.Add m
+          for newVal in newValsToAdd do vals.Add newVal
           // Reorder according to new model list
           for newIdx, newVal in newVals |> Seq.indexed do
             let oldIdx =
               vals
               |> Seq.indexed
-              |> Seq.find (fun (_, existingVal) -> getId existingVal = getId newVal)
+              |> Seq.find (fun (_, oldVal) -> getId oldVal = getId newVal)
               |> fst
             if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
         false
@@ -453,19 +453,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
         let newSubModels = getModels newModel
         // Prune and update existing models
-        let newLookup = Dictionary<_,_>()
-        for m in newSubModels do newLookup.Add(getId m, m)
+        let newSubModelsById = Dictionary<_,_>()
+        for m in newSubModels do newSubModelsById.Add(getId m, m)
         for vm in vms |> Seq.toList do
-          match newLookup.TryGetValue (getId vm.CurrentModel) with
+          match newSubModelsById.TryGetValue (getId vm.CurrentModel) with
           | false, _ -> vms.Remove(vm) |> ignore
-          | true, newSubModel -> vm.UpdateModel newSubModel
+          | true, m -> vm.UpdateModel m
         // Add new models that don't currently exist
-        let modelsToAdd =
+        let newSubModelsToAdd =
           newSubModels
           |> Seq.filter (fun m ->
                 vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
           )
-        for m in modelsToAdd do
+        for m in newSubModelsToAdd do
           let chain = getPropChainForItem bindingName (getId m |> string)
           vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
         // Reorder according to new model list
