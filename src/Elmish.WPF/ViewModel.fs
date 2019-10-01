@@ -43,6 +43,11 @@ type internal TwoWayValidate<'model, 'msg, 'a> = {
   Dispatch: Dispatch<'msg>
 }
 
+type internal Cmd<'model, 'msg> = {
+  Cmd: Command
+  CanExec: 'model -> bool
+}
+
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
@@ -50,9 +55,7 @@ type internal VmBinding<'model, 'msg> =
   | OneWaySeq of OneWaySeq<'model, obj, obj, obj>
   | TwoWay of TwoWay<'model, 'msg, obj>
   | TwoWayValidate of TwoWayValidate<'model, 'msg, obj>
-  | Cmd of
-      cmd: Command
-      * canExec: ('model -> bool)
+  | Cmd of Cmd<'model, 'msg>
   | CmdParam of cmd: Command
   | SubModel of
       vm: ViewModel<obj, obj> voption ref
@@ -218,7 +221,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let dispatch' = d.WrapDispatch dispatch
         let execute _ = exec currentModel |> ValueOption.iter dispatch'
         let canExecute _ = canExec currentModel
-        Cmd (Command(execute, canExecute, false), canExec)
+        Cmd {
+          Cmd = Command(execute, canExecute, false)
+          CanExec = canExec }
     | CmdParamData d ->
         let exec = measure2 name "exec" d.Exec
         let canExec = measure2 name "canExec" d.CanExec
@@ -521,7 +526,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSeq _
     | SubModelSelectedItem _ ->
         None
-    | Cmd (cmd, canExec) ->
+    | Cmd { Cmd = cmd; CanExec = canExec } ->
         if canExec newModel = canExec currentModel
         then None
         else Some cmd
@@ -572,7 +577,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               (!value).Value
           | OneWaySeq { Values = vals } ->
               box vals
-          | Cmd (cmd, _)
+          | Cmd { Cmd = cmd }
           | CmdParam cmd ->
               box cmd
           | SubModel (vm, _, _, _, _) -> !vm |> ValueOption.toObj |> box
