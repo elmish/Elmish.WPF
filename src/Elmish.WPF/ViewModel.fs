@@ -538,10 +538,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> fst
           if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
-    | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBinding = { Vms = vms; GetId = getSubModelId } } ->
-        let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-        log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
-        vm := ValueSome v
+    | SubModelSelectedItem b ->
+        let v = getSelectedSubModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+        log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> b.SubModelSeqBinding.GetId v.CurrentModel))
+        b.Selected := ValueSome v
         true
 
   /// Returns the command associated with a command binding if the command's
@@ -618,13 +618,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               | WindowState.Closed -> null
               | WindowState.Hidden vm | WindowState.Visible vm -> box vm
           | SubModelSeq { Vms = vms } -> box vms
-          | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBinding = { Vms = vms; GetId = getSubModelId } } ->
-              match !vm with
+          | SubModelSelectedItem b ->
+              match !b.Selected with
               | ValueSome x -> x |> ValueOption.toObj |> box
               | ValueNone ->
                   // No computed value, must perform initial computation
-                  let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
-                  vm := ValueSome selected
+                  let selected = getSelectedSubModel currentModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+                  b.Selected := ValueSome selected
                   selected |> ValueOption.toObj |> box
         true
 
@@ -640,12 +640,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | TwoWayValidate { Set = set; Dispatch = dispatch } ->
             set value currentModel |> dispatch
             true
-        | SubModelSelectedItem { Set = set; SubModelSeqBinding = { GetId = getSubModelId }; Dispatch = dispatch } ->
+        | SubModelSelectedItem b ->
             let value =
               (value :?> ViewModel<obj, obj>)
               |> ValueOption.ofObj
-              |> ValueOption.map (fun vm -> getSubModelId vm.CurrentModel)
-            set value currentModel |> dispatch
+              |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
+            b.Set value currentModel |> b.Dispatch
             true
         | OneWay _
         | OneWayLazy _
