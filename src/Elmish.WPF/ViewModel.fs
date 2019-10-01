@@ -68,6 +68,14 @@ and internal SubModelWin<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
 }
 
+and internal SubModelSeq<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+  GetModels: 'model -> 'bindingModel seq
+  GetId: 'bindingModel -> 'id
+  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  ToMsg: 'id * 'bindingMsg -> 'msg
+  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
+}
+
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
@@ -79,12 +87,7 @@ and internal VmBinding<'model, 'msg> =
   | CmdParam of cmd: Command
   | SubModel of SubModel<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWin<'model, 'msg, obj, obj>
-  | SubModelSeq of
-      vms: ObservableCollection<ViewModel<obj, obj>>
-      * getModels: ('model -> obj seq)
-      * getId: (obj -> obj)
-      * getBindings: (unit -> Binding<obj, obj> list)
-      * toMsg: (obj * obj -> 'msg)
+  | SubModelSeq of SubModelSeq<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of
       selected: ViewModel<obj, obj> voption voption ref
       * get: ('model -> obj voption)
@@ -328,7 +331,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
           |> ObservableCollection
-        SubModelSeq (vms, getModels, getId, getBindings, toMsg)
+        SubModelSeq {
+          GetModels = getModels
+          GetId = getId
+          GetBindings = getBindings
+          ToMsg = toMsg
+          Vms = vms }
     | SubModelSelectedItemData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
@@ -492,36 +500,36 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | WindowState.Visible vm, WindowState.Visible m ->
             vm.UpdateModel m
             false
-    | SubModelSeq (vms, getModels, getId, getBindings, toMsg) ->
-        let newSubModels = getModels newModel
+    | SubModelSeq b ->
+        let newSubModels = b.GetModels newModel
         // Prune and update existing models
         let newSubModelsById = Dictionary<_,_>()
-        for m in newSubModels do newSubModelsById.Add(getId m, m)
-        for vm in vms |> Seq.toList do
-          match newSubModelsById.TryGetValue (getId vm.CurrentModel) with
-          | false, _ -> vms.Remove(vm) |> ignore
+        for m in newSubModels do newSubModelsById.Add(b.GetId m, m)
+        for vm in b.Vms |> Seq.toList do
+          match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
+          | false, _ -> b.Vms.Remove(vm) |> ignore
           | true, m -> vm.UpdateModel m
         // Add new models that don't currently exist
         let newSubModelsToAdd =
           newSubModels
           |> Seq.filter (fun m ->
-                vms |> Seq.exists (fun vm -> getId m = getId vm.CurrentModel) |> not
+                b.Vms |> Seq.exists (fun vm -> b.GetId m = b.GetId vm.CurrentModel) |> not
           )
         for m in newSubModelsToAdd do
-          let chain = getPropChainForItem bindingName (getId m |> string)
-          vms.Add <| ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
+          let chain = getPropChainForItem bindingName (b.GetId m |> string)
+          b.Vms.Add <| ViewModel(m, (fun msg -> b.ToMsg (b.GetId m, msg) |> dispatch), b.GetBindings (), config, chain)
         // Reorder according to new model list
         for newIdx, newSubModel in newSubModels |> Seq.indexed do
           let oldIdx =
-            vms
+            b.Vms
             |> Seq.indexed
-            |> Seq.find (fun (_, vm) -> getId newSubModel = getId vm.CurrentModel)
+            |> Seq.find (fun (_, vm) -> b.GetId newSubModel = b.GetId vm.CurrentModel)
             |> fst
-          if oldIdx <> newIdx then vms.Move(oldIdx, newIdx)
+          if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
         match bindings.TryGetValue name with
-        | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
+        | true, SubModelSeq { Vms = vms; GetId = getSubModelId } ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
             log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
             vm := ValueSome v
@@ -601,14 +609,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               match !vm with
               | WindowState.Closed -> null
               | WindowState.Hidden vm | WindowState.Visible vm -> box vm
-          | SubModelSeq (vms, _, _, _, _) -> box vms
+          | SubModelSeq { Vms = vms } -> box vms
           | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
               match !vm with
               | ValueSome x -> x |> ValueOption.toObj |> box
               | ValueNone ->
                   // No computed value, must perform initial computation
                   match bindings.TryGetValue name with
-                  | true, SubModelSeq (vms, _, getSubModelId, _, _) ->
+                  | true, SubModelSeq { Vms = vms; GetId = getSubModelId } ->
                       let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
                       vm := ValueSome selected
                       selected |> ValueOption.toObj |> box
@@ -630,7 +638,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             true
         | SubModelSelectedItem (_, _, set, name, dispatch) ->
             match bindings.TryGetValue name with
-            | true, SubModelSeq (_, _, getSubModelId, _, _) ->
+            | true, SubModelSeq { GetId = getSubModelId } ->
                 let value =
                   (value :?> ViewModel<obj, obj>)
                   |> ValueOption.ofObj
