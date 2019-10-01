@@ -48,8 +48,16 @@ type internal Cmd<'model, 'msg> = {
   CanExec: 'model -> bool
 }
 
+type internal SubModel<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  GetModel: 'model -> 'bindingModel voption
+  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  ToMsg: 'bindingMsg -> 'msg
+  Sticky: bool
+  Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
+}
+
 /// Represents all necessary data used in an active binding.
-type internal VmBinding<'model, 'msg> =
+and internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
   | OneWayLazy of OneWayLazy<'model, obj, obj>
   | OneWaySeq of OneWaySeq<'model, obj, obj, obj>
@@ -57,12 +65,7 @@ type internal VmBinding<'model, 'msg> =
   | TwoWayValidate of TwoWayValidate<'model, 'msg, obj>
   | Cmd of Cmd<'model, 'msg>
   | CmdParam of cmd: Command
-  | SubModel of
-      vm: ViewModel<obj, obj> voption ref
-      * getModel: ('model -> obj voption)
-      * getBindings: (unit -> Binding<obj, obj> list)
-      * toMsg: (obj -> 'msg)
-      * sticky: bool
+  | SubModel of SubModel<'model, 'msg, obj, obj>
   | SubModelWin of
       vmWinState: WindowState<ViewModel<obj, obj>> ref
       * getState: ('model -> WindowState<obj>)
@@ -237,11 +240,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let toMsg = measure name "toMsg" d.ToMsg
         match getModel initialModel with
         | ValueNone ->
-            SubModel (ref ValueNone, getModel, getBindings, toMsg, d.Sticky)
+            SubModel {
+              GetModel = getModel
+              GetBindings = getBindings
+              ToMsg = toMsg
+              Sticky = d.Sticky
+              Vm = ref ValueNone }
         | ValueSome m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
-            SubModel (ref <| ValueSome vm, getModel, getBindings, toMsg, d.Sticky)
+            SubModel {
+              GetModel = getModel
+              GetBindings = getBindings
+              ToMsg = toMsg
+              Sticky = d.Sticky
+              Vm = ref <| ValueSome vm }
     | SubModelWinData d ->
         let getState = measure name "getState" d.GetState
         let getBindings = measure name "bindings" d.GetBindings
@@ -387,16 +400,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | Cmd _
     | CmdParam _ ->
         false
-    | SubModel (vm, getModel, getBindings, toMsg, sticky) ->
-      match !vm, getModel newModel with
+    | SubModel b ->
+      match !b.Vm, b.GetModel newModel with
       | ValueNone, ValueNone -> false
       | ValueSome _, ValueNone ->
-          if sticky then false
+          if b.Sticky then false
           else
-            vm := ValueNone
+            b.Vm := ValueNone
             true
       | ValueNone, ValueSome m ->
-          vm := ValueSome <| ViewModel(m, toMsg >> dispatch, getBindings (), config, getPropChainFor bindingName)
+          b.Vm := ValueSome <| ViewModel(m, b.ToMsg >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
@@ -580,7 +593,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | Cmd { Cmd = cmd }
           | CmdParam cmd ->
               box cmd
-          | SubModel (vm, _, _, _, _) -> !vm |> ValueOption.toObj |> box
+          | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
           | SubModelWin (vm, _, _, _, _, _, _, _, _) ->
               match !vm with
               | WindowState.Closed -> null
