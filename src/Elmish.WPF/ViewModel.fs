@@ -10,18 +10,18 @@ open System.Windows
 open Elmish
 
 
-type internal OneWay<'model, 'a> = {
+type internal OneWayBinding<'model, 'a> = {
   Get: 'model -> 'a
 }
 
-type internal OneWayLazy<'model, 'a, 'b> = {
+type internal OneWayLazyBinding<'model, 'a, 'b> = {
   Get: 'model -> 'a
   Equals: 'a -> 'a -> bool
   Map: 'a -> 'b
   CurrentVal: Lazy<'b> ref
 }
 
-type internal OneWaySeq<'model, 'a, 'b, 'id> = {
+type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
   Get: 'model -> 'a
   Equals: 'a -> 'a -> bool
   Map: 'a -> 'b seq
@@ -30,25 +30,25 @@ type internal OneWaySeq<'model, 'a, 'b, 'id> = {
   Values: ObservableCollection<'b>
 }
 
-type internal TwoWay<'model, 'msg, 'a> = {
+type internal TwoWayBinding<'model, 'msg, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> 'msg
   Dispatch: Dispatch<'msg>
 }
 
-type internal TwoWayValidate<'model, 'msg, 'a> = {
+type internal TwoWayValidateBinding<'model, 'msg, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> 'msg
   Validate: 'model -> string voption
   Dispatch: Dispatch<'msg>
 }
 
-type internal Cmd<'model, 'msg> = {
+type internal CmdBinding<'model, 'msg> = {
   Cmd: Command
   CanExec: 'model -> bool
 }
 
-type internal SubModel<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'bindingMsg -> 'msg
@@ -56,7 +56,7 @@ type internal SubModel<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
 }
 
-and internal SubModelWin<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'bindingMsg -> 'msg
@@ -68,7 +68,7 @@ and internal SubModelWin<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
 }
 
-and internal SubModelSeq<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   GetModels: 'model -> 'bindingModel seq
   GetId: 'bindingModel -> 'id
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
@@ -76,7 +76,7 @@ and internal SubModelSeq<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
-and internal SubModelSelectedItem<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> 'msg
   SubModelSeqBindingName: string
@@ -87,17 +87,17 @@ and internal SubModelSelectedItem<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
-  | OneWay of OneWay<'model, obj>
-  | OneWayLazy of OneWayLazy<'model, obj, obj>
-  | OneWaySeq of OneWaySeq<'model, obj, obj, obj>
-  | TwoWay of TwoWay<'model, 'msg, obj>
-  | TwoWayValidate of TwoWayValidate<'model, 'msg, obj>
-  | Cmd of Cmd<'model, 'msg>
+  | OneWay of OneWayBinding<'model, obj>
+  | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
+  | TwoWay of TwoWayBinding<'model, 'msg, obj>
+  | TwoWayValidate of TwoWayValidateBinding<'model, 'msg, obj>
+  | Cmd of CmdBinding<'model, 'msg>
   | CmdParam of cmd: Command
-  | SubModel of SubModel<'model, 'msg, obj, obj>
-  | SubModelWin of SubModelWin<'model, 'msg, obj, obj>
-  | SubModelSeq of SubModelSeq<'model, 'msg, obj, obj, obj>
-  | SubModelSelectedItem of SubModelSelectedItem<'model, 'msg, obj, obj, obj>
+  | SubModel of SubModelBinding<'model, 'msg, obj, obj>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
+  | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
