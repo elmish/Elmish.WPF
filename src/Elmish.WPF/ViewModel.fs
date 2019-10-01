@@ -21,17 +21,20 @@ type internal OneWayLazy<'model, 'a, 'b> = {
   CurrentVal: Lazy<'b> ref
 }
 
+type internal OneWaySeq<'model, 'a, 'b, 'id> = {
+  Get: 'model -> 'a
+  Equals: 'a -> 'a -> bool
+  Map: 'a -> 'b seq
+  GetId: 'b -> 'id
+  ItemEquals: 'b -> 'b -> bool
+  Values: ObservableCollection<'b>
+}
+
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
   | OneWayLazy of OneWayLazy<'model, obj, obj>
-  | OneWaySeq of
-      vals: ObservableCollection<obj>
-      * get: ('model -> obj)
-      * map: (obj -> obj seq)
-      * equals: (obj -> obj -> bool)
-      * getId: (obj -> obj)
-      * itemEquals: (obj -> obj -> bool)
+  | OneWaySeq of OneWaySeq<'model, obj, obj, obj>
   | TwoWay of
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
@@ -185,11 +188,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeqLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
-        let equals = measure2 name "equals" d.Equals
-        let getId = measure name "getId" d.GetId
-        let itemEquals = measure2 name "itemEquals" d.ItemEquals
-        let vals = ObservableCollection(initialModel |> get |> map)
-        OneWaySeq (vals, get, map, equals, getId, itemEquals)
+        OneWaySeq {
+          Get = get
+          Map = map
+          Equals = measure2 name "equals" d.Equals
+          GetId = measure name "getId" d.GetId
+          ItemEquals = measure2 name "itemEquals" d.ItemEquals
+          Values = ObservableCollection(initialModel |> get |> map) }
     | TwoWayData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
@@ -339,34 +344,34 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         else
           b.CurrentVal := lazy (newModel |> b.Get |> b.Map)
           true
-    | OneWaySeq (vals, get, map, equals, getId, itemEquals) ->
-        if not <| equals (get newModel) (get currentModel) then
-          let newVals = newModel |> get |> map
+    | OneWaySeq b ->
+        if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
+          let newVals = newModel |> b.Get |> b.Map
           // Prune and update existing values
           let newValsById = Dictionary<_,_>()
-          for newVal in newVals do newValsById.Add(getId newVal, newVal)
-          for oldVal in vals |> Seq.toList do
-            match newValsById.TryGetValue (getId oldVal) with
-            | false, _ -> vals.Remove(oldVal) |> ignore
-            | true, newVal when not (itemEquals newVal oldVal) ->
-                vals.Remove oldVal |> ignore
-                vals.Add newVal  // Will be sorted later
+          for newVal in newVals do newValsById.Add(b.GetId newVal, newVal)
+          for oldVal in b.Values |> Seq.toList do
+            match newValsById.TryGetValue (b.GetId oldVal) with
+            | false, _ -> b.Values.Remove(oldVal) |> ignore
+            | true, newVal when not (b.ItemEquals newVal oldVal) ->
+                b.Values.Remove oldVal |> ignore
+                b.Values.Add newVal  // Will be sorted later
             | _ -> ()
           // Add new values that don't currently exist
           let newValsToAdd =
             newVals
             |> Seq.filter (fun newVal ->
-                  vals |> Seq.exists (fun oldVal -> getId newVal = getId oldVal) |> not
+                  b.Values |> Seq.exists (fun oldVal -> b.GetId newVal = b.GetId oldVal) |> not
             )
-          for newVal in newValsToAdd do vals.Add newVal
+          for newVal in newValsToAdd do b.Values.Add newVal
           // Reorder according to new model list
           for newIdx, newVal in newVals |> Seq.indexed do
             let oldIdx =
-              vals
+              b.Values
               |> Seq.indexed
-              |> Seq.find (fun (_, oldVal) -> getId oldVal = getId newVal)
+              |> Seq.find (fun (_, oldVal) -> b.GetId oldVal = b.GetId newVal)
               |> fst
-            if oldIdx <> newIdx then vals.Move(oldIdx, newIdx)
+            if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
         false
     | Cmd _
     | CmdParam _ ->
@@ -559,7 +564,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               get currentModel
           | OneWayLazy { CurrentVal = value } ->
               (!value).Value
-          | OneWaySeq (vals, _, _, _, _, _) ->
+          | OneWaySeq { Values = vals } ->
               box vals
           | Cmd (cmd, _)
           | CmdParam cmd ->
