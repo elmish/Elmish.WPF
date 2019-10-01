@@ -76,6 +76,15 @@ and internal SubModelSeq<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
+and internal SubModelSelectedItem<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+  Get: 'model -> 'id voption
+  Set: 'id voption -> 'model -> 'msg
+  SubModelSeqBindingName: string
+  Dispatch: Dispatch<'msg>
+  Selected: ViewModel<'bindingModel, 'bindingMsg> voption voption ref
+}
+
+
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
@@ -88,12 +97,7 @@ and internal VmBinding<'model, 'msg> =
   | SubModel of SubModel<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWin<'model, 'msg, obj, obj>
   | SubModelSeq of SubModelSeq<'model, 'msg, obj, obj, obj>
-  | SubModelSelectedItem of
-      selected: ViewModel<obj, obj> voption voption ref
-      * get: ('model -> obj voption)
-      * set: (obj voption -> 'model -> 'msg)
-      * subModelSeqBindingName: string
-      * dispatch: Dispatch<'msg>
+  | SubModelSelectedItem of SubModelSelectedItem<'model, 'msg, obj, obj, obj>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -338,10 +342,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ToMsg = toMsg
           Vms = vms }
     | SubModelSelectedItemData d ->
-        let get = measure name "get" d.Get
-        let set = measure2 name "set" d.Set
-        let dispatch' = d.WrapDispatch dispatch
-        SubModelSelectedItem (ref ValueNone, get, set, d.SubModelSeqBindingName, dispatch')
+        SubModelSelectedItem {
+          Get = measure name "get" d.Get
+          Set = measure2 name "set" d.Set
+          SubModelSeqBindingName = d.SubModelSeqBindingName
+          Dispatch = d.WrapDispatch dispatch
+          Selected = ref ValueNone }
 
   let setInitialError name = function
     | TwoWayValidate { Validate = validate } ->
@@ -527,7 +533,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> fst
           if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
-    | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
+    | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBindingName = name } ->
         match bindings.TryGetValue name with
         | true, SubModelSeq { Vms = vms; GetId = getSubModelId } ->
             let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
@@ -610,7 +616,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               | WindowState.Closed -> null
               | WindowState.Hidden vm | WindowState.Visible vm -> box vm
           | SubModelSeq { Vms = vms } -> box vms
-          | SubModelSelectedItem (vm, getSelectedId, _, name, _) ->
+          | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBindingName = name } ->
               match !vm with
               | ValueSome x -> x |> ValueOption.toObj |> box
               | ValueNone ->
@@ -636,7 +642,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | TwoWayValidate { Set = set; Dispatch = dispatch } ->
             set value currentModel |> dispatch
             true
-        | SubModelSelectedItem (_, _, set, name, dispatch) ->
+        | SubModelSelectedItem { Set = set; SubModelSeqBindingName = name; Dispatch = dispatch } ->
             match bindings.TryGetValue name with
             | true, SubModelSeq { GetId = getSubModelId } ->
                 let value =
