@@ -14,14 +14,17 @@ type internal OneWay<'model, 'a> = {
   Get: 'model -> 'a
 }
 
+type internal OneWayLazy<'model, 'a, 'b> = {
+  Get: 'model -> 'a
+  Equals: 'a -> 'a -> bool
+  Map: 'a -> 'b
+  CurrentVal: Lazy<'b> ref
+}
+
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
-  | OneWayLazy of
-      currentVal: Lazy<obj> ref
-      * get: ('model -> obj)
-      * map: (obj -> obj)
-      * equals: (obj -> obj -> bool)
+  | OneWayLazy of OneWayLazy<'model, obj, obj>
   | OneWaySeq of
       vals: ObservableCollection<obj>
       * get: ('model -> obj)
@@ -174,8 +177,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWayLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
-        let equals = measure2 name "equals" d.Equals
-        OneWayLazy (ref <| lazy (initialModel |> get |> map), get, map, equals)
+        OneWayLazy {
+          Get = get
+          Map = map
+          Equals = measure2 name "equals" d.Equals
+          CurrentVal = ref <| lazy (initialModel |> get |> map) }
     | OneWaySeqLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
@@ -328,10 +334,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWay (get, _, _)
     | TwoWayValidate (get, _, _, _) ->
         get currentModel <> get newModel
-    | OneWayLazy (currentVal, get, map, equals) ->
-        if equals (get newModel) (get currentModel) then false
+    | OneWayLazy b ->
+        if b.Equals (b.Get newModel) (b.Get currentModel) then false
         else
-          currentVal := lazy (newModel |> get |> map)
+          b.CurrentVal := lazy (newModel |> b.Get |> b.Map)
           true
     | OneWaySeq (vals, get, map, equals, getId, itemEquals) ->
         if not <| equals (get newModel) (get currentModel) then
@@ -551,7 +557,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | TwoWay (get, _, _)
           | TwoWayValidate (get, _, _, _) ->
               get currentModel
-          | OneWayLazy (value, _, _, _) ->
+          | OneWayLazy { CurrentVal = value } ->
               (!value).Value
           | OneWaySeq (vals, _, _, _, _, _) ->
               box vals
