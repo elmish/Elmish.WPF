@@ -131,6 +131,18 @@ and Binding<'model, 'msg> =
 
 module internal BindingData =
 
+
+  let subModelSelectedItemDataLast a b =
+    match a, b with
+    | SubModelSelectedItemData _, SubModelSelectedItemData _ -> 0
+    | SubModelSelectedItemData _, _ -> 1
+    | _, SubModelSelectedItemData _ -> -1
+    | _, _ -> 0
+
+  let subModelSelectedItemLast { Data = a } { Data = b } =
+    subModelSelectedItemDataLast a b
+
+
   let boxDispatch (strongDispatch: Dispatch<'msg>) : Dispatch<obj> =
     unbox<'msg> >> strongDispatch
 
@@ -1686,9 +1698,10 @@ type Binding private () =
   ///
   ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
   ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-  ///   This binding is less type-safe and will throw at runtime if
-  ///   <paramref name="subModelSeqBindingName" /> does not correspond to a
-  ///   <see cref="subModelSeq" /> binding, or if the inferred <c>'id</c> type
+  ///   This binding is less type-safe.
+  ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding,
+  ///   and it will throw at runtime if if the inferred <c>'id</c> type
   ///   does not match the actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
@@ -1724,9 +1737,10 @@ type Binding private () =
   ///
   ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
   ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-  ///   This binding is less type-safe and will throw at runtime if
-  ///   <paramref name="subModelSeqBindingName" /> does not correspond to a
-  ///   <see cref="subModelSeq" /> binding, or if the inferred <c>'id</c> type
+  ///   This binding is less type-safe.
+  ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding,
+  ///   and it will throw at runtime if if the inferred <c>'id</c> type
   ///   does not match the actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
@@ -2266,9 +2280,10 @@ module Extensions =
     ///
     ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
     ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-    ///   This binding is less type-safe and will throw at runtime if
-    ///   <paramref name="subModelSeqBindingName" /> does not correspond to a
-    ///   <see cref="subModelSeq" /> binding, or if the inferred <c>'id</c> type
+    ///   This binding is less type-safe.
+    ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding,
+    ///   and it will throw at runtime if if the inferred <c>'id</c> type
     ///   does not match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">
@@ -2304,9 +2319,10 @@ module Extensions =
     ///
     ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
     ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-    ///   This binding is less type-safe and will throw at runtime if
-    ///   <paramref name="subModelSeqBindingName" /> does not correspond to a
-    ///   <see cref="subModelSeq" /> binding, or if the inferred <c>'id</c> type
+    ///   This binding is less type-safe.
+    ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding,
+    ///   and it will throw at runtime if if the inferred <c>'id</c> type
     ///   does not match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">

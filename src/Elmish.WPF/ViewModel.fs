@@ -79,7 +79,7 @@ and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> 'msg
-  SubModelSeqBindingName: string
+  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   Dispatch: Dispatch<'msg>
   Selected: ViewModel<'bindingModel, 'bindingMsg> voption voption ref
 }
@@ -194,7 +194,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     )
 
 
-  let initializeBinding name bindingData =
+
+  let initializeBinding name bindingData (initializedBindingsByName: Dictionary<string, VmBinding<'model, 'msg>>) =
     match bindingData with
     | OneWayData d ->
         OneWay {
@@ -342,12 +343,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ToMsg = toMsg
           Vms = vms }
     | SubModelSelectedItemData d ->
-        SubModelSelectedItem {
-          Get = measure name "get" d.Get
-          Set = measure2 name "set" d.Set
-          SubModelSeqBindingName = d.SubModelSeqBindingName
-          Dispatch = d.WrapDispatch dispatch
-          Selected = ref ValueNone }
+        match initializedBindingsByName.TryGetValue d.SubModelSeqBindingName with
+        | true, SubModelSeq b ->
+          SubModelSelectedItem {
+            Get = measure name "get" d.Get
+            Set = measure2 name "set" d.Set
+            SubModelSeqBinding = b
+            Dispatch = d.WrapDispatch dispatch
+            Selected = ref ValueNone }
+        | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
 
   let setInitialError name = function
     | TwoWayValidate { Validate = validate } ->
@@ -358,10 +362,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let bindings =
     log "[%s] Initializing bindings" propNameChain
-    let dict = Dictionary<string, VmBinding<'model, 'msg>>()
-    for b in bindings do
+    let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
+    let sortedBindings = bindings |> List.sortWith BindingData.subModelSelectedItemLast
+    for b in sortedBindings do
       if dict.ContainsKey b.Name then failwithf "Binding name '%s' is duplicated" b.Name
-      let binding = initializeBinding b.Name b.Data
+      let binding = initializeBinding b.Name b.Data dict
       dict.Add(b.Name, binding)
       setInitialError b.Name binding
     dict
@@ -533,13 +538,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> fst
           if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
-    | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBindingName = name } ->
-        match bindings.TryGetValue name with
-        | true, SubModelSeq { Vms = vms; GetId = getSubModelId } ->
-            let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
-            log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
-            vm := ValueSome v
-        | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" name
+    | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBinding = { Vms = vms; GetId = getSubModelId } } ->
+        let v = getSelectedSubModel newModel vms getSelectedId getSubModelId
+        log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> getSubModelId v.CurrentModel))
+        vm := ValueSome v
         true
 
   /// Returns the command associated with a command binding if the command's
@@ -616,18 +618,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               | WindowState.Closed -> null
               | WindowState.Hidden vm | WindowState.Visible vm -> box vm
           | SubModelSeq { Vms = vms } -> box vms
-          | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBindingName = name } ->
+          | SubModelSelectedItem { Selected = vm; Get = getSelectedId; SubModelSeqBinding = { Vms = vms; GetId = getSubModelId } } ->
               match !vm with
               | ValueSome x -> x |> ValueOption.toObj |> box
               | ValueNone ->
                   // No computed value, must perform initial computation
-                  match bindings.TryGetValue name with
-                  | true, SubModelSeq { Vms = vms; GetId = getSubModelId } ->
-                      let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
-                      vm := ValueSome selected
-                      selected |> ValueOption.toObj |> box
-                  | _ ->
-                    failwithf "subModelSelectedItem binding '%s' referenced binding '%s', but no compatible binding was found with that name" binder.Name name
+                  let selected = getSelectedSubModel currentModel vms getSelectedId getSubModelId
+                  vm := ValueSome selected
+                  selected |> ValueOption.toObj |> box
         true
 
   override __.TrySetMember (binder, value) =
@@ -642,17 +640,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | TwoWayValidate { Set = set; Dispatch = dispatch } ->
             set value currentModel |> dispatch
             true
-        | SubModelSelectedItem { Set = set; SubModelSeqBindingName = name; Dispatch = dispatch } ->
-            match bindings.TryGetValue name with
-            | true, SubModelSeq { GetId = getSubModelId } ->
-                let value =
-                  (value :?> ViewModel<obj, obj>)
-                  |> ValueOption.ofObj
-                  |> ValueOption.map (fun vm -> getSubModelId vm.CurrentModel)
-                set value currentModel |> dispatch
-                true
-            | _ ->
-                failwithf "subModelSelectedItem binding '%s' referenced binding '%s', but no compatible binding was found with that name" binder.Name name
+        | SubModelSelectedItem { Set = set; SubModelSeqBinding = { GetId = getSubModelId }; Dispatch = dispatch } ->
+            let value =
+              (value :?> ViewModel<obj, obj>)
+              |> ValueOption.ofObj
+              |> ValueOption.map (fun vm -> getSubModelId vm.CurrentModel)
+            set value currentModel |> dispatch
+            true
         | OneWay _
         | OneWayLazy _
         | OneWaySeq _
