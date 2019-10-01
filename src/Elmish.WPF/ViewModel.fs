@@ -30,15 +30,18 @@ type internal OneWaySeq<'model, 'a, 'b, 'id> = {
   Values: ObservableCollection<'b>
 }
 
+type internal TwoWay<'model, 'msg, 'a> = {
+  Get: 'model -> 'a
+  Set: 'a -> 'model -> 'msg
+  Dispatch: Dispatch<'msg>
+}
+
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
   | OneWay of OneWay<'model, obj>
   | OneWayLazy of OneWayLazy<'model, obj, obj>
   | OneWaySeq of OneWaySeq<'model, obj, obj, obj>
-  | TwoWay of
-      get: ('model -> obj)
-      * set: (obj -> 'model -> 'msg)
-      * dispatch: Dispatch<'msg>
+  | TwoWay of TwoWay<'model, 'msg, obj>
   | TwoWayValidate of
       get: ('model -> obj)
       * set: (obj -> 'model -> 'msg)
@@ -196,10 +199,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ItemEquals = measure2 name "itemEquals" d.ItemEquals
           Values = ObservableCollection(initialModel |> get |> map) }
     | TwoWayData d ->
-        let get = measure name "get" d.Get
-        let set = measure2 name "set" d.Set
-        let dispatch' = d.WrapDispatch dispatch
-        TwoWay (get, set, dispatch')
+        TwoWay {
+          Get = measure name "get" d.Get
+          Set = measure2 name "set" d.Set
+          Dispatch = d.WrapDispatch dispatch }
     | TwoWayValidateData d ->
         let get = measure name "get" d.Get
         let set = measure2 name "set" d.Set
@@ -336,7 +339,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let updateValue bindingName newModel binding =
     match binding with
     | OneWay { Get = get }
-    | TwoWay (get, _, _)
+    | TwoWay { Get = get }
     | TwoWayValidate (get, _, _, _) ->
         get currentModel <> get newModel
     | OneWayLazy b ->
@@ -559,7 +562,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         result <-
           match binding with
           | OneWay { Get = get }
-          | TwoWay (get, _, _)
+          | TwoWay { Get = get }
           | TwoWayValidate (get, _, _, _) ->
               get currentModel
           | OneWayLazy { CurrentVal = value } ->
@@ -597,7 +600,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         match binding with
-        | TwoWay (_, set, dispatch)
+        | TwoWay { Set = set; Dispatch = dispatch }
         | TwoWayValidate (_, set, _, dispatch) ->
             set value currentModel |> dispatch
             true
