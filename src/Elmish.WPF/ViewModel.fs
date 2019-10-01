@@ -9,10 +9,14 @@ open System.Windows
 
 open Elmish
 
+
+type internal OneWay<'model, 'a> = {
+  Get: 'model -> 'a
+}
+
 /// Represents all necessary data used in an active binding.
 type internal VmBinding<'model, 'msg> =
-  | OneWay of
-      get: ('model -> obj)
+  | OneWay of OneWay<'model, obj>
   | OneWayLazy of
       currentVal: Lazy<obj> ref
       * get: ('model -> obj)
@@ -165,8 +169,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name bindingData =
     match bindingData with
     | OneWayData d ->
-        let get = measure name "get" d.Get
-        OneWay get
+        OneWay {
+          Get = measure name "get" d.Get }
     | OneWayLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
@@ -320,7 +324,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// indicating whether to trigger PropertyChanged for this binding
   let updateValue bindingName newModel binding =
     match binding with
-    | OneWay get
+    | OneWay { Get = get }
     | TwoWay (get, _, _)
     | TwoWayValidate (get, _, _, _) ->
         get currentModel <> get newModel
@@ -543,7 +547,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | true, binding ->
         result <-
           match binding with
-          | OneWay get
+          | OneWay { Get = get }
           | TwoWay (get, _, _)
           | TwoWayValidate (get, _, _, _) ->
               get currentModel
