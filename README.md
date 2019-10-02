@@ -49,13 +49,44 @@ Getting started with Elmish.WPF
 
 See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are:
 
-1. Create an F# Console Application targeting .NET 4.6.1 or later (you can create a Windows application, but the core Elmish logs are currently only written to the console).
+1. Create an F# Console Application. (You can create a Windows application, but the core Elmish logs are currently only written to the console.)
 
-2. Add References to `PresentationCore`, `PresentationFramework`, and `WindowsBase`.
+   If targeting .NET Core 3, the project file should look like this:
 
-3. Add NuGet reference to package `Elmish.WPF`.
+   ```fsproj
+   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+     
+     <PropertyGroup>
+       <OutputType>Exe</OutputType>  <!-- or WinExe -->
+       <TargetFramework>netcoreapp3.0</TargetFramework>
+       <UseWpf>true</UseWpf>
+     </PropertyGroup>
+     
+     <!-- other stuff -->
+   ```
 
-4. Define the model that describes your app’s state and a function that initializes it:
+   If targeting .NET Framework (4.6.1 or later), the project file should look like this:
+
+   ```fsproj
+   <Project Sdk="Microsoft.NET.Sdk">
+     
+     <PropertyGroup>
+       <OutputType>Exe</OutputType>  <!-- or WinExe -->
+       <TargetFramework>net471</TargetFramework>
+     </PropertyGroup>
+     
+     <ItemGroup>
+       <Reference Include="PresentationCore" />
+       <Reference Include="PresentationFramework" />
+       <Reference Include="WindowsBase" />
+     </ItemGroup>
+     
+     <!-- other stuff -->
+   ```
+
+2. Add NuGet reference to package `Elmish.WPF`.
+
+3. Define the model that describes your app’s state and a function that initializes it:
 
    ```F#
    type Model =
@@ -67,7 +98,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
        StepSize = 1 }
    ```
 
-5. Define the various messages that can change your model:
+4. Define the various messages that can change your model:
 
    ```F#
    type Msg =
@@ -76,7 +107,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize of int
    ```
 
-6. Define an `update` function that takes a message and a model and returns an updated model:
+5. Define an `update` function that takes a message and a model and returns an updated model:
 
    ```F#
    let update msg m =
@@ -86,12 +117,12 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize x -> { m with StepSize = x }
    ```
 
-7. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`. In order to be compatible with Elmish it needs to have the same signature, but in many (most?) cases the `model` and `dispatch ` parameters will be unused:
+6. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally in Elm/Elmish this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function is in general only run once and simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`.
 
    ```F#
    open Elmish.WPF
    
-   let bindings model dispatch =
+   let bindings () =
      [
        "CounterValue" |> Binding.oneWay (fun m -> m.Count)
        "Increment" |> Binding.cmd (fun m -> Increment)
@@ -104,7 +135,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    The strings identify the binding names to be used in the XAML views. The [Binding module](https://github.com/elmish/Elmish.WPF/blob/master/src/Elmish.WPF/Binding.fs) has many functions to create various types of bindings.
 
-8. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
+7. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
 
    ```xaml
    <Window
@@ -121,7 +152,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    </Window>
    ```
 
-9. Add the entry point to your console project:
+8. Add the entry point to your console project:
 
    ```F#
    open System
@@ -129,13 +160,13 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    
    [<EntryPoint; STAThread>]
    let main argv =
-     Program.mkSimple init update bindings
+     Program.mkSimpleWpf init update bindings
      |> Program.runWindow (MainWindow())
    ```
 
    `Program.runWindow` will instantiate an `Application ` and set the window’s `DataContext` to the bindings you defined.
 
-10. Profit! :)
+9. Profit! :)
 
 For more complicated examples and other `Binding` functions, see the [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
 
