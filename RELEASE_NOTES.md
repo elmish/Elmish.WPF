@@ -1,3 +1,7 @@
+#### 3.5.0
+
+* Add `netcoreapp3.0` target
+
 #### 3.4.1
 
 * Corrected type parameter of `getId` in `oneWaySeqLazy`
