@@ -1,36 +1,8 @@
-﻿<!-- https://stackoverflow.com/q/43693591/2978652 -->
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <LanguageTargets>$(MSBuildExtensionsPath)\Current\Bin\Microsoft.CSharp.targets</LanguageTargets>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <UseWpf>true</UseWpf>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- XAML elements -->
-    <Page Include="**\*.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
-    </Page>
-    <Compile Update="**\*.xaml.cs" SubType="Code" DependentUpon="%(Filename)" />
-
-    <!-- Recompile when XAML changed -->
-    <!-- https://github.com/dotnet/project-system/issues/3138#issuecomment-358355449 -->
-    <UpToDateCheckInput Include="**\*.xaml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="WindowsBase" />
-  </ItemGroup>
-
-  <!-- https://github.com/dotnet/project-system/issues/2488 -->
-  <Target Name="WorkaroundForXAMLIntellisenseBuildIssue" AfterTargets="_CheckCompileDesignTimePrerequisite">
-    <PropertyGroup>
-      <BuildingProject>false</BuildingProject>
-    </PropertyGroup>
-  </Target>
 
 </Project>

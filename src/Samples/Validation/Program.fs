@@ -8,7 +8,7 @@ open Elmish.WPF
 let requireNotEmpty s =
   if String.IsNullOrEmpty s then Error "This field is required" else Ok s
 
-let parseInt s =
+let parseInt (s: string) =
   match Int32.TryParse s with
   | true, i -> Ok i
   | false, _ -> Error "Please enter a valid integer"
