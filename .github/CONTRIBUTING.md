@@ -63,6 +63,8 @@ The  `stable-` prefixed branches are what’s actually deployed. When releasing 
 
 For maintainers.
 
-* Make changes as necessary and merge into master. **The changes must include updated release notes with a new version number**, as this is automatically used as the Nuget version when deploying.
-* Create a PR from `master` to the latest `stable-` branch
-* Merge if the tests pass.
+* Make necessary changes to the code
+* Update the changelog
+* Update the version and release notes in the fsproj file
+* Commit and tag the commit (this is what triggers deployment from  AppVeyor). For consistency, the tag should have a `v` prefix and otherwise be identical to the version (e.g. `v1.2.3`).
+* Push the changes and the tag to the repo. If the AppVeyor build succeeds, the package is automatically published to NuGet.

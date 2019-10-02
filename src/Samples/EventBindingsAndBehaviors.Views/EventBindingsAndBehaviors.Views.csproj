@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Xaml" />
@@ -32,7 +36,5 @@
       <BuildingProject>false</BuildingProject>
     </PropertyGroup>
   </Target>
-
-  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 
 </Project>

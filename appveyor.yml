@@ -1,22 +1,20 @@
-version: 1.0.{build}
-
-image: Visual Studio 2017
+image: Visual Studio 2019
 
 build:
   verbosity: detailed
 
-cache:
-  - '%USERPROFILE%\.nuget\packages -> paket.lock'
-
 artifacts:
-  - path: 'deploy\*.nupkg'
+  - path: /src/**/*.nupkg
 
 build_script:
-  - cmd: fake build
+  - cmd: dotnet build src/Elmish.WPF -c Release
+
+test_script:
+  - cmd: dotnet test src/Elmish.WPF.Tests -c Release
 
 deploy:
   - provider: NuGet
     api_key:
       secure: O0k27BASO9sKX1fKtihfqzfNnvv2NHl5M9KNUuyuNGEDcOfqllJin1ujQuPKRZB+
     on:
-      branch: /stable-.*/
+      appveyor_repo_tag: true

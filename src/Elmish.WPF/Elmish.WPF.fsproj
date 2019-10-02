@@ -1,9 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <Authors>jsacks, cmeeren, bender2k14</Authors>
+    <Description>F# bindings for using Elmish in WPF</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>
+    <PackageTags>WPF F# fsharp Elmish Elm</PackageTags>
+    <Version>3.4.0</Version>
+    <PackageReleaseNotes>Make model/dispatch available to getWindow in Binding.subModelWin</PackageReleaseNotes>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
+    <DisableImplicitSystemValueTupleReference>true</DisableImplicitSystemValueTupleReference>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InternalUtils.fs" />
@@ -15,12 +31,24 @@
     <Compile Include="Utils.fs" />
     <Compile Include="Cmd.fs" />
     <Compile Include="Program.fs" />
-    <None Include="paket.references" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Elmish" Version="[3.0.3, 4)" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
+  </ItemGroup>
+  
 </Project>
