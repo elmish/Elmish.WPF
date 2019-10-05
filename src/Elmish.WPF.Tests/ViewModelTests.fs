@@ -1530,39 +1530,7 @@ module SubModelSelectedItem =
 
 
   [<Fact>]
-  let ``when updated, retrieved or set, throws if there does not exist a subModelSeq binding with the correct name`` () =
-    Property.check <| property {
-      let! subModelSeqName = GenX.auto<string>
-      let! selectedItemName = GenX.auto<string> |> GenX.notEqualTo subModelSeqName
-      let! wrongSubModelSeqName =
-        GenX.auto<string>
-        |> GenX.notEqualTo subModelSeqName
-        |> GenX.notEqualTo selectedItemName
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
-
-      let! toGetAndSet = GenX.auto<Guid voption>
-
-      let getModels = snd
-      let getId = id
-      let toMsg = snd
-
-      let get (m: int * Guid list) = toGetAndSet
-      let set (id: Guid voption) (m: int * Guid list) = ()
-
-      let subModelSeqBinding = subModelSeq subModelSeqName getModels getId toMsg []
-      let selectedItemBinding = subModelSelectedItem selectedItemName wrongSubModelSeqName get set
-
-      let vm = TestVm(m1, [subModelSeqBinding; selectedItemBinding])
-
-      raises<exn> <@ vm.UpdateModel m2 @>
-      raises<exn> <@ vm.Get selectedItemName |> ignore @>
-      raises<exn> <@ vm.Set selectedItemName toGetAndSet @>
-    }
-
-
-  [<Fact>]
-  let ``When retrieved, should return the VM corresponding to the ID that has been set`` () =
+  let ``Should return the VM corresponding to the ID that has been set`` () =
     Property.check <| property {
       let! subModelSeqName = GenX.auto<string>
       let! selectedItemName = GenX.auto<string> |> GenX.notEqualTo subModelSeqName

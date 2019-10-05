@@ -3763,3 +3763,33 @@ module subModelSelectedItem =
         let d = Binding.subModelSelectedItem("", (fail: _ -> _ option), set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> Option.map box |> ValueOption.ofOption) m = set p @>
       }
+
+
+
+module sorting =
+
+  [<Fact>]
+    let ``SubModelSelectedItemData sorted last`` () =
+      Property.check <| property {
+        let! s = GenX.auto<string>
+        let! b = GenX.auto<bool>
+        let! vo = GenX.auto<obj voption>
+        let data =
+          [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+            OneWayData { Get = fail }
+            OneWayLazyData { Get = fail; Map = fail; Equals = fail2 }
+            OneWaySeqLazyData { Get = fail; Map = fail; Equals = fail2; GetId = fail; ItemEquals = fail2 }
+            TwoWayData { Get = fail; Set = fail2; WrapDispatch = fail }
+            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail }
+            CmdData { Exec = fail; CanExec = fail; WrapDispatch = fail }
+            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
+            SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
+            SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = vo }
+            SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
+            SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+          ]
+        let sorted = data |> List.sortWith BindingData.subModelSelectedItemDataLast
+        match sorted with
+        | [_; _; _; _; _; _; _; _; _; _; SubModelSelectedItemData _; SubModelSelectedItemData _] -> ()
+        | _ -> failwith "SubModelSelectedItemData was not sorted last"
+      }
