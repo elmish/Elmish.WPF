@@ -18,7 +18,8 @@ module WindowState =
     | WindowState.Hidden m -> WindowState.Hidden (f m)
     | WindowState.Visible m -> WindowState.Visible (f m)
 
-  /// Converts None to WindowState.Closed, and Some(x) to WindowState.Visible(x).
+  /// Converts None to WindowState.Closed, and Some(x) to
+  /// WindowState.Visible(x).
   let ofOption (model: 'model option) =
     match model with
     | Some x -> WindowState.Visible x
@@ -248,8 +249,9 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a one-way binding to an optional value. The binding automatically
-  ///   converts between the optional source value and an unwrapped (possibly
+  ///   Creates a one-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly
   ///   <c>null</c>) value on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
@@ -262,8 +264,9 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a one-way binding to an optional value. The binding automatically
-  ///   converts between the optional source value and an unwrapped (possibly
+  ///   Creates a one-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly
   ///   <c>null</c>) value on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
@@ -279,8 +282,9 @@ type Binding private () =
   ///   Creates a lazily evaluated one-way binding. <paramref name="map" />
   ///   will be called only when the output of <paramref name="get" /> changes,
   ///   as determined by <paramref name="equals" />. This may have better
-  ///   performance than <see cref="oneWay" /> for expensive computations
-  ///   (but may be less performant for non-expensive functions due to additional overhead).
+  ///   performance than <see cref="oneWay" /> for expensive computations (but
+  ///   may be less performant for non-expensive functions due to additional
+  ///   overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="equals">
@@ -301,22 +305,23 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a lazily evaluated one-way binding to an optional value. The binding
-  ///   automatically converts between the optional source value and an unwrapped
-  ///   (possibly <c>null</c>) value on the view side. <paramref name="map" /> will be
-  ///   called only when the output of <paramref name="get" /> changes, as determined
-  ///   by <paramref name="equals" />.
+  ///   Creates a lazily evaluated one-way binding to an optional value. The
+  ///   binding automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side. <paramref
+  ///   name="map" /> will be called only when the output of <paramref
+  ///   name="get" /> changes, as determined by <paramref name="equals" />.
   ///
   ///   This may have better performance than a non-lazy binding for expensive
-  ///   computations (but may be less performant for non-expensive functions due to
-  ///   additional overhead).
+  ///   computations (but may be less performant for non-expensive functions due
+  ///   to additional overhead).
   /// </summary>
   /// <param name="get">Gets the intermediate value from the model.</param>
   /// <param name="equals">
   ///   Indicates whether two intermediate values are equal. Good candidates are
   ///   <c>elmEq</c> and <c>refEq</c>.
   /// </param>
-  /// <param name="map">Transforms the intermediate value into the final type.</param>
+  /// <param name="map">Transforms the intermediate value into the final
+  /// type.</param>
   static member oneWayOptLazy
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
@@ -330,22 +335,23 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a lazily evaluated one-way binding to an optional value. The binding
-  ///   automatically converts between the optional source value and an unwrapped
-  ///   (possibly <c>null</c>) value on the view side. <paramref name="map" /> will be
-  ///   called only when the output of <paramref name="get" /> changes, as determined
-  ///   by <paramref name="equals" />.
+  ///   Creates a lazily evaluated one-way binding to an optional value. The
+  ///   binding automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side. <paramref
+  ///   name="map" /> will be called only when the output of <paramref
+  ///   name="get" /> changes, as determined by <paramref name="equals" />.
   ///
   ///   This may have better performance than a non-lazy binding for expensive
-  ///   computations (but may be less performant for non-expensive functions due to
-  ///   additional overhead).
+  ///   computations (but may be less performant for non-expensive functions due
+  ///   to additional overhead).
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="equals">
   ///   Indicates whether two intermediate values are equal. Good candidates are
   ///   <c>elmEq</c> and <c>refEq</c>.
   /// </param>
-  /// <param name="map">Transforms the intermediate value into the final type.</param>
+  /// <param name="map">Transforms the intermediate value into the final
+  /// type.</param>
   static member oneWayOptLazy
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
@@ -359,18 +365,20 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a one-way binding to a sequence of items, each uniquely identified
-  ///   by the value returned by <paramref name="getId"/>. The binding is backed
-  ///   by a persistent <c>ObservableCollection</c>, so only changed items (as determined
-  ///   by <paramref name="itemEquals" />) will be replaced. If the items are complex
-  ///   and you want them updated instead of replaced, consider using <see cref="subModelSeq" />.
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding is backed by a persistent <c>ObservableCollection</c>, so only
+  ///   changed items (as determined by <paramref name="itemEquals" />) will be
+  ///   replaced. If the items are complex and you want them updated instead of
+  ///   replaced, consider using <see cref="subModelSeq" />.
   /// </summary>
   /// <param name="get">Gets the collection from the model.</param>
   /// <param name="itemEquals">
   ///   Indicates whether two collection items are equal. Good candidates are
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
-  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="getId">Gets a unique identifier for a collection
+  /// item.</param>
   static member oneWaySeq
       (get: 'model -> #seq<'a>,
        itemEquals: 'a -> 'a -> bool,
@@ -386,13 +394,15 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a one-way binding to a sequence of items, each uniquely identified
-  ///   by the value returned by <paramref name="getId"/>. The binding will only
-  ///   be updated if the output of <paramref name="get" /> changes, as determined
-  ///   by <paramref name="equals" />. The binding is backed by a persistent
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will only be updated if the output of <paramref name="get" />
+  ///   changes, as determined by <paramref name="equals" />. The binding is
+  ///   backed by a persistent
   ///   <c>ObservableCollection</c>, so only changed items (as determined by
-  ///   <paramref name="itemEquals" />) will be replaced. If the items are complex
-  ///   and you want them updated instead of replaced, consider using <see cref="subModelSeq" />.
+  ///   <paramref name="itemEquals" />) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq" />.
   /// </summary>
   /// <param name="get">Gets the intermediate value from the model.</param>
   /// <param name="equals">
@@ -404,7 +414,8 @@ type Binding private () =
   ///   Indicates whether two collection items are equal. Good candidates are
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
-  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="getId">Gets a unique identifier for a collection
+  /// item.</param>
   static member oneWaySeqLazy
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
@@ -425,8 +436,8 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWay
       (get: 'model -> 'a,
@@ -441,15 +452,15 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding to an optional value. The binding automatically
-  ///   converts between the optional source value and an unwrapped (possibly <c>null</c>)
-  ///   value on the view side.
+  ///   Creates a two-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOpt
       (get: 'model -> 'a option,
@@ -464,15 +475,15 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding to an optional value. The binding automatically
-  ///   converts between the optional source value and an unwrapped (possibly <c>null</c>)
-  ///   value on the view side.
+  ///   Creates a two-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOpt
       (get: 'model -> 'a voption,
@@ -487,7 +498,8 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+  ///   Creates a two-way binding with validation using
+  ///   <c>INotifyDataErrorInfo</c>.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -495,8 +507,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
@@ -513,7 +525,8 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+  ///   Creates a two-way binding with validation using
+  ///   <c>INotifyDataErrorInfo</c>.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -521,8 +534,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
@@ -539,7 +552,8 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+  ///   Creates a two-way binding with validation using
+  ///   <c>INotifyDataErrorInfo</c>.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -547,8 +561,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayValidate
       (get: 'model -> 'a,
@@ -566,9 +580,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -576,8 +590,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
@@ -595,9 +609,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -605,8 +619,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
@@ -624,9 +638,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -634,8 +648,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
@@ -653,9 +667,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -663,8 +677,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
@@ -682,9 +696,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -692,8 +706,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
@@ -711,9 +725,9 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-  ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-  ///   view side.
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
   /// </summary>
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -721,8 +735,8 @@ type Binding private () =
   ///   Returns the validation message from the updated model.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member twoWayOptValidate
       (get: 'model -> 'a option,
@@ -744,8 +758,8 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmd
       (exec: 'model -> 'msg,
@@ -759,15 +773,16 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends only on the model
-  ///   (not the <c>CommandParameter</c>) and can execute if <paramref name="canExec" />
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="canExec" />
   ///   returns <c>true</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="canExec">Indicates whether the command can execute.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdIf
       (exec: 'model -> 'msg,
@@ -782,14 +797,15 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends only on the model
-  ///   (not the <c>CommandParameter</c>) and can execute if <paramref name="exec" />
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
   ///   returns <c>ValueSome</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdIf
       (exec: 'model -> 'msg voption,
@@ -803,14 +819,15 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends only on the model
-  ///   (not the <c>CommandParameter</c>) and can execute if <paramref name="exec" />
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
   ///   returns <c>Some</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdIf
       (exec: 'model -> 'msg option,
@@ -824,8 +841,9 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends only on the model
-  ///   (not the <c>CommandParameter</c>) and can execute if <paramref name="exec" />
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
   ///   returns <c>Ok</c>.
   ///
   ///   This overload allows more easily re-using the same validation functions
@@ -833,8 +851,8 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>,
@@ -848,13 +866,14 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a <c>Command</c> binding that depends on the <c>CommandParameter</c>
+  ///   Creates a <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
   ///   and can always execute.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParam
       (exec: obj -> 'model -> 'msg,
@@ -869,20 +888,23 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a <c>Command</c> binding that depends on the <c>CommandParameter</c>
+  ///   Creates a <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="canExec">Indicates whether the command can execute.</param>
   /// <param name="uiBoundCmdParam">
-  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-  ///   detects UI changes that could potentially influence the command's ability
-  ///   to execute. This will likely lead to many more triggers than necessary,
-  ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+  ///   <c>CommandManager</c>
+  ///   detects UI changes that could potentially influence the command's
+  ///   ability to execute. This will likely lead to many more triggers than
+  ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+  ///   to another UI property.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg,
@@ -899,19 +921,22 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
-  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-  ///   detects UI changes that could potentially influence the command's ability
-  ///   to execute. This will likely lead to many more triggers than necessary,
-  ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+  ///   <c>CommandManager</c>
+  ///   detects UI changes that could potentially influence the command's
+  ///   ability to execute. This will likely lead to many more triggers than
+  ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+  ///   to another UI property.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
@@ -927,19 +952,22 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
-  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-  ///   detects UI changes that could potentially influence the command's ability
-  ///   to execute. This will likely lead to many more triggers than necessary,
-  ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+  ///   <c>CommandManager</c>
+  ///   detects UI changes that could potentially influence the command's
+  ///   ability to execute. This will likely lead to many more triggers than
+  ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+  ///   to another UI property.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
@@ -955,7 +983,8 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="exec" /> returns <c>Ok</c>.
   ///
   ///   This overload allows more easily re-using the same validation functions
@@ -963,14 +992,16 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
-  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-  ///   detects UI changes that could potentially influence the command's ability
-  ///   to execute. This will likely lead to many more triggers than necessary,
-  ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+  ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+  ///   <c>CommandManager</c>
+  ///   detects UI changes that could potentially influence the command's
+  ///   ability to execute. This will likely lead to many more triggers than
+  ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+  ///   to another UI property.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
@@ -1039,7 +1070,8 @@ type Binding private () =
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings.
-  ///   You typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
@@ -1058,14 +1090,16 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>,
-  ///   in which case the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="toBindingModel">
@@ -1077,8 +1111,8 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel voption,
@@ -1099,14 +1133,16 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in which
-  ///   case the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="toBindingModel">
@@ -1118,8 +1154,8 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
@@ -1142,14 +1178,16 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in which
-  ///   case the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="toMsg">
@@ -1158,8 +1196,8 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel voption,
@@ -1179,14 +1217,16 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in which
-  ///   case the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="toMsg">
@@ -1195,8 +1235,8 @@ type Binding private () =
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
@@ -1218,20 +1258,22 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings,
   ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in which case
-  ///   the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel voption,
@@ -1250,20 +1292,22 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings,
   ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in which case
-  ///   the last non-<c>null</c> model will be returned. You typically bind this to
-  ///   the <c>DataContext</c> of a <c>UserControl</c> or similar.
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
   ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a <c>UserControl</c> when
-  ///   the model is missing, but don't want the data used by that control to be
-  ///   cleared once the animation starts. (The animation must be triggered using another
-  ///   binding since this will never return <c>null</c>.)
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c> model will be returned
-  ///   instead of <c>null</c>.
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
@@ -1292,10 +1336,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   ///
   ///   If you don't nead a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
@@ -1354,10 +1398,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   ///
   ///   If you don't nead a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
@@ -1416,10 +1460,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   /// </summary>
   /// <param name="getState">Gets the window state and a sub-model.</param>
   /// <param name="toMsg">
@@ -1470,10 +1514,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   /// </summary>
   /// <param name="getState">Gets the window state and a sub-model.</param>
   /// <param name="toMsg">
@@ -1523,10 +1567,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   /// </summary>
   /// <param name="getState">Gets the window state and a sub-model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
@@ -1572,10 +1616,10 @@ type Binding private () =
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should
-  ///   supply <paramref name="onCloseRequested" /> and react to this in a
-  ///   manner that will not confuse a user trying to close the window (e.g. by
-  ///   closing it, or displaying relevant feedback to the user.)
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the window (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
   /// </summary>
   /// <param name="getState">Gets the window state and a sub-model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
@@ -1611,7 +1655,8 @@ type Binding private () =
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
   ///   their own bindings and message type. You typically bind this to the
-  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="toBindingModel">
@@ -1620,8 +1665,8 @@ type Binding private () =
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="toMsg">
   ///   Converts the sub-model ID and messages used in the bindings to parent
-  ///   model messages (e.g. a parent message union case that wraps the sub-model
-  ///   ID and message type).
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   static member subModelSeq
@@ -1644,14 +1689,15 @@ type Binding private () =
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
   ///   their own bindings and message type. You typically bind this to the
-  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="toMsg">
   ///   Converts the sub-model ID and messages used in the bindings to parent
-  ///   model messages (e.g. a parent message union case that wraps the sub-model
-  ///   ID and message type).
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
   static member subModelSeq
@@ -1671,7 +1717,8 @@ type Binding private () =
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of an
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
   ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
@@ -1691,29 +1738,34 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where the
-  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" /> binding.
-  ///   Automatically converts the dynamically created Elmish.WPF view models to/from
-  ///   their corresponding IDs, so the Elmish user code only has to work with the IDs.
+  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+  ///   the
+  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+  ///   binding. Automatically converts the dynamically created Elmish.WPF view
+  ///   models to/from their corresponding IDs, so the Elmish user code only has
+  ///   to work with the IDs.
   ///
-  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
-  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-  ///   This binding is less type-safe.
-  ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
-  ///   does not correspond to a <see cref="subModelSeq" /> binding,
-  ///   and it will throw at runtime if if the inferred <c>'id</c> type
-  ///   does not match the actual ID type used in that binding.
+  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+  ///   or
+  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+  ///   binding. This binding is less type-safe. It will throw when initializing
+  ///   the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+  ///   throw at runtime if if the inferred <c>'id</c> type does not match the
+  ///   actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
-  ///   The name of the <see cref="subModelSeq" /> binding used as the items source.
+  ///   The name of the <see cref="subModelSeq" /> binding used as the items
+  ///   source.
   /// </param>
-  /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+  /// model.</param>
   /// <param name="set">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
@@ -1730,29 +1782,34 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where the
-  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" /> binding.
-  ///   Automatically converts the dynamically created Elmish.WPF view models to/from
-  ///   their corresponding IDs, so the Elmish user code only has to work with the IDs.
+  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+  ///   the
+  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+  ///   binding. Automatically converts the dynamically created Elmish.WPF view
+  ///   models to/from their corresponding IDs, so the Elmish user code only has
+  ///   to work with the IDs.
   ///
-  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
-  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-  ///   This binding is less type-safe.
-  ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
-  ///   does not correspond to a <see cref="subModelSeq" /> binding,
-  ///   and it will throw at runtime if if the inferred <c>'id</c> type
-  ///   does not match the actual ID type used in that binding.
+  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+  ///   or
+  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+  ///   binding. This binding is less type-safe. It will throw when initializing
+  ///   the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+  ///   throw at runtime if if the inferred <c>'id</c> type does not match the
+  ///   actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
-  ///   The name of the <see cref="subModelSeq" /> binding used as the items source.
+  ///   The name of the <see cref="subModelSeq" /> binding used as the items
+  ///   source.
   /// </param>
-  /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+  /// model.</param>
   /// <param name="set">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
   /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior,
-  ///   such as throttling, debouncing, or limiting.
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
   /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
@@ -1779,8 +1836,8 @@ module Extensions =
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWay
         (get: 'model -> 'a,
@@ -1795,15 +1852,15 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding to an optional value. The binding automatically
-    ///   converts between the optional source value and an unwrapped (possibly <c>null</c>)
-    ///   value on the view side.
+    ///   Creates a two-way binding to an optional value. The binding
+    ///   automatically converts between the optional source value and an
+    ///   unwrapped (possibly <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOpt
         (get: 'model -> 'a option,
@@ -1818,15 +1875,15 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding to an optional value. The binding automatically
-    ///   converts between the optional source value and an unwrapped (possibly <c>null</c>)
-    ///   value on the view side.
+    ///   Creates a two-way binding to an optional value. The binding
+    ///   automatically converts between the optional source value and an
+    ///   unwrapped (possibly <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOpt
         (get: 'model -> 'a voption,
@@ -1841,7 +1898,8 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+    ///   Creates a two-way binding with validation using
+    ///   <c>INotifyDataErrorInfo</c>.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1849,8 +1907,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
@@ -1867,7 +1925,8 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+    ///   Creates a two-way binding with validation using
+    ///   <c>INotifyDataErrorInfo</c>.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1875,8 +1934,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
@@ -1893,7 +1952,8 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding with validation using <c>INotifyDataErrorInfo</c>.
+    ///   Creates a two-way binding with validation using
+    ///   <c>INotifyDataErrorInfo</c>.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1901,8 +1961,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayValidate
         (get: 'model -> 'a,
@@ -1920,9 +1980,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1930,8 +1990,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
@@ -1949,9 +2009,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1959,8 +2019,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
@@ -1978,9 +2038,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -1988,8 +2048,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
@@ -2007,9 +2067,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -2017,8 +2077,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
@@ -2036,9 +2096,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -2046,8 +2106,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
@@ -2065,9 +2125,9 @@ module Extensions =
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between the
-    ///   optional source value and an unwrapped (possibly <c>null</c>) value on the
-    ///   view side.
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
@@ -2075,8 +2135,8 @@ module Extensions =
     ///   Returns the validation message from the updated model.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
@@ -2098,8 +2158,8 @@ module Extensions =
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmd
         (exec: 'msg,
@@ -2113,14 +2173,14 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a <c>Command</c> binding that dispatches the specified message and
-    ///   can execute if <paramref name="canExec" /> returns <c>true</c>.
+    ///   Creates a <c>Command</c> binding that dispatches the specified message
+    ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="canExec">Indicates whether the command can execute.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdIf
         (exec: 'msg,
@@ -2135,13 +2195,14 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a <c>Command</c> binding that depends on the <c>CommandParameter</c>
+    ///   Creates a <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
     ///   and can always execute.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParam
         (exec: obj -> 'msg,
@@ -2156,19 +2217,22 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
-    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-    ///   detects UI changes that could potentially influence the command's ability
-    ///   to execute. This will likely lead to many more triggers than necessary,
-    ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+    ///   <c>CommandManager</c>
+    ///   detects UI changes that could potentially influence the command's
+    ///   ability to execute. This will likely lead to many more triggers than
+    ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+    ///   to another UI property.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg voption,
@@ -2184,19 +2248,22 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
-    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-    ///   detects UI changes that could potentially influence the command's ability
-    ///   to execute. This will likely lead to many more triggers than necessary,
-    ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+    ///   <c>CommandManager</c>
+    ///   detects UI changes that could potentially influence the command's
+    ///   ability to execute. This will likely lead to many more triggers than
+    ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+    ///   to another UI property.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg option,
@@ -2212,22 +2279,25 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a conditional <c>Command</c> binding that depends on the <c>CommandParameter</c>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="exec" /> returns <c>Ok</c>.
     ///
-    ///   This overload allows more easily re-using the same validation functions
-    ///   for inputs and commands.
+    ///   This overload allows more easily re-using the same validation
+    ///   functions for inputs and commands.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
-    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-    ///   detects UI changes that could potentially influence the command's ability
-    ///   to execute. This will likely lead to many more triggers than necessary,
-    ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+    ///   <c>CommandManager</c>
+    ///   detects UI changes that could potentially influence the command's
+    ///   ability to execute. This will likely lead to many more triggers than
+    ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+    ///   to another UI property.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
         (exec: obj -> Result<'msg, 'ignored>,
@@ -2243,20 +2313,23 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a <c>Command</c> binding that depends on the <c>CommandParameter</c>
+    ///   Creates a <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="canExec">Indicates whether the command can execute.</param>
     /// <param name="uiBoundCmdParam">
-    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's <c>CommandManager</c>
-    ///   detects UI changes that could potentially influence the command's ability
-    ///   to execute. This will likely lead to many more triggers than necessary,
-    ///   but is needed if you have bound the <c>CommandParameter</c> to another UI property.
+    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+    ///   <c>CommandManager</c>
+    ///   detects UI changes that could potentially influence the command's
+    ///   ability to execute. This will likely lead to many more triggers than
+    ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+    ///   to another UI property.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
         (exec: obj -> 'msg,
@@ -2273,29 +2346,35 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where the
-    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" /> binding.
-    ///   Automatically converts the dynamically created Elmish.WPF view models to/from
-    ///   their corresponding IDs, so the Elmish user code only has to work with the IDs.
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF
+    ///   view models to/from their corresponding IDs, so the Elmish user code
+    ///   only has to work with the IDs.
     ///
-    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
-    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-    ///   This binding is less type-safe.
-    ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
-    ///   does not correspond to a <see cref="subModelSeq" /> binding,
-    ///   and it will throw at runtime if if the inferred <c>'id</c> type
-    ///   does not match the actual ID type used in that binding.
+    ///   Only use this if you are unable to use some kind of
+    ///   <c>SelectedValue</c> or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when
+    ///   initializing the bindings if <paramref name="subModelSeqBindingName"
+    ///   />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
+    ///   will throw at runtime if if the inferred <c>'id</c> type does not
+    ///   match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">
-    ///   The name of the <see cref="subModelSeq" /> binding used as the items source.
+    ///   The name of the <see cref="subModelSeq" /> binding used as the items
+    ///   source.
     /// </param>
-    /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+    /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+    /// model.</param>
     /// <param name="set">
     ///   Returns the message to dispatch on selections/de-selections.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member subModelSelectedItem
         (subModelSeqBindingName: string,
@@ -2312,29 +2391,35 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where the
-    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" /> binding.
-    ///   Automatically converts the dynamically created Elmish.WPF view models to/from
-    ///   their corresponding IDs, so the Elmish user code only has to work with the IDs.
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF
+    ///   view models to/from their corresponding IDs, so the Elmish user code
+    ///   only has to work with the IDs.
     ///
-    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c> or
-    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" /> binding.
-    ///   This binding is less type-safe.
-    ///   It will throw when initializing the bindings if <paramref name="subModelSeqBindingName" />
-    ///   does not correspond to a <see cref="subModelSeq" /> binding,
-    ///   and it will throw at runtime if if the inferred <c>'id</c> type
-    ///   does not match the actual ID type used in that binding.
+    ///   Only use this if you are unable to use some kind of
+    ///   <c>SelectedValue</c> or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when
+    ///   initializing the bindings if <paramref name="subModelSeqBindingName"
+    ///   />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
+    ///   will throw at runtime if if the inferred <c>'id</c> type does not
+    ///   match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">
-    ///   The name of the <see cref="subModelSeq" /> binding used as the items source.
+    ///   The name of the <see cref="subModelSeq" /> binding used as the items
+    ///   source.
     /// </param>
-    /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+    /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+    /// model.</param>
     /// <param name="set">
     ///   Returns the message to dispatch on selections/de-selections.
     /// </param>
     /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior,
-    ///   such as throttling, debouncing, or limiting.
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
     /// </param>
     static member subModelSelectedItem
         (subModelSeqBindingName: string,
