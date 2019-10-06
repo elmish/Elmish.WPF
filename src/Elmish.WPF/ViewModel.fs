@@ -579,13 +579,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member __.UpdateModel (newModel: 'model) : unit =
     let propsToNotify =
       bindings
+      |> Seq.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
+      |> Seq.map Kvp.key
       |> Seq.toList
-      |> List.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
-      |> List.map Kvp.key
     let cmdsToNotify =
       bindings
+      |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged newModel)
       |> Seq.toList
-      |> List.choose (Kvp.value >> getCmdIfCanExecChanged newModel)
     currentModel <- newModel
     propsToNotify |> List.iter notifyPropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
