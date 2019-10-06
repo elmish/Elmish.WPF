@@ -1063,7 +1063,6 @@ module Cmd =
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
-      let! p = GenX.auto<obj> |> GenX.withNull
 
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
