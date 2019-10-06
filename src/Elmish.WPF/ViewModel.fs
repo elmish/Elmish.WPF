@@ -369,7 +369,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       let binding = initializeBinding b.Name b.Data dict
       dict.Add(b.Name, binding)
       setInitialError b.Name binding
-    dict
+    dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   let getSelectedSubModel model vms getSelectedId getSubModelId =
       vms
