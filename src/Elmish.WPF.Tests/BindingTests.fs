@@ -120,7 +120,7 @@ module oneWayOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.oneWayOpt(get) |> getOneWayData
 
         test <@ isNull (d.Get x) @>
@@ -601,7 +601,7 @@ module twoWayOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOpt(get, fail2) |> getTwoWayData
 
         test <@ isNull (d.Get x) @>
@@ -663,7 +663,7 @@ module twoWayOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOpt(get, fail2) |> getTwoWayData
 
         test <@ isNull (d.Get x) @>
@@ -725,7 +725,7 @@ module twoWayOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOpt(get, (fail: _ option -> int)) |> getTwoWayData
 
         test <@ isNull (d.Get x) @>
@@ -787,7 +787,7 @@ module twoWayOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOpt(get, (fail: _ voption -> int)) |> getTwoWayData
 
         test <@ isNull (d.Get x) @>
@@ -1163,7 +1163,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1238,7 +1238,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1313,7 +1313,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1389,7 +1389,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1464,7 +1464,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1539,7 +1539,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1615,7 +1615,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1690,7 +1690,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1765,7 +1765,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = ValueNone
+        let get _ = ValueNone
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1841,7 +1841,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1916,7 +1916,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -1991,7 +1991,7 @@ module twoWayOptValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get m = None
+        let get _ = None
         let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
@@ -2226,7 +2226,7 @@ module cmdIf =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let exec x = ValueNone
+        let exec _ = ValueNone
         let d = Binding.cmdIf(exec) |> getCmdData
 
         test <@ d.CanExec x = false @>
@@ -2275,7 +2275,7 @@ module cmdIf =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let exec x = None
+        let exec _ = None
         let d = Binding.cmdIf(exec) |> getCmdData
 
         test <@ d.CanExec x = false @>
@@ -2525,7 +2525,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = ValueNone
+        let exec (_: obj) _ = ValueNone
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -2594,7 +2594,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = None
+        let exec (_: obj) _ = None
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -2666,7 +2666,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
         let! err = GenX.auto<byte>
 
-        let exec (p: obj) m = Error err
+        let exec (_: obj) _ = Error err
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -2790,7 +2790,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = ValueNone
+        let exec (_: obj) = ValueNone
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -2859,7 +2859,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = None
+        let exec (_: obj) = None
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -2931,7 +2931,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
         let! err = GenX.auto<byte>
 
-        let exec (p: obj) = Error err
+        let exec (_: obj) = Error err
         let d = Binding.cmdParamIf(exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
@@ -3114,7 +3114,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string voption = ValueNone
+        let getSubModel (_: int) : string voption = ValueNone
         let d = Binding.subModelOpt(getSubModel, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
@@ -3173,7 +3173,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string option = None
+        let getSubModel (_: int) : string option = None
         let d = Binding.subModelOpt(getSubModel, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
@@ -3231,7 +3231,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string voption = ValueNone
+        let getSubModel (_: int) : string voption = ValueNone
         let d = Binding.subModelOpt(getSubModel, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
@@ -3293,7 +3293,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string option = None
+        let getSubModel (_: int) : string option = None
         let d = Binding.subModelOpt(getSubModel, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
@@ -3355,7 +3355,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string voption = ValueNone
+        let getSubModel (_: int) : string voption = ValueNone
         let d = Binding.subModelOpt(getSubModel, fail, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
@@ -3418,7 +3418,7 @@ module subModelOpt =
     let ``final getModel returns ValueNone if getSubModel returns ValueNone`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel (m: int) : string option = None
+        let getSubModel (_: int) : string option = None
         let d = Binding.subModelOpt(getSubModel, fail, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }

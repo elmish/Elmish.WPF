@@ -35,7 +35,7 @@ type Msg =
 let update msg m =
   match msg with
   | Input x -> { m with RawValue = x }
-  | Submit x -> m
+  | Submit _ -> m
 
 let bindings () : Binding<Model, Msg> list = [
   "RawValue" |> Binding.twoWayValidate(

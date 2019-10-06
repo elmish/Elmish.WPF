@@ -141,9 +141,9 @@ let timerTick dispatch =
 
 
 [<EntryPoint; STAThread>]
-let main argv =
+let main _ =
   Program.mkSimpleWpf App.init App.update App.bindings
-  |> Program.withSubscription (fun m -> Cmd.ofSub timerTick)
+  |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }

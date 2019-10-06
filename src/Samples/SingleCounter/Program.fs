@@ -37,7 +37,7 @@ let bindings () : Binding<Model, Msg> list = [
 
 
 [<EntryPoint; STAThread>]
-let main argv =
+let main _ =
   Program.mkSimpleWpf (fun () -> init) update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig

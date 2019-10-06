@@ -2240,8 +2240,8 @@ module Extensions =
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p
-        CanExec = fun p m -> exec p |> ValueOption.isSome
+        Exec = fun p _ -> exec p
+        CanExec = fun p _ -> exec p |> ValueOption.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2271,8 +2271,8 @@ module Extensions =
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueOption.ofOption
-        CanExec = fun p m -> exec p |> Option.isSome
+        Exec = fun p _ -> exec p |> ValueOption.ofOption
+        CanExec = fun p _ -> exec p |> Option.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2305,8 +2305,8 @@ module Extensions =
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueOption.ofOk
-        CanExec = fun p m -> exec p |> Result.isOk
+        Exec = fun p _ -> exec p |> ValueOption.ofOk
+        CanExec = fun p _ -> exec p |> Result.isOk
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2338,8 +2338,8 @@ module Extensions =
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueSome
-        CanExec = fun p m -> canExec p
+        Exec = fun p _ -> exec p |> ValueSome
+        CanExec = fun p _ -> canExec p
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
