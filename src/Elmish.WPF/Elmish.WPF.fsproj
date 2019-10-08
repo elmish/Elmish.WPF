@@ -15,6 +15,8 @@
     <PackageTags>WPF F# fsharp Elmish Elm</PackageTags>
     <Version>3.5.0</Version>
     <PackageReleaseNotes>Add netcoreapp3.0 target</PackageReleaseNotes>
+    <!--Turn on warnings for unused values (arguments and let bindings) -->
+    <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">

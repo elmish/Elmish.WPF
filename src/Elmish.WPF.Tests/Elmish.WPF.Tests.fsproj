@@ -2,6 +2,8 @@
   
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
+    <!--Turn on warnings for unused values (arguments and let bindings) -->
+    <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
   
   <ItemGroup>

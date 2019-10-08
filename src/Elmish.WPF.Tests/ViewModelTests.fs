@@ -72,18 +72,18 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   /// Will cause the property to be retrieved.
   member this.TrackCcTriggersFor propName =
     try
-      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun e ->
+      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun _ ->
         ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
       )
     with _ ->
-      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun e ->
+      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun _ ->
         ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
       )
 
   /// Starts tracking CanExecuteChanged triggers for the specified prop.
   /// Will cause the property to be retrieved.
   member this.TrackCecTriggersFor propName =
-    (this.Get propName : ICommand).CanExecuteChanged.Add (fun e ->
+    (this.Get propName : ICommand).CanExecuteChanged.Add (fun _ ->
       cecTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
     )
 
@@ -1063,7 +1063,6 @@ module Cmd =
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
-      let! p = GenX.auto<obj> |> GenX.withNull
 
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
