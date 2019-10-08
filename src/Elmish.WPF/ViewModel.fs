@@ -239,11 +239,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           Cmd = Command(execute, canExecute, false)
           CanExec = canExec }
     | CmdParamData d ->
+        let cast = measure name "cast" d.Cast
         let exec = measure2 name "exec" d.Exec
         let canExec = measure2 name "canExec" d.CanExec
         let dispatch' = d.WrapDispatch dispatch
-        let execute param = exec param currentModel |> ValueOption.iter dispatch'
-        let canExecute param = canExec param currentModel
+        let execute param = exec (cast param) currentModel |> ValueOption.iter dispatch'
+        let canExecute param = canExec (cast param) currentModel
         CmdParam <| Command(execute, canExecute, d.AutoRequery)
     | SubModelData d ->
         let getModel = measure name "getSubModel" d.GetModel

@@ -249,6 +249,7 @@ module Helpers =
       (canExec: 'a -> 'model -> bool)
       (autoRequery: bool) =
     name |> createBinding (CmdParamData {
+      Cast = id
       Exec = unbox >> exec
       CanExec = unbox >> canExec
       AutoRequery = autoRequery

@@ -26,8 +26,11 @@ let bindings () : Binding<Model, Msg> list = [
   "Numbers" |> Binding.oneWay(fun m -> m.Numbers)
   "Limit" |> Binding.twoWay((fun m -> float m.EnabledMaxLimit), int >> SetLimit)
   "Command" |> Binding.cmdParamIf(
-    (fun p m -> Command),
-    (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
+    (function
+      | :? int as i -> Some i
+      | _ -> None),
+    (fun _ _ -> Command),
+    (fun oi m -> oi |> Option.map (fun i -> i <= m.EnabledMaxLimit) |> Option.defaultValue false),
     true)
 ]
 

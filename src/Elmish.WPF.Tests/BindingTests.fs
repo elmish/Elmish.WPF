@@ -2342,7 +2342,7 @@ module cmdParam =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParam(fail2)
+        let binding = bindingName |> Binding.cmdParam(fail, fail2)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2354,7 +2354,7 @@ module cmdParam =
         let! p = GenX.auto<string>
 
         let exec (p: obj) (m: int) = unbox p + string m
-        let d = Binding.cmdParam(exec) |> getCmdParamData
+        let d = Binding.cmdParam(fail, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p m |> ValueSome) @>
       }
@@ -2365,7 +2365,7 @@ module cmdParam =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
-        let d = Binding.cmdParam(fail2) |> getCmdParamData
+        let d = Binding.cmdParam(fail, fail2) |> getCmdParamData
         test <@ d.CanExec (box p) m = true @>
       }
 
@@ -2373,7 +2373,7 @@ module cmdParam =
     [<Fact>]
     let ``autoRequery is false`` () =
       Property.check <| property {
-        let d = Binding.cmdParam(fail2) |> getCmdParamData
+        let d = Binding.cmdParam(fail, fail2) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2386,7 +2386,7 @@ module cmdParam =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParam(fail: obj -> obj)
+        let binding = bindingName |> Binding.cmdParam(fail, fail)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2398,7 +2398,7 @@ module cmdParam =
         let! p = GenX.auto<string>
 
         let exec p = string p
-        let d = Binding.cmdParam(exec) |> getCmdParamData
+        let d = Binding.cmdParam(fail, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p |> ValueSome) @>
       }
@@ -2409,7 +2409,7 @@ module cmdParam =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
-        let d = Binding.cmdParam(fail: obj -> obj) |> getCmdParamData
+        let d = Binding.cmdParam(fail, fail) |> getCmdParamData
         test <@ d.CanExec (box p) m = true @>
       }
 
@@ -2417,7 +2417,7 @@ module cmdParam =
     [<Fact>]
     let ``autoRequery is false`` () =
       Property.check <| property {
-        let d = Binding.cmdParam(fail: obj -> obj) |> getCmdParamData
+        let d = Binding.cmdParam(fail, fail) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2433,7 +2433,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail, fail)
+        let binding = bindingName |> Binding.cmdParamIf(fail, fail, fail)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2444,8 +2444,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = unbox p + string m
-        let d = Binding.cmdParamIf(exec, fail) |> getCmdParamData
+        let cast (p: obj) = unbox<string> p
+        let exec p m = p + string m
+        let d = Binding.cmdParamIf(cast, exec, fail) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p m |> ValueSome) @>
       }
@@ -2457,8 +2458,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let canExec (p: obj) m = (unbox<string> p).Length + m > 0
-        let d = Binding.cmdParamIf(fail, canExec) |> getCmdParamData
+        let cast (p: obj) = unbox<string> p
+        let canExec (p: string) m = p.Length + m > 0
+        let d = Binding.cmdParamIf(cast, fail, canExec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = canExec p m @>
       }
@@ -2467,7 +2469,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf(fail, fail) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, fail, fail) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2476,7 +2478,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam, wrapDispatch = id) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, fail, fail, uiBoundCmdParam = uiBoundCmdParam, wrapDispatch = id) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2488,7 +2490,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail2: _ -> _ -> _ voption)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ voption))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2499,8 +2501,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = (p :?> string).Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m = p.Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = exec p m @>
       }
@@ -2512,8 +2515,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = (p :?> string).Length + m |> ValueSome
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m = p.Length + m |> ValueSome
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2526,7 +2530,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: obj) m = ValueNone
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2535,7 +2539,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> _ voption)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ voption)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2544,7 +2548,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> _ voption), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ voption), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2557,7 +2561,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail2: _ -> _ -> _ option)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ option))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2568,8 +2572,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = (p :?> string).Length + m |> Some |> Option.filter (fun x -> x > 0)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m = p.Length + m |> Some |> Option.filter (fun x -> x > 0)
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p m |> ValueOption.ofOption) @>
       }
@@ -2581,8 +2586,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = (p :?> string).Length + m |> Some
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m = p.Length + m |> Some
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2595,7 +2601,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: obj) m = None
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2604,7 +2610,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> _ option)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ option)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2613,7 +2619,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> _ option), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> _ option), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2626,7 +2632,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail2: _ -> _ -> Result<_,_>)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail2: _ -> _ -> Result<_,_>))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2637,10 +2643,11 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m =
-          let x = (p :?> string).Length + m
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m =
+          let x = p.Length + m
           if x > 0 then Ok x else Error (string x)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p m |> ValueOption.ofOk) @>
       }
@@ -2652,8 +2659,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = (p :?> string).Length + m |> Ok
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) m = p.Length + m |> Ok
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2667,7 +2675,7 @@ module cmdParamIf =
         let! err = GenX.auto<byte>
 
         let exec (p: obj) m = Error err
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2676,7 +2684,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> Result<_,_>)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> Result<_,_>)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2685,7 +2693,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail2: _ -> _ -> Result<_,_>), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail2: _ -> _ -> Result<_,_>), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2698,7 +2706,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf((fail: obj -> obj), fail)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail: obj -> obj), fail)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2709,8 +2717,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (unbox<string> p).Length
-        let d = Binding.cmdParamIf(exec, fail) |> getCmdParamData
+        let cast (p: obj) = unbox<string> p
+        let exec (p: string) = p.Length
+        let d = Binding.cmdParamIf(cast, exec, fail) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p |> ValueSome) @>
       }
@@ -2722,8 +2731,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let canExec (p: obj) = (unbox<string> p).Length + m > 0
-        let d = Binding.cmdParamIf(fail, canExec) |> getCmdParamData
+        let cast (p: obj) = unbox<string> p
+        let canExec (p: string) = p.Length + m > 0
+        let d = Binding.cmdParamIf(cast, fail, canExec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = canExec p @>
       }
@@ -2732,7 +2742,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail: obj -> obj), fail) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, fail, fail) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2741,7 +2751,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail: obj -> obj), fail, uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: obj -> obj), fail, uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2753,7 +2763,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail: _ -> _ voption)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail: _ -> _ voption))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2764,8 +2774,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (p :?> string).Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) = p.Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = exec p @>
       }
@@ -2777,8 +2788,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (p :?> string).Length |> ValueSome
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) = p.Length |> ValueSome
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2791,7 +2803,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: obj) = ValueNone
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2800,7 +2812,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail: _ -> _ voption)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> _ voption)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2809,7 +2821,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail: _ -> _ voption), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> _ voption), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2822,7 +2834,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail: _ -> _ option)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail: _ -> _ option))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2833,8 +2845,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (p :?> string).Length |> Some |> Option.filter (fun x -> x > 0)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) = p.Length |> Some |> Option.filter (fun x -> x > 0)
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p |> ValueOption.ofOption) @>
       }
@@ -2846,8 +2859,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (p :?> string).Length |> Some
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) = p.Length |> Some
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2860,7 +2874,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: obj) = None
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2869,7 +2883,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail: _ -> _ option)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> _ option)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2878,7 +2892,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail: _ -> _ option), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> _ option), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2891,7 +2905,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail: _ -> Result<_,_>)
+        let binding = bindingName |> Binding.cmdParamIf(fail, (fail: _ -> Result<_,_>))
         test <@ binding.Name = bindingName @>
       }
 
@@ -2902,10 +2916,11 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) =
-          let x = (p :?> string).Length
+        let cast (p: obj) = p :?> string
+        let exec (p: string) =
+          let x = p.Length
           if x > 0 then Ok x else Error (string x)
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p |> ValueOption.ofOk) @>
       }
@@ -2917,8 +2932,9 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) = (p :?> string).Length |> Ok
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let cast (p: obj) = p :?> string
+        let exec (p: string) = p.Length |> Ok
+        let d = Binding.cmdParamIf(cast, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = true @>
       }
@@ -2932,7 +2948,7 @@ module cmdParamIf =
         let! err = GenX.auto<byte>
 
         let exec (p: obj) = Error err
-        let d = Binding.cmdParamIf(exec) |> getCmdParamData
+        let d = Binding.cmdParamIf(id, exec) |> getCmdParamData
 
         test <@ d.CanExec (box p) m = false @>
       }
@@ -2941,7 +2957,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf((fail: _ -> Result<_,_>)) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> Result<_,_>)) |> getCmdParamData
         test <@ d.AutoRequery = false @>
       }
 
@@ -2950,7 +2966,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf((fail: _ -> Result<_,_>), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, (fail: _ -> Result<_,_>), uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -3782,7 +3798,7 @@ module sorting =
             TwoWayData { Get = fail; Set = fail2; WrapDispatch = fail }
             TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail }
             CmdData { Exec = fail; CanExec = fail; WrapDispatch = fail }
-            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
+            CmdParamData { Cast = fail; Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
             SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
             SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = vo }
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }

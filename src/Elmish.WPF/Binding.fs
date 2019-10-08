@@ -70,9 +70,10 @@ type internal CmdData<'model, 'msg> = {
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
-type internal CmdParamData<'model, 'msg> = {
-  Exec: obj -> 'model -> 'msg voption
-  CanExec: obj -> 'model -> bool
+type internal CmdParamData<'model, 'msg, 'param> = {
+  Cast: obj -> 'param
+  Exec: 'param -> 'model -> 'msg voption
+  CanExec: 'param -> 'model -> bool
   AutoRequery: bool
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
@@ -116,7 +117,7 @@ and internal BindingData<'model, 'msg> =
   | TwoWayData of TwoWayData<'model, 'msg, obj>
   | TwoWayValidateData of TwoWayValidateData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
-  | CmdParamData of CmdParamData<'model, 'msg>
+  | CmdParamData of CmdParamData<'model, 'msg, obj>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
@@ -186,6 +187,7 @@ module internal BindingData =
         WrapDispatch = boxWrapDispatch d.WrapDispatch
       }
     | CmdParamData d -> CmdParamData {
+        Cast = d.Cast
         Exec = fun p m -> d.Exec p (unbox m) |> ValueOption.map box
         CanExec = fun p m -> d.CanExec p (unbox m)
         AutoRequery = d.AutoRequery
@@ -870,17 +872,20 @@ type Binding private () =
   ///   <c>CommandParameter</c>
   ///   and can always execute.
   /// </summary>
+  /// <param name="cast">Casts the parameter to a stronger type.</param>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="wrapDispatch">
   ///   Wraps the dispatch function with additional behavior, such as
   ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParam
-      (exec: obj -> 'model -> 'msg,
+      (cast: obj -> 'param,
+       exec: 'param -> 'model -> 'msg,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
-      Exec = fun p model -> exec p model |> ValueSome
+      Cast = cast >> box
+      Exec = fun p model -> exec (unbox<'param> p) model |> ValueSome
       CanExec = fun _ _ -> true
       AutoRequery = false
       WrapDispatch = defaultArg wrapDispatch id
@@ -892,6 +897,7 @@ type Binding private () =
   ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
   /// </summary>
+  /// <param name="cast">Casts the parameter to a stronger type.</param>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="canExec">Indicates whether the command can execute.</param>
   /// <param name="uiBoundCmdParam">
@@ -907,14 +913,16 @@ type Binding private () =
   ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
-      (exec: obj -> 'model -> 'msg,
-       canExec: obj -> 'model -> bool,
+      (cast: obj -> 'param,
+       exec: 'param -> 'model -> 'msg,
+       canExec: 'param -> 'model -> bool,
        ?uiBoundCmdParam: bool,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
-      Exec = fun p m -> exec p m |> ValueSome
-      CanExec = canExec
+      Cast = cast >> box
+      Exec = fun p m -> exec (unbox<'param> p) m |> ValueSome
+      CanExec = unbox<'param> >> canExec
       AutoRequery = defaultArg uiBoundCmdParam false
       WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
@@ -925,6 +933,7 @@ type Binding private () =
   ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
   /// </summary>
+  /// <param name="cast">Casts the parameter to a stronger type.</param>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -939,13 +948,15 @@ type Binding private () =
   ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
-      (exec: obj -> 'model -> 'msg voption,
+      (cast: obj -> 'param,
+       exec: 'param -> 'model -> 'msg voption,
        ?uiBoundCmdParam: bool,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
-      Exec = exec
-      CanExec = fun p m -> exec p m |> ValueOption.isSome
+      Cast = cast >> box
+      Exec = unbox<'prarm> >> exec
+      CanExec = fun p m -> exec (unbox<'prarm> p) m |> ValueOption.isSome
       AutoRequery = defaultArg uiBoundCmdParam false
       WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
@@ -956,6 +967,7 @@ type Binding private () =
   ///   <c>CommandParameter</c>
   ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
   /// </summary>
+  /// <param name="cast">Casts the parameter to a stronger type.</param>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -970,13 +982,15 @@ type Binding private () =
   ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
-      (exec: obj -> 'model -> 'msg option,
+      (cast: obj -> 'param,
+       exec: 'param -> 'model -> 'msg option,
        ?uiBoundCmdParam: bool,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
-      Exec = fun p m -> exec p m |> ValueOption.ofOption
-      CanExec = fun p m -> exec p m |> Option.isSome
+      Cast = cast >> box
+      Exec = fun p m -> exec (unbox<'param> p) m |> ValueOption.ofOption
+      CanExec = fun p m -> exec (unbox<'param> p) m |> Option.isSome
       AutoRequery = defaultArg uiBoundCmdParam false
       WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
@@ -990,6 +1004,7 @@ type Binding private () =
   ///   This overload allows more easily re-using the same validation functions
   ///   for inputs and commands.
   /// </summary>
+  /// <param name="cast">Casts the parameter to a stronger type.</param>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -1004,13 +1019,15 @@ type Binding private () =
   ///   throttling, debouncing, or limiting.
   /// </param>
   static member cmdParamIf
-      (exec: obj -> 'model -> Result<'msg, 'ignored>,
+      (cast: obj -> 'param,
+       exec: 'param -> 'model -> Result<'msg, 'ignored>,
        ?uiBoundCmdParam: bool,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     CmdParamData {
-      Exec = fun p m -> exec p m |> ValueOption.ofOk
-      CanExec = fun p m -> exec p m |> Result.isOk
+      Cast = cast >> box
+      Exec = fun p m -> exec (unbox<'param> p) m |> ValueOption.ofOk
+      CanExec = fun p m -> exec (unbox<'param> p) m |> Result.isOk
       AutoRequery = defaultArg uiBoundCmdParam false
       WrapDispatch = defaultArg wrapDispatch id
     } |> createBinding
@@ -2199,17 +2216,20 @@ module Extensions =
     ///   <c>CommandParameter</c>
     ///   and can always execute.
     /// </summary>
+    /// <param name="cast">Casts the parameter to a stronger type.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="wrapDispatch">
     ///   Wraps the dispatch function with additional behavior, such as
     ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParam
-        (exec: obj -> 'msg,
+        (cast: obj -> 'param,
+         exec: 'param -> 'msg,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p _ -> exec p |> ValueSome
+        Cast = cast >> box
+        Exec = fun p _ -> exec (unbox<'param> p) |> ValueSome
         CanExec = fun _ _ -> true
         AutoRequery = false
         WrapDispatch = defaultArg wrapDispatch id
@@ -2221,6 +2241,7 @@ module Extensions =
     ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
     /// </summary>
+    /// <param name="cast">Casts the parameter to a stronger type.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -2235,13 +2256,15 @@ module Extensions =
     ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
-        (exec: obj -> 'msg voption,
+        (cast: obj -> 'param,
+         exec: 'param -> 'msg voption,
          ?uiBoundCmdParam: bool,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p
-        CanExec = fun p m -> exec p |> ValueOption.isSome
+        Cast = cast >> box
+        Exec = fun p m -> exec (unbox<'param> p)
+        CanExec = fun p m -> exec (unbox<'param> p) |> ValueOption.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2252,6 +2275,7 @@ module Extensions =
     ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
     /// </summary>
+    /// <param name="cast">Casts the parameter to a stronger type.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -2266,13 +2290,15 @@ module Extensions =
     ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
-        (exec: obj -> 'msg option,
+        (cast: obj -> 'param,
+         exec: 'param -> 'msg option,
          ?uiBoundCmdParam: bool,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueOption.ofOption
-        CanExec = fun p m -> exec p |> Option.isSome
+        Cast = cast >> box
+        Exec = fun p m -> exec (unbox<'param> p) |> ValueOption.ofOption
+        CanExec = fun p m -> exec (unbox<'param> p) |> Option.isSome
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2286,6 +2312,7 @@ module Extensions =
     ///   This overload allows more easily re-using the same validation
     ///   functions for inputs and commands.
     /// </summary>
+    /// <param name="cast">Casts the parameter to a stronger type.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
@@ -2300,13 +2327,15 @@ module Extensions =
     ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
-        (exec: obj -> Result<'msg, 'ignored>,
+        (cast: obj -> 'param,
+         exec: 'param -> Result<'msg, 'ignored>,
          ?uiBoundCmdParam: bool,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueOption.ofOk
-        CanExec = fun p m -> exec p |> Result.isOk
+        Cast = cast >> box
+        Exec = fun p m -> exec (unbox<'param> p) |> ValueOption.ofOk
+        CanExec = fun p m -> exec (unbox<'param> p) |> Result.isOk
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2317,6 +2346,7 @@ module Extensions =
     ///   <c>CommandParameter</c>
     ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
     /// </summary>
+    /// <param name="cast">Casts the parameter to a stronger type.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="canExec">Indicates whether the command can execute.</param>
     /// <param name="uiBoundCmdParam">
@@ -2332,14 +2362,16 @@ module Extensions =
     ///   throttling, debouncing, or limiting.
     /// </param>
     static member cmdParamIf
-        (exec: obj -> 'msg,
-         canExec: obj -> bool,
+        (cast: obj -> 'param,
+         exec: 'param -> 'msg,
+         canExec: 'param -> bool,
          ?uiBoundCmdParam: bool,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       CmdParamData {
-        Exec = fun p m -> exec p |> ValueSome
-        CanExec = fun p m -> canExec p
+        Cast = cast >> box
+        Exec = fun p m -> exec (unbox<'param> p) |> ValueSome
+        CanExec = fun p m -> canExec (unbox<'param> p)
         AutoRequery = defaultArg uiBoundCmdParam false
         WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
@@ -2542,22 +2574,22 @@ module BindingFn =
     Binding.cmdIf(exec) name
 
 
-  [<Obsolete("Use Binding.cmdParam(exec) or another suitable overload")>]
+  [<Obsolete("Use Binding.cmdParam(cast, exec) or another suitable overload")>]
   let paramCmd
       (exec: obj -> 'model -> 'msg)
       (name: string)
       : Binding<'model, 'msg> =
-    Binding.cmdParam(exec) name
+    Binding.cmdParam(id, exec) name
 
 
-  [<Obsolete("Use Binding.cmdParamIf(exec, canExec, uiTrigger) or another suitable overload")>]
+  [<Obsolete("Use Binding.cmdParamIf(cast, exec, canExec, uiTrigger) or another suitable overload")>]
   let paramCmdIf
       (exec: obj -> 'model -> 'msg)
       (canExec: obj -> 'model -> bool)
       (uiTrigger: bool)
       (name: string)
       : Binding<'model, 'msg> =
-    Binding.cmdParamIf(exec, canExec, uiTrigger) name
+    Binding.cmdParamIf(id, exec, canExec, uiTrigger) name
 
 
   [<Obsolete("Use Binding.subModel(getModel, snd, toMsg, bindings) or another suitable overload")>]
