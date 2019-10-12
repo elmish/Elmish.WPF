@@ -524,12 +524,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
         let newSubModelsById = Dictionary<_,_>(newSubModels.Length)
         for m in newSubModels do newSubModelsById.Add(b.GetId m, m)
-        let oldSubViewModelsById = Dictionary<_,_>(b.Vms.Count)
-        for vm in b.Vms do oldSubViewModelsById.Add(b.GetId vm.CurrentModel, vm)
+        let oldSubViewModelIdxPairsById = Dictionary<_,_>(b.Vms.Count)
+        for (oldIdx, vm) in b.Vms |> Seq.indexed do oldSubViewModelIdxPairsById.Add(b.GetId vm.CurrentModel, (oldIdx, vm))
 
         // Update existing models
-        for vm in b.Vms |> Seq.toList do
-          match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
+        for KeyValue (oldId, (_, vm)) in oldSubViewModelIdxPairsById do
+          match newSubModelsById.TryGetValue oldId with
           | true, m -> vm.UpdateModel m
           | _ -> ()
 
@@ -544,7 +544,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let chain = getPropChainForItem bindingName (b.GetId m |> string)
           ViewModel(m, (fun msg -> b.ToMsg (b.GetId m, msg) |> dispatch), b.GetBindings (), config, chain)
         newSubModels
-        |> Seq.filter (b.GetId >> oldSubViewModelsById.ContainsKey >> not)
+        |> Seq.filter (b.GetId >> oldSubViewModelIdxPairsById.ContainsKey >> not)
         |> Seq.iter (create >> b.Vms.Add)
 
         // Reorder according to new model list
