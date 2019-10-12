@@ -407,11 +407,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 b.Values.Remove oldVal |> ignore
                 b.Values.Add newVal  // Will be sorted later
             | _ -> ()
+
           // Add new values that don't currently exist
-          let newValsToAdd =
-            newVals
-            |> Seq.filter (b.GetId >> oldValsById.ContainsKey >> not)
-          for newVal in newValsToAdd do b.Values.Add newVal
+          newVals
+          |> Seq.filter (b.GetId >> oldValsById.ContainsKey >> not)
+          |> Seq.iter b.Values.Add
+
           // Reorder according to new model list
           for newIdx, newVal in newVals |> Seq.indexed do
             let oldIdx =
@@ -526,13 +527,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
           | false, _ -> b.Vms.Remove(vm) |> ignore
           | true, m -> vm.UpdateModel m
+
         // Add new models that don't currently exist
-        let newSubModelsToAdd =
-          newSubModels
-          |> Seq.filter (b.GetId >> oldSubViewModelsById.ContainsKey >> not)
-        for m in newSubModelsToAdd do
+        let create m =
           let chain = getPropChainForItem bindingName (b.GetId m |> string)
-          b.Vms.Add <| ViewModel(m, (fun msg -> b.ToMsg (b.GetId m, msg) |> dispatch), b.GetBindings (), config, chain)
+          ViewModel(m, (fun msg -> b.ToMsg (b.GetId m, msg) |> dispatch), b.GetBindings (), config, chain)
+        newSubModels
+        |> Seq.filter (b.GetId >> oldSubViewModelsById.ContainsKey >> not)
+        |> Seq.iter (create >> b.Vms.Add)
+
         // Reorder according to new model list
         for newIdx, newSubModel in newSubModels |> Seq.indexed do
           let oldIdx =
