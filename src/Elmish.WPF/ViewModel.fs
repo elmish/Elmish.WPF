@@ -393,9 +393,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeq b ->
         if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
           let newVals = newModel |> b.Get |> b.Map |> Seq.toList
-          // Prune and update existing values
+
           let newValsById = Dictionary<_,_>(newVals.Length)
           for newVal in newVals do newValsById.Add(b.GetId newVal, newVal)
+          let oldValsById = Dictionary<_,_>(b.Values.Count)
+          for oldVal in b.Values do oldValsById.Add(b.GetId oldVal, oldVal)
+
+          // Prune and update existing values
           for oldVal in b.Values |> Seq.toList do
             match newValsById.TryGetValue (b.GetId oldVal) with
             | false, _ -> b.Values.Remove(oldVal) |> ignore
@@ -406,9 +410,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           // Add new values that don't currently exist
           let newValsToAdd =
             newVals
-            |> Seq.filter (fun newVal ->
-                  b.Values |> Seq.exists (fun oldVal -> b.GetId newVal = b.GetId oldVal) |> not
-            )
+            |> Seq.filter (b.GetId >> oldValsById.ContainsKey >> not)
           for newVal in newValsToAdd do b.Values.Add newVal
           // Reorder according to new model list
           for newIdx, newVal in newVals |> Seq.indexed do
@@ -513,9 +515,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             false
     | SubModelSeq b ->
         let newSubModels = newModel |> b.GetModels |> Seq.toList
-        // Prune and update existing models
+
         let newSubModelsById = Dictionary<_,_>(newSubModels.Length)
         for m in newSubModels do newSubModelsById.Add(b.GetId m, m)
+        let oldSubViewModelsById = Dictionary<_,_>(b.Vms.Count)
+        for vm in b.Vms do oldSubViewModelsById.Add(b.GetId vm.CurrentModel, vm)
+
+        // Prune and update existing models
         for vm in b.Vms |> Seq.toList do
           match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
           | false, _ -> b.Vms.Remove(vm) |> ignore
@@ -523,9 +529,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         // Add new models that don't currently exist
         let newSubModelsToAdd =
           newSubModels
-          |> Seq.filter (fun m ->
-                b.Vms |> Seq.exists (fun vm -> b.GetId m = b.GetId vm.CurrentModel) |> not
-          )
+          |> Seq.filter (b.GetId >> oldSubViewModelsById.ContainsKey >> not)
         for m in newSubModelsToAdd do
           let chain = getPropChainForItem bindingName (b.GetId m |> string)
           b.Vms.Add <| ViewModel(m, (fun msg -> b.ToMsg (b.GetId m, msg) |> dispatch), b.GetBindings (), config, chain)
