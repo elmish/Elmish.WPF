@@ -392,9 +392,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           true
     | OneWaySeq b ->
         if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
-          let newVals = newModel |> b.Get |> b.Map
+          let newVals = newModel |> b.Get |> b.Map |> Seq.toList
           // Prune and update existing values
-          let newValsById = Dictionary<_,_>()
+          let newValsById = Dictionary<_,_>(newVals.Length)
           for newVal in newVals do newValsById.Add(b.GetId newVal, newVal)
           for oldVal in b.Values |> Seq.toList do
             match newValsById.TryGetValue (b.GetId oldVal) with
@@ -512,9 +512,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        let newSubModels = b.GetModels newModel
+        let newSubModels = newModel |> b.GetModels |> Seq.toList
         // Prune and update existing models
-        let newSubModelsById = Dictionary<_,_>()
+        let newSubModelsById = Dictionary<_,_>(newSubModels.Length)
         for m in newSubModels do newSubModelsById.Add(b.GetId m, m)
         for vm in b.Vms |> Seq.toList do
           match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
