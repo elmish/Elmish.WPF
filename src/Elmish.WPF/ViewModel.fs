@@ -396,17 +396,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           let newValsById = Dictionary<_,_>(newVals.Length)
           for newVal in newVals do newValsById.Add(b.GetId newVal, newVal)
-          let oldValsById = Dictionary<_,_>(b.Values.Count)
-          for oldVal in b.Values do oldValsById.Add(b.GetId oldVal, oldVal)
+          let oldValIdxPairsById = Dictionary<_,_>(b.Values.Count)
+          for (oldIdx, oldVal) in b.Values |> Seq.indexed do oldValIdxPairsById.Add(b.GetId oldVal, (oldIdx, oldVal))
           
           // Update existing values
-          let update oldVal newVal =
-            if not (b.ItemEquals newVal oldVal) then
-              b.Values.Remove oldVal |> ignore
-              b.Values.Add newVal  // Will be sorted later
-          for oldVal in b.Values |> Seq.toList do
-            match newValsById.TryGetValue (b.GetId oldVal) with
-            | true, newVal -> update oldVal newVal
+          for KeyValue (oldId, (oldIdx, oldVal)) in oldValIdxPairsById do
+            match newValsById.TryGetValue oldId with
+            | true, newVal ->
+              if not (b.ItemEquals newVal oldVal) then
+                b.Values.[oldIdx] <- newVal  // Will be sorted later
             | _ -> ()
 
           // Remove old values that no longer exist
@@ -417,7 +415,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           // Add new values that don't currently exist
           newVals
-          |> Seq.filter (b.GetId >> oldValsById.ContainsKey >> not)
+          |> Seq.filter (b.GetId >> oldValIdxPairsById.ContainsKey >> not)
           |> Seq.iter b.Values.Add
 
           // Reorder according to new model list
