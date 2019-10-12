@@ -408,10 +408,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             | _ -> ()
 
           // Remove old values that no longer exist
-          for oldVal in b.Values |> Seq.toList do
-            match newValsById.TryGetValue (b.GetId oldVal) with
-            | false, _ -> b.Values.Remove(oldVal) |> ignore
-            | _ -> ()
+          for i in b.Values.Count - 1..-1..0 do
+            let oldId = b.GetId b.Values.[i]
+            if oldId |> newValsById.ContainsKey |> not then
+              let (oldIdx, _) = oldValIdxPairsById.[oldId]
+              b.Values.RemoveAt oldIdx
 
           // Add new values that don't currently exist
           newVals
@@ -534,10 +535,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | _ -> ()
 
         // Remove old view models that no longer exist
-        for vm in b.Vms |> Seq.toList do
-          match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
-          | false, _ -> b.Vms.Remove(vm) |> ignore
-          | _ -> ()
+        for i in b.Vms.Count - 1..-1..0 do
+          let oldId = b.GetId b.Vms.[i].CurrentModel
+          if oldId |> newSubModelsById.ContainsKey |> not then
+            let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
+            b.Vms.RemoveAt oldIdx
 
         // Add new models that don't currently exist
         let create m =
