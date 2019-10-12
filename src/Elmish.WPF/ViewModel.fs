@@ -398,16 +398,22 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           for newVal in newVals do newValsById.Add(b.GetId newVal, newVal)
           let oldValsById = Dictionary<_,_>(b.Values.Count)
           for oldVal in b.Values do oldValsById.Add(b.GetId oldVal, oldVal)
-
-          // Prune and update existing values
+          
+          // Update existing values
           let update oldVal newVal =
             if not (b.ItemEquals newVal oldVal) then
               b.Values.Remove oldVal |> ignore
               b.Values.Add newVal  // Will be sorted later
           for oldVal in b.Values |> Seq.toList do
             match newValsById.TryGetValue (b.GetId oldVal) with
-            | false, _ -> b.Values.Remove(oldVal) |> ignore
             | true, newVal -> update oldVal newVal
+            | _ -> ()
+
+          // Remove old values that no longer exist
+          for oldVal in b.Values |> Seq.toList do
+            match newValsById.TryGetValue (b.GetId oldVal) with
+            | false, _ -> b.Values.Remove(oldVal) |> ignore
+            | _ -> ()
 
           // Add new values that don't currently exist
           newVals
@@ -523,11 +529,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let oldSubViewModelsById = Dictionary<_,_>(b.Vms.Count)
         for vm in b.Vms do oldSubViewModelsById.Add(b.GetId vm.CurrentModel, vm)
 
-        // Prune and update existing models
+        // Update existing models
+        for vm in b.Vms |> Seq.toList do
+          match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
+          | true, m -> vm.UpdateModel m
+          | _ -> ()
+
+        // Remove old view models that no longer exist
         for vm in b.Vms |> Seq.toList do
           match newSubModelsById.TryGetValue (b.GetId vm.CurrentModel) with
           | false, _ -> b.Vms.Remove(vm) |> ignore
-          | true, m -> vm.UpdateModel m
+          | _ -> ()
 
         // Add new models that don't currently exist
         let create m =
