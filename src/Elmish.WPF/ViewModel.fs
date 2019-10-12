@@ -400,13 +400,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           for oldVal in b.Values do oldValsById.Add(b.GetId oldVal, oldVal)
 
           // Prune and update existing values
+          let update oldVal newVal =
+            if not (b.ItemEquals newVal oldVal) then
+              b.Values.Remove oldVal |> ignore
+              b.Values.Add newVal  // Will be sorted later
           for oldVal in b.Values |> Seq.toList do
             match newValsById.TryGetValue (b.GetId oldVal) with
             | false, _ -> b.Values.Remove(oldVal) |> ignore
-            | true, newVal when not (b.ItemEquals newVal oldVal) ->
-                b.Values.Remove oldVal |> ignore
-                b.Values.Add newVal  // Will be sorted later
-            | _ -> ()
+            | true, newVal -> update oldVal newVal
 
           // Add new values that don't currently exist
           newVals
