@@ -408,11 +408,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             | _ -> ()
 
           // Remove old values that no longer exist
-          for i in b.Values.Count - 1..-1..0 do
-            let oldId = b.GetId b.Values.[i]
-            if oldId |> newValIdxPairsById.ContainsKey |> not then
-              let (oldIdx, _) = oldValIdxPairsById.[oldId]
-              b.Values.RemoveAt oldIdx
+          if b.Values.Count <> 0 && newVals.Length = 0
+          then b.Values.Clear ()
+          else
+            for i in b.Values.Count - 1..-1..0 do
+              let oldId = b.GetId b.Values.[i]
+              if oldId |> newValIdxPairsById.ContainsKey |> not then
+                let (oldIdx, _) = oldValIdxPairsById.[oldId]
+                b.Values.RemoveAt oldIdx
 
           // Add new values that don't currently exist
           let key (KeyValue (k, _)) = k
@@ -539,11 +542,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | _ -> ()
 
         // Remove old view models that no longer exist
-        for i in b.Vms.Count - 1..-1..0 do
-          let oldId = b.GetId b.Vms.[i].CurrentModel
-          if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
-            let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
-            b.Vms.RemoveAt oldIdx
+        if b.Vms.Count <> 0 && newSubModels.Length = 0
+        then b.Vms.Clear ()
+        else
+          for i in b.Vms.Count - 1..-1..0 do
+            let oldId = b.GetId b.Vms.[i].CurrentModel
+            if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
+              let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
+              b.Vms.RemoveAt oldIdx
 
         // Add new models that don't currently exist
         let create (KeyValue (id, (_, m))) =
