@@ -32,7 +32,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   let ccTriggers = ConcurrentDictionary<string, int>()
   let cecTriggers = ConcurrentDictionary<string, int>()
   let dispatchMsgs = ResizeArray<'msg> ()
-  let mutable numDispatches = 0
 
 
   do
@@ -47,7 +46,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   new(model, binding) = TestVm(model, [binding])
 
   member private __.Dispatch x =
-    numDispatches <- numDispatches + 1
     dispatchMsgs.Add x
 
   member __.NumPcTriggersFor propName =
@@ -61,9 +59,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   member __.NumCecTriggersFor propName =
     cecTriggers.TryGetValue propName |> snd
-
-  member __.NumDispatches =
-    numDispatches
 
   member __.Dispatches =
     dispatchMsgs |> Seq.toList
@@ -93,7 +88,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     ccTriggers.Clear ()
     cecTriggers.Clear ()
     dispatchMsgs.Clear ()
-    numDispatches <- 0
 
 
 type InvokeTesterVal<'a, 'b>(initialRet: 'b) =
