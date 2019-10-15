@@ -3,6 +3,7 @@
 open System
 open System.Collections.Concurrent
 open System.Collections.ObjectModel
+open System.Collections.Specialized
 open System.ComponentModel
 open System.Windows.Input
 open FSharp.Interop.Dynamic
@@ -29,7 +30,7 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
-  let ccTriggers = ConcurrentDictionary<string, int>()
+  let ccTriggers = ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
   let cecTriggers = ConcurrentDictionary<string, int>()
   let dispatchMsgs = ResizeArray<'msg> ()
 
@@ -55,7 +56,7 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     ecTriggers.TryGetValue propName |> snd
 
   member __.NumCcTriggersFor propName =
-    ccTriggers.TryGetValue propName |> snd
+    ccTriggers.GetOrAdd(propName, []).Length
 
   member __.NumCecTriggersFor propName =
     cecTriggers.TryGetValue propName |> snd
@@ -63,16 +64,25 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   member __.Dispatches =
     dispatchMsgs |> Seq.toList
 
+  member __.CcTriggersFor propName =
+    ccTriggers.TryGetValue propName |> snd |> Seq.toList
+
   /// Starts tracking CollectionChanged triggers for the specified prop.
   /// Will cause the property to be retrieved.
   member this.TrackCcTriggersFor propName =
     try
-      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun _ ->
-        ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
+      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun e ->
+        ccTriggers.AddOrUpdate(
+          propName,
+          [e],
+          (fun _ me -> e :: me)) |> ignore
       )
     with _ ->
-      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun _ ->
-        ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
+      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun e ->
+        ccTriggers.AddOrUpdate(
+          propName,
+          [e],
+          (fun _ me -> e :: me)) |> ignore
       )
 
   /// Starts tracking CanExecuteChanged triggers for the specified prop.
