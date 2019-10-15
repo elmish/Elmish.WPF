@@ -82,13 +82,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
       cecTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
     )
 
-  member __.Reset () =
-    pcTriggers.Clear ()
-    ecTriggers.Clear ()
-    ccTriggers.Clear ()
-    cecTriggers.Clear ()
-    dispatchMsgs.Clear ()
-
 
 type InvokeTesterVal<'a, 'b>(initialRet: 'b) =
   let mutable count = 0
