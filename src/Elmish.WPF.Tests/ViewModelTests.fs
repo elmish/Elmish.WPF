@@ -815,6 +815,86 @@ module OneWaySeqLazy =
     }
 
 
+  type TestClass (id: int, data: string) =
+    member _.Id = id
+    member _.Data = data
+    override __.GetHashCode() = 0
+    override __.Equals that =
+      // All instances of TestClass are considered equal.
+      // Not very helpful, but a valid implementation.
+      match that with
+      | :? TestClass as x -> true
+      | _ -> false
+
+  [<Fact>]
+  let ``when equals returns false and element removed from model, should trigger CC.Remove for removed element`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! id1 = GenX.auto<int>
+      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
+      let! data1 = GenX.auto<string>
+      let! data2 = GenX.auto<string>
+
+      let tc1 = TestClass(id1, data1)
+      let tc2 = TestClass(id2, data2)
+
+      let m1 = [tc1; tc2]
+      let m2 = [tc1]
+
+      let get = id
+      let equals _ _ = false
+      let map = id
+      let itemEquals _ _ = true
+      let getId (tc: TestClass) = tc.Id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ ((name
+        |> vm.CcTriggersFor
+        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove)
+        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
+    }
+
+  [<Fact>]
+  let ``when equals returns false and element updated in model, should trigger CC.Remove or CC.Replace for udpated element`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! id1 = GenX.auto<int>
+      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
+      let! data1 = GenX.auto<string>
+      let! data2 = GenX.auto<string>
+      let! data3 = GenX.auto<string> |> GenX.notEqualTo data2
+
+      let tc1 = TestClass(id1, data1)
+      let tc2 = TestClass(id2, data2)
+      let tc3 = TestClass(id2, data3)
+
+      let m1 = [tc1; tc2]
+      let m2 = [tc1; tc3]
+
+      let get = id
+      let equals _ _ = false
+      let map = id
+      let itemEquals (a: TestClass) (b: TestClass) = a.Data = b.Data
+      let getId (tc: TestClass) = tc.Id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ ((name
+        |> vm.CcTriggersFor
+        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove || e.Action = NotifyCollectionChangedAction.Replace)
+        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
+    }
+
+
 module TwoWay =
 
 
