@@ -217,9 +217,7 @@ Yes, just do it before calling `Program.runWindow` and it will automatically be 
 
 #### Can I use design-time view models?
 
-Yes, but it requires “Project code” to be enabled in the XAML designer, which is currently only supported when targeting .NET Framework, not .NET Core. The following instructions are therefore only applicable if targeting .NET Framework.
-
-You need to structure your code so you have some place in your code that satisfies the following requirements:
+Yes. You need to structure your code so you have some place in your code that satisfies the following requirements:
 
 * Must be able to instantiate a model and the associated bindings
 * Must be reachable by the XAML views
@@ -231,7 +229,7 @@ module MyAssembly.DesignViewModels
 let myVm = ViewModel.designInstance myModel myBindings
 ```
 
-Then use the following attributes wherever you need a design VM:
+Then use the following attributes wherever you need a design-time VM:
 
 ```XAML
 <Window
@@ -242,6 +240,10 @@ Then use the following attributes wherever you need a design VM:
     mc:Ignorable="d"
     d:DataContext="{x:Static vm:DesignViewModels.myVm}">
 ```
+
+When targeting .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
+
+When targeting .NET Core 3, the designer is buggy when it comes to design-time view models as used above. If you don’t get the data you expect, try to remove and re-add (e.g. undo) the `d:DataContext` line. That should make it work. You will have to do this as often as needed.
 
 #### Can I open new windows/dialogs?
 
