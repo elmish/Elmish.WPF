@@ -3,6 +3,7 @@
 open System
 open System.Collections.Concurrent
 open System.Collections.ObjectModel
+open System.Collections.Specialized
 open System.ComponentModel
 open System.Windows.Input
 open FSharp.Interop.Dynamic
@@ -29,10 +30,9 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
-  let ccTriggers = ConcurrentDictionary<string, int>()
+  let ccTriggers = ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
   let cecTriggers = ConcurrentDictionary<string, int>()
   let dispatchMsgs = ResizeArray<'msg> ()
-  let mutable numDispatches = 0
 
 
   do
@@ -47,7 +47,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   new(model, binding) = TestVm(model, [binding])
 
   member private __.Dispatch x =
-    numDispatches <- numDispatches + 1
     dispatchMsgs.Add x
 
   member __.NumPcTriggersFor propName =
@@ -57,27 +56,33 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     ecTriggers.TryGetValue propName |> snd
 
   member __.NumCcTriggersFor propName =
-    ccTriggers.TryGetValue propName |> snd
+    ccTriggers.GetOrAdd(propName, []).Length
 
   member __.NumCecTriggersFor propName =
     cecTriggers.TryGetValue propName |> snd
 
-  member __.NumDispatches =
-    numDispatches
-
   member __.Dispatches =
     dispatchMsgs |> Seq.toList
+
+  member __.CcTriggersFor propName =
+    ccTriggers.TryGetValue propName |> snd |> Seq.toList
 
   /// Starts tracking CollectionChanged triggers for the specified prop.
   /// Will cause the property to be retrieved.
   member this.TrackCcTriggersFor propName =
     try
-      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun _ ->
-        ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
+      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun e ->
+        ccTriggers.AddOrUpdate(
+          propName,
+          [e],
+          (fun _ me -> e :: me)) |> ignore
       )
     with _ ->
-      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun _ ->
-        ccTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
+      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun e ->
+        ccTriggers.AddOrUpdate(
+          propName,
+          [e],
+          (fun _ me -> e :: me)) |> ignore
       )
 
   /// Starts tracking CanExecuteChanged triggers for the specified prop.
@@ -86,14 +91,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     (this.Get propName : ICommand).CanExecuteChanged.Add (fun _ ->
       cecTriggers.AddOrUpdate(propName, 1, (fun _ count -> count + 1)) |> ignore
     )
-
-  member __.Reset () =
-    pcTriggers.Clear ()
-    ecTriggers.Clear ()
-    ccTriggers.Clear ()
-    cecTriggers.Clear ()
-    dispatchMsgs.Clear ()
-    numDispatches <- 0
 
 
 type InvokeTesterVal<'a, 'b>(initialRet: 'b) =
@@ -815,6 +812,86 @@ module OneWaySeqLazy =
       vm.UpdateModel m2
 
       test <@ vm.NumCcTriggersFor name > 0 @>
+    }
+
+
+  type TestClass (id: int, data: string) =
+    member _.Id = id
+    member _.Data = data
+    override __.GetHashCode() = 0
+    override __.Equals that =
+      // All instances of TestClass are considered equal.
+      // Not very helpful, but a valid implementation.
+      match that with
+      | :? TestClass as x -> true
+      | _ -> false
+
+  [<Fact>]
+  let ``when equals returns false and element removed from model, should trigger CC.Remove for removed element`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! id1 = GenX.auto<int>
+      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
+      let! data1 = GenX.auto<string>
+      let! data2 = GenX.auto<string>
+
+      let tc1 = TestClass(id1, data1)
+      let tc2 = TestClass(id2, data2)
+
+      let m1 = [tc1; tc2]
+      let m2 = [tc1]
+
+      let get = id
+      let equals _ _ = false
+      let map = id
+      let itemEquals _ _ = true
+      let getId (tc: TestClass) = tc.Id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ ((name
+        |> vm.CcTriggersFor
+        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove)
+        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
+    }
+
+  [<Fact>]
+  let ``when equals returns false and element updated in model, should trigger CC.Remove or CC.Replace for udpated element`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! id1 = GenX.auto<int>
+      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
+      let! data1 = GenX.auto<string>
+      let! data2 = GenX.auto<string>
+      let! data3 = GenX.auto<string> |> GenX.notEqualTo data2
+
+      let tc1 = TestClass(id1, data1)
+      let tc2 = TestClass(id2, data2)
+      let tc3 = TestClass(id2, data3)
+
+      let m1 = [tc1; tc2]
+      let m2 = [tc1; tc3]
+
+      let get = id
+      let equals _ _ = false
+      let map = id
+      let itemEquals (a: TestClass) (b: TestClass) = a.Data = b.Data
+      let getId (tc: TestClass) = tc.Id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ ((name
+        |> vm.CcTriggersFor
+        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove || e.Action = NotifyCollectionChangedAction.Replace)
+        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
     }
 
 
