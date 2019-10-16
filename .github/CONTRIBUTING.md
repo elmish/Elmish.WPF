@@ -50,16 +50,7 @@ Also consider cleaning your commit history by squashing commits in an interactiv
 
 More on rebasing and squashing can be found in [this guide](https://robots.thoughtbot.com/git-interactive-rebase-squash-amend-rewriting-history).
 
-Miscellaneous information
--------------------------
-
-### Branches in the main repo
-
-`master` is the primary development branch in the main repo. Any new features and fixes are merged into master when they are done. `master` should always be fully functional, but releases do not happen automatically from this branch.
-
-The  `stable-` prefixed branches are what’s actually deployed. When releasing a new version, changes from `master` are merged into the latest `stable-` branch. AppVeyor will automatically deploy all new commits to these branches after a successful build and test run.
-
-### Deployment checklist
+## Deployment checklist
 
 For maintainers.
 
