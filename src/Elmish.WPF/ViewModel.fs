@@ -109,13 +109,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       as this =
   inherit DynamicObject()
 
-  let log fmt =
-    let innerLog (str: string) =
-      if config.LogConsole then Console.WriteLine(str)
-      if config.LogTrace then Diagnostics.Trace.WriteLine(str)
-    Printf.kprintf innerLog fmt
-
-
   let mutable currentModel = initialModel
 
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
@@ -123,6 +116,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Error messages keyed by property name.
   let errors = Dictionary<string, string>()
+
+
+  let log fmt =
+    let innerLog (str: string) =
+      if config.LogConsole then Console.WriteLine(str)
+      if config.LogTrace then Diagnostics.Trace.WriteLine(str)
+    Printf.kprintf innerLog fmt
+
+  let logInvalidGetId = log "The getId function must return distinct IDs, but it returned the same ID %A for %A and %A"
 
   let getPropChainFor bindingName =
     sprintf "%s.%s" propNameChain bindingName
@@ -211,13 +213,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeqLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
+        let getId = measure name "getId" d.GetId
+        let values = ObservableCollection(initialModel |> get |> map)
+        let valuesById = Dictionary<_,_>(values.Count)
+        for value in values do
+          let id = getId value
+          if valuesById.ContainsKey id
+          then logInvalidGetId id (valuesById.[id]) value
+          else valuesById.Add(id, value)
         OneWaySeq {
           Get = get
           Map = map
           Equals = measure2 name "equals" d.Equals
-          GetId = measure name "getId" d.GetId
+          GetId = getId
           ItemEquals = measure2 name "itemEquals" d.ItemEquals
-          Values = ObservableCollection(initialModel |> get |> map) }
+          Values = values }
     | TwoWayData d ->
         TwoWay {
           Get = measure name "get" d.Get
@@ -336,6 +346,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
           |> ObservableCollection
+        let modelsById = Dictionary<_,_>(vms.Count)
+        for model in vms |> Seq.map (fun vm -> vm.CurrentModel) do
+          let id = getId model
+          if modelsById.ContainsKey id
+          then logInvalidGetId id (modelsById.[id]) model
+          else modelsById.Add(id, model)
         SubModelSeq {
           GetModels = getModels
           GetId = getId
@@ -392,46 +408,56 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           true
     | OneWaySeq b ->
         if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
-          let newVals = newModel |> b.Get |> b.Map |> Seq.toList
+          let newVals = newModel |> b.Get |> b.Map |> Seq.toArray
 
           let newValIdxPairsById = Dictionary<_,_>(newVals.Length)
-          for (newIdx, newVal) in newVals |> Seq.indexed do newValIdxPairsById.Add(b.GetId newVal, (newIdx, newVal))
+          for (newIdx, newVal) in newVals |> Seq.indexed do
+            let id = b.GetId newVal
+            if newValIdxPairsById.ContainsKey id
+            then logInvalidGetId id (newValIdxPairsById.[id]) newVal
+            else newValIdxPairsById.Add(id, (newIdx, newVal))
+
           let oldValIdxPairsById = Dictionary<_,_>(b.Values.Count)
-          for (oldIdx, oldVal) in b.Values |> Seq.indexed do oldValIdxPairsById.Add(b.GetId oldVal, (oldIdx, oldVal))
-          
-          // Update existing values
-          for Kvp (oldId, (oldIdx, oldVal)) in oldValIdxPairsById do
-            match newValIdxPairsById.TryGetValue oldId with
-            | true, (_, newVal) ->
-              if not (b.ItemEquals newVal oldVal) then
-                b.Values.[oldIdx] <- newVal  // Will be sorted later
-            | _ -> ()
+          for (oldIdx, oldVal) in b.Values |> Seq.indexed do
+            let id = b.GetId oldVal
+            if oldValIdxPairsById.ContainsKey id
+            then logInvalidGetId id (oldValIdxPairsById.[id]) oldVal
+            else oldValIdxPairsById.Add(id, (oldIdx, oldVal))
 
-          // Remove old values that no longer exist
-          if b.Values.Count <> 0 && newVals.Length = 0
-          then b.Values.Clear ()
-          else
-            for i in b.Values.Count - 1..-1..0 do
-              let oldId = b.GetId b.Values.[i]
-              if oldId |> newValIdxPairsById.ContainsKey |> not then
-                let (oldIdx, _) = oldValIdxPairsById.[oldId]
-                b.Values.RemoveAt oldIdx
-
-          // Add new values that don't currently exist
-          newValIdxPairsById
-          |> Seq.filter (Kvp.key >> oldValIdxPairsById.ContainsKey >> not)
-          |> Seq.map Kvp.value
-          |> Seq.map snd
-          |> Seq.iter b.Values.Add
-
-          // Reorder according to new model list
-          for Kvp (newId, (newIdx, _)) in newValIdxPairsById do
-            let oldIdx =
-              b.Values
-              |> Seq.indexed
-              |> Seq.find (fun (_, oldVal) -> b.GetId oldVal = newId)
-              |> fst
-            if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
+          if newValIdxPairsById.Count = newVals.Length && oldValIdxPairsById.Count = b.Values.Count then
+            // Update existing values
+            for Kvp (oldId, (oldIdx, oldVal)) in oldValIdxPairsById do
+              match newValIdxPairsById.TryGetValue oldId with
+              | true, (_, newVal) ->
+                if not (b.ItemEquals newVal oldVal) then
+                  b.Values.[oldIdx] <- newVal  // Will be sorted later
+              | _ -> ()
+            
+            // Remove old values that no longer exist
+            if b.Values.Count <> 0 && newVals.Length = 0
+            then b.Values.Clear ()
+            else
+              for i in b.Values.Count - 1..-1..0 do
+                let oldId = b.GetId b.Values.[i]
+                if oldId |> newValIdxPairsById.ContainsKey |> not then
+                  let (oldIdx, _) = oldValIdxPairsById.[oldId]
+                  b.Values.RemoveAt oldIdx
+            
+            // Add new values that don't currently exist
+            newValIdxPairsById
+            |> Seq.filter (Kvp.key >> oldValIdxPairsById.ContainsKey >> not)
+            |> Seq.map Kvp.value
+            |> Seq.map snd
+            |> Seq.iter b.Values.Add
+            
+            // Reorder according to new model list
+            for Kvp (newId, (newIdx, _)) in newValIdxPairsById do
+              let oldIdx =
+                b.Values
+                |> Seq.indexed
+                |> Seq.find (fun (_, oldVal) -> b.GetId oldVal = newId)
+                |> fst
+              if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
         false
     | Cmd _
     | CmdParam _ ->
@@ -526,46 +552,56 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        let newSubModels = newModel |> b.GetModels |> Seq.toList
+        let newSubModels = newModel |> b.GetModels |> Seq.toArray
 
         let newSubModelIdxPairsById = Dictionary<_,_>(newSubModels.Length)
-        for (newIdx, m) in newSubModels |> Seq.indexed do newSubModelIdxPairsById.Add(b.GetId m, (newIdx, m))
+        for (newIdx, m) in newSubModels |> Seq.indexed do
+          let id = b.GetId m
+          if newSubModelIdxPairsById.ContainsKey id
+          then logInvalidGetId id (newSubModelIdxPairsById.[id]) m
+          else newSubModelIdxPairsById.Add(id, (newIdx, m))
+
         let oldSubViewModelIdxPairsById = Dictionary<_,_>(b.Vms.Count)
-        for (oldIdx, vm) in b.Vms |> Seq.indexed do oldSubViewModelIdxPairsById.Add(b.GetId vm.CurrentModel, (oldIdx, vm))
+        for (oldIdx, vm) in b.Vms |> Seq.indexed do
+          let id = b.GetId vm.CurrentModel
+          if oldSubViewModelIdxPairsById.ContainsKey id
+          then logInvalidGetId id (oldSubViewModelIdxPairsById.[id]) vm.CurrentModel
+          else oldSubViewModelIdxPairsById.Add(id, (oldIdx, vm))
 
-        // Update existing models
-        for Kvp (oldId, (_, vm)) in oldSubViewModelIdxPairsById do
-          match newSubModelIdxPairsById.TryGetValue oldId with
-          | true, (_, m) -> vm.UpdateModel m
-          | _ -> ()
-
-        // Remove old view models that no longer exist
-        if b.Vms.Count <> 0 && newSubModels.Length = 0
-        then b.Vms.Clear ()
-        else
-          for i in b.Vms.Count - 1..-1..0 do
-            let oldId = b.GetId b.Vms.[i].CurrentModel
-            if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
-              let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
-              b.Vms.RemoveAt oldIdx
-
-        // Add new models that don't currently exist
-        let create (Kvp (id, (_, m))) =
-          let chain = getPropChainForItem bindingName (id |> string)
-          ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
-        newSubModelIdxPairsById
-        |> Seq.filter (Kvp.key >> oldSubViewModelIdxPairsById.ContainsKey >> not)
-        |> Seq.map create
-        |> Seq.iter b.Vms.Add
-
-        // Reorder according to new model list
-        for Kvp (newId, (newIdx, _)) in newSubModelIdxPairsById do
-          let oldIdx =
-            b.Vms
-            |> Seq.indexed
-            |> Seq.find (fun (_, vm) -> newId = b.GetId vm.CurrentModel)
-            |> fst
-          if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
+        if newSubModelIdxPairsById.Count = newSubModels.Length && oldSubViewModelIdxPairsById.Count = b.Vms.Count then
+          // Update existing models
+          for Kvp (oldId, (_, vm)) in oldSubViewModelIdxPairsById do
+            match newSubModelIdxPairsById.TryGetValue oldId with
+            | true, (_, m) -> vm.UpdateModel m
+            | _ -> ()
+          
+          // Remove old view models that no longer exist
+          if b.Vms.Count <> 0 && newSubModels.Length = 0
+          then b.Vms.Clear ()
+          else
+            for i in b.Vms.Count - 1..-1..0 do
+              let oldId = b.GetId b.Vms.[i].CurrentModel
+              if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
+                let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
+                b.Vms.RemoveAt oldIdx
+          
+          // Add new models that don't currently exist
+          let create (Kvp (id, (_, m))) =
+            let chain = getPropChainForItem bindingName (id |> string)
+            ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
+          newSubModelIdxPairsById
+          |> Seq.filter (Kvp.key >> oldSubViewModelIdxPairsById.ContainsKey >> not)
+          |> Seq.map create
+          |> Seq.iter b.Vms.Add
+          
+          // Reorder according to new model list
+          for Kvp (newId, (newIdx, _)) in newSubModelIdxPairsById do
+            let oldIdx =
+              b.Vms
+              |> Seq.indexed
+              |> Seq.find (fun (_, vm) -> newId = b.GetId vm.CurrentModel)
+              |> fst
+            if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
         let v = getSelectedSubModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
