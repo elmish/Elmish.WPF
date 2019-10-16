@@ -13,8 +13,8 @@ module App =
     | CloseRequested
 
   type Win2 = {
-    Input1: string
-    Input2: string
+    Input: string
+    IsChecked: bool
     ConfirmState: ConfirmState option
   }
 
@@ -34,8 +34,8 @@ module App =
     | CloseWin1
     | ShowWin2
     | Win1Input of string
-    | Win2Input1 of string
-    | Win2Input2 of string
+    | Win2Input of string
+    | Win2SetChecked of bool
     | Win2Submit
     | Win2ButtonCancel
     | Win2CloseRequested
@@ -46,20 +46,20 @@ module App =
     | HideWin1 -> { m with Win1State = WindowState.Hidden "" }
     | CloseWin1 -> { m with Win1State = WindowState.Closed }
     | ShowWin2 ->
-        let win2 = { Input1 = ""; Input2 = ""; ConfirmState = None }
+        let win2 = { Input = ""; IsChecked = false; ConfirmState = None }
         { m with Win2 = Some win2 }
     | Win1Input s -> { m with Win1Input = s }
-    | Win2Input1 s ->
+    | Win2Input s ->
         { m with
             Win2 =
               m.Win2
-              |> Option.map (fun m' -> { m' with Input1 = s })
+              |> Option.map (fun m' -> { m' with Input = s })
           }
-    | Win2Input2 s ->
+    | Win2SetChecked isChecked ->
         { m with
             Win2 =
               m.Win2
-              |> Option.map (fun m' -> { m' with Input2 = s })
+              |> Option.map (fun m' -> { m' with IsChecked = isChecked })
             }
     | Win2Submit ->
         match m.Win2 with
@@ -93,8 +93,8 @@ module App =
     "Win2" |> Binding.subModelWin(
       (fun m -> m.Win2 |> WindowState.ofOption), snd, id,
       (fun () -> [
-        "Input1" |> Binding.twoWay((fun m -> m.Input1), Win2Input1)
-        "Input2" |> Binding.twoWay((fun m -> m.Input2), Win2Input2)
+        "Input" |> Binding.twoWay((fun m -> m.Input), Win2Input)
+        "IsChecked" |> Binding.twoWay((fun m -> m.IsChecked), Win2SetChecked)
         "Submit" |> Binding.cmd Win2Submit
         "Cancel" |> Binding.cmd Win2ButtonCancel
         "SubmitMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some SubmitClicked)
