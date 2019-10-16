@@ -1,3 +1,7 @@
+#### 3.5.1
+
+* Improve performance of `Binding.oneWaySeq`, `Binding.oneWaySeqLazy`, and `Binding.subModelSeq`
+
 #### 3.5.0
 
 * Add `netcoreapp3.0` target
