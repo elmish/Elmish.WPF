@@ -370,7 +370,9 @@ type Binding private () =
   ///   binding is backed by a persistent <c>ObservableCollection</c>, so only
   ///   changed items (as determined by <paramref name="itemEquals" />) will be
   ///   replaced. If the items are complex and you want them updated instead of
-  ///   replaced, consider using <see cref="subModelSeq" />.
+  ///   replaced, consider using <see cref="subModelSeq" />. This method is
+  ///   implemented by calling <see cref="oneWaySeqLazy" /> with <c>refEq</c>
+  ///   for <c>equals</c> and <c>id</c> for <c>map</c>.
   /// </summary>
   /// <param name="get">Gets the collection from the model.</param>
   /// <param name="itemEquals">
@@ -384,13 +386,7 @@ type Binding private () =
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
       : string -> Binding<'model, 'msg> =
-    OneWaySeqLazyData {
-      Get = box
-      Map = unbox<'model> >> get >> Seq.map box
-      Equals = fun _ _ -> false
-      GetId = unbox<'a> >> getId >> box
-      ItemEquals = fun a b -> itemEquals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
+    Binding.oneWaySeqLazy(get, refEq, id, itemEquals, getId)
 
 
   /// <summary>
