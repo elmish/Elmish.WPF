@@ -822,9 +822,7 @@ module OneWaySeqLazy =
     override __.Equals that =
       // All instances of TestClass are considered equal.
       // Not very helpful, but a valid implementation.
-      match that with
-      | :? TestClass as x -> true
-      | _ -> false
+      that :? TestClass
 
   [<Fact>]
   let ``when equals returns false and element removed from model, should trigger CC.Remove for removed element`` () =
