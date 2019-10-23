@@ -15,6 +15,7 @@
     <PackageTags>WPF F# fsharp Elmish Elm</PackageTags>
     <Version>3.5.1</Version>
     <PackageReleaseNotes>Improve performance of Binding.oneWaySeq, Binding.oneWaySeqLazy, and Binding.subModelSeq</PackageReleaseNotes>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
