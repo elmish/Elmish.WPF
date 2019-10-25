@@ -603,9 +603,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ValueSome err -> setError err name
     | _ -> ()
 
-  member __.CurrentModel : 'model = currentModel
+  member _.CurrentModel : 'model = currentModel
 
-  member __.UpdateModel (newModel: 'model) : unit =
+  member _.UpdateModel (newModel: 'model) : unit =
     let propsToNotify =
       bindings
       |> Seq.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
@@ -621,7 +621,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     for Kvp (name, binding) in bindings do
       updateValidationStatus name binding
 
-  override __.TryGetMember (binder, result) =
+  override _.TryGetMember (binder, result) =
     log "[%s] TryGetMember %s" propNameChain binder.Name
     match bindings.TryGetValue binder.Name with
     | false, _ ->
@@ -657,7 +657,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                   selected |> ValueOption.toObj |> box
         true
 
-  override __.TrySetMember (binder, value) =
+  override _.TrySetMember (binder, value) =
     log "[%s] TrySetMember %s" propNameChain binder.Name
     match bindings.TryGetValue binder.Name with
     | false, _ ->
@@ -689,14 +689,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
-    member __.PropertyChanged = propertyChanged.Publish
+    member _.PropertyChanged = propertyChanged.Publish
 
   interface INotifyDataErrorInfo with
     [<CLIEvent>]
-    member __.ErrorsChanged = errorsChanged.Publish
-    member __.HasErrors =
+    member _.ErrorsChanged = errorsChanged.Publish
+    member _.HasErrors =
       errors.Count > 0
-    member __.GetErrors propName =
+    member _.GetErrors propName =
       log "[%s] GetErrors %s" propNameChain (propName |> Option.ofObj |> Option.defaultValue "<null>")
       match errors.TryGetValue propName with
       | true, err -> upcast [err]

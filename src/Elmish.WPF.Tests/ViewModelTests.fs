@@ -46,25 +46,25 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   new(model, binding) = TestVm(model, [binding])
 
-  member private __.Dispatch x =
+  member private _.Dispatch x =
     dispatchMsgs.Add x
 
-  member __.NumPcTriggersFor propName =
+  member _.NumPcTriggersFor propName =
     pcTriggers.TryGetValue propName |> snd
 
-  member __.NumEcTriggersFor propName =
+  member _.NumEcTriggersFor propName =
     ecTriggers.TryGetValue propName |> snd
 
-  member __.NumCcTriggersFor propName =
+  member _.NumCcTriggersFor propName =
     ccTriggers.GetOrAdd(propName, []).Length
 
-  member __.NumCecTriggersFor propName =
+  member _.NumCecTriggersFor propName =
     cecTriggers.TryGetValue propName |> snd
 
-  member __.Dispatches =
+  member _.Dispatches =
     dispatchMsgs |> Seq.toList
 
-  member __.CcTriggersFor propName =
+  member _.CcTriggersFor propName =
     ccTriggers.TryGetValue propName |> snd |> Seq.toList
 
   /// Starts tracking CollectionChanged triggers for the specified prop.
@@ -101,11 +101,11 @@ type InvokeTesterVal<'a, 'b>(initialRet: 'b) =
     count <- count + 1
     values <- values @ [x]
     retVal
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.SetRetVal ret = retVal <- ret
-  member __.Reset () =
+  member _.Fn = wrapped
+  member _.Count = count
+  member _.Values = values
+  member _.SetRetVal ret = retVal <- ret
+  member _.Reset () =
     count <- 0
     values <- []
     retVal <- initialRet
@@ -119,11 +119,11 @@ type InvokeTesterVal2<'a, 'b, 'c>(initialRet: 'c) =
     count <- count + 1
     values <- values @ [(x, y)]
     retVal
-  member __.Fn : 'a -> 'b -> 'c = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.SetRetVal ret = retVal <- ret
-  member __.Reset () =
+  member _.Fn : 'a -> 'b -> 'c = wrapped
+  member _.Count = count
+  member _.Values = values
+  member _.SetRetVal ret = retVal <- ret
+  member _.Reset () =
     count <- 0
     values <- []
     retVal <- initialRet
@@ -136,10 +136,10 @@ type InvokeTester<'a, 'b>(f: 'a -> 'b) =
     count <- count + 1
     values <- values @ [x]
     f x
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.Reset () =
+  member _.Fn = wrapped
+  member _.Count = count
+  member _.Values = values
+  member _.Reset () =
     count <- 0
     values <- []
 
@@ -151,10 +151,10 @@ type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
     count <- count + 1
     values <- values @ [x, y]
     f x
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.Reset () =
+  member _.Fn = wrapped
+  member _.Count = count
+  member _.Values = values
+  member _.Reset () =
     count <- 0
     values <- []
 
@@ -818,8 +818,8 @@ module OneWaySeqLazy =
   type TestClass (id: int, data: string) =
     member _.Id = id
     member _.Data = data
-    override __.GetHashCode() = 0
-    override __.Equals that =
+    override _.GetHashCode() = 0
+    override _.Equals that =
       // All instances of TestClass are considered equal.
       // Not very helpful, but a valid implementation.
       that :? TestClass
