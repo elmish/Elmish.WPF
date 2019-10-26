@@ -200,12 +200,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name bindingData (initializedBindingsByName: Dictionary<string, VmBinding<'model, 'msg>>) =
     match bindingData with
     | OneWayData d ->
-        OneWay {
+        Some <| OneWay {
           Get = measure name "get" d.Get }
     | OneWayLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
-        OneWayLazy {
+        Some <| OneWayLazy {
           Get = get
           Map = map
           Equals = measure2 name "equals" d.Equals
@@ -221,7 +221,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if valuesById.ContainsKey id
           then logInvalidGetId id (valuesById.[id]) value
           else valuesById.Add(id, value)
-        OneWaySeq {
+        Some <| OneWaySeq {
           Get = get
           Map = map
           Equals = measure2 name "equals" d.Equals
@@ -229,12 +229,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ItemEquals = measure2 name "itemEquals" d.ItemEquals
           Values = values }
     | TwoWayData d ->
-        TwoWay {
+        Some <| TwoWay {
           Get = measure name "get" d.Get
           Set = measure2 name "set" d.Set
           Dispatch = d.WrapDispatch dispatch }
     | TwoWayValidateData d ->
-        TwoWayValidate {
+        Some <| TwoWayValidate {
           Get = measure name "get" d.Get
           Set = measure2 name "set" d.Set
           Validate = measure name "validate" d.Validate
@@ -245,7 +245,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let dispatch' = d.WrapDispatch dispatch
         let execute _ = exec currentModel |> ValueOption.iter dispatch'
         let canExecute _ = canExec currentModel
-        Cmd {
+        Some <| Cmd {
           Cmd = Command(execute, canExecute, false)
           CanExec = canExec }
     | CmdParamData d ->
@@ -254,14 +254,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let dispatch' = d.WrapDispatch dispatch
         let execute param = exec param currentModel |> ValueOption.iter dispatch'
         let canExecute param = canExec param currentModel
-        CmdParam <| Command(execute, canExecute, d.AutoRequery)
+        Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
     | SubModelData d ->
         let getModel = measure name "getSubModel" d.GetModel
         let getBindings = measure name "bindings" d.GetBindings
         let toMsg = measure name "toMsg" d.ToMsg
         match getModel initialModel with
         | ValueNone ->
-            SubModel {
+            Some <| SubModel {
               GetModel = getModel
               GetBindings = getBindings
               ToMsg = toMsg
@@ -270,7 +270,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ValueSome m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
-            SubModel {
+            Some <| SubModel {
               GetModel = getModel
               GetBindings = getBindings
               ToMsg = toMsg
@@ -283,7 +283,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let onCloseRequested = fun () -> d.OnCloseRequested |> ValueOption.iter dispatch
         match getState initialModel with
         | WindowState.Closed ->
-            SubModelWin {
+            Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
               ToMsg = toMsg
@@ -303,7 +303,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             showNewWindow
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Hidden
-            SubModelWin {
+            Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
               ToMsg = toMsg
@@ -323,7 +323,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             showNewWindow
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Visible
-            SubModelWin {
+            Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
               ToMsg = toMsg
@@ -352,7 +352,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if modelsById.ContainsKey id
           then logInvalidGetId id (modelsById.[id]) model
           else modelsById.Add(id, model)
-        SubModelSeq {
+        Some <| SubModelSeq {
           GetModels = getModels
           GetId = getId
           GetBindings = getBindings
@@ -361,13 +361,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSelectedItemData d ->
         match initializedBindingsByName.TryGetValue d.SubModelSeqBindingName with
         | true, SubModelSeq b ->
-          SubModelSelectedItem {
+          Some <| SubModelSelectedItem {
             Get = measure name "get" d.Get
             Set = measure2 name "set" d.Set
             SubModelSeqBinding = b
             Dispatch = d.WrapDispatch dispatch
             Selected = ref ValueNone }
-        | _ -> failwithf "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
+        | _ ->
+          log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
+          None
 
   let setInitialError name = function
     | TwoWayValidate { Validate = validate } ->
@@ -381,10 +383,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let sortedBindings = bindings |> List.sortWith BindingData.subModelSelectedItemLast
     for b in sortedBindings do
-      if dict.ContainsKey b.Name then failwithf "Binding name '%s' is duplicated" b.Name
-      let binding = initializeBinding b.Name b.Data dict
-      dict.Add(b.Name, binding)
-      setInitialError b.Name binding
+      if dict.ContainsKey b.Name then
+        log "Binding name '%s' is duplicated. Only the first occurance will be used." b.Name
+      else
+        initializeBinding b.Name b.Data dict
+        |> Option.iter (fun binding ->
+          dict.Add(b.Name, binding)
+          setInitialError b.Name binding)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   let getSelectedSubModel model vms getSelectedId getSubModelId =

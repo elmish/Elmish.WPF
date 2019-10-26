@@ -295,19 +295,6 @@ module Helpers =
 
 
 
-module General =
-
-
-  [<Fact>]
-  let ``throws during instantiation if two bindings have the same name`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m = GenX.auto<int>
-      raises<exn> <@ TestVm(m, [oneWay name id; oneWay name id]) @>
-  }
-
-
-
 module OneWay =
 
 
