@@ -70,7 +70,7 @@ and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
   GetId: 'bindingModel -> 'id
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'id * 'bindingMsg -> 'msg
-  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
+  Vms: EnhancedObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
@@ -366,7 +366,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                let chain = getPropChainForItem name (getId m |> string)
                ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
-          |> ObservableCollection
+          |> EnhancedObservableCollection
         let modelsById = Dictionary<_,_>(vms.Count)
         for model in vms |> Seq.map (fun vm -> vm.CurrentModel) do
           let id = getId model
@@ -594,11 +594,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if b.Vms.Count <> 0 && newSubModels.Length = 0
           then b.Vms.Clear ()
           else
-            for i in b.Vms.Count - 1..-1..0 do
-              let oldId = b.GetId b.Vms.[i].CurrentModel
-              if oldId |> newIdxSubModelPairsById.ContainsKey |> not then
-                let (oldIdx, _) = oldIdxSubViewModelPairsById.[oldId]
-                b.Vms.RemoveAt oldIdx
+            let predicate (vm: ViewModel<_,_>) =
+              let oldId = b.GetId vm.CurrentModel
+              if newIdxSubModelPairsById.ContainsKey oldId
+              then None
+              else oldIdxSubViewModelPairsById.[oldId] |> fst |> Some
+            b.Vms.RemoveAll predicate
           
           // Add new models that don't currently exist
           let create (Kvp (id, (_, m))) =
