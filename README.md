@@ -35,9 +35,10 @@ Thanks to JetBrains for sponsoring Elmish.WPF with OSS licenses!
 Recommended resources
 ---------------------
 
-* The [Elmish docs site](https://elmish.github.io/elmish) explains the general Elm architecture and principles.
+* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex bindings and optimizations.
+* The [Elmish docs site](https://elmish.github.io/elmish) also explains the general MVU architecture and principles.
 * The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
-* Elm resources may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings.
+* Elm resources may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings. See the [tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) for details.
   * [Official Elm guide](https://guide.elm-lang.org)
   * Two talks: [Summarising Elm scaling strategy](https://dev.to/elmupdate/summarising-elm-scaling-strategy-1bjn)
   * Reddit: [Resources regarding scaling Elm apps](https://www.reddit.com/r/elm/comments/65s0g4/resources_regarding_scaling_elm_apps/)
@@ -168,7 +169,10 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
 9. Profit! :)
 
-For more complicated examples and other `Binding` functions, see the [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
+Further resources:
+
+* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) provides information on general MVU/Elmish concepts and how they apply to Elmish.WPF, as well as the various Elmish.WPF bindings.
+* The [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) are complete, working mini-apps demonstrating selected aspects of Elmish.WPF.
 
 FAQ
 ---
