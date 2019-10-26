@@ -22,11 +22,12 @@ Table of contents
   + [Update](#update)
   + [View in standard MVU (not Elmish.WPF)](#view-in-standard-mvu--not-elmishwpf-)
   + [View in Elmish.WPF](#view-in-elmishwpf)
-  + [Commands](#commands)
+  + [Commands (and subscriptions)](#commands--and-subscriptions-)
 * [Some MVU tips for beginners](#some-mvu-tips-for-beginners)
   + [Normalize your model; use IDs instead of duplicating entities](#normalize-your-model--use-ids-instead-of-duplicating-entities)
   + [Child components and scaling](#child-components-and-scaling)
   + [Optimize easily with memoization](#optimize-easily-with-memoization)
+* [Getting started with Elmish.WPF](#getting-started-with-elmishwpf)
 * [The Elmish.WPF bindings](#the-elmishwpf-bindings)
   + [One-way bindings](#one-way-bindings)
     - [Binding to option-wrapped values](#binding-to-option-wrapped-values)
@@ -48,7 +49,8 @@ Table of contents
     - [`oneWaySeq`](#-onewayseq-)
   + [Lazy bindings](#lazy-bindings)
   + [Wrapping dispatch (debouncing/throttling etc.)](#wrapping-dispatch--debouncing-throttling-etc-)
-+ [Additional resources](#additional resources)
+* [Additional resources](#additional-resources)
+
 -----------------------------------------
 
 The MVU (Elm/Elmish) architecture
