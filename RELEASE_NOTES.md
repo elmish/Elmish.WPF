@@ -1,3 +1,7 @@
+#### 3.5.2
+
+* Improved error handling when collection bindings contain duplicates
+
 #### 3.5.1
 
 * Improve performance of `Binding.oneWaySeq`, `Binding.oneWaySeqLazy`, and `Binding.subModelSeq`
