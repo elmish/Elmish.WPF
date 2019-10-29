@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
-    Title="EventBindings" Height="240" Width="400"
+    Title="EventBindings" Height="450" Width="400"
     WindowStartupLocation="CenterScreen">
   <StackPanel Margin="15" HorizontalAlignment="Center">
     <TextBlock Text="Switch focus between these two inputs." Margin="0,0,0,10" TextAlignment="Center" />
@@ -47,5 +47,15 @@
         <local:FocusWhenVisibleBehavior />
       </i:Interaction.Behaviors>
     </TextBox>
+    <Separator Margin="0,16,0,16"/>
+    <TextBlock Text="MouseEventArgs given to command as parameter when the MoveMouse event is triggered inside the ellipse." TextWrapping="Wrap"/>
+    <TextBlock Text="{Binding MousePosition, StringFormat='Mouse Position is {0}'}" Margin="0,16,0,16"/>
+    <Ellipse Fill="LightGray" Stroke="Black" Height="100" Width="300">
+      <i:Interaction.Triggers>
+        <i:EventTrigger EventName="MouseMove">
+          <i:InvokeCommandAction PassEventArgsToCommand="True" Command="{Binding MouseMoveCommand}" />
+        </i:EventTrigger>
+      </i:Interaction.Triggers>
+    </Ellipse>
   </StackPanel>
 </Window>

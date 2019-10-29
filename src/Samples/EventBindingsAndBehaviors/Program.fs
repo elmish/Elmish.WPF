@@ -4,13 +4,17 @@ open System
 open Elmish
 open Elmish.WPF
 open System.Windows
+open System.Windows.Input
 
+
+type Position = { X: int; Y: int }
 
 type Model =
   { Msg1: string
     Msg2: string
     ButtonText: string
-    Visibility: Visibility }
+    Visibility: Visibility
+    MousePosition: Position }
 
 let visibleButtonText = "Hide text box"
 let hiddenButonText = "Show text box"
@@ -19,7 +23,8 @@ let init () =
   { Msg1 = ""
     Msg2 = ""
     ButtonText = visibleButtonText
-    Visibility = Visibility.Visible }
+    Visibility = Visibility.Visible
+    MousePosition = { X = 0; Y = 0 } }
 
 type Msg =
   | GotFocus1
@@ -27,6 +32,7 @@ type Msg =
   | LostFocus1
   | LostFocus2
   | ToggleVisibility
+  | NewMousePosition of Position
 
 let update msg m =
   match msg with
@@ -38,7 +44,14 @@ let update msg m =
     if m.Visibility = Visibility.Visible
     then { m with Visibility = Visibility.Hidden; ButtonText = hiddenButonText }
     else { m with Visibility = Visibility.Visible; ButtonText = visibleButtonText }
+  | NewMousePosition p -> { m with MousePosition = p }
 
+
+let paramToNewMousePositionMsg (p: obj) =
+  let args = p :?> MouseEventArgs
+  let e = args.OriginalSource :?> UIElement;
+  let point = args.GetPosition e
+  NewMousePosition { X = int point.X; Y = int point.Y }
 
 let bindings () : Binding<Model, Msg> list = [
   "Msg1" |> Binding.oneWay (fun m -> m.Msg1)
@@ -50,6 +63,8 @@ let bindings () : Binding<Model, Msg> list = [
   "ToggleVisibility" |> Binding.cmd ToggleVisibility
   "ButtonText" |> Binding.oneWay (fun m -> m.ButtonText)
   "TextBoxVisibility" |> Binding.oneWay (fun m -> m.Visibility)
+  "MouseMoveCommand" |> Binding.cmdParam paramToNewMousePositionMsg
+  "MousePosition" |> Binding.oneWay (fun m -> sprintf "%dx%d" m.MousePosition.X m.MousePosition.Y)
 ]
 
 
