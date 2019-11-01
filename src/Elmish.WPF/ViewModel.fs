@@ -152,6 +152,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log "[%s] ErrorsChanged \"%s\"" propNameChain propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
+  let updateValidationError model name = function
+    | TwoWayValidate { Validate = validate } ->
+        match validate model with
+        | ValueNone -> removeError name
+        | ValueSome error -> setError error name
+    | _ -> ()
+
   let measure name callName f =
     if not config.Measure then f
     else
@@ -371,13 +378,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
           None
 
-  let setInitialError name = function
-    | TwoWayValidate { Validate = validate } ->
-        match validate initialModel with
-        | ValueNone -> ()
-        | ValueSome error -> setError error name
-    | _ -> ()
-
   let bindings =
     log "[%s] Initializing bindings" propNameChain
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
@@ -389,7 +389,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         initializeBinding b.Name b.Data dict
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
-          setInitialError b.Name binding)
+          updateValidationError initialModel b.Name binding)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   let getSelectedSubModel model vms getSelectedId getSubModelId =
@@ -635,15 +635,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | CmdParam cmd ->
         Some cmd
 
-  /// Updates the validation status for a binding.
-  let updateValidationStatus name binding =
-    match binding with
-    | TwoWayValidate { Validate = validate } ->
-        match validate currentModel with
-        | ValueNone -> removeError name
-        | ValueSome err -> setError err name
-    | _ -> ()
-
   member __.CurrentModel : 'model = currentModel
 
   member __.UpdateModel (newModel: 'model) : unit =
@@ -660,7 +651,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     propsToNotify |> List.iter notifyPropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
     for Kvp (name, binding) in bindings do
-      updateValidationStatus name binding
+      updateValidationError currentModel name binding
 
   override __.TryGetMember (binder, result) =
     log "[%s] TryGetMember %s" propNameChain binder.Name
