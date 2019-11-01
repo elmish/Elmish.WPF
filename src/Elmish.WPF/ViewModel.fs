@@ -32,15 +32,13 @@ type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
 
 type internal TwoWayBinding<'model, 'msg, 'a> = {
   Get: 'model -> 'a
-  Set: 'a -> 'model -> 'msg
-  Dispatch: Dispatch<'msg>
+  Set: 'a -> 'model -> unit
 }
 
 type internal TwoWayValidateBinding<'model, 'msg, 'a> = {
   Get: 'model -> 'a
-  Set: 'a -> 'model -> 'msg
+  Set: 'a -> 'model -> unit
   Validate: 'model -> string voption
-  Dispatch: Dispatch<'msg>
 }
 
 type internal CmdBinding<'model, 'msg> = {
@@ -78,9 +76,8 @@ and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
 
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   Get: 'model -> 'id voption
-  Set: 'id voption -> 'model -> 'msg
+  Set: 'id voption -> 'model -> unit
   SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
-  Dispatch: Dispatch<'msg>
   Selected: ViewModel<'bindingModel, 'bindingMsg> voption voption ref
 }
 
@@ -236,16 +233,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ItemEquals = measure2 name "itemEquals" d.ItemEquals
           Values = values }
     | TwoWayData d ->
+        let set = measure2 name "set" d.Set
+        let dispatch' = d.WrapDispatch dispatch
         Some <| TwoWay {
           Get = measure name "get" d.Get
-          Set = measure2 name "set" d.Set
-          Dispatch = d.WrapDispatch dispatch }
+          Set = fun obj m -> set obj m |> dispatch' }
     | TwoWayValidateData d ->
+        let set = measure2 name "set" d.Set
+        let dispatch' = d.WrapDispatch dispatch
         Some <| TwoWayValidate {
           Get = measure name "get" d.Get
-          Set = measure2 name "set" d.Set
-          Validate = measure name "validate" d.Validate
-          Dispatch = d.WrapDispatch dispatch }
+          Set = fun obj m -> set obj m |> dispatch'
+          Validate = measure name "validate" d.Validate }
     | CmdData d ->
         let exec = measure name "exec" d.Exec
         let canExec = measure name "canExec" d.CanExec
@@ -368,11 +367,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSelectedItemData d ->
         match initializedBindingsByName.TryGetValue d.SubModelSeqBindingName with
         | true, SubModelSeq b ->
+          let set = measure2 name "set" d.Set
+          let dispatch' = d.WrapDispatch dispatch
           Some <| SubModelSelectedItem {
             Get = measure name "get" d.Get
-            Set = measure2 name "set" d.Set
+            Set = fun obj m -> set obj m |> dispatch'
             SubModelSeqBinding = b
-            Dispatch = d.WrapDispatch dispatch
             Selected = ref ValueNone }
         | _ ->
           log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
@@ -697,16 +697,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         match binding with
-        | TwoWay { Set = set; Dispatch = dispatch }
-        | TwoWayValidate { Set = set; Dispatch = dispatch } ->
-            set value currentModel |> dispatch
+        | TwoWay { Set = set }
+        | TwoWayValidate { Set = set } ->
+            set value currentModel
             true
         | SubModelSelectedItem b ->
             let value =
               (value :?> ViewModel<obj, obj>)
               |> ValueOption.ofObj
               |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
-            b.Set value currentModel |> b.Dispatch
+            b.Set value currentModel
             true
         | OneWay _
         | OneWayLazy _
