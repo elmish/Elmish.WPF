@@ -153,7 +153,7 @@ module internal BindingData =
   let boxWrapDispatch (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>) : Dispatch<obj> -> Dispatch<obj> =
     unboxDispatch >> strongWrapDispatch >> boxDispatch
 
-  let box : BindingData<'model, 'msg> -> BindingData<obj, obj> = function
+  let boxBindingData : BindingData<'model, 'msg> -> BindingData<obj, obj> = function
     | OneWayData d -> OneWayData {
         Get = unbox >> d.Get
       }
@@ -230,7 +230,7 @@ module internal Helpers =
 
   let boxBinding binding =
     { Name = binding.Name
-      Data = BindingData.box binding.Data }
+      Data = BindingData.boxBindingData binding.Data }
 
 
 
