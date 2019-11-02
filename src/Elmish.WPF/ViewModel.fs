@@ -154,7 +154,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match validate model with
         | ValueNone -> removeError name
         | ValueSome error -> setError error name
-    | _ -> ()
+    | OneWay _
+    | OneWayLazy _
+    | OneWaySeq _
+    | TwoWay _
+    | Cmd _
+    | CmdParam _
+    | SubModel _
+    | SubModelWin _
+    | SubModelSeq _
+    | SubModelSelectedItem _ -> ()
 
   let measure name callName f =
     if not config.Measure then f
@@ -635,6 +644,55 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | CmdParam cmd ->
         Some cmd
 
+  let tryGetMember model = function
+    | OneWay { Get = get }
+    | TwoWay { Get = get }
+    | TwoWayValidate { Get = get } ->
+        get model
+    | OneWayLazy { CurrentVal = value } ->
+        (!value).Value
+    | OneWaySeq { Values = vals } ->
+        box vals
+    | Cmd { Cmd = cmd }
+    | CmdParam cmd ->
+        box cmd
+    | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
+    | SubModelWin { VmWinState = vm } ->
+        match !vm with
+        | WindowState.Closed -> null
+        | WindowState.Hidden vm | WindowState.Visible vm -> box vm
+    | SubModelSeq { Vms = vms } -> box vms
+    | SubModelSelectedItem b ->
+        match !b.Selected with
+        | ValueSome x -> x |> ValueOption.toObj |> box
+        | ValueNone ->
+            // No computed value, must perform initial computation
+            let selected = getSelectedSubModel model b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+            b.Selected := ValueSome selected
+            selected |> ValueOption.toObj |> box
+
+  let trySetMember model (value: obj) = function
+    | TwoWay { Set = set }
+    | TwoWayValidate { Set = set } ->
+        set value model
+        true
+    | SubModelSelectedItem b ->
+        let value =
+          (value :?> ViewModel<obj, obj>)
+          |> ValueOption.ofObj
+          |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
+        b.Set value model
+        true
+    | OneWay _
+    | OneWayLazy _
+    | OneWaySeq _
+    | Cmd _
+    | CmdParam _
+    | SubModel _
+    | SubModelWin _
+    | SubModelSeq _ ->
+        false
+
   member __.CurrentModel : 'model = currentModel
 
   member __.UpdateModel (newModel: 'model) : unit =
@@ -660,33 +718,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         log "[%s] TryGetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
         false
     | true, binding ->
-        result <-
-          match binding with
-          | OneWay { Get = get }
-          | TwoWay { Get = get }
-          | TwoWayValidate { Get = get } ->
-              get currentModel
-          | OneWayLazy { CurrentVal = value } ->
-              (!value).Value
-          | OneWaySeq { Values = vals } ->
-              box vals
-          | Cmd { Cmd = cmd }
-          | CmdParam cmd ->
-              box cmd
-          | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
-          | SubModelWin { VmWinState = vm } ->
-              match !vm with
-              | WindowState.Closed -> null
-              | WindowState.Hidden vm | WindowState.Visible vm -> box vm
-          | SubModelSeq { Vms = vms } -> box vms
-          | SubModelSelectedItem b ->
-              match !b.Selected with
-              | ValueSome x -> x |> ValueOption.toObj |> box
-              | ValueNone ->
-                  // No computed value, must perform initial computation
-                  let selected = getSelectedSubModel currentModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
-                  b.Selected := ValueSome selected
-                  selected |> ValueOption.toObj |> box
+        result <- tryGetMember currentModel binding
         true
 
   override __.TrySetMember (binder, value) =
@@ -696,28 +728,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         log "[%s] TrySetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
         false
     | true, binding ->
-        match binding with
-        | TwoWay { Set = set }
-        | TwoWayValidate { Set = set } ->
-            set value currentModel
-            true
-        | SubModelSelectedItem b ->
-            let value =
-              (value :?> ViewModel<obj, obj>)
-              |> ValueOption.ofObj
-              |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
-            b.Set value currentModel
-            true
-        | OneWay _
-        | OneWayLazy _
-        | OneWaySeq _
-        | Cmd _
-        | CmdParam _
-        | SubModel _
-        | SubModelWin _
-        | SubModelSeq _ ->
-            log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name
-            false
+        let success = trySetMember currentModel value binding
+        if not success then
+          log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name
+        success
+
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
