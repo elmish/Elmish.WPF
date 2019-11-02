@@ -11,8 +11,6 @@ This tutorial also assumes some knowledge of WPF and MVVM.
 
 Suggestions for improvements are welcome. For large changes, please open an issue. For small changes (e.g. typos), simply submit a PR.
 
----
-
 Table of contents
 -----------------
 
@@ -50,8 +48,6 @@ Table of contents
   + [Lazy bindings](#lazy-bindings)
   + [Wrapping dispatch (debouncing/throttling etc.)](#wrapping-dispatch--debouncing-throttling-etc-)
 * [Additional resources](#additional-resources)
-
------------------------------------------
 
 The MVU (Elm/Elmish) architecture
 ---------------------------------
