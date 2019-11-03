@@ -144,79 +144,91 @@ module internal BindingData =
     subModelSelectedItemDataLast a b
 
 
-  let boxDispatch (strongDispatch: Dispatch<'msg>) : Dispatch<obj> =
-    unbox<'msg> >> strongDispatch
+  let boxDispatch
+      (unboxMsg: 'boxedMsg -> 'msg)
+      (strongDispatch: Dispatch<'msg>) : Dispatch<'boxedMsg> =
+    unboxMsg >> strongDispatch
 
-  let unboxDispatch (weakDispatch: Dispatch<obj>) : Dispatch<'msg> =
-    box >> weakDispatch
+  let unboxDispatch
+      (boxMsg: 'msg -> 'boxedMsg)
+      (weakDispatch: Dispatch<'boxedMsg>) : Dispatch<'msg> =
+    boxMsg >> weakDispatch
 
-  let boxWrapDispatch (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>) : Dispatch<obj> -> Dispatch<obj> =
-    unboxDispatch >> strongWrapDispatch >> boxDispatch
+  let boxWrapDispatch
+      (unboxMsg: 'boxedMsg -> 'msg)
+      (boxMsg: 'msg -> 'boxedMsg)
+      (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : Dispatch<'boxedMsg> -> Dispatch<'boxedMsg> =
+    (unboxDispatch boxMsg) >> strongWrapDispatch >> (boxDispatch unboxMsg)
 
-  let boxBindingData : BindingData<'model, 'msg> -> BindingData<obj, obj> = function
+  let boxBindingData
+      (unboxModel: 'boxedModel -> 'model)
+      (unboxMsg: 'boxedMsg -> 'msg)
+      (boxMsg: 'msg -> 'boxedMsg)
+      : BindingData<'model, 'msg> -> BindingData<'boxedModel, 'boxedMsg> = function
     | OneWayData d -> OneWayData {
-        Get = unbox >> d.Get
+        Get = unboxModel >> d.Get
       }
     | OneWayLazyData d -> OneWayLazyData {
-        Get = unbox >> d.Get
+        Get = unboxModel >> d.Get
         Map = d.Map
         Equals = d.Equals
       }
     | OneWaySeqLazyData d -> OneWaySeqLazyData {
-        Get = unbox >> d.Get
+        Get = unboxModel >> d.Get
         Map = d.Map
         Equals = d.Equals
         GetId = d.GetId
         ItemEquals = d.ItemEquals
       }
     | TwoWayData d -> TwoWayData {
-        Get = unbox >> d.Get
-        Set = fun v m -> d.Set v (unbox m) |> box
-        WrapDispatch = boxWrapDispatch d.WrapDispatch
+        Get = unboxModel >> d.Get
+        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
+        WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | TwoWayValidateData d -> TwoWayValidateData {
-        Get = unbox >> d.Get
-        Set = fun v m -> d.Set v (unbox m) |> box
+        Get = unboxModel >> d.Get
+        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
         Validate = unbox >> d.Validate
-        WrapDispatch = boxWrapDispatch d.WrapDispatch
+        WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | CmdData d -> CmdData {
-        Exec = unbox >> d.Exec >> ValueOption.map box
-        CanExec = unbox >> d.CanExec
-        WrapDispatch = boxWrapDispatch d.WrapDispatch
+        Exec = unboxModel >> d.Exec >> ValueOption.map boxMsg
+        CanExec = unboxModel >> d.CanExec
+        WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | CmdParamData d -> CmdParamData {
-        Exec = fun p m -> d.Exec p (unbox m) |> ValueOption.map box
-        CanExec = fun p m -> d.CanExec p (unbox m)
+        Exec = fun p m -> d.Exec p (unboxModel m) |> ValueOption.map boxMsg
+        CanExec = fun p m -> d.CanExec p (unboxModel m)
         AutoRequery = d.AutoRequery
-        WrapDispatch = boxWrapDispatch d.WrapDispatch
+        WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | SubModelData d -> SubModelData {
-        GetModel = unbox >> d.GetModel
+        GetModel = unboxModel >> d.GetModel
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> box
+        ToMsg = d.ToMsg >> boxMsg
         Sticky = d.Sticky
       }
     | SubModelWinData d -> SubModelWinData {
-        GetState = unbox >> d.GetState
+        GetState = unboxModel >> d.GetState
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> box
+        ToMsg = d.ToMsg >> boxMsg
         GetWindow =
-          fun (m: obj) (disp: Dispatch<obj>) -> d.GetWindow (unbox m) (unboxDispatch disp)
+          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow (unboxModel m) (unboxDispatch boxMsg disp)
         IsModal = d.IsModal
-        OnCloseRequested = d.OnCloseRequested |> ValueOption.map box
+        OnCloseRequested = d.OnCloseRequested |> ValueOption.map boxMsg
       }
     | SubModelSeqData d -> SubModelSeqData {
-        GetModels = unbox >> d.GetModels
+        GetModels = unboxModel >> d.GetModels
         GetId = d.GetId
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> box
+        ToMsg = d.ToMsg >> boxMsg
       }
     | SubModelSelectedItemData d -> SubModelSelectedItemData {
-        Get = unbox >> d.Get
-        Set = fun v m -> d.Set v (unbox m) |> box
+        Get = unboxModel >> d.Get
+        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
         SubModelSeqBindingName = d.SubModelSeqBindingName
-        WrapDispatch = boxWrapDispatch d.WrapDispatch
+        WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
 
 
@@ -230,7 +242,7 @@ module internal Helpers =
 
   let boxBinding binding =
     { Name = binding.Name
-      Data = BindingData.boxBindingData binding.Data }
+      Data = BindingData.boxBindingData unbox unbox box binding.Data }
 
 
 
