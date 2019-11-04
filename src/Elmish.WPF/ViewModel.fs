@@ -209,9 +209,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     )
 
   let getSelectedSubViewModel model vms getSelectedId getSubModelId =
+    let selectedId = getSelectedId model
     vms
     |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-      getSelectedId model = ValueSome (getSubModelId vm.CurrentModel))
+      selectedId = ValueSome (getSubModelId vm.CurrentModel))
     |> ValueOption.ofOption
 
   let initializeBinding name bindingData (initializedBindingsByName: Dictionary<string, VmBinding<'model, 'msg>>) =
