@@ -401,7 +401,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           updateValidationError initialModel b.Name binding)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
-  let getSelectedSubModel model vms getSelectedId getSubModelId =
+  let getSelectedSubViewModel model vms getSelectedId getSubModelId =
       vms
       |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
           getSelectedId model = ValueSome (getSubModelId vm.CurrentModel))
@@ -618,7 +618,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
-        let v = getSelectedSubModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+        let v = getSelectedSubViewModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
         log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> b.SubModelSeqBinding.GetId v.CurrentModel))
         b.Selected := ValueSome v
         true
@@ -667,7 +667,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ValueSome x -> x |> ValueOption.toObj |> box
         | ValueNone ->
             // No computed value, must perform initial computation
-            let selected = getSelectedSubModel model b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+            let selected = getSelectedSubViewModel model b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
             b.Selected := ValueSome selected
             selected |> ValueOption.toObj |> box
 
