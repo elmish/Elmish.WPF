@@ -623,7 +623,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.Selected := ValueSome selected
           true
         match !b.Selected with
-        | ValueNone -> false // never initialized, so no need to notify changed
+        | ValueNone -> false  // never initialized, so no need to notify changed
         | ValueSome oldSelected ->
             let newSelected = getSelectedSubViewModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
             match oldSelected, newSelected with
