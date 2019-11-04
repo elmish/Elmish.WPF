@@ -618,10 +618,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
-        let v = getSelectedSubViewModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
-        log "[%s] Setting selected VM to %A" propNameChain (v |> ValueOption.map (fun v -> b.SubModelSeqBinding.GetId v.CurrentModel))
-        b.Selected := ValueSome v
-        true
+        let updateSelected (selected: ViewModel<obj, obj> voption) =
+          log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+          b.Selected := ValueSome selected
+          true
+        match !b.Selected with
+        | ValueNone -> false  // never initialized, so no need to notify changed
+        | ValueSome oldSelected ->
+            let newSelected = getSelectedSubViewModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+            match oldSelected, newSelected with
+            | ValueNone, ValueNone -> false
+            | ValueSome oldVm, ValueSome newVm ->
+                if refEq oldVm newVm then false
+                else updateSelected newSelected
+            | _ -> updateSelected newSelected
+                
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.

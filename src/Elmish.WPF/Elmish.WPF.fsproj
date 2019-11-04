@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop" >
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.0;net461</TargetFrameworks>
@@ -30,9 +30,9 @@
     <Compile Include="InternalTypes.fs" />
     <Compile Include="Config.fs" />
     <Compile Include="Binding.fs" />
+    <Compile Include="Utils.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="ViewModelModule.fs" />
-    <Compile Include="Utils.fs" />
     <Compile Include="Cmd.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
