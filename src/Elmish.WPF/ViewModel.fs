@@ -208,7 +208,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       } |> Async.StartImmediate
     )
 
-
+  let getSelectedSubViewModel model vms getSelectedId getSubModelId =
+    vms
+    |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
+      getSelectedId model = ValueSome (getSubModelId vm.CurrentModel))
+    |> ValueOption.ofOption
 
   let initializeBinding name bindingData (initializedBindingsByName: Dictionary<string, VmBinding<'model, 'msg>>) =
     match bindingData with
@@ -400,12 +404,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           dict.Add(b.Name, binding)
           updateValidationError initialModel b.Name binding)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
-
-  let getSelectedSubViewModel model vms getSelectedId getSubModelId =
-      vms
-      |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-          getSelectedId model = ValueSome (getSubModelId vm.CurrentModel))
-      |> ValueOption.ofOption
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
