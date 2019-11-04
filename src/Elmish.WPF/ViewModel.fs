@@ -677,11 +677,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         set value model
         true
     | SubModelSelectedItem b ->
-        let value =
+        let id =
           (value :?> ViewModel<obj, obj>)
           |> ValueOption.ofObj
           |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
-        b.Set value model
+        b.Set id model
         true
     | OneWay _
     | OneWayLazy _
