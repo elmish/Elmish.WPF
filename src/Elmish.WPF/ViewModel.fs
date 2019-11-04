@@ -78,7 +78,7 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> unit
   SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
-  Selected: ViewModel<'bindingModel, 'bindingMsg> voption voption ref
+  Selected: Lazy<ViewModel<'bindingModel, 'bindingMsg> voption> ref
 }
 
 
@@ -381,13 +381,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSelectedItemData d ->
         match initializedBindingsByName.TryGetValue d.SubModelSeqBindingName with
         | true, SubModelSeq b ->
+          let get = measure name "get" d.Get
           let set = measure2 name "set" d.Set
           let dispatch' = d.WrapDispatch dispatch
           Some <| SubModelSelectedItem {
-            Get = measure name "get" d.Get
+            Get = get
             Set = fun obj m -> set obj m |> dispatch'
             SubModelSeqBinding = b
-            Selected = ref ValueNone }
+            Selected = ref <| lazy (getSelectedSubViewModel b.Vms b.GetId get initialModel) }
         | _ ->
           log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
           None
@@ -617,21 +618,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
-        let updateSelected (selected: ViewModel<obj, obj> voption) =
-          log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
-          b.Selected := ValueSome selected
+        if b.Get newModel = b.Get currentModel then false
+        else
+          b.Selected := lazy (
+            let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get newModel
+            log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+            selected)
           true
-        match !b.Selected with
-        | ValueNone -> false  // never initialized, so no need to notify changed
-        | ValueSome oldSelected ->
-            let newSelected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get newModel
-            match oldSelected, newSelected with
-            | ValueNone, ValueNone -> false
-            | ValueSome oldVm, ValueSome newVm ->
-                if refEq oldVm newVm then false
-                else updateSelected newSelected
-            | _ -> updateSelected newSelected
-                
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
@@ -673,13 +666,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | WindowState.Hidden vm | WindowState.Visible vm -> box vm
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        match !b.Selected with
-        | ValueSome x -> x |> ValueOption.toObj |> box
-        | ValueNone ->
-            // No computed value, must perform initial computation
-            let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get model
-            b.Selected := ValueSome selected
-            selected |> ValueOption.toObj |> box
+        (!b.Selected).Value |> ValueOption.toObj |> box
 
   let trySetMember model (value: obj) = function
     | TwoWay { Set = set }
