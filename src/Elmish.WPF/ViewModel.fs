@@ -208,7 +208,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       } |> Async.StartImmediate
     )
 
-  let getSelectedSubViewModel model vms getSelectedId getSubModelId =
+  let getSelectedSubViewModel vms getSubModelId getSelectedId model =
     let selectedId = getSelectedId model
     vms
     |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
@@ -624,7 +624,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match !b.Selected with
         | ValueNone -> false  // never initialized, so no need to notify changed
         | ValueSome oldSelected ->
-            let newSelected = getSelectedSubViewModel newModel b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+            let newSelected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get newModel
             match oldSelected, newSelected with
             | ValueNone, ValueNone -> false
             | ValueSome oldVm, ValueSome newVm ->
@@ -677,7 +677,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ValueSome x -> x |> ValueOption.toObj |> box
         | ValueNone ->
             // No computed value, must perform initial computation
-            let selected = getSelectedSubViewModel model b.SubModelSeqBinding.Vms b.Get b.SubModelSeqBinding.GetId
+            let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get model
             b.Selected := ValueSome selected
             selected |> ValueOption.toObj |> box
 
