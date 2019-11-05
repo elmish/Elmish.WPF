@@ -215,7 +215,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       selectedId = ValueSome (getSubModelId vm.CurrentModel))
     |> ValueOption.ofOption
 
-  let initializeBinding name bindingData (initializedBindingsByName: Dictionary<string, VmBinding<'model, 'msg>>) =
+  let initializeBinding name bindingData getInitializedBindingByName =
     match bindingData with
     | OneWayData d ->
         Some <| OneWay {
@@ -379,8 +379,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ToMsg = toMsg
           Vms = vms }
     | SubModelSelectedItemData d ->
-        match initializedBindingsByName.TryGetValue d.SubModelSeqBindingName with
-        | true, SubModelSeq b ->
+        match getInitializedBindingByName d.SubModelSeqBindingName with
+        | Some (SubModelSeq b) ->
           let get = measure name "get" d.Get
           let set = measure2 name "set" d.Set
           let dispatch' = d.WrapDispatch dispatch
@@ -396,12 +396,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let bindings =
     log "[%s] Initializing bindings" propNameChain
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
+    let dictAsFunc name =
+      match dict.TryGetValue name with
+      | true, b -> Some b
+      | _ -> None
     let sortedBindings = bindings |> List.sortWith BindingData.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
         log "Binding name '%s' is duplicated. Only the first occurance will be used." b.Name
       else
-        initializeBinding b.Name b.Data dict
+        initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
           updateValidationError initialModel b.Name binding)
