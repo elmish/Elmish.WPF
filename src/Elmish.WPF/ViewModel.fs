@@ -591,44 +591,44 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           else oldSubViewModelIdxPairsById.Add(id, (oldIdx, vm))
 
         if newSubModelIdxPairsById.Count = newSubModels.Length && oldSubViewModelIdxPairsById.Count = b.Vms.Count then
-            // Update existing models
-            for Kvp (oldId, (_, vm)) in oldSubViewModelIdxPairsById do
-              match newSubModelIdxPairsById.TryGetValue oldId with
-              | true, (_, m) -> vm.UpdateModel m
-              | _ -> ()
+          // Update existing models
+          for Kvp (oldId, (_, vm)) in oldSubViewModelIdxPairsById do
+            match newSubModelIdxPairsById.TryGetValue oldId with
+            | true, (_, m) -> vm.UpdateModel m
+            | _ -> ()
 
-            // Remove old view models that no longer exist
-            if b.Vms.Count <> 0 && newSubModels.Length = 0
-            then
-              b.Vms |> Seq.iter (fun vm -> BindingManager.disposeBindings vm)
-              b.Vms.Clear ()
-            else
-              for i in b.Vms.Count - 1..-1..0 do
-                let oldId = b.GetId b.Vms.[i].CurrentModel
-                if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
-                  let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
-                  log "[%s] Removing model at %O" propNameChain oldId
-                  b.Vms.[oldIdx] |> BindingManager.disposeBindings
-                  b.Vms.RemoveAt oldIdx
+          // Remove old view models that no longer exist
+          if b.Vms.Count <> 0 && newSubModels.Length = 0
+          then
+            b.Vms |> Seq.iter (fun vm -> BindingManager.disposeBindings vm)
+            b.Vms.Clear ()
+          else
+            for i in b.Vms.Count - 1..-1..0 do
+              let oldId = b.GetId b.Vms.[i].CurrentModel
+              if oldId |> newSubModelIdxPairsById.ContainsKey |> not then
+                let (oldIdx, _) = oldSubViewModelIdxPairsById.[oldId]
+                log "[%s] Removing model at %O" propNameChain oldId
+                b.Vms.[oldIdx] |> BindingManager.disposeBindings
+                b.Vms.RemoveAt oldIdx
 
-            // Add new models that don't currently exist
-            let create (Kvp (id, (_, m))) =
-              let chain = getPropChainForItem bindingName (id |> string)
-              log "[%s] Adding model at %O" propNameChain id
-              ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
-            newSubModelIdxPairsById
-            |> Seq.filter (Kvp.key >> oldSubViewModelIdxPairsById.ContainsKey >> not)
-            |> Seq.map create
-            |> Seq.iter b.Vms.Add
+          // Add new models that don't currently exist
+          let create (Kvp (id, (_, m))) =
+            let chain = getPropChainForItem bindingName (id |> string)
+            log "[%s] Adding model at %O" propNameChain id
+            ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
+          newSubModelIdxPairsById
+          |> Seq.filter (Kvp.key >> oldSubViewModelIdxPairsById.ContainsKey >> not)
+          |> Seq.map create
+          |> Seq.iter b.Vms.Add
 
-            // Reorder according to new model list
-            for Kvp (newId, (newIdx, _)) in newSubModelIdxPairsById do
-              let oldIdx =
-                b.Vms
-                |> Seq.indexed
-                |> Seq.find (fun (_, vm) -> newId = b.GetId vm.CurrentModel)
-                |> fst
-              if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
+          // Reorder according to new model list
+          for Kvp (newId, (newIdx, _)) in newSubModelIdxPairsById do
+            let oldIdx =
+              b.Vms
+              |> Seq.indexed
+              |> Seq.find (fun (_, vm) -> newId = b.GetId vm.CurrentModel)
+              |> fst
+            if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
         if b.Get newModel = b.Get currentModel then false
