@@ -23,6 +23,7 @@ Table of contents
   + [Commands (and subscriptions)](#commands-and-subscriptions)
 * [Some MVU tips for beginners](#some-mvu-tips-for-beginners)
   + [Normalize your model; use IDs instead of duplicating entities](#normalize-your-model-use-ids-instead-of-duplicating-entities)
+  + [Use commands for anything impure](#use-commands-for-anything-impure)
   + [Child components and scaling](#child-components-and-scaling)
   + [Optimize easily with memoization](#optimize-easily-with-memoization)
 * [Getting started with Elmish.WPF](#getting-started-with-elmishwpf)
@@ -212,7 +213,7 @@ let timerTick (dispatch: Dispatch<Msg>) =
   timer.Start()
 ```
 
-The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` function. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
+The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
 
 In other words, you don’t call the impure functions yourself; the MVU library calls them for you. Furthermore, from the point of view of your model, everything happens asynchronously (in the sense that your app and update loop continues without waiting on a response, and reacts to the “response” message when it arrives).
 
@@ -256,6 +257,14 @@ type Model = {
 (You don’t have to use `list`; often it will make sense to have `Map<BookId, Book>` to easily and efficiently get a book by its ID.)
 
 This principle also extends to data in messages: If you have a choice between passing an entity ID and a complete entity object in a message, using an entity ID will usually be the better choice (even if it may not be immediately obvious).
+
+
+### Use commands for anything impure
+
+Keep the XAML (and any code-behind) focused on the view, keep `bindings` focused on bindings, and keep your model and `update`  pure. If you need to do anything impure, that's what `Command` is for, whether it's writing to disk, connecting to a DB, calling a web API, talking to actors, or anything else. All impure operations can be implemented using commands.
+
+Note that there's nothing stopping you from having mutable state outside your model. For example, if you have persistent connections (e.g. SignalR) that you need to start and stop during the lifetime of your app, you can define them elsewhere and use  them in commands from your `update`. If you need an unknown number of them, such as one connection per item in a list in your model, you can store them in a dictionary or similar, keyed by the item's ID. This allows you to create, dispose, and remove items according to the data in your model.
+
 
 ### Child components and scaling
 
