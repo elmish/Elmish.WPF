@@ -216,13 +216,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       } |> Async.StartImmediate
     )
 
-  let getSelectedSubViewModel vms getSubModelId getSelectedId model =
-    let selectedId = getSelectedId model
-    vms
-    |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-      selectedId = ValueSome (getSubModelId vm.CurrentModel))
-    |> ValueOption.ofOption
-
   let initializeBinding name bindingData getInitializedBindingByName =
     match bindingData with
     | OneWayData d ->
@@ -673,7 +666,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | WindowState.Hidden vm | WindowState.Visible vm -> box vm
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get model
+        let selectedId = b.Get model
+        let selected =
+          b.SubModelSeqBinding.Vms 
+          |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
+            selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
+          |> ValueOption.ofOption
         log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
         selected |> ValueOption.toObj |> box
     | Cached b ->
