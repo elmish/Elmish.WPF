@@ -81,6 +81,11 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
   Selected: Lazy<ViewModel<'bindingModel, 'bindingMsg> voption> ref
 }
 
+and internal CachedBinding<'model, 'msg, 'value> = {
+  Binding: VmBinding<'model, 'msg>
+  Cache: 'value option ref
+}
+
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
@@ -95,6 +100,7 @@ and internal VmBinding<'model, 'msg> =
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
+  | Cached of CachedBinding<'model, 'msg, obj>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -149,7 +155,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log "[%s] ErrorsChanged \"%s\"" propNameChain propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let updateValidationError model name = function
+  let rec updateValidationError model name = function
     | TwoWayValidate { Validate = validate } ->
         match validate model with
         | ValueNone -> removeError name
@@ -164,6 +170,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelWin _
     | SubModelSeq _
     | SubModelSelectedItem _ -> ()
+    | Cached b -> updateValidationError model name b.Binding
 
   let measure name callName f =
     if not config.Measure then f
@@ -413,8 +420,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
-  let updateValue bindingName newModel binding =
-    match binding with
+  let rec updateValue bindingName newModel = function
     | OneWay { Get = get }
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
@@ -629,11 +635,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
             selected)
           true
+    | Cached b ->
+        let valueChanged = updateValue bindingName newModel b.Binding
+        if valueChanged then
+          b.Cache := None
+        valueChanged
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
-  let getCmdIfCanExecChanged newModel binding =
-    match binding with
+  let rec getCmdIfCanExecChanged newModel = function
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -650,8 +660,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         else Some cmd
     | CmdParam cmd ->
         Some cmd
+    | Cached b -> getCmdIfCanExecChanged newModel b.Binding
 
-  let tryGetMember model = function
+  let rec tryGetMember model = function
     | OneWay { Get = get }
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
@@ -671,8 +682,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
         (!b.Selected).Value |> ValueOption.toObj |> box
+    | Cached b ->
+        match !b.Cache with
+        | Some v -> v
+        | None ->
+            let v = tryGetMember model b.Binding
+            b.Cache := Some v
+            v
 
-  let trySetMember model (value: obj) = function
+  let rec trySetMember model (value: obj) = function
     | TwoWay { Set = set }
     | TwoWayValidate { Set = set } ->
         set value model
@@ -684,6 +702,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
         b.Set id model
         true
+    | Cached b ->
+        let successful = trySetMember model value b.Binding
+        if successful then
+          b.Cache := None  // TODO #185: write test
+        successful
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
