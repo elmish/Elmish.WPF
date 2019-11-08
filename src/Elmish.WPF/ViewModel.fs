@@ -78,7 +78,6 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> unit
   SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
-  Selected: Lazy<ViewModel<'bindingModel, 'bindingMsg> voption> ref
 }
 
 and internal CachedBinding<'model, 'msg, 'value> = {
@@ -119,6 +118,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Error messages keyed by property name.
   let errors = Dictionary<string, string>()
+
+
+  let withCaching b = Cached { Binding = b; Cache = ref None }
 
 
   let log fmt =
@@ -391,11 +393,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let get = measure name "get" d.Get
           let set = measure2 name "set" d.Set
           let dispatch' = d.WrapDispatch dispatch
-          Some <| SubModelSelectedItem {
+          SubModelSelectedItem {
             Get = get
             Set = fun obj m -> set obj m |> dispatch'
             SubModelSeqBinding = b
-            Selected = ref <| lazy (getSelectedSubViewModel b.Vms b.GetId get initialModel) }
+          } |> withCaching |> Some
         | _ ->
           log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
           None
@@ -628,13 +630,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
-        if b.Get newModel = b.Get currentModel then false
-        else
-          b.Selected := lazy (
-            let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get newModel
-            log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
-            selected)
-          true
+        b.Get newModel <> b.Get currentModel
     | Cached b ->
         let valueChanged = updateValue bindingName newModel b.Binding
         if valueChanged then
@@ -681,7 +677,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | WindowState.Hidden vm | WindowState.Visible vm -> box vm
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        (!b.Selected).Value |> ValueOption.toObj |> box
+        let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get model
+        log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+        selected |> ValueOption.toObj |> box
     | Cached b ->
         match !b.Cache with
         | Some v -> v
