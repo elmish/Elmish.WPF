@@ -671,7 +671,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.SubModelSeqBinding.Vms 
           |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
             selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
-        log "[%s] Setting selected VM to %A" propNameChain (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+        log "[%s] Setting selected VM to %A"
+          propNameChain
+          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
         selected |> Option.toObj |> box
     | Cached b ->
         match !b.Cache with
