@@ -18,7 +18,6 @@ type internal OneWayLazyBinding<'model, 'a, 'b> = {
   Get: 'model -> 'a
   Equals: 'a -> 'a -> bool
   Map: 'a -> 'b
-  CurrentVal: Lazy<'b> ref
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
@@ -232,11 +231,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWayLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
-        Some <| OneWayLazy {
+        OneWayLazy {
           Get = get
           Map = map
           Equals = measure2 name "equals" d.Equals
-          CurrentVal = ref <| lazy (initialModel |> get |> map) }
+        } |> withCaching |> Some
     | OneWaySeqLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
@@ -428,10 +427,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
     | OneWayLazy b ->
-        if b.Equals (b.Get newModel) (b.Get currentModel) then false
-        else
-          b.CurrentVal := lazy (newModel |> b.Get |> b.Map)
-          true
+        not <| b.Equals (b.Get newModel) (b.Get currentModel)
     | OneWaySeq b ->
         if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
           let newVals = newModel |> b.Get |> b.Map |> Seq.toArray
@@ -663,8 +659,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get model
-    | OneWayLazy { CurrentVal = value } ->
-        (!value).Value
+    | OneWayLazy b ->
+        model |> b.Get |> b.Map
     | OneWaySeq { Values = vals } ->
         box vals
     | Cmd { Cmd = cmd }
