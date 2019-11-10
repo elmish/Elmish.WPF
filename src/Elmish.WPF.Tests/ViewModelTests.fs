@@ -388,6 +388,7 @@ module OneWayLazy =
 
       let binding = oneWayLazy name get equals map
       let vm = TestVm(m1, binding)
+      vm.Get name |> ignore  // populate cache
       vm.UpdateModel m2
 
       test <@ vm.Get name = (m1 |> get |> map) @>

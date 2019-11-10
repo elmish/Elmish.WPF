@@ -18,7 +18,6 @@ type internal OneWayLazyBinding<'model, 'a, 'b> = {
   Get: 'model -> 'a
   Equals: 'a -> 'a -> bool
   Map: 'a -> 'b
-  CurrentVal: Lazy<'b> ref
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
@@ -78,7 +77,11 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> unit
   SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
-  Selected: Lazy<ViewModel<'bindingModel, 'bindingMsg> voption> ref
+}
+
+and internal CachedBinding<'model, 'msg, 'value> = {
+  Binding: VmBinding<'model, 'msg>
+  Cache: 'value option ref
 }
 
 
@@ -95,6 +98,7 @@ and internal VmBinding<'model, 'msg> =
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
+  | Cached of CachedBinding<'model, 'msg, obj>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -113,6 +117,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Error messages keyed by property name.
   let errors = Dictionary<string, string>()
+
+
+  let withCaching b = Cached { Binding = b; Cache = ref None }
 
 
   let log fmt =
@@ -149,7 +156,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log "[%s] ErrorsChanged \"%s\"" propNameChain propName
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let updateValidationError model name = function
+  let rec updateValidationError model name = function
     | TwoWayValidate { Validate = validate } ->
         match validate model with
         | ValueNone -> removeError name
@@ -164,6 +171,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelWin _
     | SubModelSeq _
     | SubModelSelectedItem _ -> ()
+    | Cached b -> updateValidationError model name b.Binding
 
   let measure name callName f =
     if not config.Measure then f
@@ -208,13 +216,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       } |> Async.StartImmediate
     )
 
-  let getSelectedSubViewModel vms getSubModelId getSelectedId model =
-    let selectedId = getSelectedId model
-    vms
-    |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-      selectedId = ValueSome (getSubModelId vm.CurrentModel))
-    |> ValueOption.ofOption
-
   let initializeBinding name bindingData getInitializedBindingByName =
     match bindingData with
     | OneWayData d ->
@@ -223,11 +224,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWayLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
-        Some <| OneWayLazy {
+        OneWayLazy {
           Get = get
           Map = map
           Equals = measure2 name "equals" d.Equals
-          CurrentVal = ref <| lazy (initialModel |> get |> map) }
+        } |> withCaching |> Some
     | OneWaySeqLazyData d ->
         let get = measure name "get" d.Get
         let map = measure name "map" d.Map
@@ -384,11 +385,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let get = measure name "get" d.Get
           let set = measure2 name "set" d.Set
           let dispatch' = d.WrapDispatch dispatch
-          Some <| SubModelSelectedItem {
+          SubModelSelectedItem {
             Get = get
             Set = fun obj m -> set obj m |> dispatch'
             SubModelSeqBinding = b
-            Selected = ref <| lazy (getSelectedSubViewModel b.Vms b.GetId get initialModel) }
+          } |> withCaching |> Some
         | _ ->
           log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
           None
@@ -413,17 +414,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
-  let updateValue bindingName newModel binding =
-    match binding with
+  let rec updateValue bindingName newModel = function
     | OneWay { Get = get }
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
     | OneWayLazy b ->
-        if b.Equals (b.Get newModel) (b.Get currentModel) then false
-        else
-          b.CurrentVal := lazy (newModel |> b.Get |> b.Map)
-          true
+        not <| b.Equals (b.Get newModel) (b.Get currentModel)
     | OneWaySeq b ->
         if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
           let newVals = newModel |> b.Get |> b.Map |> Seq.toArray
@@ -622,18 +619,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
         false
     | SubModelSelectedItem b ->
-        if b.Get newModel = b.Get currentModel then false
-        else
-          b.Selected := lazy (
-            let selected = getSelectedSubViewModel b.SubModelSeqBinding.Vms b.SubModelSeqBinding.GetId b.Get newModel
-            log "[%s] Setting selected VM to %A" propNameChain (selected |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
-            selected)
-          true
+        b.Get newModel <> b.Get currentModel
+    | Cached b ->
+        let valueChanged = updateValue bindingName newModel b.Binding
+        if valueChanged then
+          b.Cache := None
+        valueChanged
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
-  let getCmdIfCanExecChanged newModel binding =
-    match binding with
+  let rec getCmdIfCanExecChanged newModel = function
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -650,14 +645,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         else Some cmd
     | CmdParam cmd ->
         Some cmd
+    | Cached b -> getCmdIfCanExecChanged newModel b.Binding
 
-  let tryGetMember model = function
+  let rec tryGetMember model = function
     | OneWay { Get = get }
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get model
-    | OneWayLazy { CurrentVal = value } ->
-        (!value).Value
+    | OneWayLazy b ->
+        model |> b.Get |> b.Map
     | OneWaySeq { Values = vals } ->
         box vals
     | Cmd { Cmd = cmd }
@@ -670,9 +666,24 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | WindowState.Hidden vm | WindowState.Visible vm -> box vm
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        (!b.Selected).Value |> ValueOption.toObj |> box
+        let selectedId = b.Get model
+        let selected =
+          b.SubModelSeqBinding.Vms 
+          |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
+            selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
+        log "[%s] Setting selected VM to %A"
+          propNameChain
+          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+        selected |> Option.toObj |> box
+    | Cached b ->
+        match !b.Cache with
+        | Some v -> v
+        | None ->
+            let v = tryGetMember model b.Binding
+            b.Cache := Some v
+            v
 
-  let trySetMember model (value: obj) = function
+  let rec trySetMember model (value: obj) = function
     | TwoWay { Set = set }
     | TwoWayValidate { Set = set } ->
         set value model
@@ -684,6 +695,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
         b.Set id model
         true
+    | Cached b ->
+        let successful = trySetMember model value b.Binding
+        if successful then
+          b.Cache := None  // TODO #185: write test
+        successful
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
