@@ -128,9 +128,9 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
        "CounterValue" |> Binding.oneWay (fun m -> m.Count)
        "Increment" |> Binding.cmd (fun m -> Increment)
        "Decrement" |> Binding.cmd (fun m -> Decrement)
-       "StepSize" |> Binding.twoWay
-         (fun m -> float m.StepSize)
-         (fun newVal m -> int newVal |> SetStepSize)
+       "StepSize" |> Binding.twoWay(
+         (fun m -> float m.StepSize),
+         (fun newVal m -> int newVal |> SetStepSize))
      ]
    ```
 
