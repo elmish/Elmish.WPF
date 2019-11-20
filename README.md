@@ -165,7 +165,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      |> Program.runWindow (MainWindow())
    ```
 
-   `Program.runWindow` will instantiate an `Application ` and set the window’s `DataContext` to the bindings you defined.
+   `Program.runWindow` will instantiate an `Application` and set the window’s `DataContext` to the bindings you defined.
 
 9. Profit! :)
 
