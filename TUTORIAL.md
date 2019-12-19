@@ -630,7 +630,7 @@ Additionally, these bindings have an optional `sticky: bool` parameter. If `true
 
 *Relevant sample: NewWindow*
 
-The `subModelWin` binding is a variant of `subModelOpt` that allows you to control the opening/closing/hiding of new windows. It has the same overloads as `subModel` and `subModelWin`, with two key differences: First, the sub-model is wrapped in a custom type called `WindowState` that is defined like this:
+The `subModelWin` binding is a variant of `subModelOpt` that allows you to control the opening/closing/hiding of new windows. It has the same overloads as `subModel` and `subModelOpt`, with two key differences: First, the sub-model is wrapped in a custom type called `WindowState` that is defined like this:
 
 ```f#
 [<RequireQualifiedAccess>]
