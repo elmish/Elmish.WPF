@@ -190,13 +190,13 @@ This is yet another part of MVU that is not in the name. Not to be confused with
 
 Think about it: If the update function must be pure, how can we do side effects like making an HTTP call or reading from disk? Or alternatively, if we decided to make `update` impure (which is possible in F#, but not in Elm) and do some long-running IO there, wouldn’t that block the whole app (since the update loop can only process one message at a time for concurrency reasons)?
 
-The answer is that there are actually two variants of the `update` function: For very simple apps, as shown above, you can use the simple `update` version that just returns the new model. For more complex apps that need to use commands, the `update` function can return both the new model and a command in a tuple:
+The answer is that there are actually two variants of the `update` function: For apps that are able to respond immediately to the UI, as shown above, you can create the simple version of the `update` function which returns a new model. For apps with responses that may delay the `update` function they can instead return a new model along with command functions that encapsulate the long running activity, as follows:
 
 ```f#
 update: 'msg -> 'model -> 'model * Cmd<'msg>
 ```
 
-What is a command, you ask? It’s simply the “top level” of three type aliases:
+What is a `Cmd<'msg>`, you ask? It’s simply the “top level” of three type aliases:
 
 ```f#
 type Dispatch<'msg> = 'msg -> unit
@@ -204,9 +204,9 @@ type Sub<'msg> = Dispatch<'msg> -> unit
 type Cmd<'msg> = Sub<'msg> list
 ```
 
-We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it to the MVU update loop so that it ends up in `update`.
+We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it immediately to the MVU update loop so that it ends up in `update`.
 
-The next alias, `Sub<'msg>` (short for “subscription”) is simply a function that accepts a dispatcher and returns `unit`. This function can then dispatch whatever messages it wants when it wants, e.g. by setting up event subscriptions.
+The next alias, `Sub<'msg>` (short for “subscription”) is simply a function that accepts a dispatcher and returns `unit`. This function can then dispatch whatever messages it wants whenever it wants, e.g. by setting up event subscriptions.
 
 For example, here is such a function that, when called, will start dispatching a `SetTime` message every second. The whole `timerTick` function (without applying `dispatch`) has the signature `Sub<Msg>`:
 
@@ -219,17 +219,17 @@ let timerTick (dispatch: Dispatch<Msg>) =
 
 This is the kind of function that you pass to `Program.withSubscription`, which allows you to start arbitrary non-UI message dispatchers when the app starts. For example, you can start timers (as shown above), subscribe to other non-UI events, start a `MailboxProcessor`, etc.
 
-The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
+The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU will execute by providing a dispatch function. These commands functions, as you saw above, can then dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the work within it asynchronously, and then use the `dispatch` argument it will have been provided to insert the response into the MVU event loop.
 
-In other words, you don’t call the impure functions yourself; the MVU library calls them for you. Furthermore, from the point of view of your model, everything happens asynchronously (in the sense that your app and update loop continues without waiting on a response, and reacts to the “response” message when it arrives).
+In other words, unlike the model which is given to the view function for interpretation, the `Cmd<'msg>` function will be invoked by the MVU. From the point of view of your model, everything happens asynchronously: your app and UI update loop continues without waiting for the results of the `Cmds<'msg>` and when the commands complete the results are `dispatch` into the event loop as just another event.
 
 For example:
 
 - The user clicks a button to log in, which dispatches a `SignInRequested` message
-- The `update` function returns a new model with an `IsBusy = true` value (which can be to show an animation such as a spinner) as well as a command that actually calls the API
-- The MVU loop calls the command
-- The app continues to work normally - the spinner spins because `IsBusy = true`, and any other messages are processed as they would normally be. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`; for example, you may choose to ignore additional `SignInRequested` messages.
-- When the API call returns, the function that called the API dispatches a suitable message based on the result (e.g. `SignInSuccessful` or `SignInFailed`)
+- The `update` function returns a new `model` with an `IsBusy = true` value (which can be shown as an animation such as a spinner) as well as a `Cmd<'msg>` function that calls the API asynchronously to perform the request and process the response onced invoked with a `dispatch` function.
+- MVU uses new model with view to update the UI and invokes the command by passing it a `dispatch` function.
+- The app continues to work normally - the spinner spins because `IsBusy = true` and any other messages are processed as normally. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`. For example, you may choose to ignore additional `SignInRequested` messages.
+- When the API call finally returns (as detected by `await` continuing or `Task` completion event), the command function continues by calling the `dispatch` function to insert its result into the MVU eventloop (e.g. `SignInSuccessful` or `SignInFailed`) upon which the `update` function immediately performs to produce a new `model * Cmd<'msg>` result.
 
 Elmish has several helpers in the `Cmd` module to easily create commands from normal functions, but if they don’t suit your use-case, you can always write a command directly as a list of `Dispatch<'msg> -> unit` functions.
 
@@ -238,7 +238,7 @@ Some MVU tips for beginners
 
 ### Normalize your model; use IDs instead of duplicating entities
 
-It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This opens up for state synchronization bugs.
+It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This opens up opportunities for state synchronization bugs.
 
 For example, say you have an app that can display a list of books, and you can click on a book in the list to open a detail view of that book. You might think to represent it with the following model:
 
