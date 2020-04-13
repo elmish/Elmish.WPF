@@ -40,19 +40,19 @@ let private startApp window =
   Application.Current.Run window
 
 
-/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
-/// if it is not already running, and then run the specified window. This is
-/// a blocking function.
-let runWindow window program =
-  startElmishLoop ElmConfig.Default window program
-  startApp window
-
-
 /// Starts the Elmish and WPF dispatch loops with the specified configuration.
 /// Will instantiate Application if it is not already running, and then run the
 /// specified window. This is a blocking function.
 let runWindowWithConfig config window program =
   startElmishLoop config window program
+  startApp window
+
+
+/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
+/// if it is not already running, and then run the specified window. This is
+/// a blocking function.
+let runWindow window program =
+  startElmishLoop ElmConfig.Default window program
   startApp window
 
 
