@@ -1,3 +1,7 @@
+#### 3.5.3
+
+* Fix crash when `init` returns a command opening a `subModelWin`
+
 #### 3.5.2
 
 * Improved error handling when collection bindings contain duplicates
