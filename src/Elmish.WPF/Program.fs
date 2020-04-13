@@ -33,8 +33,8 @@ let startElmishLoop
   |> Program.run
 
 
-/// Starts the WPF dispatch loop. Will instantiate Application if it is not
-/// already running, and then run the specified window. This is a blocking function.
+/// Instantiates Application if it is not already running, and then runs the
+/// specified window. This is a blocking function.
 let private startApp window =
   if isNull Application.Current then Application () |> ignore
   Application.Current.Run window
