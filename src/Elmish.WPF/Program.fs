@@ -33,27 +33,30 @@ let startElmishLoop
   |> Program.run
 
 
-/// Starts the WPF dispatch loop. Will instantiate Application if it is not
-/// already running, and then run the specified window. This is a blocking function.
-let private startApp window =
+/// Instantiates Application if it is not already running.
+let private instantiateApp () =
   if isNull Application.Current then Application () |> ignore
+
+
+/// Runs the specified window. This is a blocking function.
+let private startApp window =
   Application.Current.Run window
-
-
-/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
-/// if it is not already running, and then run the specified window. This is
-/// a blocking function.
-let runWindow window program =
-  startElmishLoop ElmConfig.Default window program
-  startApp window
 
 
 /// Starts the Elmish and WPF dispatch loops with the specified configuration.
 /// Will instantiate Application if it is not already running, and then run the
 /// specified window. This is a blocking function.
 let runWindowWithConfig config window program =
+  instantiateApp ()
   startElmishLoop config window program
   startApp window
+
+
+/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
+/// if it is not already running, and then run the specified window. This is
+/// a blocking function.
+let runWindow window program =
+  runWindowWithConfig ElmConfig.Default window program
 
 
 /// Same as mkSimple, but with a signature adapted for Elmish.WPF.
