@@ -52,8 +52,7 @@ let runWindowWithConfig config window program =
 /// if it is not already running, and then run the specified window. This is
 /// a blocking function.
 let runWindow window program =
-  startElmishLoop ElmConfig.Default window program
-  startApp window
+  runWindowWithConfig ElmConfig.Default window program
 
 
 /// Same as mkSimple, but with a signature adapted for Elmish.WPF.
