@@ -1,3 +1,7 @@
+#### 3.5.4
+
+* Windows may now be created on any thread
+
 #### 3.5.3
 
 * Fix crash when `init` returns a command opening a `subModelWin`
