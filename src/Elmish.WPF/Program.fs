@@ -33,13 +33,10 @@ let startElmishLoop
   |> Program.run
 
 
-/// Instantiates Application if it is not already running.
-let private instantiateApp () =
-  if isNull Application.Current then Application () |> ignore
-
-
-/// Runs the specified window. This is a blocking function.
+/// Instantiates Application if it is not already running then runs the
+/// specified window. This is a blocking function.
 let private startApp window =
+  if isNull Application.Current then Application () |> ignore
   Application.Current.Run window
 
 
@@ -47,7 +44,6 @@ let private startApp window =
 /// Will instantiate Application if it is not already running, and then run the
 /// specified window. This is a blocking function.
 let runWindowWithConfig config window program =
-  instantiateApp ()
   startElmishLoop config window program
   startApp window
 
