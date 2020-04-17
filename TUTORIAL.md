@@ -1,6 +1,8 @@
 Elmish.WPF Tutorial
 ===================
 
+<img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/felicity-logo.png" width="300" align="right" />
+
 The aim of this tutorial is to explain how to use Elmish.WPF, building in complexity from start (what is MVU?) to end (using complex bindings and applying optimizations).
 
 This tutorial is not directly related to the many samples in the Elmish.WPF repository, but complements them well. The samples are complete, fully functional apps demonstrating selected aspects of Elmish.WPF. The samples *show*; the tutorial *explains*.
