@@ -1,7 +1,6 @@
-WPF done the Elmish Way
-=======================
+# WPF done the Elmish Way
 
-<img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/elmish-wpf-logo.png" width="300" align="right" />
+<img src="https://raw.githubusercontent.com/MrMattSim/Elmish.WPF/master/logo/elmish-wpf-logo-ghreadme.png" width="300" align="right" />
 
 [![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://img.shields.io/appveyor/ci/cmeeren/elmish-wpf/master.svg?label=master)](https://ci.appveyor.com/project/cmeeren/elmish-wpf/branch/master)
 
@@ -13,14 +12,14 @@ Elmish.WPF is a **production-ready** library that allows you to write WPF apps w
 
 Some benefits of MVU you’ll get with Elmish.WPF is:
 
-* Simple-to-understand, unidirectional data flow
-* Single source of truth for all the state in your app
-* Simple async/IO
-* Immutable data
-* Pure functions
-* Great testability
-* Simple optimization
-* 78% more rockets 🚀
+- Simple-to-understand, unidirectional data flow
+- Single source of truth for all the state in your app
+- Simple async/IO
+- Immutable data
+- Pure functions
+- Great testability
+- Simple optimization
+- 78% more rockets 🚀
 
 Even with static views, your central model/update code can follow an idiomatic Elmish/MVU architecture. You could, if you wanted, use the same model/update code to implement an app using a dynamic UI library such as [Fabulous](https://github.com/fsprojects/Fabulous) or [Fable.React](https://github.com/fable-compiler/fable-react), by just rewriting the “U” part of MVU.
 
@@ -34,23 +33,21 @@ Elmish.WPF uses [Elmish](https://github.com/elmish/elmish), an F# implementation
 
 Thanks to JetBrains for sponsoring Elmish.WPF with OSS licenses!
 
-Recommended resources
----------------------
+## Recommended resources
 
-* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex bindings and optimizations.
-* The [Elmish docs site](https://elmish.github.io/elmish) also explains the general MVU architecture and principles.
-* The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
-* Blog posts:
-   * [Getting Elmish in .NET with Elmish.WPF](https://medium.com/swlh/getting-elmish-in-net-with-elmish-wpf-cd44e3eddc27) ("getting started" guide by Matt Eland)
-* Elm resources may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings. See the [tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) for details.
-  * [Official Elm guide](https://guide.elm-lang.org)
-  * Two talks: [Summarising Elm scaling strategy](https://dev.to/elmupdate/summarising-elm-scaling-strategy-1bjn)
-  * Reddit: [Resources regarding scaling Elm apps](https://www.reddit.com/r/elm/comments/65s0g4/resources_regarding_scaling_elm_apps/)
-  * Reddit: [How to structure Elm with multiple models](https://www.reddit.com/r/elm/comments/5jd2xn/how_to_structure_elm_with_multiple_models/dbuu0m4/)
-  * Reddit: [Elm Architecture with a Redux-like store pattern](https://www.reddit.com/r/elm/comments/5xdl9z/elm_architecture_with_a_reduxlike_store_pattern/)
+- The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex bindings and optimizations.
+- The [Elmish docs site](https://elmish.github.io/elmish) also explains the general MVU architecture and principles.
+- The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
+- Blog posts:
+  - [Getting Elmish in .NET with Elmish.WPF](https://medium.com/swlh/getting-elmish-in-net-with-elmish-wpf-cd44e3eddc27) ("getting started" guide by Matt Eland)
+- Elm resources may also provide some guidance, but note that not everything is relevant. A significant difference between “normal” Elm architecture and Elmish.WPF is that in Elmish.WPF, the views are statically defined using XAML, and the “view” function does not render views, but set up bindings. See the [tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) for details.
+  - [Official Elm guide](https://guide.elm-lang.org)
+  - Two talks: [Summarising Elm scaling strategy](https://dev.to/elmupdate/summarising-elm-scaling-strategy-1bjn)
+  - Reddit: [Resources regarding scaling Elm apps](https://www.reddit.com/r/elm/comments/65s0g4/resources_regarding_scaling_elm_apps/)
+  - Reddit: [How to structure Elm with multiple models](https://www.reddit.com/r/elm/comments/5jd2xn/how_to_structure_elm_with_multiple_models/dbuu0m4/)
+  - Reddit: [Elm Architecture with a Redux-like store pattern](https://www.reddit.com/r/elm/comments/5xdl9z/elm_architecture_with_a_reduxlike_store_pattern/)
 
-Getting started with Elmish.WPF
--------------------------------
+## Getting started with Elmish.WPF
 
 See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are:
 
@@ -60,13 +57,13 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```fsproj
    <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
-     
+
      <PropertyGroup>
        <OutputType>Exe</OutputType>  <!-- or WinExe -->
        <TargetFramework>netcoreapp3.0</TargetFramework>
        <UseWpf>true</UseWpf>
      </PropertyGroup>
-     
+
      <!-- other stuff -->
    ```
 
@@ -74,18 +71,18 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```fsproj
    <Project Sdk="Microsoft.NET.Sdk">
-     
+
      <PropertyGroup>
        <OutputType>Exe</OutputType>  <!-- or WinExe -->
        <TargetFramework>net471</TargetFramework>
      </PropertyGroup>
-     
+
      <ItemGroup>
        <Reference Include="PresentationCore" />
        <Reference Include="PresentationFramework" />
        <Reference Include="WindowsBase" />
      </ItemGroup>
-     
+
      <!-- other stuff -->
    ```
 
@@ -97,7 +94,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    type Model =
      { Count: int
        StepSize: int }
-   
+
    let init () =
      { Count = 0
        StepSize = 1 }
@@ -126,7 +123,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```F#
    open Elmish.WPF
-   
+
    let bindings () =
      [
        "CounterValue" |> Binding.oneWay (fun m -> m.Count)
@@ -162,7 +159,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    ```F#
    open System
    open Elmish.WPF
-   
+
    [<EntryPoint; STAThread>]
    let main argv =
      Program.mkSimpleWpf init update bindings
@@ -175,11 +172,10 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
 Further resources:
 
-* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) provides information on general MVU/Elmish concepts and how they apply to Elmish.WPF, as well as the various Elmish.WPF bindings.
-* The [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) are complete, working mini-apps demonstrating selected aspects of Elmish.WPF.
+- The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) provides information on general MVU/Elmish concepts and how they apply to Elmish.WPF, as well as the various Elmish.WPF bindings.
+- The [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) are complete, working mini-apps demonstrating selected aspects of Elmish.WPF.
 
-FAQ
----
+## FAQ
 
 #### Static views? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
 
@@ -201,21 +197,21 @@ In short, for WPF apps, a solution based on static XAML views is currently the w
 
 Not at all. The above example, as well as the samples, keep everything in a single project for simplicity (the samples have the XAML definitions in separate projects for technical reasons). For more complex apps, you might want to consider a more clear separation of UI and core logic. An example would be the following structure:
 
-* A core library containing the model definitions and `update` functions.
-  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on certain WPF UI assemblies and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
-* An entry point project that contains the `bindings` (or `view`) function and the call to `Program.runWindow`.
-  * This project would reference the core library and `Elmish.WPF`.
-* A view project containing the XAML-related stuff (windows, user controls, behaviors, etc.).
-  * This could also be part of the entry point project, but if you’re using the new project format (like the samples in this repo), this might not work properly until .NET Core 3.0.
+- A core library containing the model definitions and `update` functions.
+  - This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on certain WPF UI assemblies and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
+- An entry point project that contains the `bindings` (or `view`) function and the call to `Program.runWindow`.
+  - This project would reference the core library and `Elmish.WPF`.
+- A view project containing the XAML-related stuff (windows, user controls, behaviors, etc.).
+  - This could also be part of the entry point project, but if you’re using the new project format (like the samples in this repo), this might not work properly until .NET Core 3.0.
 
 #### How can I test commands? What is the CmdMsg pattern?
 
 Since the commands (`Cmd<Msg>`) returned by `init` and `update` are lists of functions, they are not particularly testable. A general pattern to get around this is to replace the commands with pure data that are transformed to the actual commands elsewhere:
 
-* Create a `CmdMsg` union type with cases for each command you want to execute in the app.
-* Make `init` and `update` return `model * CmdMsg list` instead of `model * Cmd<Msg>`. Since `init` and `update` now return data, they are much easier to test.
-* Create a trivial/too-boring-to-test `cmdMsgToCmd` function that transforms a `CmdMsg` to the corresponding `Cmd`.
-* Finally, create “normal” versions of `init` and `update` that you can use when creating `Program`. Elmish.WPF provides `Program.mkProgramWpfWithCmdMsg` that does this for you (but there’s no magic going on – it’s really easy to do yourself).
+- Create a `CmdMsg` union type with cases for each command you want to execute in the app.
+- Make `init` and `update` return `model * CmdMsg list` instead of `model * Cmd<Msg>`. Since `init` and `update` now return data, they are much easier to test.
+- Create a trivial/too-boring-to-test `cmdMsgToCmd` function that transforms a `CmdMsg` to the corresponding `Cmd`.
+- Finally, create “normal” versions of `init` and `update` that you can use when creating `Program`. Elmish.WPF provides `Program.mkProgramWpfWithCmdMsg` that does this for you (but there’s no magic going on – it’s really easy to do yourself).
 
 The [FileDialogs.CmdMsg sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) demonstrates this approach. For more information, see the [Fabulous documentation](https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/update.html#replacing-commands-with-command-messages-for-better-testability). For reference, here is [the discussion that led to this pattern](https://github.com/fsprojects/Fabulous/pull/320#issuecomment-491522737).
 
@@ -227,8 +223,8 @@ Yes, just do it before calling `Program.runWindow` and it will automatically be 
 
 Yes. You need to structure your code so you have some place in your code that satisfies the following requirements:
 
-* Must be able to instantiate a model and the associated bindings
-* Must be reachable by the XAML views
+- Must be able to instantiate a model and the associated bindings
+- Must be reachable by the XAML views
 
 There, use `ViewModel.designInstance` to create a view model instance that your XAML can use at design-time:
 
