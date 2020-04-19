@@ -28,6 +28,8 @@ Even with static views, your central model/update code can follow an idiomatic E
 
 Elmish.WPF uses [Elmish](https://github.com/elmish/elmish), an F# implementation of the MVU message loop.
 
+Big thanks to [@MrMattSim](https://github.com/MrMattSim) for the wonderful logo!
+
 ### Sponsor
 
 [![JetBrains logo](jetbrains.svg)](https://www.jetbrains.com/?from=Elmish.WPF)
