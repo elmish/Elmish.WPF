@@ -1,7 +1,7 @@
 Elmish.WPF Tutorial
 ===================
 
-<img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/elmish-wpf-logo.png" width="300" align="right" />
+<img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/logo/elmish-wpf-logo-ghreadme.png" width="300" align="right" />
 
 The aim of this tutorial is to explain how to use Elmish.WPF, building in complexity from start (what is MVU?) to end (using complex bindings and applying optimizations).
 
