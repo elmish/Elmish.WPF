@@ -33,24 +33,28 @@ let startElmishLoop
   |> Program.run
 
 
-/// Instantiates Application if it is not already running then runs the
-/// specified window. This is a blocking function.
-let private startApp window =
-  if isNull Application.Current then Application () |> ignore
-  Application.Current.Run window
+/// Instantiates Application and sets its MainWindow if it is not already
+/// running.
+let private initializeApplication window =
+  if isNull Application.Current
+  then
+    Application () |> ignore
+    Application.Current.MainWindow <- window
 
 
 /// Starts the Elmish and WPF dispatch loops with the specified configuration.
-/// Will instantiate Application if it is not already running, and then run the
-/// specified window. This is a blocking function.
-let runWindowWithConfig config window program =
+/// Will instantiate Application and set its MainWindow if it is not already
+/// running, and then run the specified window. This is a blocking function.
+let runWindowWithConfig config (window: Window) program =
+  initializeApplication window
+  window.Show ()
   startElmishLoop config window program
-  startApp window
+  Application.Current.Run window
 
 
-/// Starts the Elmish and WPF dispatch loops. Will instantiate Application
-/// if it is not already running, and then run the specified window. This is
-/// a blocking function.
+/// Starts the Elmish and WPF dispatch loops. Will instantiate Application and
+/// set its MainWindow if it is not already running, and then run the specified
+/// window. This is a blocking function.
 let runWindow window program =
   runWindowWithConfig ElmConfig.Default window program
 
