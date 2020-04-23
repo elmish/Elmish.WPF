@@ -36,8 +36,7 @@ let startElmishLoop
 /// Instantiates Application and sets its MainWindow if it is not already
 /// running.
 let private initializeApplication window =
-  if isNull Application.Current
-  then
+  if isNull Application.Current then
     Application () |> ignore
     Application.Current.MainWindow <- window
 
