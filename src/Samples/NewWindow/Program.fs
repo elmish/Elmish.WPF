@@ -78,7 +78,7 @@ module App =
         | None -> m
 
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings mainWindow () : Binding<Model, Msg> list = [
     "ShowWin1" |> Binding.cmd ShowWin1
     "HideWin1" |> Binding.cmd HideWin1
     "CloseWin1" |> Binding.cmd CloseWin1
@@ -101,7 +101,7 @@ module App =
         "CancelMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CancelClicked)
         "CloseRequestedMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CloseRequested)
       ]),
-      (fun () -> Window2(Owner = Application.Current.MainWindow)),
+      (fun () -> Window2(Owner = mainWindow)),
       onCloseRequested = Win2CloseRequested,
       isModal = true
     )
@@ -110,8 +110,9 @@ module App =
 
 [<EntryPoint; STAThread>]
 let main _ =
-  Program.mkSimpleWpf App.init App.update App.bindings
+  let mainWindow = MainWindow()
+  Program.mkSimpleWpf App.init App.update (App.bindings mainWindow)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    mainWindow
