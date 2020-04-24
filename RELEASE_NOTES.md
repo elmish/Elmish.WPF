@@ -1,3 +1,7 @@
+#### 3.5.5
+
+* Fix exception when showing sub-windows as part of `init`
+
 #### 3.5.4
 
 * Windows may now be created on any thread

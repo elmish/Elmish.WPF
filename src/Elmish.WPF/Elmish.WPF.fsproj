@@ -14,8 +14,8 @@
     <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>
     <PackageTags>WPF F# fsharp Elmish Elm</PackageTags>
     <PackageIcon>elmish-wpf-logo-128x128.png</PackageIcon>
-    <Version>3.5.4</Version>
-    <PackageReleaseNotes>Windows may now be created on any thread</PackageReleaseNotes>
+    <Version>3.5.5</Version>
+    <PackageReleaseNotes>Fix exception when showing sub-windows as part of init</PackageReleaseNotes>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
