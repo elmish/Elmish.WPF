@@ -61,7 +61,8 @@ module Tree =
     n.Children |> List.map (fun nn -> nn.Data)
 
   let rec map f n =
-    n |> f |> (fun nn -> { nn with Children = nn.Children |> List.map (map f) } )
+    let nn = n |> f
+    { nn with Children = nn.Children |> List.map (map f) }
 
   let rec mapData f n =
     { Data = n.Data |> f
