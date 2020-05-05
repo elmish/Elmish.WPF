@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+namespace Elmish.WPF
 
 open System.Windows
 
@@ -230,6 +230,83 @@ module internal BindingData =
         SubModelSeqBindingName = d.SubModelSeqBindingName
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
+
+
+module internal Binding =
+
+  let mapModel f binding =
+    let binaryHelper binary x m = (x, f m) ||> binary
+    let newData =
+      match binding.Data with
+      | OneWayData d ->
+          { Get = f >> d.Get
+          } |> OneWayData
+      | OneWayLazyData d ->
+          { Get = f >> d.Get
+            Map = d.Map;
+            Equals = d.Equals
+          } |> OneWayLazyData
+      | OneWaySeqLazyData d ->
+          { Get = f >> d.Get
+            Map = d.Map
+            Equals = d.Equals
+            GetId = d.GetId
+            ItemEquals = d.ItemEquals
+          } |> OneWaySeqLazyData
+      | TwoWayData d ->
+          { Get = f >> d.Get
+            Set = binaryHelper d.Set
+            WrapDispatch = d.WrapDispatch
+          } |> TwoWayData
+      | TwoWayValidateData d ->
+          { Get = f >> d.Get
+            Set = binaryHelper d.Set
+            Validate = f >> d.Validate
+            WrapDispatch = d.WrapDispatch
+          } |> TwoWayValidateData
+      | CmdData d ->
+          { Exec = f >> d.Exec
+            CanExec = f >> d.CanExec
+            WrapDispatch = d.WrapDispatch
+          } |> CmdData
+      | CmdParamData d ->
+          { Exec = binaryHelper d.Exec
+            CanExec = binaryHelper d.CanExec
+            AutoRequery = d.AutoRequery
+            WrapDispatch = d.WrapDispatch
+          } |> CmdParamData
+      | SubModelData d ->
+          { GetModel = f >> d.GetModel
+            GetBindings = d.GetBindings
+            ToMsg = d.ToMsg
+            Sticky = d.Sticky
+          } |> SubModelData
+      | SubModelWinData d ->
+          { GetState = f >> d.GetState
+            GetBindings = d.GetBindings
+            ToMsg = d.ToMsg
+            GetWindow = f >> d.GetWindow
+            IsModal = d.IsModal
+            OnCloseRequested = d.OnCloseRequested
+          } |> SubModelWinData
+      | SubModelSeqData d ->
+          { GetModels = f >> d.GetModels
+            GetId = d.GetId
+            GetBindings = d.GetBindings
+            ToMsg = d.ToMsg
+          } |> SubModelSeqData
+      | SubModelSelectedItemData d ->
+          { Get = f >> d.Get
+            Set = binaryHelper d.Set
+            SubModelSeqBindingName = d.SubModelSeqBindingName
+            WrapDispatch = d.WrapDispatch
+          } |> SubModelSelectedItemData
+    { Name = binding.Name; Data = newData }
+
+
+module internal Bindings =
+
+  let mapModel f bindings = bindings |> List.map (Binding.mapModel f)
 
 
 
