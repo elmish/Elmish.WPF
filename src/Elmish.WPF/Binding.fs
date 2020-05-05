@@ -1,4 +1,4 @@
-namespace Elmish.WPF
+﻿namespace Elmish.WPF
 
 open System.Windows
 
@@ -161,72 +161,59 @@ module internal BindingData =
       : Dispatch<'boxedMsg> -> Dispatch<'boxedMsg> =
     (unboxDispatch boxMsg) >> strongWrapDispatch >> (boxDispatch unboxMsg)
 
-  let boxBindingData
-      (unboxModel: 'boxedModel -> 'model)
+  let boxMsg
       (unboxMsg: 'boxedMsg -> 'msg)
       (boxMsg: 'msg -> 'boxedMsg)
-      : BindingData<'model, 'msg> -> BindingData<'boxedModel, 'boxedMsg> = function
-    | OneWayData d -> OneWayData {
-        Get = unboxModel >> d.Get
-      }
-    | OneWayLazyData d -> OneWayLazyData {
-        Get = unboxModel >> d.Get
-        Map = d.Map
-        Equals = d.Equals
-      }
-    | OneWaySeqLazyData d -> OneWaySeqLazyData {
-        Get = unboxModel >> d.Get
-        Map = d.Map
-        Equals = d.Equals
-        GetId = d.GetId
-        ItemEquals = d.ItemEquals
-      }
+      : BindingData<'model, 'msg> -> BindingData<'model, 'boxedMsg> = function
+    | OneWayData d -> d |> OneWayData
+    | OneWayLazyData d -> d |> OneWayLazyData
+    | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
     | TwoWayData d -> TwoWayData {
-        Get = unboxModel >> d.Get
-        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> boxMsg
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | TwoWayValidateData d -> TwoWayValidateData {
-        Get = unboxModel >> d.Get
-        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> boxMsg
         Validate = unbox >> d.Validate
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | CmdData d -> CmdData {
-        Exec = unboxModel >> d.Exec >> ValueOption.map boxMsg
-        CanExec = unboxModel >> d.CanExec
+        Exec = d.Exec >> ValueOption.map boxMsg
+        CanExec = d.CanExec
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | CmdParamData d -> CmdParamData {
-        Exec = fun p m -> d.Exec p (unboxModel m) |> ValueOption.map boxMsg
-        CanExec = fun p m -> d.CanExec p (unboxModel m)
+        Exec = fun p m -> d.Exec p m |> ValueOption.map boxMsg
+        CanExec = fun p m -> d.CanExec p m
         AutoRequery = d.AutoRequery
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
     | SubModelData d -> SubModelData {
-        GetModel = unboxModel >> d.GetModel
+        GetModel = d.GetModel
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> boxMsg
         Sticky = d.Sticky
       }
     | SubModelWinData d -> SubModelWinData {
-        GetState = unboxModel >> d.GetState
+        GetState = d.GetState
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> boxMsg
         GetWindow =
-          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow (unboxModel m) (unboxDispatch boxMsg disp)
+          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow m (unboxDispatch boxMsg disp)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map boxMsg
       }
     | SubModelSeqData d -> SubModelSeqData {
-        GetModels = unboxModel >> d.GetModels
+        GetModels = d.GetModels
         GetId = d.GetId
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> boxMsg
       }
     | SubModelSelectedItemData d -> SubModelSelectedItemData {
-        Get = unboxModel >> d.Get
-        Set = fun v m -> d.Set v (unboxModel m) |> boxMsg
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> boxMsg
         SubModelSeqBindingName = d.SubModelSeqBindingName
         WrapDispatch = boxWrapDispatch unboxMsg boxMsg d.WrapDispatch
       }
@@ -317,9 +304,10 @@ module internal Helpers =
     { Name = name
       Data = data }
 
-  let boxBinding binding =
+  let boxBinding (binding: Binding<'a, 'b>) : Binding<obj, obj> =
     { Name = binding.Name
-      Data = BindingData.boxBindingData unbox unbox box binding.Data }
+      Data = BindingData.boxMsg unbox box binding.Data }
+    |> Binding.mapModel unbox
 
 
 
