@@ -179,6 +179,7 @@ Further resources:
 
 * The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) provides information on general MVU/Elmish concepts and how they apply to Elmish.WPF, as well as the various Elmish.WPF bindings.
 * The [samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) are complete, working mini-apps demonstrating selected aspects of Elmish.WPF.
+* If you'd like to contribute, please read and follow the [Contributor guidelines](https://github.com/elmish/Elmish.WPF/blob/master/.github/CONTRIBUTING.md).
 
 FAQ
 ---
