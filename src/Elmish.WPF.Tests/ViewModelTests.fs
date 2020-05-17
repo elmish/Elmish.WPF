@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF.Tests.ViewModelTests
+namespace Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
@@ -554,6 +554,26 @@ module OneWaySeqLazy =
 
       let expected = m1 |> get |> map
       test <@ expected = actual @>
+    }
+
+
+  [<Fact>]
+  let ``get should be called at most once during VM instantiation`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int * Guid list>
+      let! eq = Gen.bool
+
+      let get = InvokeTester snd
+      let equals _ _ = eq
+      let map = id
+      let itemEquals = (=)
+      let getId = id
+
+      let binding = oneWaySeqLazy name get.Fn equals map itemEquals getId
+      TestVm(m1, binding) |> ignore
+
+      test <@ get.Count <= 1 @>
     }
 
 
