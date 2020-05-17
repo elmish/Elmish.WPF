@@ -422,8 +422,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWayLazy b ->
         not <| b.Equals (b.Get newModel) (b.Get currentModel)
     | OneWaySeq b ->
-        if not <| b.Equals (b.Get newModel) (b.Get currentModel) then
-          let newVals = newModel |> b.Get |> b.Map |> Seq.toArray
+        let intermediate = b.Get newModel
+        if not <| b.Equals intermediate (b.Get currentModel) then
+          let newVals = intermediate |> b.Map |> Seq.toArray
 
           let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
           for (newIdx, newVal) in newVals |> Seq.indexed do
