@@ -644,6 +644,30 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
+  let ``get should be called at most twice during model update`` () = // once on current model and once on new model
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int * Guid list>
+      let! m2 = GenX.auto<int * Guid list>
+      let! eq = Gen.bool
+
+      let get = InvokeTester snd
+      let equals _ _ = eq
+      let map = id
+      let itemEquals = (=)
+      let getId = id
+
+      let binding = oneWaySeqLazy name get.Fn equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      get.Reset ()
+      vm.UpdateModel m2
+
+      test <@ get.Count <= 2 @>
+    }
+
+
+  [<Fact>]
   let ``when retrieved several times between updates, map is called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
