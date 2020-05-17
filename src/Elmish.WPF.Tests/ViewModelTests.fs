@@ -502,8 +502,10 @@ module OneWaySeqLazy =
 
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m, binding)
+      let actual = (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox
 
-      test <@ (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox = (m |> get |> map) @>
+      let expected = m |> get |> map
+      test <@ expected = actual @>
     }
 
 
@@ -524,8 +526,10 @@ module OneWaySeqLazy =
         let vm = TestVm(m1, binding)
 
         vm.UpdateModel m2
+        let actual = (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox
 
-        test <@ (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox = (m2 |> get |> map) @>
+        let expected = m2 |> get |> map
+        test <@ expected = actual @>
     }
 
 
@@ -546,8 +550,10 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
+      let actual = (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox
 
-      test <@ (vm.Get name : ObservableCollection<obj>) |> Seq.toList |> List.map unbox = (m1 |> get |> map) @>
+      let expected = m1 |> get |> map
+      test <@ expected = actual @>
     }
 
 
