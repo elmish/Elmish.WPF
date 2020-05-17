@@ -706,10 +706,11 @@ module OneWaySeqLazy =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
-      let! newItem = Gen.guid
+      let! addedItem = Gen.guid
+      let! list2 = m1 |> snd |> Gen.constant |> GenX.addElement addedItem
       let! i2 = GenX.auto<int>
 
-      let m2 = (i2, snd m1 @ [newItem])
+      let m2 = (i2, list2)
 
       let get = snd
       let equals _ _ = false
@@ -731,12 +732,12 @@ module OneWaySeqLazy =
   let ``when model is updated and equals returns false, should trigger CC if elements are removed`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 1 50)
+      let! m2 = GenX.auto<int * Guid list>
+      let! removedItem = Gen.guid
+      let! list1 = m2 |> snd |> Gen.constant |> GenX.addElement removedItem
       let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
 
       let m1 = (i1, list1)
-      let m2 = (i2, List.tail list1)
 
       let get = snd
       let equals _ _ = false
@@ -1471,10 +1472,11 @@ module SubModelSeq =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
-      let! newItem = Gen.guid
+      let! addedItem = Gen.guid
+      let! list2 = m1 |> snd |> Gen.constant |> GenX.addElement addedItem
       let! i2 = GenX.auto<int>
 
-      let m2 = (i2, (snd m1) @ [newItem])
+      let m2 = (i2, list2)
 
       let getModels = snd
       let getId = id
@@ -1495,12 +1497,12 @@ module SubModelSeq =
   let ``when model is updated, should trigger CC if elements are removed`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 1 50)
+      let! m2 = GenX.auto<int * Guid list>
+      let! removedItem = Gen.guid
+      let! list1 = m2 |> snd |> Gen.constant |> GenX.addElement removedItem
       let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
 
       let m1 = (i1, list1)
-      let m2 = (i2, List.tail list1)
 
       let getModels = snd
       let getId = id
