@@ -1,4 +1,4 @@
-namespace Elmish.WPF.Tests.ViewModelTests
+﻿namespace Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
@@ -598,15 +598,14 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``map should be called at most once during model update iff equals returns false`` () =
+  let ``when equals returns true, map should be called at most once during model update`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
       let! m2 = GenX.auto<int * Guid list>
-      let! eq = Gen.bool
 
       let get = snd
-      let equals _ _ = eq
+      let equals _ _ = true
       let map = InvokeTester id
       let itemEquals = (=)
       let getId = id
@@ -617,7 +616,30 @@ module OneWaySeqLazy =
       map.Reset ()
       vm.UpdateModel m2
 
-      test <@ if eq then map.Count = 0 else map.Count <= 1 @>
+      test <@ map.Count = 0 @>
+    }
+
+
+  [<Fact>]
+  let ``when equals returns false, map should be called at most once during model update`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int * Guid list>
+      let! m2 = GenX.auto<int * Guid list>
+
+      let get = snd
+      let equals _ _ = false
+      let map = InvokeTester id
+      let itemEquals = (=)
+      let getId = id
+
+      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      map.Reset ()
+      vm.UpdateModel m2
+
+      test <@ map.Count <= 1 @>
     }
 
 
