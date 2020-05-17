@@ -494,9 +494,9 @@ module OneWaySeqLazy =
       let! name = GenX.auto<string>
       let! m = GenX.auto<int * Guid array>
 
-      let get : int * Guid array -> Guid array = snd
+      let get = snd
       let equals = (=)
-      let map : Guid array -> Guid list = Array.toList
+      let map = Array.toList
       let itemEquals = (=)
       let getId = id
 
@@ -516,9 +516,9 @@ module OneWaySeqLazy =
         let! m1 = GenX.auto<int * Guid array>
         let! m2 = GenX.auto<int * Guid array>
 
-        let get : int * Guid array -> Guid array = snd
+        let get = snd
         let equals _ _ = false
-        let map : Guid array -> Guid list = Array.toList
+        let map = Array.toList
         let itemEquals = (=)
         let getId = id
 
@@ -540,9 +540,9 @@ module OneWaySeqLazy =
       let! m1 = GenX.auto<int * Guid array>
       let! m2 = GenX.auto<int * Guid array>
 
-      let get : int * Guid array -> Guid array = snd
+      let get = snd
       let equals _ _ = true
-      let map : Guid array -> Guid list = Array.toList
+      let map = Array.toList
       let itemEquals = (=)
       let getId = id
 
