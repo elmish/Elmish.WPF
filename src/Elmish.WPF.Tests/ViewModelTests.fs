@@ -1638,7 +1638,7 @@ module SubModelSeq =
       let! subName = GenX.auto<string>
       let! m = GenX.auto<int * Guid list>
 
-      let getModels : int * Guid list -> Guid list = snd
+      let getModels = snd
       let getId = id
       let toMsg = id
       let subGet = string
@@ -1666,7 +1666,7 @@ module SubModelSeq =
       let! m = GenX.auto<int * Guid list>
       let! p = GenX.auto<string>
 
-      let getModels : int * Guid list -> Guid list = snd
+      let getModels = snd
       let getId = string
       let toMsg (id: string, subMsg: string) = (id + subMsg).Length
       let subGet = string
