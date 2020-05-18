@@ -414,6 +414,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let oneWaySeqMerge
       getId
+      update
       (b: OneWaySeqBinding<_, _, _, _>)
       (newVals: _ array) =
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
@@ -435,8 +436,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       for Kvp (oldId, (oldIdx, oldVal)) in oldIdxValPairsById do
         match newIdxValPairsById.TryGetValue oldId with
         | true, (_, newVal) ->
-          if not (b.ItemEquals newVal oldVal) then
-            b.Values.[oldIdx] <- newVal  // Will be sorted later
+          update oldVal newVal oldIdx
         | _ -> ()
       
       // Remove old values that no longer exist
@@ -533,8 +533,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeq b ->
         let intermediate = b.Get newModel
         if not <| b.Equals intermediate (b.Get currentModel) then
+          let update oldVal newVal oldIdx =
+            if not (b.ItemEquals newVal oldVal) then
+              b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge b.GetId b newVals
+          oneWaySeqMerge b.GetId update b newVals
         false
     | Cmd _
     | CmdParam _ ->
