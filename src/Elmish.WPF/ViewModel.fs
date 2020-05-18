@@ -466,9 +466,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let subModelSeqMerge
       create
       (b: SubModelSeqBinding<_, _, _, _, _>)
-      newModel =
-    let newSubModels = newModel |> b.GetModels |> Seq.toArray
-
+      (newSubModels: _ array) =
     let newIdxSubModelPairsById = Dictionary<_,_>(newSubModels.Length)
     for (newIdx, m) in newSubModels |> Seq.indexed do
       let id = b.GetId m
@@ -626,7 +624,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let create m id = 
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
-        subModelSeqMerge create b newModel
+        let newSubModels = newModel |> b.GetModels |> Seq.toArray
+        subModelSeqMerge create b newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
