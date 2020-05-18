@@ -1,4 +1,4 @@
-namespace Elmish.WPF.Tests.ViewModelTests
+﻿namespace Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
@@ -510,7 +510,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when retrieved after update and equals returns false, should return an ObservableCollection with the new values returned by map`` () =
+  let ``given equals returns false, when retrieved after update, should return an ObservableCollection with the new values returned by map`` () =
       Property.check <| property {
         let! name = GenX.auto<string>
         let! m1 = GenX.auto<int * Guid list>
@@ -534,7 +534,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when retrieved after update and equals returns true, should return an ObservableCollection with the previous values returned by map`` () =
+  let ``given equals returns true, when retrieved after update, should return an ObservableCollection with the previous values returned by map`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -558,7 +558,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``get should be called at most once during VM instantiation`` () =
+  let ``during VM instantiation, get should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -578,7 +578,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``map should be called at most once during VM instantiation`` () =
+  let ``during VM instantiation, map should have be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -598,7 +598,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when equals returns true, map should be called at most once during model update`` () =
+  let ``given equals returns true, during model update, map should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -621,7 +621,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when equals returns false, map should be called at most once during model update`` () =
+  let ``when equals returns false, during model update, map should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -644,7 +644,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``get should be called at most twice during model update`` () = // once on current model and once on new model
+  let ``during model update, get should be called at most twice`` () = // once on current model and once on new model
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -716,7 +716,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated, should never trigger PC regardless of equals or itemEquals`` () =  // because this binding should only trigger CC
+  let ``for any behavior of equals or itemEquals, when model is updated, should never trigger PC`` () =  // because this binding should only trigger CC
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -740,7 +740,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns true, should never trigger CC`` () =
+  let ``given equals returns true, when model is updated, should never trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -763,7 +763,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns false, should not trigger CC if elements are identical`` () =
+  let ``given equals returns false and identical elements, when model is updated, should not trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -788,7 +788,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns false, should trigger CC if elements are added`` () =
+  let ``given equals returns false and an element is added, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -815,7 +815,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns false, should trigger CC if elements are removed`` () =
+  let ``given equals returns false and an element is removed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m2 = GenX.auto<int * Guid list>
@@ -842,7 +842,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns false, should trigger CC if elements are re-ordered`` () =
+  let ``given equals returns false and order of elements reversed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
@@ -869,7 +869,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``when model is updated and equals returns false, should trigger CC if itemEquals returns false`` () =
+  let ``given equals returns false and itemEquals returns false, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! list1 = Gen.guid |> Gen.list (Range.exponential 1 50)
@@ -906,7 +906,7 @@ module OneWaySeqLazy =
       that :? TestClass
 
   [<Fact>]
-  let ``when equals returns false and element removed from model, should trigger CC.Remove for removed element`` () =
+  let ``when equals returns false and an element is removed, should trigger CC.Remove for removed element`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! id1 = GenX.auto<int>
@@ -939,7 +939,7 @@ module OneWaySeqLazy =
     }
 
   [<Fact>]
-  let ``when equals returns false and element updated in model, should trigger CC.Remove or CC.Replace for udpated element`` () =
+  let ``when equals returns false and an element is updated, should trigger CC.Remove or CC.Replace for udpated element`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! id1 = GenX.auto<int>
@@ -1531,7 +1531,7 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``when model is updated, should not trigger CC if elements are the same`` () =
+  let ``given elements are the same, when model is updated, should not trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -1554,7 +1554,7 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``when model is updated, should trigger CC if elements are added`` () =
+  let ``given an element is added, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<int * Guid list>
@@ -1580,7 +1580,7 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``when model is updated, should trigger CC if elements are removed`` () =
+  let ``given an element is removed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m2 = GenX.auto<int * Guid list>
@@ -1606,7 +1606,7 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``when model is updated, should trigger CC if elements are re-ordered`` () =
+  let ``given order of elements is reversed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! list = Gen.guid |> Gen.list (Range.exponential 2 50)
