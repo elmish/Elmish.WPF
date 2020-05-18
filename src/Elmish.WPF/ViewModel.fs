@@ -464,12 +464,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
 
   let subModelSeqMerge
+      getSourceId
       create
       (b: SubModelSeqBinding<_, _, _, _, _>)
       (newSubModels: _ array) =
     let newIdxSubModelPairsById = Dictionary<_,_>(newSubModels.Length)
     for (newIdx, m) in newSubModels |> Seq.indexed do
-      let id = b.GetId m
+      let id = getSourceId m
       if newIdxSubModelPairsById.ContainsKey id
       then logInvalidGetId id (newIdxSubModelPairsById.[id]) m
       else newIdxSubModelPairsById.Add(id, (newIdx, m))
@@ -625,7 +626,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        subModelSeqMerge create b newSubModels
+        subModelSeqMerge b.GetId create b newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
