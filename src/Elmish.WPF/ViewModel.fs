@@ -415,7 +415,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let oneWaySeqMerge
       getId
       update
-      (b: OneWaySeqBinding<_, _, _, _>)
+      (observableCollection: ObservableCollection<_>)
       (newVals: _ array) =
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
     for (newIdx, newVal) in newVals |> Seq.indexed do
@@ -424,14 +424,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       then logInvalidGetId id (newIdxValPairsById.[id]) newVal
       else newIdxValPairsById.Add(id, (newIdx, newVal))
 
-    let oldIdxValPairsById = Dictionary<_,_>(b.Values.Count)
-    for (oldIdx, oldVal) in b.Values |> Seq.indexed do
+    let oldIdxValPairsById = Dictionary<_,_>(observableCollection.Count)
+    for (oldIdx, oldVal) in observableCollection |> Seq.indexed do
       let id = getId oldVal
       if oldIdxValPairsById.ContainsKey id
       then logInvalidGetId id (oldIdxValPairsById.[id]) oldVal
       else oldIdxValPairsById.Add(id, (oldIdx, oldVal))
 
-    if newIdxValPairsById.Count = newVals.Length && oldIdxValPairsById.Count = b.Values.Count then
+    if newIdxValPairsById.Count = newVals.Length && oldIdxValPairsById.Count = observableCollection.Count then
       // Update existing values
       for Kvp (oldId, (oldIdx, oldVal)) in oldIdxValPairsById do
         match newIdxValPairsById.TryGetValue oldId with
@@ -440,30 +440,30 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | _ -> ()
       
       // Remove old values that no longer exist
-      if b.Values.Count <> 0 && newVals.Length = 0
-      then b.Values.Clear ()
+      if observableCollection.Count <> 0 && newVals.Length = 0
+      then observableCollection.Clear ()
       else
-        for i in b.Values.Count - 1..-1..0 do
-          let oldId = getId b.Values.[i]
+        for i in observableCollection.Count - 1..-1..0 do
+          let oldId = getId observableCollection.[i]
           if oldId |> newIdxValPairsById.ContainsKey |> not then
             let (oldIdx, _) = oldIdxValPairsById.[oldId]
-            b.Values.RemoveAt oldIdx
+            observableCollection.RemoveAt oldIdx
       
       // Add new values that don't currently exist
       newIdxValPairsById
       |> Seq.filter (Kvp.key >> oldIdxValPairsById.ContainsKey >> not)
       |> Seq.map Kvp.value
       |> Seq.map snd
-      |> Seq.iter b.Values.Add
+      |> Seq.iter observableCollection.Add
       
       // Reorder according to new model list
       for Kvp (newId, (newIdx, _)) in newIdxValPairsById do
         let oldIdx =
-          b.Values
+          observableCollection
           |> Seq.indexed
           |> Seq.find (fun (_, oldVal) -> getId oldVal = newId)
           |> fst
-        if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
+        if oldIdx <> newIdx then observableCollection.Move(oldIdx, newIdx)
 
   let subModelSeqMerge
       logInvalidGetSourceId
@@ -537,7 +537,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if not (b.ItemEquals newVal oldVal) then
               b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge b.GetId update b newVals
+          oneWaySeqMerge b.GetId update b.Values newVals
         false
     | Cmd _
     | CmdParam _ ->
