@@ -463,7 +463,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> fst
         if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
 
-  let subModelSeqMerge bindingName (b: SubModelSeqBinding<_, _, _, _, _>) newModel =
+  let subModelSeqMerge
+      bindingName
+      (b: SubModelSeqBinding<_, _, _, _, _>)
+      newModel =
     let newSubModels = newModel |> b.GetModels |> Seq.toArray
 
     let newIdxSubModelPairsById = Dictionary<_,_>(newSubModels.Length)
