@@ -413,6 +413,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   let oneWaySeqMerge
+      logInvalidGetSourceId
       getId
       update
       (observableCollection: ObservableCollection<_>)
@@ -421,7 +422,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     for (newIdx, newVal) in newVals |> Seq.indexed do
       let id = getId newVal
       if newIdxValPairsById.ContainsKey id
-      then logInvalidGetId id (newIdxValPairsById.[id]) newVal
+      then logInvalidGetSourceId id (newIdxValPairsById.[id]) newVal
       else newIdxValPairsById.Add(id, (newIdx, newVal))
 
     let oldIdxValPairsById = Dictionary<_,_>(observableCollection.Count)
@@ -537,7 +538,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if not (b.ItemEquals newVal oldVal) then
               b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge b.GetId update b.Values newVals
+          oneWaySeqMerge logInvalidGetId b.GetId update b.Values newVals
         false
     | Cmd _
     | CmdParam _ ->
