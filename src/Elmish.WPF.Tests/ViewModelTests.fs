@@ -842,6 +842,42 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
+  let ``given equals returns false and an element is replaced, when model is updated, should trigger CC`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! list1Head = Gen.guid
+      let! list1Tail = GenX.auto<Guid list>
+      let! list2Replacement = Gen.guid
+      let! replcementIndex = (0, list1Tail.Length) ||> Range.constant |> Gen.int
+      let! i1 = GenX.auto<int>
+      let! i2 = GenX.auto<int>
+
+      let list1 = list1Head :: list1Tail
+      let list2 =
+        (list1 |> List.take replcementIndex)
+        @ [list2Replacement]
+        @ (list1 |> List.skip (replcementIndex + 1))
+
+      let m1 = (i1, list1)
+      let m2 = (i2, list2)
+
+      let get = snd
+      let equals _ _ = false
+      let map = id
+      let itemEquals = (=)
+      let getId = id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ vm.NumCcTriggersFor name > 0 @>
+    }
+
+
+  [<Fact>]
   let ``given equals returns false and shuffled elements, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
@@ -1590,6 +1626,40 @@ module SubModelSeq =
       let! i1 = GenX.auto<int>
 
       let m1 = (i1, list1)
+
+      let getModels = snd
+      let getId = id
+      let toMsg = id
+
+      let binding = subModelSeq name getModels getId toMsg []
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+
+      vm.UpdateModel m2
+
+      test <@ vm.NumCcTriggersFor name > 0 @>
+    }
+
+
+  [<Fact>]
+  let ``given an element is replaced, when model is updated, should trigger CC`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! list1Head = Gen.guid
+      let! list1Tail = GenX.auto<Guid list>
+      let! list2Replacement = Gen.guid
+      let! replcementIndex = (0, list1Tail.Length) ||> Range.constant |> Gen.int
+      let! i1 = GenX.auto<int>
+      let! i2 = GenX.auto<int>
+
+      let list1 = list1Head :: list1Tail
+      let list2 =
+        (list1 |> List.take replcementIndex)
+        @ [list2Replacement]
+        @ (list1 |> List.skip (replcementIndex + 1))
+      let m1 = (i1, list1)
+      let m2 = (i2, list2)
 
       let getModels = snd
       let getId = id
