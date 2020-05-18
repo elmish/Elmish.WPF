@@ -470,7 +470,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       getTargetId
       create
       update
-      (b: SubModelSeqBinding<_, _, _, _, _>)
+      (observableCollection: ObservableCollection<_>)
       (newSubModels: _ array) =
     let newIdxSubModelPairsById = Dictionary<_,_>(newSubModels.Length)
     for (newIdx, m) in newSubModels |> Seq.indexed do
@@ -479,14 +479,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       then logInvalidGetSourceId id (newIdxSubModelPairsById.[id]) m
       else newIdxSubModelPairsById.Add(id, (newIdx, m))
 
-    let oldIdxSubViewModelPairsById = Dictionary<_,_>(b.Vms.Count)
-    for (oldIdx, vm) in b.Vms |> Seq.indexed do
+    let oldIdxSubViewModelPairsById = Dictionary<_,_>(observableCollection.Count)
+    for (oldIdx, vm) in observableCollection |> Seq.indexed do
       let id = getTargetId vm
       if oldIdxSubViewModelPairsById.ContainsKey id
       then logInvalidGetTargetId id (oldIdxSubViewModelPairsById.[id]) vm
       else oldIdxSubViewModelPairsById.Add(id, (oldIdx, vm))
 
-    if newIdxSubModelPairsById.Count = newSubModels.Length && oldIdxSubViewModelPairsById.Count = b.Vms.Count then
+    if newIdxSubModelPairsById.Count = newSubModels.Length && oldIdxSubViewModelPairsById.Count = observableCollection.Count then
       // Update existing models
       for Kvp (oldId, (_, vm)) in oldIdxSubViewModelPairsById do
         match newIdxSubModelPairsById.TryGetValue oldId with
@@ -494,30 +494,30 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | _ -> ()
       
       // Remove old view models that no longer exist
-      if b.Vms.Count <> 0 && newSubModels.Length = 0
-      then b.Vms.Clear ()
+      if observableCollection.Count <> 0 && newSubModels.Length = 0
+      then observableCollection.Clear ()
       else
-        for i in b.Vms.Count - 1..-1..0 do
-          let oldId = getTargetId b.Vms.[i]
+        for i in observableCollection.Count - 1..-1..0 do
+          let oldId = getTargetId observableCollection.[i]
           if oldId |> newIdxSubModelPairsById.ContainsKey |> not then
             let (oldIdx, _) = oldIdxSubViewModelPairsById.[oldId]
-            b.Vms.RemoveAt oldIdx
+            observableCollection.RemoveAt oldIdx
       
       // Add new models that don't currently exist
       let create (Kvp (id, (_, m))) = create m id
       newIdxSubModelPairsById
       |> Seq.filter (Kvp.key >> oldIdxSubViewModelPairsById.ContainsKey >> not)
       |> Seq.map create
-      |> Seq.iter b.Vms.Add
+      |> Seq.iter observableCollection.Add
       
       // Reorder according to new model list
       for Kvp (newId, (newIdx, _)) in newIdxSubModelPairsById do
         let oldIdx =
-          b.Vms
+          observableCollection
           |> Seq.indexed
           |> Seq.find (fun (_, vm) -> newId = getTargetId vm)
           |> fst
-        if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
+        if oldIdx <> newIdx then observableCollection.Move(oldIdx, newIdx)
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
@@ -633,7 +633,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let update m (vm: ViewModel<_, _>) = vm.UpdateModel m
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        subModelSeqMerge logInvalidGetId logInvalidGetTargetId b.GetId getTargetId create update b newSubModels
+        subModelSeqMerge logInvalidGetId logInvalidGetTargetId b.GetId getTargetId create update b.Vms newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
