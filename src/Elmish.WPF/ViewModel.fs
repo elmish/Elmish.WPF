@@ -464,7 +464,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let tIdx =
           target
           |> Seq.indexed
-          |> Seq.find (fun (_, t) -> getTargetId t = sId)
+          |> Seq.find (fun (_, t) -> sId = getTargetId t)
           |> fst
         if tIdx <> sIdx then target.Move(tIdx, sIdx)
 
