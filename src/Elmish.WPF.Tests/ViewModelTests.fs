@@ -164,6 +164,15 @@ type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
 module Helpers =
 
 
+  module List =
+    let swap i j =
+      List.permute
+        (function
+          | a when a = i -> j
+          | a when a = j -> i
+          | a -> a)
+
+
   module String =
 
     let length (s: string) = s.Length
@@ -858,6 +867,35 @@ module OneWaySeqLazy =
         @ [list2Replacement]
         @ (list1 |> List.skip (replcementIndex + 1))
 
+      let m1 = (i1, list1)
+      let m2 = (i2, list2)
+
+      let get = snd
+      let equals _ _ = false
+      let map = id
+      let itemEquals = (=)
+      let getId = id
+
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+      vm.UpdateModel m2
+
+      test <@ vm.NumCcTriggersFor name > 0 @>
+    }
+
+
+  [<Fact>]
+  let ``given equals returns false and adjacent elements swapped, when model is updated, should trigger CC`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! firstSwapIndex = (0, list1.Length - 2) ||> Range.constant |> Gen.int
+      let! i1 = GenX.auto<int>
+      let! i2 = GenX.auto<int>
+
+      let list2 = list1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
       let m1 = (i1, list1)
       let m2 = (i2, list2)
 
@@ -1658,6 +1696,34 @@ module SubModelSeq =
         (list1 |> List.take replcementIndex)
         @ [list2Replacement]
         @ (list1 |> List.skip (replcementIndex + 1))
+      let m1 = (i1, list1)
+      let m2 = (i2, list2)
+
+      let getModels = snd
+      let getId = id
+      let toMsg = id
+
+      let binding = subModelSeq name getModels getId toMsg []
+      let vm = TestVm(m1, binding)
+
+      vm.TrackCcTriggersFor name
+
+      vm.UpdateModel m2
+
+      test <@ vm.NumCcTriggersFor name > 0 @>
+    }
+
+
+  [<Fact>]
+  let ``given adjacent elements swapped, when model is updated, should trigger CC`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! firstSwapIndex = (0, list1.Length - 2) ||> Range.constant |> Gen.int
+      let! i1 = GenX.auto<int>
+      let! i2 = GenX.auto<int>
+
+      let list2 = list1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
       let m1 = (i1, list1)
       let m2 = (i2, list2)
 
