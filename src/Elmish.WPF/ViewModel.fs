@@ -419,55 +419,55 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       getTargetId
       create
       update
-      (observableCollection: ObservableCollection<_>)
-      (newVals: _ array) =
-    let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
-    for (newIdx, newVal) in newVals |> Seq.indexed do
-      let id = getSourceId newVal
-      if newIdxValPairsById.ContainsKey id
-      then logInvalidGetSourceId id (newIdxValPairsById.[id]) newVal
-      else newIdxValPairsById.Add(id, (newIdx, newVal))
+      (target: ObservableCollection<_>)
+      (source: _ array) =
+    let sourceIdxItemPairsById = Dictionary<_,_>(source.Length)
+    for (idx, s) in source |> Seq.indexed do
+      let id = getSourceId s
+      if sourceIdxItemPairsById.ContainsKey id
+      then logInvalidGetSourceId id (sourceIdxItemPairsById.[id]) s
+      else sourceIdxItemPairsById.Add(id, (idx, s))
 
-    let oldIdxValPairsById = Dictionary<_,_>(observableCollection.Count)
-    for (oldIdx, oldVal) in observableCollection |> Seq.indexed do
-      let id = getTargetId oldVal
-      if oldIdxValPairsById.ContainsKey id
-      then logInvalidGetTargetId id (oldIdxValPairsById.[id]) oldVal
-      else oldIdxValPairsById.Add(id, (oldIdx, oldVal))
+    let targetIdxItemPairsById = Dictionary<_,_>(target.Count)
+    for (idx, t) in target |> Seq.indexed do
+      let id = getTargetId t
+      if targetIdxItemPairsById.ContainsKey id
+      then logInvalidGetTargetId id (targetIdxItemPairsById.[id]) t
+      else targetIdxItemPairsById.Add(id, (idx, t))
 
-    if newIdxValPairsById.Count = newVals.Length && oldIdxValPairsById.Count = observableCollection.Count then
+    if sourceIdxItemPairsById.Count = source.Length && targetIdxItemPairsById.Count = target.Count then
       // Update existing values
-      for Kvp (oldId, (oldIdx, oldVal)) in oldIdxValPairsById do
-        match newIdxValPairsById.TryGetValue oldId with
-        | true, (_, newVal) ->
-          update oldVal newVal oldIdx
+      for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
+        match sourceIdxItemPairsById.TryGetValue tId with
+        | true, (_, s) ->
+          update t s tIdx
         | _ -> ()
       
       // Remove old values that no longer exist
-      if observableCollection.Count <> 0 && newVals.Length = 0
-      then observableCollection.Clear ()
+      if target.Count <> 0 && source.Length = 0
+      then target.Clear ()
       else
-        for i in observableCollection.Count - 1..-1..0 do
-          let oldId = getTargetId observableCollection.[i]
-          if oldId |> newIdxValPairsById.ContainsKey |> not then
-            let (oldIdx, _) = oldIdxValPairsById.[oldId]
-            observableCollection.RemoveAt oldIdx
+        for tIdx in target.Count - 1..-1..0 do
+          let tId = getTargetId target.[tIdx]
+          if tId |> sourceIdxItemPairsById.ContainsKey |> not then
+            let (tIdx2, _) = targetIdxItemPairsById.[tId] // tIdx = tIdx2, so this line is unnecessary
+            target.RemoveAt tIdx2
       
       // Add new values that don't currently exist
-      let create (Kvp (id, (_, m))) = create m id
-      newIdxValPairsById
-      |> Seq.filter (Kvp.key >> oldIdxValPairsById.ContainsKey >> not)
+      let create (Kvp (sId, (_, s))) = create s sId
+      sourceIdxItemPairsById
+      |> Seq.filter (Kvp.key >> targetIdxItemPairsById.ContainsKey >> not)
       |> Seq.map create
-      |> Seq.iter observableCollection.Add
+      |> Seq.iter target.Add
       
       // Reorder according to new model list
-      for Kvp (newId, (newIdx, _)) in newIdxValPairsById do
-        let oldIdx =
-          observableCollection
+      for Kvp (sId, (sIdx, _)) in sourceIdxItemPairsById do
+        let tIdx =
+          target
           |> Seq.indexed
-          |> Seq.find (fun (_, oldVal) -> getTargetId oldVal = newId)
+          |> Seq.find (fun (_, t) -> getTargetId t = sId)
           |> fst
-        if oldIdx <> newIdx then observableCollection.Move(oldIdx, newIdx)
+        if tIdx <> sIdx then target.Move(tIdx, sIdx)
 
   let subModelSeqMerge
       logInvalidGetSourceId
@@ -476,54 +476,54 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       getTargetId
       create
       update
-      (observableCollection: ObservableCollection<_>)
-      (newSubModels: _ array) =
-    let newIdxSubModelPairsById = Dictionary<_,_>(newSubModels.Length)
-    for (newIdx, m) in newSubModels |> Seq.indexed do
-      let id = getSourceId m
-      if newIdxSubModelPairsById.ContainsKey id
-      then logInvalidGetSourceId id (newIdxSubModelPairsById.[id]) m
-      else newIdxSubModelPairsById.Add(id, (newIdx, m))
+      (target: ObservableCollection<_>)
+      (source: _ array) =
+    let sourceIdxItemPairsById = Dictionary<_,_>(source.Length)
+    for (idx, s) in source |> Seq.indexed do
+      let id = getSourceId s
+      if sourceIdxItemPairsById.ContainsKey id
+      then logInvalidGetSourceId id (sourceIdxItemPairsById.[id]) s
+      else sourceIdxItemPairsById.Add(id, (idx, s))
 
-    let oldIdxSubViewModelPairsById = Dictionary<_,_>(observableCollection.Count)
-    for (oldIdx, vm) in observableCollection |> Seq.indexed do
-      let id = getTargetId vm
-      if oldIdxSubViewModelPairsById.ContainsKey id
-      then logInvalidGetTargetId id (oldIdxSubViewModelPairsById.[id]) vm
-      else oldIdxSubViewModelPairsById.Add(id, (oldIdx, vm))
+    let targetIdxItemPairsById = Dictionary<_,_>(target.Count)
+    for (idx, t) in target |> Seq.indexed do
+      let id = getTargetId t
+      if targetIdxItemPairsById.ContainsKey id
+      then logInvalidGetTargetId id (targetIdxItemPairsById.[id]) t
+      else targetIdxItemPairsById.Add(id, (idx, t))
 
-    if newIdxSubModelPairsById.Count = newSubModels.Length && oldIdxSubViewModelPairsById.Count = observableCollection.Count then
+    if sourceIdxItemPairsById.Count = source.Length && targetIdxItemPairsById.Count = target.Count then
       // Update existing models
-      for Kvp (oldId, (oldIdx, vm)) in oldIdxSubViewModelPairsById do
-        match newIdxSubModelPairsById.TryGetValue oldId with
-        | true, (_, m) -> update vm m oldIdx
+      for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
+        match sourceIdxItemPairsById.TryGetValue tId with
+        | true, (_, s) -> update t s tIdx
         | _ -> ()
       
       // Remove old view models that no longer exist
-      if observableCollection.Count <> 0 && newSubModels.Length = 0
-      then observableCollection.Clear ()
+      if target.Count <> 0 && source.Length = 0
+      then target.Clear ()
       else
-        for i in observableCollection.Count - 1..-1..0 do
-          let oldId = getTargetId observableCollection.[i]
-          if oldId |> newIdxSubModelPairsById.ContainsKey |> not then
-            let (oldIdx, _) = oldIdxSubViewModelPairsById.[oldId]
-            observableCollection.RemoveAt oldIdx
+        for tIdx in target.Count - 1..-1..0 do
+          let tId = getTargetId target.[tIdx]
+          if tId |> sourceIdxItemPairsById.ContainsKey |> not then
+            let (tIdx2, _) = targetIdxItemPairsById.[tId] // tIdx = tIdx2, so this line is unnecessary
+            target.RemoveAt tIdx2
       
       // Add new models that don't currently exist
-      let create (Kvp (id, (_, m))) = create m id
-      newIdxSubModelPairsById
-      |> Seq.filter (Kvp.key >> oldIdxSubViewModelPairsById.ContainsKey >> not)
+      let create (Kvp (sId, (_, s))) = create s sId
+      sourceIdxItemPairsById
+      |> Seq.filter (Kvp.key >> targetIdxItemPairsById.ContainsKey >> not)
       |> Seq.map create
-      |> Seq.iter observableCollection.Add
+      |> Seq.iter target.Add
       
       // Reorder according to new model list
-      for Kvp (newId, (newIdx, _)) in newIdxSubModelPairsById do
-        let oldIdx =
-          observableCollection
+      for Kvp (sId, (sIdx, _)) in sourceIdxItemPairsById do
+        let tIdx =
+          target
           |> Seq.indexed
-          |> Seq.find (fun (_, vm) -> newId = getTargetId vm)
+          |> Seq.find (fun (_, t) -> sId = getTargetId t)
           |> fst
-        if oldIdx <> newIdx then observableCollection.Move(oldIdx, newIdx)
+        if tIdx <> sIdx then target.Move(tIdx, sIdx)
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
