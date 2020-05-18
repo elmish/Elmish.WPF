@@ -338,8 +338,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if config.LogTrace then Diagnostics.Trace.WriteLine(str)
     Printf.kprintf innerLog fmt
 
-  let logInvalidGetId = log "The getId function must return distinct IDs, but it returned the same ID %A for %A and %A"
-
   let getPropChainFor bindingName =
     sprintf "%s.%s" propNameChain bindingName
 
@@ -444,12 +442,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let map = measure name "map" d.Map
         let getId = measure name "getId" d.GetId
         let values = ObservableCollection(initialModel |> get |> map)
-        let valuesById = Dictionary<_,_>(values.Count)
-        for value in values do
-          let id = getId value
-          if valuesById.ContainsKey id
-          then logInvalidGetId id (valuesById.[id]) value
-          else valuesById.Add(id, value)
         Some <| OneWaySeq {
           Get = get
           Map = map
@@ -577,12 +569,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
           |> ObservableCollection
-        let modelsById = Dictionary<_,_>(vms.Count)
-        for model in vms |> Seq.map (fun vm -> vm.CurrentModel) do
-          let id = getId model
-          if modelsById.ContainsKey id
-          then logInvalidGetId id (modelsById.[id]) model
-          else modelsById.Add(id, model)
         Some <| SubModelSeq {
           GetModels = getModels
           GetId = getId
@@ -639,7 +625,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if not (b.ItemEquals newVal oldVal) then
               b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          historicalMerge logInvalidGetId logInvalidGetId b.GetId b.GetId create update b.Values newVals
+          elmStyleMerge b.GetId b.GetId create update b.Values newVals
         false
     | Cmd _
     | CmdParam _ ->
@@ -734,14 +720,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        let logInvalidGetTargetId a b (vm: ViewModel<_, _>) = logInvalidGetId a b vm.CurrentModel
         let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
         let create m id = 
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let update (vm: ViewModel<_, _>) m _ = vm.UpdateModel m
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        historicalMerge logInvalidGetId logInvalidGetTargetId b.GetId getTargetId create update b.Vms newSubModels
+        elmStyleMerge b.GetId getTargetId create update b.Vms newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel

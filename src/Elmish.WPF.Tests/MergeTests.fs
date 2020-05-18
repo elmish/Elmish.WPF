@@ -9,11 +9,10 @@ open Swensen.Unquote
 open Elmish.WPF
 
 
-let logNoOp _ _ _ = ()
 let getIdAsId = id
 let createAsId a _ = a
 let updateNoOp _ _ _ = ()
-let merge x = x |> historicalMerge logNoOp logNoOp
+let merge x = x |> elmStyleMerge
 
 
 let private trackCC (observableCollection: ObservableCollection<_>) =
