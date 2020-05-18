@@ -492,7 +492,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       // Update existing models
       for Kvp (oldId, (_, vm)) in oldIdxSubViewModelPairsById do
         match newIdxSubModelPairsById.TryGetValue oldId with
-        | true, (_, m) -> update m vm
+        | true, (_, m) -> update vm m
         | _ -> ()
       
       // Remove old view models that no longer exist
@@ -637,7 +637,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let create m id = 
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
-        let update m (vm: ViewModel<_, _>) = vm.UpdateModel m
+        let update (vm: ViewModel<_, _>) m = vm.UpdateModel m
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
         subModelSeqMerge logInvalidGetId logInvalidGetTargetId b.GetId getTargetId create update b.Vms newSubModels
         false
