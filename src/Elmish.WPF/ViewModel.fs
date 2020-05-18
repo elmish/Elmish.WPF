@@ -436,13 +436,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       else targetIdxItemPairsById.Add(id, (idx, t))
 
     if sourceIdxItemPairsById.Count = source.Length && targetIdxItemPairsById.Count = target.Count then
-      // Update existing values
+      // Update target items
       for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
         match sourceIdxItemPairsById.TryGetValue tId with
         | true, (_, s) -> update t s tIdx
         | _ -> ()
       
-      // Remove old values that no longer exist
+      // Remove target items that no longer exist
       if target.Count <> 0 && source.Length = 0
       then target.Clear ()
       else
@@ -452,14 +452,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let (tIdx2, _) = targetIdxItemPairsById.[tId] // tIdx = tIdx2, so this line is unnecessary
             target.RemoveAt tIdx2
       
-      // Add new values that don't currently exist
+      // Add target items that don't currently exist
       let create (Kvp (sId, (_, s))) = create s sId
       sourceIdxItemPairsById
       |> Seq.filter (Kvp.key >> targetIdxItemPairsById.ContainsKey >> not)
       |> Seq.map create
       |> Seq.iter target.Add
       
-      // Reorder according to new model list
+      // Reorder according to source items
       for Kvp (sId, (sIdx, _)) in sourceIdxItemPairsById do
         let tIdx =
           target
@@ -492,13 +492,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       else targetIdxItemPairsById.Add(id, (idx, t))
 
     if sourceIdxItemPairsById.Count = source.Length && targetIdxItemPairsById.Count = target.Count then
-      // Update existing models
+      // Update target items
       for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
         match sourceIdxItemPairsById.TryGetValue tId with
         | true, (_, s) -> update t s tIdx
         | _ -> ()
       
-      // Remove old view models that no longer exist
+      // Remove target items that no longer exist
       if target.Count <> 0 && source.Length = 0
       then target.Clear ()
       else
@@ -508,14 +508,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let (tIdx2, _) = targetIdxItemPairsById.[tId] // tIdx = tIdx2, so this line is unnecessary
             target.RemoveAt tIdx2
       
-      // Add new models that don't currently exist
+      // Add target items that don't currently exist
       let create (Kvp (sId, (_, s))) = create s sId
       sourceIdxItemPairsById
       |> Seq.filter (Kvp.key >> targetIdxItemPairsById.ContainsKey >> not)
       |> Seq.map create
       |> Seq.iter target.Add
       
-      // Reorder according to new model list
+      // Reorder according to source items
       for Kvp (sId, (sIdx, _)) in sourceIdxItemPairsById do
         let tIdx =
           target
