@@ -465,6 +465,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let subModelSeqMerge
       logInvalidGetSourceId
+      logInvalidGetTargetId
       getSourceId
       getTargetId
       create
@@ -481,7 +482,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     for (oldIdx, vm) in b.Vms |> Seq.indexed do
       let id = getTargetId vm
       if oldIdxSubViewModelPairsById.ContainsKey id
-      then logInvalidGetId id (oldIdxSubViewModelPairsById.[id]) vm.CurrentModel
+      then logInvalidGetTargetId id (oldIdxSubViewModelPairsById.[id]) vm
       else oldIdxSubViewModelPairsById.Add(id, (oldIdx, vm))
 
     if newIdxSubModelPairsById.Count = newSubModels.Length && oldIdxSubViewModelPairsById.Count = b.Vms.Count then
@@ -624,12 +625,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
+        let logInvalidGetTargetId a b (vm: ViewModel<_, _>) = logInvalidGetId a b vm.CurrentModel
         let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
         let create m id = 
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        subModelSeqMerge logInvalidGetId b.GetId getTargetId create b newSubModels
+        subModelSeqMerge logInvalidGetId logInvalidGetTargetId b.GetId getTargetId create b newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
