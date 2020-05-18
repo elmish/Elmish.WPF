@@ -415,21 +415,22 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let oneWaySeqMerge
       logInvalidGetSourceId
       logInvalidGetTargetId
-      getId
+      getSourceId
+      getTargetId
       create
       update
       (observableCollection: ObservableCollection<_>)
       (newVals: _ array) =
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
     for (newIdx, newVal) in newVals |> Seq.indexed do
-      let id = getId newVal
+      let id = getSourceId newVal
       if newIdxValPairsById.ContainsKey id
       then logInvalidGetSourceId id (newIdxValPairsById.[id]) newVal
       else newIdxValPairsById.Add(id, (newIdx, newVal))
 
     let oldIdxValPairsById = Dictionary<_,_>(observableCollection.Count)
     for (oldIdx, oldVal) in observableCollection |> Seq.indexed do
-      let id = getId oldVal
+      let id = getTargetId oldVal
       if oldIdxValPairsById.ContainsKey id
       then logInvalidGetTargetId id (oldIdxValPairsById.[id]) oldVal
       else oldIdxValPairsById.Add(id, (oldIdx, oldVal))
@@ -447,7 +448,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       then observableCollection.Clear ()
       else
         for i in observableCollection.Count - 1..-1..0 do
-          let oldId = getId observableCollection.[i]
+          let oldId = getTargetId observableCollection.[i]
           if oldId |> newIdxValPairsById.ContainsKey |> not then
             let (oldIdx, _) = oldIdxValPairsById.[oldId]
             observableCollection.RemoveAt oldIdx
@@ -464,7 +465,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let oldIdx =
           observableCollection
           |> Seq.indexed
-          |> Seq.find (fun (_, oldVal) -> getId oldVal = newId)
+          |> Seq.find (fun (_, oldVal) -> getTargetId oldVal = newId)
           |> fst
         if oldIdx <> newIdx then observableCollection.Move(oldIdx, newIdx)
 
@@ -541,7 +542,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             if not (b.ItemEquals newVal oldVal) then
               b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge logInvalidGetId logInvalidGetId b.GetId create update b.Values newVals
+          oneWaySeqMerge logInvalidGetId logInvalidGetId b.GetId b.GetId create update b.Values newVals
         false
     | Cmd _
     | CmdParam _ ->
