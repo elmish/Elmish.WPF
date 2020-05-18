@@ -464,7 +464,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
 
   let subModelSeqMerge
-      bindingName
+      create
       (b: SubModelSeqBinding<_, _, _, _, _>)
       newModel =
     let newSubModels = newModel |> b.GetModels |> Seq.toArray
@@ -501,9 +501,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.Vms.RemoveAt oldIdx
       
       // Add new models that don't currently exist
-      let create (Kvp (id, (_, m))) =
-        let chain = getPropChainForItem bindingName (id |> string)
-        ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
+      let create (Kvp (id, (_, m))) = create m id
       newIdxSubModelPairsById
       |> Seq.filter (Kvp.key >> oldIdxSubViewModelPairsById.ContainsKey >> not)
       |> Seq.map create
@@ -625,7 +623,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        subModelSeqMerge bindingName b newModel
+        let create m id = 
+          let chain = getPropChainForItem bindingName (id |> string)
+          ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
+        subModelSeqMerge create b newModel
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
