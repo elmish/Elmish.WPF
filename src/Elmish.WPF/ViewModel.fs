@@ -465,6 +465,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let subModelSeqMerge
       getSourceId
+      getTargetId
       create
       (b: SubModelSeqBinding<_, _, _, _, _>)
       (newSubModels: _ array) =
@@ -477,7 +478,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
     let oldIdxSubViewModelPairsById = Dictionary<_,_>(b.Vms.Count)
     for (oldIdx, vm) in b.Vms |> Seq.indexed do
-      let id = b.GetId vm.CurrentModel
+      let id = getTargetId vm
       if oldIdxSubViewModelPairsById.ContainsKey id
       then logInvalidGetId id (oldIdxSubViewModelPairsById.[id]) vm.CurrentModel
       else oldIdxSubViewModelPairsById.Add(id, (oldIdx, vm))
@@ -494,7 +495,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       then b.Vms.Clear ()
       else
         for i in b.Vms.Count - 1..-1..0 do
-          let oldId = b.GetId b.Vms.[i].CurrentModel
+          let oldId = getTargetId b.Vms.[i]
           if oldId |> newIdxSubModelPairsById.ContainsKey |> not then
             let (oldIdx, _) = oldIdxSubViewModelPairsById.[oldId]
             b.Vms.RemoveAt oldIdx
@@ -511,7 +512,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let oldIdx =
           b.Vms
           |> Seq.indexed
-          |> Seq.find (fun (_, vm) -> newId = b.GetId vm.CurrentModel)
+          |> Seq.find (fun (_, vm) -> newId = getTargetId vm)
           |> fst
         if oldIdx <> newIdx then b.Vms.Move(oldIdx, newIdx)
 
@@ -622,11 +623,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
+        let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
         let create m id = 
           let chain = getPropChainForItem bindingName (id |> string)
           ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        subModelSeqMerge b.GetId create b newSubModels
+        subModelSeqMerge b.GetId getTargetId create b newSubModels
         false
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
