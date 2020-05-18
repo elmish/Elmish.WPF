@@ -414,8 +414,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let oneWaySeqMerge
       (b: OneWaySeqBinding<_, _, _, _>)
-      intermediate =
-    let newVals = intermediate |> b.Map |> Seq.toArray
+      (newVals: _ array) =
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
     for (newIdx, newVal) in newVals |> Seq.indexed do
       let id = b.GetId newVal
@@ -533,7 +532,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeq b ->
         let intermediate = b.Get newModel
         if not <| b.Equals intermediate (b.Get currentModel) then
-          oneWaySeqMerge b intermediate
+          let newVals = intermediate |> b.Map |> Seq.toArray
+          oneWaySeqMerge b newVals
         false
     | Cmd _
     | CmdParam _ ->
