@@ -1647,12 +1647,14 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg [subBinding]
       let vm = TestVm(m, binding)
 
-      test <@ vm.Get name
-              |> unbox<ObservableCollection<ViewModel<obj,obj>>>
-              |> Seq.map (fun vm -> vm.Get subName |> unbox<string>)
-              |> Seq.toList
-                = (getModels m |> Seq.map subGet |> Seq.toList)
-              @>
+      let actual =
+        vm.Get name
+        |> unbox<ObservableCollection<ViewModel<obj,obj>>>
+        |> Seq.map (fun vm -> vm.Get subName |> unbox<string>)
+        |> Seq.toList
+
+      let expected = getModels m |> Seq.map subGet |> Seq.toList
+      test <@ expected = actual @>
     }
 
 
@@ -1678,7 +1680,8 @@ module SubModelSeq =
       |> unbox<ObservableCollection<ViewModel<obj,obj>>>
       |> Seq.iter (fun vm -> vm.Set subName p)
 
-      test <@ vm.Dispatches = (m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)) @>
+      let expected = m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)
+      test <@ expected = vm.Dispatches @>
     }
 
 
