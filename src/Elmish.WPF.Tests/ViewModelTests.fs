@@ -842,15 +842,16 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``given equals returns false and order of elements reversed, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and shuffled elements, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! list2 = list1 |> GenX.shuffle |> GenX.notEqualTo list1
       let! i1 = GenX.auto<int>
       let! i2 = GenX.auto<int>
 
       let m1 = (i1, list1)
-      let m2 = (i2, List.rev list1)
+      let m2 = (i2, list2)
 
       let get = snd
       let equals _ _ = false
@@ -1606,15 +1607,16 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``given order of elements is reversed, when model is updated, should trigger CC`` () =
+  let ``given shuffled elements, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! list2 = list1 |> GenX.shuffle |> GenX.notEqualTo list1
       let! i1 = GenX.auto<int>
       let! i2 = GenX.auto<int>
 
-      let m1 = (i1, list)
-      let m2 = (i2, List.rev list)
+      let m1 = (i1, list1)
+      let m2 = (i2, list2)
 
       let getModels = snd
       let getId = id
