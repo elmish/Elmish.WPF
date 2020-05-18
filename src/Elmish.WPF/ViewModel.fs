@@ -412,7 +412,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           updateValidationError initialModel b.Name binding)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
-  let oneWaySeqMerge (b: OneWaySeqBinding<_, _, _, _>) intermediate =
+  let oneWaySeqMerge
+      (b: OneWaySeqBinding<_, _, _, _>)
+      intermediate =
     let newVals = intermediate |> b.Map |> Seq.toArray
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
     for (newIdx, newVal) in newVals |> Seq.indexed do
