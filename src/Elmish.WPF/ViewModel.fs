@@ -439,8 +439,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       // Update existing values
       for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
         match sourceIdxItemPairsById.TryGetValue tId with
-        | true, (_, s) ->
-          update t s tIdx
+        | true, (_, s) -> update t s tIdx
         | _ -> ()
       
       // Remove old values that no longer exist
