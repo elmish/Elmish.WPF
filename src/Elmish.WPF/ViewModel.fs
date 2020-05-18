@@ -416,6 +416,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       logInvalidGetSourceId
       logInvalidGetTargetId
       getId
+      create
       update
       (observableCollection: ObservableCollection<_>)
       (newVals: _ array) =
@@ -452,10 +453,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             observableCollection.RemoveAt oldIdx
       
       // Add new values that don't currently exist
+      let create (Kvp (id, (_, m))) = create m id
       newIdxValPairsById
       |> Seq.filter (Kvp.key >> oldIdxValPairsById.ContainsKey >> not)
-      |> Seq.map Kvp.value
-      |> Seq.map snd
+      |> Seq.map create
       |> Seq.iter observableCollection.Add
       
       // Reorder according to new model list
@@ -535,11 +536,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | OneWaySeq b ->
         let intermediate = b.Get newModel
         if not <| b.Equals intermediate (b.Get currentModel) then
+          let create v _ = v
           let update oldVal newVal oldIdx =
             if not (b.ItemEquals newVal oldVal) then
               b.Values.[oldIdx] <- newVal
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge logInvalidGetId logInvalidGetId b.GetId update b.Values newVals
+          oneWaySeqMerge logInvalidGetId logInvalidGetId b.GetId create update b.Values newVals
         false
     | Cmd _
     | CmdParam _ ->
