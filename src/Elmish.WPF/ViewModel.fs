@@ -413,18 +413,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   let oneWaySeqMerge
+      getId
       (b: OneWaySeqBinding<_, _, _, _>)
       (newVals: _ array) =
     let newIdxValPairsById = Dictionary<_,_>(newVals.Length)
     for (newIdx, newVal) in newVals |> Seq.indexed do
-      let id = b.GetId newVal
+      let id = getId newVal
       if newIdxValPairsById.ContainsKey id
       then logInvalidGetId id (newIdxValPairsById.[id]) newVal
       else newIdxValPairsById.Add(id, (newIdx, newVal))
 
     let oldIdxValPairsById = Dictionary<_,_>(b.Values.Count)
     for (oldIdx, oldVal) in b.Values |> Seq.indexed do
-      let id = b.GetId oldVal
+      let id = getId oldVal
       if oldIdxValPairsById.ContainsKey id
       then logInvalidGetId id (oldIdxValPairsById.[id]) oldVal
       else oldIdxValPairsById.Add(id, (oldIdx, oldVal))
@@ -443,7 +444,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       then b.Values.Clear ()
       else
         for i in b.Values.Count - 1..-1..0 do
-          let oldId = b.GetId b.Values.[i]
+          let oldId = getId b.Values.[i]
           if oldId |> newIdxValPairsById.ContainsKey |> not then
             let (oldIdx, _) = oldIdxValPairsById.[oldId]
             b.Values.RemoveAt oldIdx
@@ -460,7 +461,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let oldIdx =
           b.Values
           |> Seq.indexed
-          |> Seq.find (fun (_, oldVal) -> b.GetId oldVal = newId)
+          |> Seq.find (fun (_, oldVal) -> getId oldVal = newId)
           |> fst
         if oldIdx <> newIdx then b.Values.Move(oldIdx, newIdx)
 
@@ -533,7 +534,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let intermediate = b.Get newModel
         if not <| b.Equals intermediate (b.Get currentModel) then
           let newVals = intermediate |> b.Map |> Seq.toArray
-          oneWaySeqMerge b newVals
+          oneWaySeqMerge b.GetId b newVals
         false
     | Cmd _
     | CmdParam _ ->
