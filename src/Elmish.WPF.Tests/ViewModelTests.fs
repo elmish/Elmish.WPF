@@ -164,15 +164,6 @@ type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
 module Helpers =
 
 
-  module List =
-    let swap i j =
-      List.permute
-        (function
-          | a when a = i -> j
-          | a when a = j -> i
-          | a -> a)
-
-
   module String =
 
     let length (s: string) = s.Length
@@ -771,150 +762,6 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``given equals returns false and identical elements, when model is updated, should not trigger CC`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m = GenX.auto<Guid list>
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m, binding)
-
-      vm.TrackCcTriggersFor name
-      vm.UpdateModel m
-
-      test <@ vm.NumCcTriggersFor name = 0 @>
-    }
-
-
-  [<Fact>]
-  let ``given equals returns false and an element is added, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = GenX.auto<Guid list>
-      let! addedItem = Gen.guid
-      let! m2 = m1 |> Gen.constant |> GenX.addElement addedItem
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given equals returns false and an element is removed, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m2 = GenX.auto<Guid list>
-      let! removedItem = Gen.guid
-      let! m1 = m2 |> Gen.constant |> GenX.addElement removedItem
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given equals returns false and an element is replaced, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1Head = Gen.guid
-      let! m1Tail = GenX.auto<Guid list>
-      let! list2Replacement = Gen.guid
-      let! replcementIndex = (0, m1Tail.Length) ||> Range.constant |> Gen.int
-
-      let m1 = m1Head :: m1Tail
-      let m2 =
-        (m1 |> List.take replcementIndex)
-        @ [list2Replacement]
-        @ (m1 |> List.skip (replcementIndex + 1))
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given equals returns false and adjacent elements swapped, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! firstSwapIndex = (0, m1.Length - 2) ||> Range.constant |> Gen.int
-
-      let m2 = m1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given equals returns false and shuffled elements, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! m2 = m1 |> GenX.shuffle |> GenX.notEqualTo m1
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals = (=)
-      let getId = id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
   let ``given equals returns false and itemEquals returns false, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
@@ -935,83 +782,6 @@ module OneWaySeqLazy =
       testObservableCollectionContainsExpectedItems vm name m2
     }
 
-
-  type TestClass (id: int, data: string) =
-    member _.Id = id
-    member _.Data = data
-    override __.GetHashCode() = 0
-    override __.Equals that =
-      // All instances of TestClass are considered equal.
-      // Not very helpful, but a valid implementation.
-      that :? TestClass
-
-  [<Fact>]
-  let ``when equals returns false and an element is removed, should trigger CC.Remove for removed element`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! id1 = GenX.auto<int>
-      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
-      let! data1 = GenX.auto<string>
-      let! data2 = GenX.auto<string>
-
-      let tc1 = TestClass(id1, data1)
-      let tc2 = TestClass(id2, data2)
-
-      let m1 = [tc1; tc2]
-      let m2 = [tc1]
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals _ _ = true
-      let getId (tc: TestClass) = tc.Id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.TrackCcTriggersFor name
-      vm.UpdateModel m2
-
-      test <@ ((name
-        |> vm.CcTriggersFor
-        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove)
-        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
-    }
-
-  [<Fact>]
-  let ``when equals returns false and an element is updated, should trigger CC.Remove or CC.Replace for udpated element`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! id1 = GenX.auto<int>
-      let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
-      let! data1 = GenX.auto<string>
-      let! data2 = GenX.auto<string>
-      let! data3 = GenX.auto<string> |> GenX.notEqualTo data2
-
-      let tc1 = TestClass(id1, data1)
-      let tc2 = TestClass(id2, data2)
-      let tc3 = TestClass(id2, data3)
-
-      let m1 = [tc1; tc2]
-      let m2 = [tc1; tc3]
-
-      let get = id
-      let equals _ _ = false
-      let map = id
-      let itemEquals (a: TestClass) (b: TestClass) = a.Data = b.Data
-      let getId (tc: TestClass) = tc.Id
-
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
-
-      vm.TrackCcTriggersFor name
-      vm.UpdateModel m2
-
-      test <@ ((name
-        |> vm.CcTriggersFor
-        |> List.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove || e.Action = NotifyCollectionChangedAction.Replace)
-        |> List.head).OldItems.[0] :?> TestClass).Id = tc2.Id @>
-    }
 
 
 module TwoWay =
@@ -1377,6 +1147,7 @@ module CmdParam =
     }
 
 
+
 module SubModel =
 
 
@@ -1594,118 +1365,6 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``given an element is added, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = GenX.auto<Guid list>
-      let! addedItem = Gen.guid
-      let! m2 = m1 |> Gen.constant |> GenX.addElement addedItem
-
-      let getModels = id
-      let getId = id
-      let toMsg = id
-
-      let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given an element is removed, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m2 = GenX.auto<Guid list>
-      let! removedItem = Gen.guid
-      let! m1 = m2 |> Gen.constant |> GenX.addElement removedItem
-
-      let getModels = id
-      let getId = id
-      let toMsg = id
-
-      let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given an element is replaced, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1Head = Gen.guid
-      let! m1Tail = GenX.auto<Guid list>
-      let! list2Replacement = Gen.guid
-      let! replcementIndex = (0, m1Tail.Length) ||> Range.constant |> Gen.int
-
-      let m1 = m1Head :: m1Tail
-      let m2 =
-        (m1 |> List.take replcementIndex)
-        @ [list2Replacement]
-        @ (m1 |> List.skip (replcementIndex + 1))
-
-      let getModels = id
-      let getId = id
-      let toMsg = id
-
-      let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given adjacent elements swapped, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! firstSwapIndex = (0, m1.Length - 2) ||> Range.constant |> Gen.int
-
-      let m2 = m1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
-
-      let getModels = id
-      let getId = id
-      let toMsg = id
-
-      let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
-  let ``given shuffled elements, when model is updated, should contain expected items in collection`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! m2 = m1 |> GenX.shuffle |> GenX.notEqualTo m1
-
-      let getModels = id
-      let getId = id
-      let toMsg = id
-
-      let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
-
-      vm.UpdateModel m2
-      
-      testObservableCollectionContainsExpectedItems vm name m2
-    }
-
-
-  [<Fact>]
   let ``smoke test: when a sub-model OneWay binding is retrieved, returns the value returned by get`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
@@ -1757,6 +1416,7 @@ module SubModelSeq =
       let expected = m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)
       test <@ expected = vm.Dispatches @>
     }
+
 
 
 module SubModelSelectedItem =
