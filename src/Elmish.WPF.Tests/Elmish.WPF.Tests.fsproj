@@ -8,6 +8,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <Compile Include="MergeTests.fs" />
     <Compile Include="ViewModelTests.fs" />
     <Compile Include="BindingTests.fs" />
     <Compile Include="UtilsTests.fs" />
