@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF.Tests.ViewModelTests
+namespace Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
@@ -1550,7 +1550,7 @@ module SubModelSeq =
 
       let actual =
         vm.Get name
-        |> unbox<ObservableCollection<ViewModel<obj,obj>>>
+        |> unbox<ObservableCollection<ViewModel<_,_>>>
         |> Seq.map (fun vm -> vm.CurrentModel |> unbox)
         |> Seq.toList
 
@@ -1740,7 +1740,7 @@ module SubModelSeq =
 
       let actual =
         vm.Get name
-        |> unbox<ObservableCollection<ViewModel<obj,obj>>>
+        |> unbox<ObservableCollection<ViewModel<_,_>>>
         |> Seq.map (fun vm -> vm.Get subName |> unbox<string>)
         |> Seq.toList
 
@@ -1768,7 +1768,7 @@ module SubModelSeq =
       let vm = TestVm(m, binding)
 
       vm.Get name
-      |> unbox<ObservableCollection<ViewModel<obj,obj>>>
+      |> unbox<ObservableCollection<ViewModel<_,_>>>
       |> Seq.iter (fun vm -> vm.Set subName p)
 
       let expected = m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)
