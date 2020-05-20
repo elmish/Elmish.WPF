@@ -1,4 +1,4 @@
-namespace Elmish.WPF.Tests.ViewModelTests
+﻿namespace Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
@@ -501,9 +501,9 @@ module OneWaySeqLazy =
   let ``when retrieved initially, should return an ObservableCollection with the values returned by map`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m = GenX.auto<int * Guid list>
+      let! m = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals = (=)
       let map = id
       let itemEquals = (=)
@@ -522,10 +522,10 @@ module OneWaySeqLazy =
   let ``given equals returns false, when retrieved after update, should return an ObservableCollection with the new values returned by map`` () =
       Property.check <| property {
         let! name = GenX.auto<string>
-        let! m1 = GenX.auto<int * Guid list>
-        let! m2 = GenX.auto<int * Guid list>
+        let! m1 = GenX.auto<Guid list>
+        let! m2 = GenX.auto<Guid list>
 
-        let get = snd
+        let get = id
         let equals _ _ = false
         let map = id
         let itemEquals = (=)
@@ -546,10 +546,10 @@ module OneWaySeqLazy =
   let ``given equals returns true, when retrieved after update, should return an ObservableCollection with the previous values returned by map`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals _ _ = true
       let map = id
       let itemEquals = (=)
@@ -570,10 +570,10 @@ module OneWaySeqLazy =
   let ``during VM instantiation, get should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
       let! eq = Gen.bool
 
-      let get = InvokeTester snd
+      let get = InvokeTester id
       let equals _ _ = eq
       let map = id
       let itemEquals = (=)
@@ -590,10 +590,10 @@ module OneWaySeqLazy =
   let ``during VM instantiation, map should have be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
       let! eq = Gen.bool
 
-      let get = snd
+      let get = id
       let equals _ _ = eq
       let map = InvokeTester id
       let itemEquals = (=)
@@ -610,10 +610,10 @@ module OneWaySeqLazy =
   let ``given equals returns true, during model update, map should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals _ _ = true
       let map = InvokeTester id
       let itemEquals = (=)
@@ -633,10 +633,10 @@ module OneWaySeqLazy =
   let ``when equals returns false, during model update, map should be called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = InvokeTester id
       let itemEquals = (=)
@@ -656,11 +656,11 @@ module OneWaySeqLazy =
   let ``during model update, get should be called at most twice`` () = // once on current model and once on new model
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
       let! eq = Gen.bool
 
-      let get = InvokeTester snd
+      let get = InvokeTester id
       let equals _ _ = eq
       let map = id
       let itemEquals = (=)
@@ -680,9 +680,9 @@ module OneWaySeqLazy =
   let ``when retrieved several times after VM initialization, map is called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals = (=)
       let map = InvokeTester id
       let itemEquals = (=)
@@ -702,10 +702,10 @@ module OneWaySeqLazy =
   let ``when retrieved several times after update, map is called at most once`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals = (=)
       let map = InvokeTester id
       let itemEquals = (=)
@@ -728,12 +728,12 @@ module OneWaySeqLazy =
   let ``for any behavior of equals or itemEquals, when model is updated, should never trigger PC`` () =  // because this binding should only trigger CC
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
       let! eq = Gen.bool
       let! itemEq = Gen.bool
 
-      let get = snd
+      let get = id
       let equals _ _ = eq
       let map = InvokeTester id
       let itemEquals _ _ = itemEq
@@ -752,10 +752,10 @@ module OneWaySeqLazy =
   let ``given equals returns true, when model is updated, should never trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let get = snd
+      let get = id
       let equals _ _ = true
       let map = id
       let itemEquals = (=)
@@ -775,22 +775,19 @@ module OneWaySeqLazy =
   let ``given equals returns false and identical elements, when model is updated, should not trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! i2 = GenX.auto<int>
+      let! m = GenX.auto<Guid list>
 
-      let m2 = (i2, snd m1)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
       let getId = id
 
       let binding = oneWaySeqLazy name get equals map itemEquals getId
-      let vm = TestVm(m1, binding)
+      let vm = TestVm(m, binding)
 
       vm.TrackCcTriggersFor name
-      vm.UpdateModel m2
+      vm.UpdateModel m
 
       test <@ vm.NumCcTriggersFor name = 0 @>
     }
@@ -800,14 +797,11 @@ module OneWaySeqLazy =
   let ``given equals returns false and an element is added, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
       let! addedItem = Gen.guid
-      let! list2 = m1 |> snd |> Gen.constant |> GenX.addElement addedItem
-      let! i2 = GenX.auto<int>
+      let! m2 = m1 |> Gen.constant |> GenX.addElement addedItem
 
-      let m2 = (i2, list2)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
@@ -827,14 +821,11 @@ module OneWaySeqLazy =
   let ``given equals returns false and an element is removed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m2 = GenX.auto<Guid list>
       let! removedItem = Gen.guid
-      let! list1 = m2 |> snd |> Gen.constant |> GenX.addElement removedItem
-      let! i1 = GenX.auto<int>
+      let! m1 = m2 |> Gen.constant |> GenX.addElement removedItem
 
-      let m1 = (i1, list1)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
@@ -854,23 +845,18 @@ module OneWaySeqLazy =
   let ``given equals returns false and an element is replaced, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1Head = Gen.guid
-      let! list1Tail = GenX.auto<Guid list>
+      let! m1Head = Gen.guid
+      let! m1Tail = GenX.auto<Guid list>
       let! list2Replacement = Gen.guid
-      let! replcementIndex = (0, list1Tail.Length) ||> Range.constant |> Gen.int
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! replcementIndex = (0, m1Tail.Length) ||> Range.constant |> Gen.int
 
-      let list1 = list1Head :: list1Tail
-      let list2 =
-        (list1 |> List.take replcementIndex)
+      let m1 = m1Head :: m1Tail
+      let m2 =
+        (m1 |> List.take replcementIndex)
         @ [list2Replacement]
-        @ (list1 |> List.skip (replcementIndex + 1))
+        @ (m1 |> List.skip (replcementIndex + 1))
 
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
@@ -890,16 +876,12 @@ module OneWaySeqLazy =
   let ``given equals returns false and adjacent elements swapped, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! firstSwapIndex = (0, list1.Length - 2) ||> Range.constant |> Gen.int
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! firstSwapIndex = (0, m1.Length - 2) ||> Range.constant |> Gen.int
 
-      let list2 = list1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
+      let m2 = m1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
 
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
@@ -919,15 +901,10 @@ module OneWaySeqLazy =
   let ``given equals returns false and shuffled elements, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! list2 = list1 |> GenX.shuffle |> GenX.notEqualTo list1
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! m2 = m1 |> GenX.shuffle |> GenX.notEqualTo m1
 
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals = (=)
@@ -947,15 +924,10 @@ module OneWaySeqLazy =
   let ``given equals returns false and itemEquals returns false, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 1 50)
-      let! list2 = Gen.guid |> Gen.list (Range.exponential 1 50)
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! m1 = Gen.guid |> Gen.list (Range.exponential 1 50)
+      let! m2 = Gen.guid |> Gen.list (Range.exponential 1 50)
 
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
-
-      let get = snd
+      let get = id
       let equals _ _ = false
       let map = id
       let itemEquals _ _ = false
@@ -1567,9 +1539,9 @@ module SubModelSeq =
   let ``when retrieved, should return an ObservableCollection with ViewModels whose CurrentModel is the corresponding value returned by getModels`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m = GenX.auto<int * Guid list>
+      let! m = GenX.auto<Guid list>
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1591,10 +1563,10 @@ module SubModelSeq =
   let ``when model is updated, should never trigger PC`` () =  // because this binding should only trigger CC
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1611,20 +1583,18 @@ module SubModelSeq =
   let ``given elements are the same, when model is updated, should not trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
-      let! i2 = GenX.auto<int>
-      let m2 = (i2, snd m1)
+      let! m = GenX.auto<Guid list>
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
       let binding = subModelSeq name getModels getId toMsg []
-      let vm = TestVm(m1, binding)
+      let vm = TestVm(m, binding)
 
       vm.TrackCcTriggersFor name
 
-      vm.UpdateModel m2
+      vm.UpdateModel m
 
       test <@ vm.NumCcTriggersFor name = 0 @>
     }
@@ -1634,14 +1604,11 @@ module SubModelSeq =
   let ``given an element is added, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int * Guid list>
+      let! m1 = GenX.auto<Guid list>
       let! addedItem = Gen.guid
-      let! list2 = m1 |> snd |> Gen.constant |> GenX.addElement addedItem
-      let! i2 = GenX.auto<int>
+      let! m2 = m1 |> Gen.constant |> GenX.addElement addedItem
 
-      let m2 = (i2, list2)
-
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1660,14 +1627,11 @@ module SubModelSeq =
   let ``given an element is removed, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m2 = GenX.auto<int * Guid list>
+      let! m2 = GenX.auto<Guid list>
       let! removedItem = Gen.guid
-      let! list1 = m2 |> snd |> Gen.constant |> GenX.addElement removedItem
-      let! i1 = GenX.auto<int>
+      let! m1 = m2 |> Gen.constant |> GenX.addElement removedItem
 
-      let m1 = (i1, list1)
-
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1686,22 +1650,18 @@ module SubModelSeq =
   let ``given an element is replaced, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1Head = Gen.guid
-      let! list1Tail = GenX.auto<Guid list>
+      let! m1Head = Gen.guid
+      let! m1Tail = GenX.auto<Guid list>
       let! list2Replacement = Gen.guid
-      let! replcementIndex = (0, list1Tail.Length) ||> Range.constant |> Gen.int
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! replcementIndex = (0, m1Tail.Length) ||> Range.constant |> Gen.int
 
-      let list1 = list1Head :: list1Tail
-      let list2 =
-        (list1 |> List.take replcementIndex)
+      let m1 = m1Head :: m1Tail
+      let m2 =
+        (m1 |> List.take replcementIndex)
         @ [list2Replacement]
-        @ (list1 |> List.skip (replcementIndex + 1))
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
+        @ (m1 |> List.skip (replcementIndex + 1))
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1720,16 +1680,12 @@ module SubModelSeq =
   let ``given adjacent elements swapped, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! firstSwapIndex = (0, list1.Length - 2) ||> Range.constant |> Gen.int
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! firstSwapIndex = (0, m1.Length - 2) ||> Range.constant |> Gen.int
 
-      let list2 = list1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
+      let m2 = m1 |> List.swap firstSwapIndex (firstSwapIndex + 1)
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1748,15 +1704,10 @@ module SubModelSeq =
   let ``given shuffled elements, when model is updated, should trigger CC`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
-      let! list2 = list1 |> GenX.shuffle |> GenX.notEqualTo list1
-      let! i1 = GenX.auto<int>
-      let! i2 = GenX.auto<int>
+      let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+      let! m2 = m1 |> GenX.shuffle |> GenX.notEqualTo m1
 
-      let m1 = (i1, list1)
-      let m2 = (i2, list2)
-
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
 
@@ -1776,9 +1727,9 @@ module SubModelSeq =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! subName = GenX.auto<string>
-      let! m = GenX.auto<int * Guid list>
+      let! m = GenX.auto<Guid list>
 
-      let getModels = snd
+      let getModels = id
       let getId = id
       let toMsg = id
       let subGet = string
@@ -1803,10 +1754,10 @@ module SubModelSeq =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! subName = GenX.auto<string>
-      let! m = GenX.auto<int * Guid list>
+      let! m = GenX.auto<Guid list>
       let! p = GenX.auto<string>
 
-      let getModels = snd
+      let getModels = id
       let getId = string
       let toMsg (id: string, subMsg: string) = (id + subMsg).Length
       let subGet = string
