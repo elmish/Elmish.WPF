@@ -520,25 +520,25 @@ module OneWaySeqLazy =
 
   [<Fact>]
   let ``given equals returns false, when retrieved after update, should return an ObservableCollection with the new values returned by map`` () =
-      Property.check <| property {
-        let! name = GenX.auto<string>
-        let! m1 = GenX.auto<Guid list>
-        let! m2 = GenX.auto<Guid list>
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<Guid list>
+      let! m2 = GenX.auto<Guid list>
 
-        let get = id
-        let equals _ _ = false
-        let map = id
-        let itemEquals = (=)
-        let getId = id
+      let get = id
+      let equals _ _ = false
+      let map = id
+      let itemEquals = (=)
+      let getId = id
 
-        let binding = oneWaySeqLazy name get equals map itemEquals getId
-        let vm = TestVm(m1, binding)
+      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let vm = TestVm(m1, binding)
 
-        vm.UpdateModel m2
-        let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
+      vm.UpdateModel m2
+      let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
 
-        let expected = m2 |> get |> map
-        test <@ expected = actual @>
+      let expected = m2 |> get |> map
+      test <@ expected = actual @>
     }
 
 
