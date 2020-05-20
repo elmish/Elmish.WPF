@@ -793,7 +793,7 @@ module OneWaySeqLazy =
 
 
   [<Fact>]
-  let ``given equals returns false and an element is added, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and an element is added, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<Guid list>
@@ -809,15 +809,14 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given equals returns false and an element is removed, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and an element is removed, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m2 = GenX.auto<Guid list>
@@ -833,15 +832,14 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given equals returns false and an element is replaced, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and an element is replaced, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1Head = Gen.guid
@@ -864,15 +862,14 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given equals returns false and adjacent elements swapped, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and adjacent elements swapped, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
@@ -889,15 +886,14 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given equals returns false and shuffled elements, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and shuffled elements, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
@@ -912,15 +908,14 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given equals returns false and itemEquals returns false, when model is updated, should trigger CC`` () =
+  let ``given equals returns false and itemEquals returns false, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = Gen.guid |> Gen.list (Range.exponential 1 50)
@@ -935,10 +930,9 @@ module OneWaySeqLazy =
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
@@ -1600,7 +1594,7 @@ module SubModelSeq =
 
 
   [<Fact>]
-  let ``given an element is added, when model is updated, should trigger CC`` () =
+  let ``given an element is added, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = GenX.auto<Guid list>
@@ -1614,16 +1608,14 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
-
       vm.UpdateModel m2
 
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given an element is removed, when model is updated, should trigger CC`` () =
+  let ``given an element is removed, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m2 = GenX.auto<Guid list>
@@ -1637,16 +1629,14 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
-
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given an element is replaced, when model is updated, should trigger CC`` () =
+  let ``given an element is replaced, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1Head = Gen.guid
@@ -1667,16 +1657,14 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
-
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given adjacent elements swapped, when model is updated, should trigger CC`` () =
+  let ``given adjacent elements swapped, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
@@ -1691,16 +1679,14 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
-
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
   [<Fact>]
-  let ``given shuffled elements, when model is updated, should trigger CC`` () =
+  let ``given shuffled elements, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
       let! m1 = Gen.guid |> Gen.list (Range.exponential 2 50)
@@ -1713,11 +1699,9 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m1, binding)
 
-      vm.TrackCcTriggersFor name
-
       vm.UpdateModel m2
-
-      test <@ vm.NumCcTriggersFor name > 0 @>
+      
+      testObservableCollectionContainsExpectedItems vm name m2
     }
 
 
