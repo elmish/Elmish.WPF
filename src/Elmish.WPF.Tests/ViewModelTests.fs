@@ -497,6 +497,11 @@ module OneWayLazy =
 module OneWaySeqLazy =
 
 
+  let private testObservableCollectionContainsExpectedItems (vm: ViewModel<_, _>) name expected =
+    let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
+    test <@ expected = actual @>
+
+
   [<Fact>]
   let ``when retrieved initially, should return an ObservableCollection with the values returned by map`` () =
     Property.check <| property {
@@ -511,10 +516,8 @@ module OneWaySeqLazy =
 
       let binding = oneWaySeqLazy name get equals map itemEquals getId
       let vm = TestVm(m, binding)
-      let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
 
-      let expected = m |> get |> map
-      test <@ expected = actual @>
+      testObservableCollectionContainsExpectedItems vm name (m |> get |> map)
     }
 
 
@@ -535,10 +538,8 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
-      let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
-
-      let expected = m2 |> get |> map
-      test <@ expected = actual @>
+      
+      testObservableCollectionContainsExpectedItems vm name (m2 |> get |> map)
     }
 
 
@@ -559,10 +560,8 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
-      let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
-
-      let expected = m1 |> get |> map
-      test <@ expected = actual @>
+      
+      testObservableCollectionContainsExpectedItems vm name (m1 |> get |> map)
     }
 
 
@@ -1534,6 +1533,13 @@ module SubModel =
 
 module SubModelSeq =
 
+  let private testObservableCollectionContainsExpectedItems (vm: ViewModel<_, _>) name expected =
+    let actual =
+      vm.Get name
+      |> unbox<ObservableCollection<ViewModel<_,_>>>
+      |> Seq.map (fun vm -> vm.CurrentModel |> unbox)
+      |> Seq.toList
+    test <@ expected = actual @>
 
   [<Fact>]
   let ``when retrieved, should return an ObservableCollection with ViewModels whose CurrentModel is the corresponding value returned by getModels`` () =
@@ -1548,14 +1554,7 @@ module SubModelSeq =
       let binding = subModelSeq name getModels getId toMsg []
       let vm = TestVm(m, binding)
 
-      let actual =
-        vm.Get name
-        |> unbox<ObservableCollection<ViewModel<_,_>>>
-        |> Seq.map (fun vm -> vm.CurrentModel |> unbox)
-        |> Seq.toList
-
-      let expected = getModels m
-      test <@ expected = actual @>
+      testObservableCollectionContainsExpectedItems vm name m
     }
 
 
