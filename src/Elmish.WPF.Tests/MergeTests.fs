@@ -1,4 +1,4 @@
-module Elmish.WPF.Tests.MergeTests
+﻿module Elmish.WPF.Tests.MergeTests
 
 open System
 open System.Collections.ObjectModel
@@ -14,7 +14,6 @@ let getIdAsId = id
 let createAsId a _ = a
 let updateNoOp _ _ _ = ()
 let merge x = x |> historicalMerge logNoOp logNoOp
-let simpleMerge x = x |> merge getIdAsId getIdAsId createAsId updateNoOp
 
 
 let private trackCC (observableCollection: ObservableCollection<_>) =
@@ -67,7 +66,7 @@ let ``starting with random items, when merging random items, should contain the 
 
     let observableCollection = ObservableCollection<_> array1
 
-    simpleMerge observableCollection array2
+    merge getIdAsId getIdAsId createAsId updateNoOp observableCollection array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
   }
