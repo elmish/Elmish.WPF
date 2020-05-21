@@ -182,6 +182,28 @@ let ``starting with random items, when merging after swapping two adjacent items
   }
   
 [<Fact>]
+let ``starting with random items, when merging after swapping two items, should contain the merged items and never call create and call update exactly once for each item`` () =
+  Property.check <| property {
+    let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+    let! i = (0, list1.Length - 1) ||> Range.constant |> Gen.int
+    let! j = (0, list1.Length - 1) ||> Range.constant |> Gen.int |> GenX.notEqualTo i
+
+    let observableCollection = ObservableCollection<_> list1
+    let array2 =
+      list1
+      |> List.swap i j
+      |> List.toArray
+    let createTracker = InvokeTester2 createAsId
+    let updateTracker = InvokeTester3 updateNoOp
+    
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+
+    testObservableCollectionContainsDataInArray observableCollection array2
+    test <@ createTracker.Count = 0 @>
+    test <@ updateTracker.Count = array2.Length @>
+  }
+  
+[<Fact>]
 let ``starting with random items, when merging after shuffling, should contain the merged items and never call create and call update eactly once for each item`` () =
   Property.check <| property {
     let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
