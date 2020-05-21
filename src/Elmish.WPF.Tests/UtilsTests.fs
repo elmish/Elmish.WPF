@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF.Tests.UtilsTests
+﻿module Elmish.WPF.Tests.UtilsTests
 
 open Xunit
 open Hedgehog
