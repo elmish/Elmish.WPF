@@ -32,6 +32,21 @@ type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
     values <- []
 
 
+type InvokeTester3<'a, 'b, 'c, 'd>(f: 'a -> 'b -> 'c -> 'd) =
+  let mutable count = 0
+  let mutable values = []
+  let wrapped a b c =
+    count <- count + 1
+    values <- values @ [a, b, c]
+    f a b c
+  member __.Fn = wrapped
+  member __.Count = count
+  member __.Values = values
+  member __.Reset () =
+    count <- 0
+    values <- []
+
+
 [<RequireQualifiedAccess>]
 module String =
 
