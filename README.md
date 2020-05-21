@@ -34,7 +34,7 @@ Big thanks to [@MrMattSim](https://github.com/MrMattSim) for the wonderful logo!
 
 [![JetBrains logo](jetbrains.svg)](https://www.jetbrains.com/?from=Elmish.WPF)
 
-Thanks to JetBrains for sponsoring Elmish.WPF with OSS licenses!
+Thanks to JetBrains for sponsoring Elmish.WPF with [OSS licenses](https://www.jetbrains.com/community/opensource/#support)!
 
 Recommended resources
 ---------------------
