@@ -1,12 +1,8 @@
 ﻿module Elmish.WPF.Tests.MergeTests
 
 open System
-open System.Collections.Concurrent
 open System.Collections.ObjectModel
 open System.Collections.Specialized
-open System.ComponentModel
-open System.Windows.Input
-open FSharp.Interop.Dynamic
 open Xunit
 open Hedgehog
 open Swensen.Unquote
@@ -33,12 +29,23 @@ let private testObservableCollectionContainsDataInArray observableCollection arr
 
   
 module private List =
+
   let swap i j =
     List.permute
       (function
         | a when a = i -> j
         | a when a = j -> i
         | a -> a)
+
+  let insert i a ma =
+    (ma |> List.take i)
+    @ [ a ]
+    @ (ma |> List.skip i)
+
+  let replace i a ma =
+    (ma |> List.take i)
+    @ [ a ]
+    @ (ma |> List.skip (i + 1))
 
 
 [<Fact>]
@@ -112,6 +119,25 @@ let ``starting with random items, when merging after a removal, should contain t
   }
   
 [<Fact>]
+let ``starting with random items, when merging after a move, should contain the merged items`` () =
+  Property.check <| property {
+    let! list = GenX.auto<Guid list>
+    let! movedItem = Gen.guid
+    let! additionalItem = Gen.guid
+    let! i1 = (0, list.Length + 1) ||> Range.constant |> Gen.int
+    let! i2 = (0, list.Length + 1) ||> Range.constant |> Gen.int |> GenX.notEqualTo i1
+
+    let list = additionalItem :: list
+    let list1 = list |> List.insert i1 movedItem
+    let array2 = list |> List.insert i2 movedItem |> List.toArray
+    let observableCollection = ObservableCollection<_> list1
+    
+    simpleMerge observableCollection array2
+
+    testObservableCollectionContainsDataInArray observableCollection array2
+  }
+  
+[<Fact>]
 let ``starting with random items, when merging after a replacement, should contain the merged items`` () =
   Property.check <| property {
     let! list1Head = Gen.guid
@@ -122,9 +148,8 @@ let ``starting with random items, when merging after a replacement, should conta
     let list1 = list1Head :: list1Tail
     let observableCollection = ObservableCollection<_> list1
     let array2 =
-      (list1 |> List.take replcementIndex)
-      @ [list2Replacement]
-      @ (list1 |> List.skip (replcementIndex + 1))
+      list1
+      |> List.replace replcementIndex list2Replacement
       |> List.toArray
     
     simpleMerge observableCollection array2
