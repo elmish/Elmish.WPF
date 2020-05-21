@@ -27,26 +27,6 @@ let private testObservableCollectionContainsDataInArray observableCollection arr
   let expected = array |> Array.toList
   test <@ expected = actual @>
 
-  
-module private List =
-
-  let swap i j =
-    List.permute
-      (function
-        | a when a = i -> j
-        | a when a = j -> i
-        | a -> a)
-
-  let insert i a ma =
-    (ma |> List.take i)
-    @ [ a ]
-    @ (ma |> List.skip i)
-
-  let replace i a ma =
-    (ma |> List.take i)
-    @ [ a ]
-    @ (ma |> List.skip (i + 1))
-
 
 [<Fact>]
 let ``starting from empty, when items merged, should contain those items`` () =

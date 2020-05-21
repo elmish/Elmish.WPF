@@ -93,44 +93,9 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     )
 
 
-type InvokeTester<'a, 'b>(f: 'a -> 'b) =
-  let mutable count = 0
-  let mutable values = []
-  let wrapped x =
-    count <- count + 1
-    values <- values @ [x]
-    f x
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.Reset () =
-    count <- 0
-    values <- []
-
-
-type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
-  let mutable count = 0
-  let mutable values = []
-  let wrapped x y =
-    count <- count + 1
-    values <- values @ [x, y]
-    f x
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.Reset () =
-    count <- 0
-    values <- []
-
-
 
 [<AutoOpen>]
 module Helpers =
-
-
-  module String =
-
-    let length (s: string) = s.Length
 
 
   let internal oneWay
