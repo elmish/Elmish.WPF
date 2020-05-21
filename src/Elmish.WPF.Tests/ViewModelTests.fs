@@ -1,4 +1,4 @@
-namespace Elmish.WPF.Tests.ViewModelTests
+module Elmish.WPF.Tests.ViewModelTests
 
 open System
 open System.Collections.Concurrent
