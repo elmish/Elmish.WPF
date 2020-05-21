@@ -23,7 +23,7 @@ type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
   let wrapped x y =
     count <- count + 1
     values <- values @ [x, y]
-    f x
+    f x y
   member __.Fn = wrapped
   member __.Count = count
   member __.Values = values
