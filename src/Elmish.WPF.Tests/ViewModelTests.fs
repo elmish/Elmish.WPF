@@ -93,42 +93,6 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
     )
 
 
-type InvokeTesterVal<'a, 'b>(initialRet: 'b) =
-  let mutable count = 0
-  let mutable values = []
-  let mutable retVal = initialRet
-  let wrapped x =
-    count <- count + 1
-    values <- values @ [x]
-    retVal
-  member __.Fn = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.SetRetVal ret = retVal <- ret
-  member __.Reset () =
-    count <- 0
-    values <- []
-    retVal <- initialRet
-
-
-type InvokeTesterVal2<'a, 'b, 'c>(initialRet: 'c) =
-  let mutable count = 0
-  let mutable values = []
-  let mutable retVal = initialRet
-  let wrapped x y =
-    count <- count + 1
-    values <- values @ [(x, y)]
-    retVal
-  member __.Fn : 'a -> 'b -> 'c = wrapped
-  member __.Count = count
-  member __.Values = values
-  member __.SetRetVal ret = retVal <- ret
-  member __.Reset () =
-    count <- 0
-    values <- []
-    retVal <- initialRet
-
-
 type InvokeTester<'a, 'b>(f: 'a -> 'b) =
   let mutable count = 0
   let mutable values = []
