@@ -29,12 +29,18 @@ let private testObservableCollectionContainsDataInArray observableCollection arr
 
   
 module private List =
+
   let swap i j =
     List.permute
       (function
         | a when a = i -> j
         | a when a = j -> i
         | a -> a)
+
+  let replace i a ma =
+    (ma |> List.take i)
+    @ [ a ]
+    @ (ma |> List.skip (i + 1))
 
 
 [<Fact>]
@@ -118,9 +124,8 @@ let ``starting with random items, when merging after a replacement, should conta
     let list1 = list1Head :: list1Tail
     let observableCollection = ObservableCollection<_> list1
     let array2 =
-      (list1 |> List.take replcementIndex)
-      @ [list2Replacement]
-      @ (list1 |> List.skip (replcementIndex + 1))
+      list1
+      |> List.replace replcementIndex list2Replacement
       |> List.toArray
     
     simpleMerge observableCollection array2
