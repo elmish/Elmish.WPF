@@ -5,10 +5,10 @@ module internal Elmish.WPF.Tests.InternalUtils
 type InvokeTester<'a, 'b>(f: 'a -> 'b) =
   let mutable count = 0
   let mutable values = []
-  let wrapped x =
+  let wrapped a =
     count <- count + 1
-    values <- values @ [x]
-    f x
+    values <- values @ [a]
+    f a
   member __.Fn = wrapped
   member __.Count = count
   member __.Values = values
@@ -20,10 +20,10 @@ type InvokeTester<'a, 'b>(f: 'a -> 'b) =
 type InvokeTester2<'a, 'b, 'c>(f: 'a -> 'b -> 'c) =
   let mutable count = 0
   let mutable values = []
-  let wrapped x y =
+  let wrapped a b =
     count <- count + 1
-    values <- values @ [x, y]
-    f x y
+    values <- values @ [a, b]
+    f a b
   member __.Fn = wrapped
   member __.Count = count
   member __.Values = values
