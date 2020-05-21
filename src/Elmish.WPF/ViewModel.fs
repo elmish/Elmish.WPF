@@ -202,19 +202,33 @@ module internal ViewModelHelpers =
             additions.Remove id |> ignore
             (tIdx, sIdx, t, s) |> List.singleton)
 
-    // actually remove
-    Seq.empty
-    |> Seq.append (removals |> Seq.map (Kvp.value >> fst))
-    |> Seq.append (moves |> Seq.map (fun (tIdx, _, _, _) -> tIdx))
-    |> Seq.sortDescending
-    |> Seq.iter target.RemoveAt
+    let actuallyRemove () =
+      Seq.empty
+      |> Seq.append (removals |> Seq.map (Kvp.value >> fst))
+      |> Seq.append (moves |> Seq.map (fun (tIdx, _, _, _) -> tIdx))
+      |> Seq.sortDescending
+      |> Seq.iter target.RemoveAt
 
-    // actually add
-    Seq.empty
-    |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
-    |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
-    |> Seq.sortBy fst
-    |> Seq.iter target.Insert
+    let actuallyAdd () =
+      Seq.empty
+      |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
+      |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
+      |> Seq.sortBy fst
+      |> Seq.iter target.Insert
+
+    match moves, removals.Count, additions.Count with
+    | [ (tIdx, sIdx, _, _) ], 0, 0 -> // single move
+        target.Move(tIdx, sIdx)
+    | [ (t1Idx, s1Idx, _, _); (t2Idx, s2Idx, _, _) ], 0, 0 when t1Idx = s2Idx && t2Idx = s1Idx-> // single swap
+        let temp = target.[t1Idx]
+        target.[t1Idx] <- target.[t2Idx]
+        target.[t2Idx] <- temp
+    | _, rc, _ when rc = targetCount && rc > 0 -> // remove everything (implies moves = [])
+        target.Clear ()
+        actuallyAdd ()
+    | _ ->
+        actuallyRemove ()
+        actuallyAdd ()
 
     // update moved elements
     moves |> Seq.iter (fun (_, sIdx, t, s) -> update t s sIdx)
