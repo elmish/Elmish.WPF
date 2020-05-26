@@ -253,7 +253,7 @@ let ``starting with two TestClass instances, when merging after removing the las
   }
 
 [<Fact>]
-let ``starting with two TestClass instances, when merging after updating the last one, should update on updated item`` () =
+let ``starting with two TestClass instances, when merging after updating the last one, should call update on updated item`` () =
   Property.check <| property {
     let! id1 = GenX.auto<int>
     let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
