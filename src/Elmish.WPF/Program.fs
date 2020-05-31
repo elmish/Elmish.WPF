@@ -4,6 +4,12 @@ open System.Windows
 open Elmish
 
 
+type ProgramWpf<'arg, 'model, 'msg> = private {
+  ElmishProgram: Program<'arg, 'model, 'msg, Binding<'model, 'msg> list>
+  ElmConfig: ElmConfig
+}
+
+
 [<RequireQualifiedAccess>]
 module Program =
 
@@ -11,16 +17,15 @@ module Program =
   /// for the specified FrameworkElement. Non-blocking. This is a low-level function;
   /// for normal usage, see runWindow and runWindowWithConfig.
   let startElmishLoop
-      (config: ElmConfig)
       (element: FrameworkElement)
-      (program: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>) =
+      (program: ProgramWpf<unit, 'model, 'msg>) =
     let mutable lastModel = None
   
     let setState model dispatch =
       match lastModel with
       | None ->
-          let bindings = Program.view program model dispatch
-          let vm = ViewModel<'model,'msg>(model, dispatch, bindings, config, "main")
+          let bindings = Program.view program.ElmishProgram model dispatch
+          let vm = ViewModel<'model,'msg>(model, dispatch, bindings, program.ElmConfig, "main")
           element.DataContext <- vm
           lastModel <- Some vm
       | Some vm ->
@@ -29,7 +34,7 @@ module Program =
     let uiDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       fun msg -> element.Dispatcher.Invoke(fun () -> innerDispatch msg)
   
-    program
+    program.ElmishProgram
     |> Program.withSetState setState
     |> Program.withSyncDispatch uiDispatch
     |> Program.run
@@ -43,21 +48,14 @@ module Program =
       Application.Current.MainWindow <- window
   
   
-  /// Starts the Elmish and WPF dispatch loops with the specified configuration.
-  /// Will instantiate Application and set its MainWindow if it is not already
-  /// running, and then run the specified window. This is a blocking function.
-  let runWindowWithConfig config (window: Window) program =
+  /// Starts the Elmish and WPF dispatch loops.  Will instantiate Application
+  /// and set its MainWindow if it is not already running, and then run the
+  /// specified window. This is a blocking function.
+  let runWindow (window: Window) program =
     initializeApplication window
     window.Show ()
-    startElmishLoop config window program
+    startElmishLoop window program
     Application.Current.Run window
-  
-  
-  /// Starts the Elmish and WPF dispatch loops. Will instantiate Application and
-  /// set its MainWindow if it is not already running, and then run the specified
-  /// window. This is a blocking function.
-  let runWindow window program =
-    runWindowWithConfig ElmConfig.Default window program
   
   
   /// Same as mkSimple, but with a signature adapted for Elmish.WPF.
@@ -65,7 +63,8 @@ module Program =
       (init: unit -> 'model)
       (update: 'msg  -> 'model -> 'model)
       (bindings: unit -> Binding<'model, 'msg> list) =
-    Program.mkSimple init update (fun _ _ -> bindings ())
+    { ElmishProgram = Program.mkSimple init update (fun _ _ -> bindings ())
+      ElmConfig = ElmConfig.Default }
   
   
   /// Same as mkProgram, but with a signature adapted for Elmish.WPF.
@@ -73,7 +72,8 @@ module Program =
       (init: unit -> 'model * Cmd<'msg>)
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
       (bindings: unit -> Binding<'model, 'msg> list) =
-    Program.mkProgram init update (fun _ _ -> bindings ())
+    { ElmishProgram = Program.mkProgram init update (fun _ _ -> bindings ())
+      ElmConfig = ElmConfig.Default }
   
   
   /// Same as mkProgramWpf, except that init and update doesn't return Cmd<'msg>
@@ -101,3 +101,18 @@ module Program =
       System.Diagnostics.Debug.WriteLine(sprintf "New message: %A" msg)
       System.Diagnostics.Debug.WriteLine(sprintf "Updated state: %A" model)
     )
+
+  let mapElmishProgram f program =
+    { program with ElmishProgram = f program.ElmishProgram}
+
+  let logConsole program =
+    { program with ElmConfig = { program.ElmConfig with LogConsole = true } }
+
+  let logTrace program =
+    { program with ElmConfig = { program.ElmConfig with LogTrace = true } }
+
+  let measure program =
+    { program with ElmConfig = { program.ElmConfig with Measure = true } }
+
+  let withMeasureLimitMs i program =
+    { program with ElmConfig = { program.ElmConfig with MeasureLimitMs = i } }

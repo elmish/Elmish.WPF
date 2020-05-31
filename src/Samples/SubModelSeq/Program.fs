@@ -223,7 +223,8 @@ module Bindings =
 [<EntryPoint; STAThread>]
 let main _ =
   Program.mkSimpleWpf App.init App.update Bindings.rootBindings
-  |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
-    { ElmConfig.Default with LogConsole = true; Measure = true }
+  |> Program.mapElmishProgram Program.withConsoleTrace
+  |> Program.logConsole
+  |> Program.measure
+  |> Program.runWindow
     (MainWindow())

@@ -1,6 +1,6 @@
 ﻿namespace Elmish.WPF
 
-type ElmConfig =
+type internal ElmConfig =
   { // Whether to log to console. Default false.
     LogConsole: bool
     // Whether to log to trace (VS debug output). Default false.

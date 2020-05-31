@@ -33,7 +33,8 @@ let bindings () : Binding<Model, Msg> list = [
 [<EntryPoint; STAThread>]
 let main _ =
   Program.mkSimpleWpf init update bindings
-  |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
-    { ElmConfig.Default with LogConsole = true }
+  |> Program.mapElmishProgram Program.withConsoleTrace
+  |> Program.logConsole
+  |> Program.measure
+  |> Program.runWindow
     (MainWindow())
