@@ -4,8 +4,8 @@ open System.Windows
 open Elmish
 
 
-type ProgramWpf<'arg, 'model, 'msg> = private {
-  ElmishProgram: Program<'arg, 'model, 'msg, Binding<'model, 'msg> list>
+type ProgramWpf<'model, 'msg> = private {
+  ElmishProgram: Program<Unit, 'model, 'msg, Binding<'model, 'msg> list>
   ElmConfig: ElmConfig
 }
 
@@ -18,7 +18,7 @@ module Program =
   /// for normal usage, see runWindow and runWindowWithConfig.
   let startElmishLoop
       (element: FrameworkElement)
-      (program: ProgramWpf<unit, 'model, 'msg>) =
+      (program: ProgramWpf<'model, 'msg>) =
     let mutable lastModel = None
   
     let setState model dispatch =
