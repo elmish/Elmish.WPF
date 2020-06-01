@@ -100,9 +100,8 @@ let timerTick dispatch =
 [<EntryPoint; STAThread>]
 let main _ =
   Program.mkProgramWpf init update bindings
-  |> Program.mapElmishProgram (
-       Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
-       >> Program.withConsoleTrace)
+  |> Elmish.WPF.ElmishProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+  |> ElmishProgram.withConsoleTrace
   |> Program.logConsole
   |> Program.measure
   |> Program.runWindow

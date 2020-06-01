@@ -116,3 +116,14 @@ module Program =
 
   let withMeasureLimitMs i program =
     { program with ElmConfig = { program.ElmConfig with MeasureLimitMs = i } }
+    
+
+
+[<RequireQualifiedAccess>]
+module ElmishProgram =
+
+  let withConsoleTrace program =
+    program |> Program.mapElmishProgram Program.withConsoleTrace
+
+  let withSubscription subscribe program =
+    program |> Program.mapElmishProgram (Program.withSubscription subscribe)
