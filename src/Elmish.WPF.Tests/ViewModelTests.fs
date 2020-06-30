@@ -694,8 +694,8 @@ module OneWaySeqLazy =
   let ``given equals returns false and itemEquals returns false, when model is updated, should contain expected items in collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = Gen.guid |> Gen.list (Range.exponential 1 50)
-      let! m2 = Gen.guid |> Gen.list (Range.exponential 1 50)
+      let! m1 = Gen.guid |> Gen.list (Range.constant 1 50)
+      let! m2 = Gen.guid |> Gen.list (Range.constant 1 50)
 
       let get = id
       let equals _ _ = false
