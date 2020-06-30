@@ -162,7 +162,7 @@ let ``starting with random items, when merging after a replacement, should conta
 [<Fact>]
 let ``starting with random items, when merging after swapping two adjacent items, should contain the merged items and never call create and call update exactly once for each item`` () =
   Property.check <| property {
-    let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+    let! list1 = Gen.guid |> Gen.list (Range.constant 2 50)
     let! firstSwapIndex = (0, list1.Length - 2) ||> Range.constant |> Gen.int
 
     let observableCollection = ObservableCollection<_> list1
@@ -183,7 +183,7 @@ let ``starting with random items, when merging after swapping two adjacent items
 [<Fact>]
 let ``starting with random items, when merging after swapping two items, should contain the merged items and never call create and call update exactly once for each item`` () =
   Property.check <| property {
-    let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+    let! list1 = Gen.guid |> Gen.list (Range.constant 2 50)
     let! i = (0, list1.Length - 1) ||> Range.constant |> Gen.int
     let! j = (0, list1.Length - 1) ||> Range.constant |> Gen.int |> GenX.notEqualTo i
 
@@ -205,7 +205,7 @@ let ``starting with random items, when merging after swapping two items, should 
 [<Fact>]
 let ``starting with random items, when merging after shuffling, should contain the merged items and never call create and call update eactly once for each item`` () =
   Property.check <| property {
-    let! list1 = Gen.guid |> Gen.list (Range.exponential 2 50)
+    let! list1 = Gen.guid |> Gen.list (Range.constant 2 50)
     let! list2 = list1 |> GenX.shuffle |> GenX.notEqualTo list1
     
     let observableCollection = ObservableCollection<_> list1
