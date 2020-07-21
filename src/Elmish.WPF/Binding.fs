@@ -246,6 +246,54 @@ module internal BindingData =
           SubModelSeqBindingName = d.SubModelSeqBindingName
         } |> SubModelSelectedItemData
 
+  let mapMsg f = function
+    | OneWayData d -> d |> OneWayData
+    | OneWayLazyData d -> d |> OneWayLazyData
+    | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
+    | TwoWayData d -> TwoWayData {
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> f
+      }
+    | TwoWayValidateData d -> TwoWayValidateData {
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> f
+        Validate = unbox >> d.Validate
+      }
+    | CmdData d -> CmdData {
+        Exec = d.Exec >> ValueOption.map f
+        CanExec = d.CanExec
+      }
+    | CmdParamData d -> CmdParamData {
+        Exec = fun p m -> d.Exec p m |> ValueOption.map f
+        CanExec = fun p m -> d.CanExec p m
+        AutoRequery = d.AutoRequery
+      }
+    | SubModelData d -> SubModelData {
+        GetModel = d.GetModel
+        GetBindings = d.GetBindings
+        ToMsg = d.ToMsg >> f
+        Sticky = d.Sticky
+      }
+    | SubModelWinData d -> SubModelWinData {
+        GetState = d.GetState
+        GetBindings = d.GetBindings
+        ToMsg = d.ToMsg >> f
+        GetWindow = fun m dispatch -> d.GetWindow m (f >> dispatch)
+        IsModal = d.IsModal
+        OnCloseRequested = d.OnCloseRequested |> ValueOption.map f
+      }
+    | SubModelSeqData d -> SubModelSeqData {
+        GetModels = d.GetModels
+        GetId = d.GetId
+        GetBindings = d.GetBindings
+        ToMsg = d.ToMsg >> f
+      }
+    | SubModelSelectedItemData d -> SubModelSelectedItemData {
+        Get = d.Get
+        Set = fun v m -> d.Set v m |> f
+        SubModelSeqBindingName = d.SubModelSeqBindingName
+      }
+
 
 module internal Binding =
 
@@ -254,6 +302,7 @@ module internal Binding =
       Data = binding.Data |> f }
 
   let mapModel f = f |> BindingData.mapModel |> mapData
+  let mapMsg   f = f |> BindingData.mapMsg   |> mapData
 
   let subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
@@ -262,6 +311,7 @@ module internal Binding =
 module internal Bindings =
 
   let mapModel f bindings = bindings |> List.map (Binding.mapModel f)
+  let mapMsg   f bindings = bindings |> List.map (Binding.mapMsg f)
 
 
 
