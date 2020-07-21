@@ -8,15 +8,17 @@ type Model =
   { Count: int
     StepSize: int }
 
-let init =
-  { Count = 0
-    StepSize = 1 }
-
 type Msg =
   | Increment
   | Decrement
   | SetStepSize of int
   | Reset
+
+let init =
+  { Count = 0
+    StepSize = 1 }
+
+let canReset = (<>) init
 
 let update msg m =
   match msg with
@@ -32,7 +34,7 @@ let bindings () : Binding<Model, Msg> list = [
   "StepSize" |> Binding.twoWay(
     (fun m -> float m.StepSize),
     int >> SetStepSize)
-  "Reset" |> Binding.cmdIf(Reset, (<>) init)
+  "Reset" |> Binding.cmdIf(Reset, canReset)
 ]
 
 
