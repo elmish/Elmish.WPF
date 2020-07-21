@@ -134,56 +134,6 @@ module internal BindingData =
     | _, SubModelSelectedItemData _ -> -1
     | _, _ -> 0
 
-  let boxMsg
-      (boxMsg: 'msg -> 'boxedMsg)
-      : BindingData<'model, 'msg> -> BindingData<'model, 'boxedMsg> = function
-    | OneWayData d -> d |> OneWayData
-    | OneWayLazyData d -> d |> OneWayLazyData
-    | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
-    | TwoWayData d -> TwoWayData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> boxMsg
-      }
-    | TwoWayValidateData d -> TwoWayValidateData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> boxMsg
-        Validate = unbox >> d.Validate
-      }
-    | CmdData d -> CmdData {
-        Exec = d.Exec >> ValueOption.map boxMsg
-        CanExec = d.CanExec
-      }
-    | CmdParamData d -> CmdParamData {
-        Exec = fun p m -> d.Exec p m |> ValueOption.map boxMsg
-        CanExec = fun p m -> d.CanExec p m
-        AutoRequery = d.AutoRequery
-      }
-    | SubModelData d -> SubModelData {
-        GetModel = d.GetModel
-        GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> boxMsg
-        Sticky = d.Sticky
-      }
-    | SubModelWinData d -> SubModelWinData {
-        GetState = d.GetState
-        GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> boxMsg
-        GetWindow = fun m dispatch -> d.GetWindow m (boxMsg >> dispatch)
-        IsModal = d.IsModal
-        OnCloseRequested = d.OnCloseRequested |> ValueOption.map boxMsg
-      }
-    | SubModelSeqData d -> SubModelSeqData {
-        GetModels = d.GetModels
-        GetId = d.GetId
-        GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> boxMsg
-      }
-    | SubModelSelectedItemData d -> SubModelSelectedItemData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> boxMsg
-        SubModelSeqBindingName = d.SubModelSeqBindingName
-      }
-
   let mapModel f data =
     let binaryHelper binary x m = (x, f m) ||> binary
     match data with
@@ -323,8 +273,8 @@ module internal Helpers =
       Data = data }
 
   let boxBinding (binding: Binding<'a, 'b>) : Binding<obj, obj> =
-    { Name = binding.Name
-      Data = BindingData.boxMsg box binding.Data }
+    binding
+    |> Binding.mapMsg box
     |> Binding.mapModel unbox
 
 
