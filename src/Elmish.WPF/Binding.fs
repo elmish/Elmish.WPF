@@ -189,8 +189,7 @@ module internal BindingData =
         GetState = d.GetState
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> boxMsg
-        GetWindow =
-          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow m (boxMsg >> disp)
+        GetWindow = fun m dispatch -> d.GetWindow m (boxMsg >> dispatch)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map boxMsg
       }
