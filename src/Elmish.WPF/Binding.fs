@@ -143,23 +143,12 @@ module internal BindingData =
   let subModelSelectedItemLast { Data = a } { Data = b } =
     subModelSelectedItemDataLast a b
 
-
-  let boxDispatch
-      (unboxMsg: 'boxedMsg -> 'msg)
-      (strongDispatch: Dispatch<'msg>) : Dispatch<'boxedMsg> =
-    unboxMsg >> strongDispatch
-
-  let unboxDispatch
-      (boxMsg: 'msg -> 'boxedMsg)
-      (weakDispatch: Dispatch<'boxedMsg>) : Dispatch<'msg> =
-    boxMsg >> weakDispatch
-
   let boxWrapDispatch
       (unboxMsg: 'boxedMsg -> 'msg)
       (boxMsg: 'msg -> 'boxedMsg)
       (strongWrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : Dispatch<'boxedMsg> -> Dispatch<'boxedMsg> =
-    (unboxDispatch boxMsg) >> strongWrapDispatch >> (boxDispatch unboxMsg)
+    ((>>) boxMsg) >> strongWrapDispatch >> ((>>) unboxMsg)
 
   let boxMsg
       (unboxMsg: 'boxedMsg -> 'msg)
@@ -201,7 +190,7 @@ module internal BindingData =
         GetBindings = d.GetBindings
         ToMsg = d.ToMsg >> boxMsg
         GetWindow =
-          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow m (unboxDispatch boxMsg disp)
+          fun m (disp: Dispatch<'boxedMsg>) -> d.GetWindow m (boxMsg >> disp)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested |> ValueOption.map boxMsg
       }
