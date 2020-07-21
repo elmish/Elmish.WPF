@@ -3788,7 +3788,7 @@ module sorting =
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
           ]
-        let sorted = data |> List.sortWith BindingData.subModelSelectedItemDataLast
+        let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast
         match sorted with
         | [_; _; _; _; _; _; _; _; _; _; SubModelSelectedItemData _; SubModelSelectedItemData _] -> ()
         | _ -> failwith "SubModelSelectedItemData was not sorted last"

@@ -132,16 +132,12 @@ and Binding<'model, 'msg> =
 
 module internal BindingData =
 
-
-  let subModelSelectedItemDataLast a b =
+  let subModelSelectedItemLast a b =
     match a, b with
     | SubModelSelectedItemData _, SubModelSelectedItemData _ -> 0
     | SubModelSelectedItemData _, _ -> 1
     | _, SubModelSelectedItemData _ -> -1
     | _, _ -> 0
-
-  let subModelSelectedItemLast { Data = a } { Data = b } =
-    subModelSelectedItemDataLast a b
 
   let boxWrapDispatch
       (unboxMsg: 'boxedMsg -> 'msg)
@@ -281,6 +277,9 @@ module internal Binding =
       Data = binding.Data |> f }
 
   let mapModel f = f |> BindingData.mapModel |> mapData
+
+  let subModelSelectedItemLast a b =
+    BindingData.subModelSelectedItemLast a.Data b.Data
 
 
 module internal Bindings =

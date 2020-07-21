@@ -611,7 +611,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       match dict.TryGetValue name with
       | true, b -> Some b
       | _ -> None
-    let sortedBindings = bindings |> List.sortWith BindingData.subModelSelectedItemLast
+    let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
         log "Binding name '%s' is duplicated. Only the first occurance will be used." b.Name
