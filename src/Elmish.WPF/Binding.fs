@@ -33,17 +33,17 @@ module WindowState =
     | ValueNone -> WindowState.Closed
 
 
-type internal OneWayData<'model, 'a> = {
+type OneWayData<'model, 'a> = {
   Get: 'model -> 'a
 }
 
-type internal OneWayLazyData<'model, 'a, 'b> = {
+type OneWayLazyData<'model, 'a, 'b> = {
   Get: 'model -> 'a
   Map: 'a -> 'b
   Equals: 'a -> 'a -> bool
 }
 
-type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
+type OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
   Get: 'model -> 'a
   Map: 'a -> 'b seq
   Equals: 'a -> 'a -> bool
@@ -51,42 +51,42 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
   ItemEquals: 'b -> 'b -> bool
 }
 
-type internal TwoWayData<'model, 'msg, 'a> = {
+type TwoWayData<'model, 'msg, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> 'msg
 }
 
-type internal TwoWayValidateData<'model, 'msg, 'a> = {
+type TwoWayValidateData<'model, 'msg, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> 'msg
   Validate: 'model -> string voption
 }
 
-type internal CmdData<'model, 'msg> = {
+type CmdData<'model, 'msg> = {
   Exec: 'model -> 'msg voption
   CanExec: 'model -> bool
 }
 
-type internal CmdParamData<'model, 'msg> = {
+type CmdParamData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
 }
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id> = {
+type SubModelSelectedItemData<'model, 'msg, 'id> = {
   Get: 'model -> 'id voption
   Set: 'id voption -> 'model -> 'msg
   SubModelSeqBindingName: string
 }
 
-type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+type SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
   Sticky: bool
 }
 
-and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+and SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
@@ -95,7 +95,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   OnCloseRequested: 'model -> 'msg voption
 }
 
-and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
+and SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   GetModels: 'model -> 'bindingModel seq
   GetId: 'bindingModel -> 'id
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
@@ -104,7 +104,7 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
 
 
 /// Represents all necessary data used to create the different binding types.
-and internal BindingData<'model, 'msg> =
+and BindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model, obj>
   | OneWayLazyData of OneWayLazyData<'model, obj, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
@@ -120,12 +120,11 @@ and internal BindingData<'model, 'msg> =
 
 /// Represents all necessary data used to create a binding.
 and Binding<'model, 'msg> =
-  internal
     { Name: string
       Data: BindingData<'model, 'msg> }
 
 
-module internal BindingData =
+module BindingData =
 
   let subModelSelectedItemLast a b =
     match a, b with
@@ -247,7 +246,7 @@ module internal BindingData =
   let mapMsg f = mapMsgWithModel (fun _ -> f)
 
 
-module internal Binding =
+module Binding =
 
   let mapData f binding =
     { Name = binding.Name
@@ -261,7 +260,7 @@ module internal Binding =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
 
-module internal Bindings =
+module Bindings =
 
   let mapModel        f bindings = bindings |> List.map (Binding.mapModel        f)
   let mapMsgWithModel f bindings = bindings |> List.map (Binding.mapMsgWithModel f)
