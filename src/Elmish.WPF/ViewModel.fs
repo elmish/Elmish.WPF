@@ -227,7 +227,7 @@ and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   ToMsg: 'bindingMsg -> 'msg
   GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
-  OnCloseRequested: unit -> unit
+  OnCloseRequested: 'model -> unit
   WinRef: WeakReference<Window>
   PreventClose: bool ref
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
@@ -359,7 +359,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       (getWindow: 'model -> Dispatch<'msg> -> Window)
       dataContext
       isDialog
-      (onCloseRequested: unit -> unit)
+      (onCloseRequested: 'model -> unit)
       (preventClose: bool ref)
       initialVisibility =
     let win = getWindow currentModel dispatch
@@ -372,7 +372,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ev.Cancel <- !preventClose
           async {
             do! Async.SwitchToThreadPool()
-            onCloseRequested ()
+            onCloseRequested currentModel
           } |> Async.StartImmediate
         )
         do! Async.SwitchToContext guiCtx
@@ -457,7 +457,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let getState = measure name "getState" d.GetState
         let getBindings = measure name "bindings" d.GetBindings
         let toMsg = measure name "toMsg" d.ToMsg
-        let onCloseRequested = fun () -> d.OnCloseRequested |> ValueOption.iter dispatch
+        let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         match getState initialModel with
         | WindowState.Closed ->
             Some <| SubModelWin {

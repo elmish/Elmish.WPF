@@ -3773,7 +3773,6 @@ module sorting =
       Property.check <| property {
         let! s = GenX.auto<string>
         let! b = GenX.auto<bool>
-        let! vo = GenX.auto<obj voption>
         let data =
           [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
             OneWayData { Get = fail }
@@ -3784,7 +3783,7 @@ module sorting =
             CmdData { Exec = fail; CanExec = fail }
             CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b }
             SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
-            SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = vo }
+            SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = fail }
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ]
