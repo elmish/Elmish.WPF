@@ -1,4 +1,4 @@
-namespace Elmish.WPF
+﻿namespace Elmish.WPF
 
 open System.Windows
 
@@ -196,53 +196,55 @@ module internal BindingData =
           SubModelSeqBindingName = d.SubModelSeqBindingName
         } |> SubModelSelectedItemData
 
-  let mapMsg f = function
+  let mapMsgWithModel f = function
     | OneWayData d -> d |> OneWayData
     | OneWayLazyData d -> d |> OneWayLazyData
     | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
     | TwoWayData d -> TwoWayData {
         Get = d.Get
-        Set = fun v m -> d.Set v m |> f
+        Set = fun v m -> d.Set v m |> f m
       }
     | TwoWayValidateData d -> TwoWayValidateData {
         Get = d.Get
-        Set = fun v m -> d.Set v m |> f
+        Set = fun v m -> d.Set v m |> f m
         Validate = unbox >> d.Validate
       }
     | CmdData d -> CmdData {
-        Exec = d.Exec >> ValueOption.map f
+        Exec = fun m -> m |> d.Exec |> ValueOption.map (f m)
         CanExec = d.CanExec
       }
     | CmdParamData d -> CmdParamData {
-        Exec = fun p m -> d.Exec p m |> ValueOption.map f
+        Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
         CanExec = fun p m -> d.CanExec p m
         AutoRequery = d.AutoRequery
       }
     | SubModelData d -> SubModelData {
         GetModel = d.GetModel
         GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
         Sticky = d.Sticky
       }
     | SubModelWinData d -> SubModelWinData {
         GetState = d.GetState
         GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
-        GetWindow = fun m dispatch -> d.GetWindow m (f >> dispatch)
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+        GetWindow = fun m dispatch -> d.GetWindow m (m |> f >> dispatch)
         IsModal = d.IsModal
-        OnCloseRequested = d.OnCloseRequested >> ValueOption.map f
+        OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
       }
     | SubModelSeqData d -> SubModelSeqData {
         GetModels = d.GetModels
         GetId = d.GetId
         GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
       }
     | SubModelSelectedItemData d -> SubModelSelectedItemData {
         Get = d.Get
-        Set = fun v m -> d.Set v m |> f
+        Set = fun v m -> d.Set v m |> f m
         SubModelSeqBindingName = d.SubModelSeqBindingName
       }
+
+  let mapMsg f = mapMsgWithModel (fun _ -> f)
 
 
 module internal Binding =
@@ -251,8 +253,9 @@ module internal Binding =
     { Name = binding.Name
       Data = binding.Data |> f }
 
-  let mapModel f = f |> BindingData.mapModel |> mapData
-  let mapMsg   f = f |> BindingData.mapMsg   |> mapData
+  let mapModel        f = f |> BindingData.mapModel        |> mapData
+  let mapMsgWithModel f = f |> BindingData.mapMsgWithModel |> mapData
+  let mapMsg          f = f |> BindingData.mapMsg          |> mapData
 
   let subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
@@ -260,8 +263,9 @@ module internal Binding =
 
 module internal Bindings =
 
-  let mapModel f bindings = bindings |> List.map (Binding.mapModel f)
-  let mapMsg   f bindings = bindings |> List.map (Binding.mapMsg f)
+  let mapModel        f bindings = bindings |> List.map (Binding.mapModel        f)
+  let mapMsgWithModel f bindings = bindings |> List.map (Binding.mapMsgWithModel f)
+  let mapMsg          f bindings = bindings |> List.map (Binding.mapMsg          f)
 
 
 
