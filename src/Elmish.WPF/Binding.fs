@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+namespace Elmish.WPF
 
 open System.Windows
 
@@ -82,14 +82,14 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id> = {
 type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'bindingMsg -> 'msg
   Sticky: bool
 }
 
 and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'bindingMsg -> 'msg
   GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
   OnCloseRequested: 'model -> 'msg voption
@@ -99,7 +99,7 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
   GetModels: 'model -> 'bindingModel seq
   GetId: 'bindingModel -> 'id
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'id * 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
 }
 
 
@@ -173,13 +173,13 @@ module internal BindingData =
     | SubModelData d ->
         { GetModel = f >> d.GetModel
           GetBindings = d.GetBindings
-          ToMsg = d.ToMsg
+          ToMsg = f >> d.ToMsg
           Sticky = d.Sticky
         } |> SubModelData
     | SubModelWinData d ->
         { GetState = f >> d.GetState
           GetBindings = d.GetBindings
-          ToMsg = d.ToMsg
+          ToMsg = f >> d.ToMsg
           GetWindow = f >> d.GetWindow
           IsModal = d.IsModal
           OnCloseRequested = f >> d.OnCloseRequested
@@ -188,7 +188,7 @@ module internal BindingData =
         { GetModels = f >> d.GetModels
           GetId = d.GetId
           GetBindings = d.GetBindings
-          ToMsg = d.ToMsg
+          ToMsg = f >> d.ToMsg
         } |> SubModelSeqData
     | SubModelSelectedItemData d ->
         { Get = f >> d.Get
@@ -221,13 +221,13 @@ module internal BindingData =
     | SubModelData d -> SubModelData {
         GetModel = d.GetModel
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> f
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
         Sticky = d.Sticky
       }
     | SubModelWinData d -> SubModelWinData {
         GetState = d.GetState
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> f
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
         GetWindow = fun m dispatch -> d.GetWindow m (f >> dispatch)
         IsModal = d.IsModal
         OnCloseRequested = d.OnCloseRequested >> ValueOption.map f
@@ -236,7 +236,7 @@ module internal BindingData =
         GetModels = d.GetModels
         GetId = d.GetId
         GetBindings = d.GetBindings
-        ToMsg = d.ToMsg >> f
+        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f
       }
     | SubModelSelectedItemData d -> SubModelSelectedItemData {
         Get = d.Get
@@ -952,7 +952,7 @@ type Binding private () =
     SubModelData {
       GetModel = fun m -> toBindingModel (m, getSubModel m) |> box |> ValueSome
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'bindingMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
       Sticky = false
     } |> createBinding
 
@@ -976,7 +976,7 @@ type Binding private () =
     SubModelData {
       GetModel = fun m -> (m, getSubModel m) |> box |> ValueSome
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
       Sticky = false
     } |> createBinding
 
@@ -995,7 +995,7 @@ type Binding private () =
     SubModelData {
       GetModel = fun m -> (m, getSubModel m) |> box |> ValueSome
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'msg>
+      ToMsg = fun _ -> unbox<'msg>
       Sticky = false
     } |> createBinding
 
@@ -1038,7 +1038,7 @@ type Binding private () =
       GetModel = fun m ->
         getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'bindingMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1083,7 +1083,7 @@ type Binding private () =
         |> ValueOption.ofOption
         |> ValueOption.map (fun sub -> toBindingModel (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'bindingMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1122,7 +1122,7 @@ type Binding private () =
       GetModel = fun m ->
         getSubModel m |> ValueOption.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1163,7 +1163,7 @@ type Binding private () =
         |> ValueOption.ofOption
         |> ValueOption.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1197,7 +1197,7 @@ type Binding private () =
       GetModel = fun m ->
         getSubModel m |> ValueOption.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'msg>
+      ToMsg = fun _ -> unbox<'msg>
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1233,7 +1233,7 @@ type Binding private () =
         |> ValueOption.ofOption
         |> ValueOption.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'msg>
+      ToMsg = fun _ -> unbox<'msg>
       Sticky = defaultArg sticky false
     } |> createBinding
 
@@ -1292,7 +1292,7 @@ type Binding private () =
       GetState = fun m ->
         getState m |> WindowState.map (fun sub -> toBindingModel (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'bindingMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
@@ -1408,7 +1408,7 @@ type Binding private () =
       GetState = fun m ->
         getState m |> WindowState.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
@@ -1510,7 +1510,7 @@ type Binding private () =
       GetState = fun m ->
         getState m |> WindowState.map (fun sub -> (m, sub) |> box)
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = unbox<'msg>
+      ToMsg = fun _ -> unbox<'msg>
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
@@ -1594,7 +1594,7 @@ type Binding private () =
         m |> getSubModels |> Seq.map (fun sub -> toBindingModel (m, sub) |> box)
       GetId = unbox<'bindingModel> >> getId >> box
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun (id, msg) -> toMsg (unbox<'id> id, unbox<'bindingMsg> msg)
+      ToMsg = fun _ (id, msg) -> toMsg (unbox<'id> id, unbox<'bindingMsg> msg)
     } |> createBinding
 
 
@@ -1623,7 +1623,7 @@ type Binding private () =
       GetModels = fun m -> m |> getSubModels |> Seq.map (fun sub -> (m, sub) |> box)
       GetId = unbox<'model * 'subModel> >> snd >> getId >> box
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
+      ToMsg = fun _ (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
     } |> createBinding
 
 
@@ -1646,7 +1646,7 @@ type Binding private () =
       GetModels = fun m -> m |> getSubModels |> Seq.map (fun sub -> (m, sub) |> box)
       GetId = unbox<'model * 'subModel> >> snd >> getId >> box
       GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun (_, msg) -> unbox<'msg> msg
+      ToMsg = fun _ (_, msg) -> unbox<'msg> msg
     } |> createBinding
 
 
