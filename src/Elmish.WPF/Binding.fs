@@ -92,7 +92,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   ToMsg: 'bindingMsg -> 'msg
   GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
-  OnCloseRequested: 'msg voption
+  OnCloseRequested: 'model -> 'msg voption
 }
 
 and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
@@ -182,7 +182,7 @@ module internal BindingData =
           ToMsg = d.ToMsg
           GetWindow = f >> d.GetWindow
           IsModal = d.IsModal
-          OnCloseRequested = d.OnCloseRequested
+          OnCloseRequested = f >> d.OnCloseRequested
         } |> SubModelWinData
     | SubModelSeqData d ->
         { GetModels = f >> d.GetModels
@@ -230,7 +230,7 @@ module internal BindingData =
         ToMsg = d.ToMsg >> f
         GetWindow = fun m dispatch -> d.GetWindow m (f >> dispatch)
         IsModal = d.IsModal
-        OnCloseRequested = d.OnCloseRequested |> ValueOption.map f
+        OnCloseRequested = d.OnCloseRequested >> ValueOption.map f
       }
     | SubModelSeqData d -> SubModelSeqData {
         GetModels = d.GetModels
@@ -1295,7 +1295,7 @@ type Binding private () =
       ToMsg = unbox<'bindingMsg> >> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
     } |> createBinding
 
 
@@ -1411,7 +1411,7 @@ type Binding private () =
       ToMsg = unbox<'subMsg> >> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
     } |> createBinding
 
 
@@ -1513,7 +1513,7 @@ type Binding private () =
       ToMsg = unbox<'msg>
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
     } |> createBinding
 
 
