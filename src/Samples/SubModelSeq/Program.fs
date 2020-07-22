@@ -170,7 +170,7 @@ module Bindings =
 
   open App
 
-  let rec counterBindings () : Binding<Model * Counter, Msg> list = [
+  let rec counterTreeBindings () : Binding<Model * Counter, Msg> list = [
     "CounterIdText" |> Binding.oneWay(fun (_, { Id = CounterId id }) -> id)
 
     "CounterValue" |> Binding.oneWay(fun (_, c) -> c.CounterValue)
@@ -204,7 +204,7 @@ module Bindings =
       (fun ((m, _), childCounter) -> (m, childCounter)),
       (fun (_, c) -> c.Id),
       snd,
-      counterBindings)
+      counterTreeBindings)
   ]
 
 
@@ -212,7 +212,7 @@ module Bindings =
     "Counters" |> Binding.subModelSeq(
       (fun m -> m |> topLevelCounters),
       (fun c -> c.Id),
-      counterBindings)
+      counterTreeBindings)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
