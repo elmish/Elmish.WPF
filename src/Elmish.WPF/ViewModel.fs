@@ -409,22 +409,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           Values = values }
     | TwoWayData d ->
         let set = measure2 name "set" d.Set
-        let dispatch' = d.WrapDispatch dispatch
         Some <| TwoWay {
           Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch' }
+          Set = fun obj m -> set obj m |> dispatch }
     | TwoWayValidateData d ->
         let set = measure2 name "set" d.Set
-        let dispatch' = d.WrapDispatch dispatch
         Some <| TwoWayValidate {
           Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch'
+          Set = fun obj m -> set obj m |> dispatch
           Validate = measure name "validate" d.Validate }
     | CmdData d ->
         let exec = measure name "exec" d.Exec
         let canExec = measure name "canExec" d.CanExec
-        let dispatch' = d.WrapDispatch dispatch
-        let execute _ = exec currentModel |> ValueOption.iter dispatch'
+        let execute _ = exec currentModel |> ValueOption.iter dispatch
         let canExecute _ = canExec currentModel
         Some <| Cmd {
           Cmd = Command(execute, canExecute, false)
@@ -432,8 +429,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | CmdParamData d ->
         let exec = measure2 name "exec" d.Exec
         let canExec = measure2 name "canExec" d.CanExec
-        let dispatch' = d.WrapDispatch dispatch
-        let execute param = exec param currentModel |> ValueOption.iter dispatch'
+        let execute param = exec param currentModel |> ValueOption.iter dispatch
         let canExecute param = canExec param currentModel
         Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
     | SubModelData d ->
@@ -538,10 +534,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | Some (SubModelSeq b) ->
           let get = measure name "get" d.Get
           let set = measure2 name "set" d.Set
-          let dispatch' = d.WrapDispatch dispatch
           SubModelSelectedItem {
             Get = get
-            Set = fun obj m -> set obj m |> dispatch'
+            Set = fun obj m -> set obj m |> dispatch
             SubModelSeqBinding = b
           } |> withCaching |> Some
         | _ ->

@@ -2119,7 +2119,7 @@ module cmdIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdIf(fail, fail, id)
+        let binding = bindingName |> Binding.cmdIf(fail, fail)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2476,7 +2476,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam, wrapDispatch = id) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -3775,18 +3775,18 @@ module sorting =
         let! b = GenX.auto<bool>
         let! vo = GenX.auto<obj voption>
         let data =
-          [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+          [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
             OneWayData { Get = fail }
             OneWayLazyData { Get = fail; Map = fail; Equals = fail2 }
             OneWaySeqLazyData { Get = fail; Map = fail; Equals = fail2; GetId = fail; ItemEquals = fail2 }
-            TwoWayData { Get = fail; Set = fail2; WrapDispatch = fail }
-            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail }
-            CmdData { Exec = fail; CanExec = fail; WrapDispatch = fail }
-            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
+            TwoWayData { Get = fail; Set = fail2 }
+            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail }
+            CmdData { Exec = fail; CanExec = fail }
+            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b }
             SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
             SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = vo }
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
-            SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+            SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ]
         let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast
         match sorted with
