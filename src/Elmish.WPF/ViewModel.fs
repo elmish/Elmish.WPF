@@ -272,7 +272,7 @@ type internal CmdBinding<'model, 'msg> = {
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'bindingMsg -> 'msg
   Sticky: bool
   Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
 }
@@ -280,7 +280,7 @@ type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
 and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'bindingMsg -> 'msg
   GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
   OnCloseRequested: 'model -> unit
@@ -293,7 +293,7 @@ and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
   GetModels: 'model -> 'bindingModel seq
   GetId: 'bindingModel -> 'id
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'id * 'bindingMsg -> 'msg
+  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
@@ -491,35 +491,37 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelData d ->
         let getModel = measure name "getSubModel" d.GetModel
         let getBindings = measure name "bindings" d.GetBindings
-        let toMsg = measure name "toMsg" d.ToMsg
+        let toMsg2 = measure2 name "toMsg" d.ToMsg
+        let toMsg1 = fun msg -> toMsg2 currentModel msg
         match getModel initialModel with
         | ValueNone ->
             Some <| SubModel {
               GetModel = getModel
               GetBindings = getBindings
-              ToMsg = toMsg
+              ToMsg = toMsg2
               Sticky = d.Sticky
               Vm = ref ValueNone }
         | ValueSome m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
             Some <| SubModel {
               GetModel = getModel
               GetBindings = getBindings
-              ToMsg = toMsg
+              ToMsg = toMsg2
               Sticky = d.Sticky
               Vm = ref <| ValueSome vm }
     | SubModelWinData d ->
         let getState = measure name "getState" d.GetState
         let getBindings = measure name "bindings" d.GetBindings
-        let toMsg = measure name "toMsg" d.ToMsg
+        let toMsg2 = measure name "toMsg" d.ToMsg
+        let toMsg1 = fun msg -> toMsg2 currentModel msg
         let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         match getState initialModel with
         | WindowState.Closed ->
             Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
-              ToMsg = toMsg
+              ToMsg = toMsg2
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -529,7 +531,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log "[%s] Creating hidden window" chain
@@ -539,7 +541,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
-              ToMsg = toMsg
+              ToMsg = toMsg2
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -549,7 +551,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Visible m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log "[%s] Creating and opening window" chain
@@ -559,7 +561,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             Some <| SubModelWin {
               GetState = getState
               GetBindings = getBindings
-              ToMsg = toMsg
+              ToMsg = toMsg2
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -571,19 +573,20 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let getModels = measure name "getSubModels" d.GetModels
         let getId = measure name "getId" d.GetId
         let getBindings = measure name "bindings" d.GetBindings
-        let toMsg = measure name "toMsg" d.ToMsg
+        let toMsg2 = measure name "toMsg" d.ToMsg
+        let toMsg1 = fun msg -> toMsg2 currentModel msg
         let vms =
           getModels initialModel
           |> Seq.map (fun m ->
                let chain = getPropChainForItem name (getId m |> string)
-               ViewModel(m, (fun msg -> toMsg (getId m, msg) |> dispatch), getBindings (), config, chain)
+               ViewModel(m, (fun msg -> toMsg1 (getId m, msg) |> dispatch), getBindings (), config, chain)
           )
           |> ObservableCollection
         Some <| SubModelSeq {
           GetModels = getModels
           GetId = getId
           GetBindings = getBindings
-          ToMsg = toMsg
+          ToMsg = toMsg2
           Vms = vms }
     | SubModelSelectedItemData d ->
         match getInitializedBindingByName d.SubModelSeqBindingName with
@@ -648,7 +651,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.Vm := ValueNone
             true
       | ValueNone, ValueSome m ->
-          b.Vm := ValueSome <| ViewModel(m, b.ToMsg >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
+          let toMsg1 = fun msg -> b.ToMsg currentModel msg
+          b.Vm := ValueSome <| ViewModel(m, toMsg1 >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
@@ -690,7 +694,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.PreventClose initialVisibility
 
         let newVm model =
-          ViewModel(model, b.ToMsg >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
+          let toMsg1 = fun msg -> b.ToMsg currentModel msg
+          ViewModel(model, toMsg1 >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
 
         match !b.VmWinState, b.GetState newModel with
         | WindowState.Closed, WindowState.Closed ->
@@ -731,8 +736,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelSeq b ->
         let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
         let create m id = 
+          let toMsg1 = fun msg -> b.ToMsg currentModel msg
           let chain = getPropChainForItem bindingName (id |> string)
-          ViewModel(m, (fun msg -> b.ToMsg (id, msg) |> dispatch), b.GetBindings (), config, chain)
+          ViewModel(m, (fun msg -> toMsg1 (id, msg) |> dispatch), b.GetBindings (), config, chain)
         let update (vm: ViewModel<_, _>) m _ = vm.UpdateModel m
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
         elmStyleMerge b.GetId getTargetId create update b.Vms newSubModels
