@@ -614,7 +614,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
-        log "Binding name '%s' is duplicated. Only the first occurance will be used." b.Name
+        log "Binding name '%s' is duplicated. Only the first occurrence will be used." b.Name
       else
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
