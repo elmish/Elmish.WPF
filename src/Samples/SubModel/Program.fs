@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.SubModel.Program
+module Elmish.WPF.Samples.SubModel.Program
 
 open System
 open Elmish
@@ -74,7 +74,7 @@ module CounterWithClock =
     { Counter: Counter.Model
       Clock: Clock.Model }
 
-  let init =
+  let init () =
     { Counter = Counter.init
       Clock = Clock.init () }
 
@@ -100,8 +100,8 @@ module App =
       ClockCounter2: CounterWithClock.Model }
 
   let init () =
-    { ClockCounter1 = CounterWithClock.init
-      ClockCounter2 = CounterWithClock.init }
+    { ClockCounter1 = CounterWithClock.init ()
+      ClockCounter2 = CounterWithClock.init () }
 
   type Msg =
     | ClockCounter1Msg of CounterWithClock.Msg
