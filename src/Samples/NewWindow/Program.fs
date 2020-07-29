@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.NewWindow.Program
+module Elmish.WPF.Samples.NewWindow.Program
 
 open System
 open System.Windows
@@ -28,6 +28,11 @@ module App =
       Win1Input = ""
       Win2 = None }
 
+  let initWindow2 =
+    { Input = ""
+      IsChecked = false
+      ConfirmState = None }
+
   type Msg =
     | ShowWin1
     | HideWin1
@@ -45,9 +50,7 @@ module App =
     | ShowWin1 -> { m with Win1State = WindowState.Visible "" }
     | HideWin1 -> { m with Win1State = WindowState.Hidden "" }
     | CloseWin1 -> { m with Win1State = WindowState.Closed }
-    | ShowWin2 ->
-        let win2 = { Input = ""; IsChecked = false; ConfirmState = None }
-        { m with Win2 = Some win2 }
+    | ShowWin2 -> { m with Win2 = Some initWindow2 }
     | Win1Input s -> { m with Win1Input = s }
     | Win2Input s ->
         { m with
