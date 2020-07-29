@@ -9,10 +9,16 @@ module Func =
 
   let flip f b a = f a b
 
-  let flatten f a = f a a
-
   let applyIf p f a =
     if p a then f a else a
+
+
+module FuncOption =
+
+  let inputIfNone f a = a |> f |> Option.defaultValue a
+
+  let bindFunc (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
+    mb a |> Option.bind (fun b -> Some(f b a))
 
 
 let map get set f a =
@@ -162,9 +168,8 @@ module App =
     nId
     |> hasId
     |> List.tryFindIndex
-    >> Option.map swap
-    >> Option.defaultValue id
-    |> Func.flatten
+    |> FuncOption.bindFunc swap
+    |> FuncOption.inputIfNone
     |> RoseTree.mapChildren
 
   let update = function
