@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.FileDialogs.Program
+module Elmish.WPF.Samples.FileDialogs.Program
 
 open System
 open System.IO
@@ -30,9 +30,6 @@ type Msg =
   | LoadCanceled
   | SaveFailed of exn
   | LoadFailed of exn
-
-
-
 
 
 let save text =
