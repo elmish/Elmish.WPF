@@ -1,8 +1,7 @@
-﻿<UserControl
-    x:Class="Elmish.WPF.Samples.SubModel.CounterWithClock"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModel">
+﻿<UserControl x:Class="Elmish.WPF.Samples.SubModel.CounterWithClock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModel">
   <StackPanel>
     <local:Counter DataContext="{Binding Counter}" HorizontalAlignment="Center" />
     <local:Clock DataContext="{Binding Clock}" HorizontalAlignment="Center" />

@@ -1,11 +1,12 @@
-﻿<Window
-    x:Class="Elmish.WPF.Samples.EventBindingsAndBehaviors.MainWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-    xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
-    Title="EventBindings" Height="450" Width="400"
-    WindowStartupLocation="CenterScreen">
+﻿<Window x:Class="Elmish.WPF.Samples.EventBindingsAndBehaviors.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
+        Title="EventBindings"
+        Height="450"
+        Width="400"
+        WindowStartupLocation="CenterScreen">
   <StackPanel Margin="15" HorizontalAlignment="Center">
     <TextBlock Text="Switch focus between these two inputs." Margin="0,0,0,10" TextAlignment="Center" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
