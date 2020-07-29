@@ -129,6 +129,12 @@ module App =
   ]
 
 
+let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
+let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
+let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
+
+
 let timerTick dispatch =
   let timer = new System.Timers.Timer(1000.)
   timer.Elapsed.Add (fun _ ->
@@ -142,11 +148,10 @@ let timerTick dispatch =
   timer.Start()
 
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkSimpleWpf App.init App.update App.bindings
   |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

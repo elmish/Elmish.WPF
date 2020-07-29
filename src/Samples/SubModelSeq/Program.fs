@@ -253,11 +253,11 @@ module Bindings =
     "AddCounter" |> Binding.cmd(fun m -> AddChild m.DummyRoot.Data.Id)
   ]
 
+let mainDesignVm = ViewModel.designInstance (App.init ()) (Bindings.rootBindings ())
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkSimpleWpf App.init App.update Bindings.rootBindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

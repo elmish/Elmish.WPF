@@ -1,6 +1,5 @@
 ﻿module Elmish.WPF.Samples.SubModelOpt.Program
 
-open System
 open Elmish
 open Elmish.WPF
 
@@ -116,10 +115,14 @@ module App =
   ]
 
 
-[<EntryPoint; STAThread>]
-let main _ =
+let form1DesignVm = ViewModel.designInstance Form1.init (Form1.bindings ())
+let form2DesignVm = ViewModel.designInstance Form2.init (Form2.bindings ())
+let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
+
+
+let main window =
   Program.mkSimpleWpf App.init App.update App.bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

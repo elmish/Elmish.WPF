@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <OutputType>Exe</OutputType>
     <UseWpf>true</UseWpf>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OneWaySeq\OneWaySeq.fsproj" />
+  </ItemGroup>
 
 </Project>

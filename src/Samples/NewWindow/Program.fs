@@ -1,4 +1,4 @@
-module Elmish.WPF.Samples.NewWindow.Program
+﻿module Elmish.WPF.Samples.NewWindow.Program
 
 open System
 open System.Windows
@@ -112,12 +112,21 @@ module App =
   ]
 
 
-[<EntryPoint; STAThread>]
-let main _ =
-  let createWindow2 () = Window2(Owner = Application.Current.MainWindow)
-  let bindings = App.mainBindings Window1 createWindow2
+let fail _ = failwith "never called"
+let mainDesignVm = ViewModel.designInstance (App.init ()) (App.mainBindings fail fail ())
+let window1DesignVm = ViewModel.designInstance (App.init ()) (App.window1Bindings ())
+let window2DesignVm = ViewModel.designInstance App.initWindow2 (App.window2Bindings ())
+
+
+let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>) =
+  let createWindow1 () = createWindow1.Invoke()
+  let createWindow2 () =
+    let window = createWindow2.Invoke()
+    window.Owner <- mainWindow
+    window
+  let bindings = App.mainBindings createWindow1 createWindow2
   Program.mkSimpleWpf App.init App.update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    mainWindow

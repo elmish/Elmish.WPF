@@ -1,6 +1,5 @@
 ﻿module Elmish.WPF.Samples.EventBindingsAndBehaviors.Program
 
-open System
 open Elmish
 open Elmish.WPF
 open System.Windows
@@ -67,11 +66,12 @@ let bindings () : Binding<Model, Msg> list = [
   "MousePosition" |> Binding.oneWay (fun m -> sprintf "%dx%d" m.MousePosition.X m.MousePosition.Y)
 ]
 
+let designVm = ViewModel.designInstance (init ()) (bindings ())
 
-[<EntryPoint; STAThread>]
-let main _ =
+
+let main window =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
      { ElmConfig.Default with LogConsole = true; Measure = true }
-     (MainWindow())
+     window

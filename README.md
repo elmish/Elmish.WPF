@@ -254,7 +254,7 @@ Then use the following attributes wherever you need a design-time VM:
 
 When targeting .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
 
-When targeting .NET Core 3, the designer is buggy when it comes to design-time view models as used above. If you don’t get the data you expect, try to remove and re-add (e.g. undo) the `d:DataContext` line. That should make it work. You will have to do this as often as needed.
+When targeting .NET Core 3, a bug in the XAML designer causes design-time data to not be displayed through `DataContext` bindings.  See [this issue](https://developercommunity.visualstudio.com/content/problem/1133390/design-time-data-in-datacontext-binding-not-displa.html) for more details.
 
 #### Can I open new windows/dialogs?
 
