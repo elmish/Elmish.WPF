@@ -94,7 +94,7 @@ module App =
     "CloseRequestedMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CloseRequested)
   ]
 
-  let mainBindings () : Binding<Model, Msg> list = [
+  let mainBindings (createWindow1: unit -> #Window) (createWindow2: unit -> #Window) () : Binding<Model, Msg> list = [
     "ShowWin1" |> Binding.cmd ShowWin1
     "HideWin1" |> Binding.cmd HideWin1
     "CloseWin1" |> Binding.cmd CloseWin1
@@ -102,11 +102,11 @@ module App =
     "Win1" |> Binding.subModelWin(
       (fun m -> m.Win1State), fst, id,
       window1Bindings,
-      Window1)
+      createWindow1)
     "Win2" |> Binding.subModelWin(
       (fun m -> m.Win2 |> WindowState.ofOption), snd, id,
       window2Bindings,
-      (fun () -> Window2(Owner = Application.Current.MainWindow)),
+      createWindow2,
       onCloseRequested = Win2CloseRequested,
       isModal = true)
   ]
@@ -114,7 +114,9 @@ module App =
 
 [<EntryPoint; STAThread>]
 let main _ =
-  Program.mkSimpleWpf App.init App.update App.mainBindings
+  let createWindow2 () = Window2(Owner = Application.Current.MainWindow)
+  let bindings = App.mainBindings Window1 createWindow2
+  Program.mkSimpleWpf App.init App.update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
