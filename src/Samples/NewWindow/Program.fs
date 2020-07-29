@@ -80,40 +80,41 @@ module App =
         | Some win2 -> { m with Win2 = Some { win2 with ConfirmState = Some CloseRequested } }
         | None -> m
 
+  let window1Bindings () = [
+    "Input" |> Binding.twoWay((fun m -> m.Win1Input), Win1Input)
+  ]
 
-  let bindings () : Binding<Model, Msg> list = [
+  let window2Bindings () = [
+    "Input" |> Binding.twoWay((fun m -> m.Input), Win2Input)
+    "IsChecked" |> Binding.twoWay((fun m -> m.IsChecked), Win2SetChecked)
+    "Submit" |> Binding.cmd Win2Submit
+    "Cancel" |> Binding.cmd Win2ButtonCancel
+    "SubmitMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some SubmitClicked)
+    "CancelMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CancelClicked)
+    "CloseRequestedMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CloseRequested)
+  ]
+
+  let mainBindings () : Binding<Model, Msg> list = [
     "ShowWin1" |> Binding.cmd ShowWin1
     "HideWin1" |> Binding.cmd HideWin1
     "CloseWin1" |> Binding.cmd CloseWin1
     "ShowWin2" |> Binding.cmd ShowWin2
     "Win1" |> Binding.subModelWin(
       (fun m -> m.Win1State), fst, id,
-      (fun () -> [
-        "Input" |> Binding.twoWay((fun m -> m.Win1Input), Win1Input)
-      ]),
-      Window1
-    )
+      window1Bindings,
+      Window1)
     "Win2" |> Binding.subModelWin(
       (fun m -> m.Win2 |> WindowState.ofOption), snd, id,
-      (fun () -> [
-        "Input" |> Binding.twoWay((fun m -> m.Input), Win2Input)
-        "IsChecked" |> Binding.twoWay((fun m -> m.IsChecked), Win2SetChecked)
-        "Submit" |> Binding.cmd Win2Submit
-        "Cancel" |> Binding.cmd Win2ButtonCancel
-        "SubmitMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some SubmitClicked)
-        "CancelMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CancelClicked)
-        "CloseRequestedMsgVisible" |> Binding.oneWay (fun m -> m.ConfirmState = Some CloseRequested)
-      ]),
+      window2Bindings,
       (fun () -> Window2(Owner = Application.Current.MainWindow)),
       onCloseRequested = Win2CloseRequested,
-      isModal = true
-    )
+      isModal = true)
   ]
 
 
 [<EntryPoint; STAThread>]
 let main _ =
-  Program.mkSimpleWpf App.init App.update App.bindings
+  Program.mkSimpleWpf App.init App.update App.mainBindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
