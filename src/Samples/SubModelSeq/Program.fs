@@ -37,7 +37,7 @@ module List =
   let swapWithNext i = swap i (i + 1)
   let swapWithPrev i = swap i (i - 1)
 
-  let cons a ma = a :: ma
+  let cons head tail = head :: tail
 
         
 [<AutoOpen>]
