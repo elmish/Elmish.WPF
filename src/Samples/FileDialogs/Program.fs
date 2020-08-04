@@ -1,4 +1,4 @@
-module Elmish.WPF.Samples.FileDialogs.Program
+﻿module Elmish.WPF.Samples.FileDialogs.Program
 
 open System
 open System.IO
@@ -12,12 +12,13 @@ type Model =
   { CurrentTime: DateTimeOffset
     Text: string
     StatusMsg: string }
-
+    
+        
 let init () =
   { CurrentTime = DateTimeOffset.Now
     Text = ""
     StatusMsg = "" },
-  Cmd.none
+  []
 
 type Msg =
   | SetTime of DateTimeOffset
@@ -88,17 +89,19 @@ let bindings () : Binding<Model, Msg> list = [
 ]
 
 
+let designVm = ViewModel.designInstance (init () |> fst) (bindings ())
+
+
 let timerTick dispatch =
   let timer = new Timers.Timer(1000.)
   timer.Elapsed.Add (fun _ -> dispatch (SetTime DateTimeOffset.Now))
   timer.Start()
 
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkProgramWpf init update bindings
   |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

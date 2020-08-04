@@ -40,11 +40,11 @@ let bindings () : Binding<Model, Msg> list = [
   "SelectedEntity" |> Binding.subModelSelectedItem("Entities", (fun m -> m.Selected), Select)
 ]
 
+let designVm = ViewModel.designInstance (init ()) (bindings ())
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

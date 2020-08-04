@@ -1,6 +1,5 @@
 ﻿module Elmish.WPF.Samples.OneWaySeq.Program
 
-open System
 open Elmish
 open Elmish.WPF
 
@@ -29,11 +28,11 @@ let bindings () : Binding<Model, Msg> list = [
   "AddOneWayNumber" |> Binding.cmd AddOneWayNumber
 ]
 
+let designVm = ViewModel.designInstance (init ()) (bindings ())
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true }
-    (MainWindow())
+    window

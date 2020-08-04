@@ -1,11 +1,16 @@
 ﻿<Window x:Class="Elmish.WPF.Samples.SubModel.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModel"
+        xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModel;assembly=SubModel"
         Title="Sub-model"
         Height="270"
         Width="500"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d"
+        d:DataContext="{x:Static vm:Program.mainDesignVm}">
   <StackPanel>
     <TextBlock Text="Counter with clock 1" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
     <local:CounterWithClock DataContext="{Binding ClockCounter1}" />

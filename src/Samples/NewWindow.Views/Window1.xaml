@@ -1,9 +1,14 @@
 ﻿<Window x:Class="Elmish.WPF.Samples.NewWindow.Window1"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Elmish.WPF.Samples.NewWindow;assembly=NewWindow"
         Width="400"
         Height="400"
-        Title="Window 1">
+        Title="Window 1"
+        mc:Ignorable="d"
+        d:DataContext="{x:Static vm:Program.window1DesignVm}">
   <StackPanel VerticalAlignment="Center" Width="300">
     <TextBlock
         TextWrapping="Wrap">

@@ -1,10 +1,15 @@
 ﻿<Window x:Class="Elmish.WPF.Samples.UiBoundCmdParam.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Elmish.WPF.Samples.UiBoundCmdParam;assembly=UiBoundCmdParam"
         Title="UI-bound CommandParameter"
         Height="350"
         Width="500"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d"
+        d:DataContext="{x:Static vm:Program.designVm}">
   <StackPanel>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,25,0,0">
       <Button

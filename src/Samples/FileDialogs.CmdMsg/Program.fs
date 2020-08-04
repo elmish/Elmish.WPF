@@ -113,17 +113,19 @@ open Core
 open Platform
 
 
+let designVm = ViewModel.designInstance (init () |> fst) (bindings ())
+
+
 let timerTick dispatch =
   let timer = new Timers.Timer(1000.)
   timer.Elapsed.Add (fun _ -> dispatch (SetTime DateTimeOffset.Now))
   timer.Start()
 
 
-[<EntryPoint; STAThread>]
-let main _ =
+let main window =
   Program.mkProgramWpfWithCmdMsg init update bindings toCmd
   |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window

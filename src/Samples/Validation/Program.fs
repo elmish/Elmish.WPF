@@ -46,11 +46,12 @@ let bindings () : Binding<Model, Msg> list = [
     fun m -> validateInt42 m.RawValue |> Result.map Submit)
 ]
 
+let designVm = ViewModel.designInstance (init ()) (bindings ())
 
-[<EntryPoint; STAThread>]
-let main _ =
+
+let main window =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
   |> Program.runWindowWithConfig
     { ElmConfig.Default with LogConsole = true; Measure = true }
-    (MainWindow())
+    window
