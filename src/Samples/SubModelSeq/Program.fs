@@ -85,6 +85,15 @@ module Counter =
       | SetStepSize x -> { m with StepSize = x }
       | Reset -> init
 
+    let bindings () : Binding<Counter, CounterMsg> list = [
+      "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+      "Increment" |> Binding.cmd Increment
+      "Decrement" |> Binding.cmd Decrement
+      "StepSize" |> Binding.twoWay(
+        (fun m -> float m.StepSize),
+        int >> SetStepSize)
+      "Reset" |> Binding.cmdIf(Reset, canReset)
+    ]
 
 
 [<AutoOpen>]
@@ -206,40 +215,39 @@ module Bindings =
 
   open App
 
-  let rec counterTreeBindings () : Binding<Model * Identifiable<Counter>, Msg> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, c) -> c.Id)
-
-    "CounterValue" |> Binding.oneWay(fun (_, c) -> c.Value.Count)
-    "Increment" |> Binding.cmd(fun (_, c) -> CounterMsg (c.Id, Increment))
-    "Decrement" |> Binding.cmd(fun (_, c) -> CounterMsg (c.Id, Decrement))
-    "StepSize" |> Binding.twoWay(
-      (fun (_, c) -> float c.Value.StepSize),
-      (fun v (_, c) -> CounterMsg (c.Id, SetStepSize (int v))))
-    "Reset" |> Binding.cmdIf(
-      (fun (_, c) -> CounterMsg (c.Id, Reset)),
-      (fun (_, c) -> Counter.canReset c.Value))
-
-    "Remove" |> Binding.cmd(fun (_, c) -> Remove c.Id)
-
-    "AddChild" |> Binding.cmd(fun (_, c) -> AddChild c.Id)
-
-    "MoveUp" |> Binding.cmdIf(
-      (fun (_, c) -> MoveUp c.Id),
-      (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryHead <> Some c))
-
-    "MoveDown" |> Binding.cmdIf(
-      (fun (_, c) -> MoveDown c.Id),
-      (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryLast <> Some c))
-
-    "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-
-    "ChildCounters" |> Binding.subModelSeq(
-      (fun (m, c) -> m |> childCountersOf c.Id),
-      (fun ((m, _), childCounter) -> (m, childCounter)),
-      (fun (_, c) -> c.Id),
-      snd,
-      counterTreeBindings)
-  ]
+  let rec counterTreeBindings () : Binding<Model * Identifiable<Counter>, Msg> list =
+    let counterBindings =
+      Counter.bindings ()
+      |> Bindings.mapModel (fun (_, c) -> c.Value)
+      |> Bindings.mapMsgWithModel (fun (_, c) msg -> CounterMsg (c.Id, msg))
+    let newBindings =
+      [
+        "CounterIdText" |> Binding.oneWay(fun (_, c) -> c.Id)
+      
+        "Remove" |> Binding.cmd(fun (_, c) -> Remove c.Id)
+      
+        "AddChild" |> Binding.cmd(fun (_, c) -> AddChild c.Id)
+      
+        "MoveUp" |> Binding.cmdIf(
+          (fun (_, c) -> MoveUp c.Id),
+          (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryHead <> Some c))
+      
+        "MoveDown" |> Binding.cmdIf(
+          (fun (_, c) -> MoveDown c.Id),
+          (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryLast <> Some c))
+      
+        "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
+      
+        "ChildCounters" |> Binding.subModelSeq(
+          (fun (m, c) -> m |> childCountersOf c.Id),
+          (fun ((m, _), childCounter) -> (m, childCounter)),
+          (fun (_, c) -> c.Id),
+          snd,
+          counterTreeBindings)
+      ]
+    [ counterBindings
+      newBindings ]
+    |> List.concat
 
 
   let rootBindings () : Binding<Model, Msg> list = [
