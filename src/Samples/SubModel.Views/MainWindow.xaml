@@ -13,8 +13,8 @@
         d:DataContext="{x:Static vm:Program.mainDesignVm}">
   <StackPanel>
     <TextBlock Text="Counter with clock 1" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
-    <local:CounterWithClock DataContext="{Binding ClockCounter1}" />
+    <local:CounterWithClock DataContext="{Binding ClockCounter1}" d:DataContext="{Binding DataContext.ClockCounter1, RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
     <TextBlock Text="Counter with clock 2" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
-    <local:CounterWithClock DataContext="{Binding ClockCounter2}" />
+    <local:CounterWithClock DataContext="{Binding ClockCounter2}" d:DataContext="{Binding DataContext.ClockCounter2, RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
   </StackPanel>
 </Window>
