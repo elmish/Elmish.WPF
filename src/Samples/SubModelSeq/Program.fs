@@ -261,6 +261,7 @@ module Bindings =
     "AddCounter" |> Binding.cmd(fun m -> AddChild m.DummyRoot.Data.Id)
   ]
 
+let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
 let mainDesignVm = ViewModel.designInstance (App.init ()) (Bindings.rootBindings ())
 
 let main window =
