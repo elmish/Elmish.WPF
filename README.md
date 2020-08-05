@@ -254,7 +254,24 @@ Then use the following attributes wherever you need a design-time VM:
 
 When targeting .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
 
-When targeting .NET Core 3, a bug in the XAML designer causes design-time data to not be displayed through `DataContext` bindings.  See [this issue](https://developercommunity.visualstudio.com/content/problem/1133390/design-time-data-in-datacontext-binding-not-displa.html) for more details.
+##### .NET Core 3 workaround
+
+When targeting .NET Core 3, a bug in the XAML designer causes design-time data to not be displayed through `DataContext` bindings. See [this issue](https://developercommunity.visualstudio.com/content/problem/1133390/design-time-data-in-datacontext-binding-not-displa.html) for details. One workaround is to add a `d:DataContext` binding alongside your `DataContext` binding. Change from this:
+
+```xaml
+<local:MyControl DataContext="{Binding Child}" />
+```
+
+To this:
+
+```xaml
+<local:MyControl
+  DataContext="{Binding Child}"
+  d:DataContext="{Binding DataContext.Child,
+                          RelativeSource={RelativeSource AncestorType=T}}" />
+```
+
+Where `T` is the type of the parent object that contains `local:MyControl` (or a more distant ancestor, though there are issues with using `Window` as the type).
 
 #### Can I open new windows/dialogs?
 
