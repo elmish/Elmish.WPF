@@ -33,16 +33,16 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InternalUtils.fs" />
     <Compile Include="InternalTypes.fs" />
-    <Compile Include="Config.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="ViewModelModule.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="WpfProgram.fs" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.0.3, 4)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

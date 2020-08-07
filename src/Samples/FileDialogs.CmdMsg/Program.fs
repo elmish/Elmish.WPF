@@ -1,6 +1,8 @@
 ﻿module Elmish.WPF.Samples.FileDialogs.CmdMsg.Program
 
 open System
+open Serilog
+open Serilog.Extensions.Logging
 open Elmish
 open Elmish.WPF
 
@@ -123,9 +125,17 @@ let timerTick dispatch =
 
 
 let main window =
-  Program.mkProgramWpfWithCmdMsg init update bindings toCmd
-  |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
-  |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
-    { ElmConfig.Default with LogConsole = true; Measure = true }
-    window
+
+  Log.Logger <- 
+    LoggerConfiguration()
+      .MinimumLevel.Override("Elmish.Messages", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.State", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.BindingPerformance", Events.LogEventLevel.Verbose)
+      .WriteTo.Console()
+      .CreateLogger()
+
+  WpfProgram.mkProgramWithCmdMsg init update bindings toCmd
+  |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+  |> WpfProgram.withLogger (new SerilogLoggerFactory())
+  |> WpfProgram.runWindow window

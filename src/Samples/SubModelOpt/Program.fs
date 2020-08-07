@@ -1,6 +1,7 @@
 ﻿module Elmish.WPF.Samples.SubModelOpt.Program
 
-open Elmish
+open Serilog
+open Serilog.Extensions.Logging
 open Elmish.WPF
 
 
@@ -121,8 +122,16 @@ let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
 
 
 let main window =
-  Program.mkSimpleWpf App.init App.update App.bindings
-  |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
-    { ElmConfig.Default with LogConsole = true; Measure = true }
-    window
+
+  Log.Logger <- 
+    LoggerConfiguration()
+      .MinimumLevel.Override("Elmish.Messages", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.State", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.BindingPerformance", Events.LogEventLevel.Verbose)
+      .WriteTo.Console()
+      .CreateLogger()
+
+  WpfProgram.mkSimple App.init App.update App.bindings
+  |> WpfProgram.withLogger (new SerilogLoggerFactory())
+  |> WpfProgram.runWindow window
