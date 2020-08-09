@@ -296,3 +296,30 @@ let save text =
 #### Can I bind to events and use behaviors?
 
 Sure! Check out the [EventBindingsAndBehaviors sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). Note that you have to install the NuGet package `Microsoft.Xaml.Behaviors.Wpf`.
+
+#### How can I control logging?
+
+Elmish.WPF uses `Microsoft.Extensions.Logging`. To see Elmish.WPF output in your favorite logging framework, use `WpfProgram.withLogger` to pass an `ILoggerFactory`:
+
+```f#
+WpfProgram.mkSimple init update bindings
+|> WpfProgram.withLogger yourLoggerFactory
+|> WpfProgram.runWindow window
+```
+
+For example, in Serilog, you need to install Serilog.Extensions.Logging and instantiate `SerilogLoggerFactory`. The samples demonstrate this.
+
+Elmish.WPF logs to these categories:
+
+* `Elmish.Messages`: Logs every dispatched message at the Trace/Verbose level.
+* `Elmish.State`: Logs every updated model at the Trace/Verbose level.
+* `Elmish.WPF.Bindings`: Logs events related to bindings. Some logging is done at the Warning level (e.g. duplicated binding names, WPF attempting to get non-existent bindings or set read-only bindings), but otherwise it’s generally just Trace/Verbose for when you really want to see everything that’s happening (triggering `PropertyChanged`, WPF getting/setting bindings, etc.)
+* `Elmish.WPF.BindingPerformance`: Logs the performance of the functions you pass when creating bindings (`get`, `set`, `map`, `equals`, etc.) at the Trace/Verbose level. Use `WpfProgram.withBindingPerformanceLogThreshold` to set the minimum duration to log.
+
+The specific method of controlling what Elmish.WPF logs depends on your logging framework. For Serilog you can use `.MinimumLevel.Override(...)` to specify the minimum log level per category, like this:
+
+```f#
+myLoggerConfiguration
+  .MinimumLevel.Override("Elmish.WPF.Bindings", LogEventLevel.Verbose)
+  ...
+```
