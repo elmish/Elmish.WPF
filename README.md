@@ -311,8 +311,7 @@ For example, in Serilog, you need to install Serilog.Extensions.Logging and inst
 
 Elmish.WPF logs to these categories:
 
-* `Elmish.Messages`: Logs every dispatched message at the Trace/Verbose level.
-* `Elmish.State`: Logs every updated model at the Trace/Verbose level.
+* `Elmish.WPF.Update`: Logs exceptions (Error level) and messages/models (Trace/Verbose level) during `update`.
 * `Elmish.WPF.Bindings`: Logs events related to bindings. Some logging is done at the Warning level (e.g. duplicated binding names, WPF attempting to get non-existent bindings or set read-only bindings), but otherwise it’s generally just Trace/Verbose for when you really want to see everything that’s happening (triggering `PropertyChanged`, WPF getting/setting bindings, etc.)
 * `Elmish.WPF.BindingPerformance`: Logs the performance of the functions you pass when creating bindings (`get`, `set`, `map`, `equals`, etc.) at the Trace/Verbose level. Use `WpfProgram.withBindingPerformanceLogThreshold` to set the minimum duration to log.
 

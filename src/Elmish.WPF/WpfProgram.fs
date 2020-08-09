@@ -64,13 +64,16 @@ module WpfProgram =
     let uiDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       fun msg -> element.Dispatcher.Invoke(fun () -> innerDispatch msg)
 
-
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
-      program.LoggerFactory.CreateLogger("Elmish.Messages").LogTrace("New message: {Message}", msg)
-      program.LoggerFactory.CreateLogger("Elmish.State").LogTrace("Updated state:\n{Model}", model)
+      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogTrace("New message: {Message}", msg)
+      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogTrace("Updated state:\n{Model}", model)
+
+    let logError (msg: string, ex: exn) =
+      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogError(ex, msg)
 
     program.ElmishProgram
     |> Program.withTrace logMsgAndModel
+    |> Program.withErrorHandler logError
     |> Program.withSetState setState
     |> Program.withSyncDispatch uiDispatch
     |> Program.run
