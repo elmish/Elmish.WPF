@@ -1,3 +1,9 @@
+#### 4.0.0
+
+* **Breaking:** Removed the obsolete binding functions in the `BindingFn` module
+* **Breaking:** Removed the obsolete function `Elmish.WPF.Cmd.showWindow`
+
+
 #### 3.5.6
 
 * The amount of time used to update `OneWaySeq` and `SubModelSeq` bindings has been significantly decreased.  This includes all cases of a `SubModelSeq` binding and all cases of a `OneWaySeq` binding for which `equals` returns `false`.
