@@ -13,62 +13,6 @@ open Elmish
 [<AutoOpen>]
 module internal ViewModelHelpers =
 
-  let historicalMerge
-      logInvalidGetSourceId
-      logInvalidGetTargetId
-      getSourceId
-      getTargetId
-      create
-      update
-      (target: ObservableCollection<_>)
-      (source: _ array) =
-    let sourceIdxItemPairsById = Dictionary<_,_>(source.Length)
-    for (idx, s) in source |> Seq.indexed do
-      let id = getSourceId s
-      if sourceIdxItemPairsById.ContainsKey id
-      then logInvalidGetSourceId id (sourceIdxItemPairsById.[id]) s
-      else sourceIdxItemPairsById.Add(id, (idx, s))
-
-    let targetIdxItemPairsById = Dictionary<_,_>(target.Count)
-    for (idx, t) in target |> Seq.indexed do
-      let id = getTargetId t
-      if targetIdxItemPairsById.ContainsKey id
-      then logInvalidGetTargetId id (targetIdxItemPairsById.[id]) t
-      else targetIdxItemPairsById.Add(id, (idx, t))
-
-    if sourceIdxItemPairsById.Count = source.Length && targetIdxItemPairsById.Count = target.Count then
-      // Update target items
-      for Kvp (tId, (tIdx, t)) in targetIdxItemPairsById do
-        match sourceIdxItemPairsById.TryGetValue tId with
-        | true, (_, s) -> update t s tIdx
-        | _ -> ()
-      
-      // Remove target items that no longer exist
-      if target.Count <> 0 && source.Length = 0
-      then target.Clear ()
-      else
-        for tIdx in target.Count - 1..-1..0 do
-          let tId = getTargetId target.[tIdx]
-          if tId |> sourceIdxItemPairsById.ContainsKey |> not then
-            let (tIdx2, _) = targetIdxItemPairsById.[tId] // tIdx = tIdx2, so this line is unnecessary
-            target.RemoveAt tIdx2
-      
-      // Add target items that don't currently exist
-      let create (Kvp (sId, (_, s))) = create s sId
-      sourceIdxItemPairsById
-      |> Seq.filter (Kvp.key >> targetIdxItemPairsById.ContainsKey >> not)
-      |> Seq.map create
-      |> Seq.iter target.Add
-      
-      // Reorder according to source items
-      for Kvp (sId, (sIdx, _)) in sourceIdxItemPairsById do
-        let tIdx =
-          target
-          |> Seq.indexed
-          |> Seq.find (fun (_, t) -> sId = getTargetId t)
-          |> fst
-        if tIdx <> sIdx then target.Move(tIdx, sIdx)
-
   let elmStyleMerge
         getSourceId
         getTargetId
