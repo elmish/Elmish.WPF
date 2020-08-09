@@ -128,7 +128,7 @@ let main window =
       .MinimumLevel.Override("Elmish.Messages", Events.LogEventLevel.Verbose)
       .MinimumLevel.Override("Elmish.State", Events.LogEventLevel.Verbose)
       .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.BindingPerformance", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
 

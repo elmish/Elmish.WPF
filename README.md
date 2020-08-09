@@ -313,7 +313,7 @@ Elmish.WPF logs to these categories:
 
 * `Elmish.WPF.Update`: Logs exceptions (Error level) and messages/models (Trace/Verbose level) during `update`.
 * `Elmish.WPF.Bindings`: Logs events related to bindings. Some logging is done at the Warning level (e.g. duplicated binding names, WPF attempting to get non-existent bindings or set read-only bindings), but otherwise it’s generally just Trace/Verbose for when you really want to see everything that’s happening (triggering `PropertyChanged`, WPF getting/setting bindings, etc.)
-* `Elmish.WPF.BindingPerformance`: Logs the performance of the functions you pass when creating bindings (`get`, `set`, `map`, `equals`, etc.) at the Trace/Verbose level. Use `WpfProgram.withBindingPerformanceLogThreshold` to set the minimum duration to log.
+* `Elmish.WPF.Performance`: Logs the performance of the functions you pass when creating bindings (`get`, `set`, `map`, `equals`, etc.) at the Trace/Verbose level. Use `WpfProgram.withPerformanceLogThreshold` to set the minimum duration to log.
 
 The specific method of controlling what Elmish.WPF logs depends on your logging framework. For Serilog you can use `.MinimumLevel.Override(...)` to specify the minimum log level per category, like this:
 

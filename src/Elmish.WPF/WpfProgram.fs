@@ -11,7 +11,7 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>
     LoggerFactory: ILoggerFactory
     /// Only log calls that take at least this many milliseconds. Default 1.
-    BindingPerformanceLogThresholdMs: int
+    PerformanceLogThreshold: int
   }
 
 
@@ -22,7 +22,7 @@ module WpfProgram =
   let private fromElmishProgram program =
     { ElmishProgram = program
       LoggerFactory = NullLoggerFactory.Instance
-      BindingPerformanceLogThresholdMs = 1 }
+      PerformanceLogThreshold = 1 }
 
 
   /// Creates a WpfProgram that does not use commands.
@@ -55,7 +55,7 @@ module WpfProgram =
       match lastModel with
       | None ->
           let bindings = Program.view program.ElmishProgram model dispatch
-          let vm = ViewModel<'model, 'msg>(model, dispatch, bindings, program.BindingPerformanceLogThresholdMs, "main", program.LoggerFactory)
+          let vm = ViewModel<'model, 'msg>(model, dispatch, bindings, program.PerformanceLogThreshold, "main", program.LoggerFactory)
           element.DataContext <- vm
           lastModel <- Some vm
       | Some vm ->
@@ -129,5 +129,5 @@ module WpfProgram =
 
   /// Only logs binding performance for calls taking longer than the specified number of
   /// milliseconds. The default is 1ms.
-  let withBindingPerformanceLogThreshold threshold program =
-    { program with BindingPerformanceLogThresholdMs = threshold }
+  let withPerformanceLogThreshold threshold program =
+    { program with PerformanceLogThreshold = threshold }
