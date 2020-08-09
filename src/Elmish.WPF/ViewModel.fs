@@ -542,7 +542,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             SubModelSeqBinding = b
           } |> withCaching |> Some
         | _ ->
-          log.LogWarning("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
+          log.LogError("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
           None
 
   let bindings =
@@ -555,7 +555,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
-        log.LogWarning("Binding name '{BindingName}' is duplicated. Only the first occurrence will be used.", b.Name)
+        log.LogError("Binding name '{BindingName}' is duplicated. Only the first occurrence will be used.", b.Name)
       else
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
@@ -607,7 +607,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.PreventClose := false
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log.LogWarning("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
+              log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
           | true, w ->
               log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
               b.WinRef.SetTarget null
@@ -617,7 +617,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let hide () =
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log.LogWarning("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
+              log.LogError("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
           | true, w ->
               log.LogTrace("[{BindingNameChain}] Hiding window", winPropChain)
               w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Hidden)
@@ -625,7 +625,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let showHidden () =
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log.LogWarning("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
+              log.LogError("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
           | true, w ->
               log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
               w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
@@ -802,7 +802,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", propNameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log.LogWarning("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
+        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
         false
     | true, binding ->
         result <- tryGetMember currentModel binding
@@ -812,12 +812,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", propNameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log.LogWarning("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
+        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
         false
     | true, binding ->
         let success = trySetMember currentModel value binding
         if not success then
-          log.LogWarning("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", propNameChain, binder.Name)
+          log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", propNameChain, binder.Name)
         success
 
 
