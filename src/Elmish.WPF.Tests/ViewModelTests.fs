@@ -27,7 +27,7 @@ module Extensions =
 
 
 type internal TestVm<'model, 'msg>(model, bindings) as this =
-  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, 1, "", NullLoggerFactory.Instance)
+  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, 1, "", NullLogger.Instance, NullLogger.Instance)
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
