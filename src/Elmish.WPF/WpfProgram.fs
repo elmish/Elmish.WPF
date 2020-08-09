@@ -51,11 +51,15 @@ module WpfProgram =
       (program:  WpfProgram<'model, 'msg>) =
     let mutable lastModel = None
 
+    let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
+    let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
+    let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
+
     let setState model dispatch =
       match lastModel with
       | None ->
           let bindings = Program.view program.ElmishProgram model dispatch
-          let vm = ViewModel<'model, 'msg>(model, dispatch, bindings, program.PerformanceLogThreshold, "main", program.LoggerFactory)
+          let vm = ViewModel<'model, 'msg>(model, dispatch, bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
           element.DataContext <- vm
           lastModel <- Some vm
       | Some vm ->
@@ -65,11 +69,11 @@ module WpfProgram =
       fun msg -> element.Dispatcher.Invoke(fun () -> innerDispatch msg)
 
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
-      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogTrace("New message: {Message}", msg)
-      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogTrace("Updated state:\n{Model}", model)
+      updateLogger.LogTrace("New message: {Message}", msg)
+      updateLogger.LogTrace("Updated state:\n{Model}", model)
 
     let logError (msg: string, ex: exn) =
-      program.LoggerFactory.CreateLogger("Elmish.WPF.Update").LogError(ex, msg)
+      updateLogger.LogError(ex, msg)
 
     program.ElmishProgram
     |> Program.withTrace logMsgAndModel
