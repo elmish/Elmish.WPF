@@ -70,8 +70,7 @@ module WpfProgram =
       fun msg -> element.Dispatcher.Invoke(fun () -> innerDispatch msg)
 
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
-      updateLogger.LogTrace("New message: {Message}", msg)
-      updateLogger.LogTrace("Updated state:\n{Model}", model)
+      updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
 
     let logError (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
