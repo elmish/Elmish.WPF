@@ -247,9 +247,9 @@ module internal BindingData =
   let mapMsg f = mapMsgWithModel (fun _ -> f)
 
 
-module internal Binding =
+module Binding =
 
-  let mapData f binding =
+  let internal mapData f binding =
     { Name = binding.Name
       Data = binding.Data |> f }
 
@@ -257,11 +257,11 @@ module internal Binding =
   let mapMsgWithModel f = f |> BindingData.mapMsgWithModel |> mapData
   let mapMsg          f = f |> BindingData.mapMsg          |> mapData
 
-  let subModelSelectedItemLast a b =
+  let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
 
-module internal Bindings =
+module Bindings =
 
   let mapModel        f bindings = bindings |> List.map (Binding.mapModel        f)
   let mapMsgWithModel f bindings = bindings |> List.map (Binding.mapMsgWithModel f)
