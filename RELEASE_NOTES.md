@@ -2,7 +2,11 @@
 
 * **Breaking:** Removed the obsolete binding functions in the `BindingFn` module
 * **Breaking:** Removed the obsolete function `Elmish.WPF.Cmd.showWindow`
-
+* **Breaking:** Removed all occurrences of the argument `wrapDispatch` from the methods used to create a binding. There is currently no migration path. Please create an issue if this is a negative impact for you.
+* Added binding mapping functions
+  * Added `mapModel`, `mapMsg`, and `mapMsgWithModel` in both the `Binding` and `Bindings` modules
+  * These functions enable common model and message mapping logic to be extracted
+  * See the `SubModelSeq` sample for an excellent use of `mapModel` and `mapMsgWithMsg`
 
 #### 3.5.6
 

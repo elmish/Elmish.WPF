@@ -141,7 +141,6 @@ module Helpers =
     name |> createBinding (TwoWayData {
       Get = get >> box
       Set = unbox<'a> >> set
-      WrapDispatch = id
     })
 
 
@@ -154,7 +153,6 @@ module Helpers =
       Get = get >> box
       Set = unbox<'a> >> set
       Validate = validate
-      WrapDispatch = id
     })
 
 
@@ -165,7 +163,6 @@ module Helpers =
     name |> createBinding (CmdData {
       Exec = exec
       CanExec = canExec
-      WrapDispatch = id
     })
 
 
@@ -178,7 +175,6 @@ module Helpers =
       Exec = unbox >> exec
       CanExec = unbox >> canExec
       AutoRequery = autoRequery
-      WrapDispatch = id
     })
 
 
@@ -191,7 +187,7 @@ module Helpers =
     name |> createBinding (SubModelData {
       GetModel = getModel >> ValueOption.map box
       GetBindings = fun () -> bindings |> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
+      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
       Sticky = sticky
     })
 
@@ -206,7 +202,7 @@ module Helpers =
       GetModels = getModels >> Seq.map box
       GetId = unbox<'subModel> >> getId >> box
       GetBindings = fun () -> bindings |> List.map boxBinding
-      ToMsg = fun (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
+      ToMsg = fun _ (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
     })
 
 
@@ -219,7 +215,6 @@ module Helpers =
       Get = get >> ValueOption.map box
       Set = ValueOption.map unbox<'id> >> set
       SubModelSeqBindingName = subModelSeqBindingName
-      WrapDispatch = id
     })
 
 

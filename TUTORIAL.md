@@ -49,7 +49,9 @@ Table of contents
     - [`subModelSeqSelectedItem`](#submodelseqselecteditem)
     - [`oneWaySeq`](#onewayseq)
   + [Lazy bindings](#lazy-bindings)
-  + [Wrapping dispatch (debouncing/throttling etc.)](#wrapping-dispatch-debouncingthrottling-etc)
+  + [Mapping bindings](#mapping-bindings)
+    - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
+    - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
 * [Additional resources](#additional-resources)
 
 The MVU (Elm/Elmish) architecture
@@ -728,66 +730,62 @@ Elmish.WPF provides two helpers you can often use as the `equals` parameter: `re
 
 You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want structural comparison (note the caveat above however), you can pass `(=)`.
 
-### Wrapping dispatch (debouncing/throttling etc.)
+### Mapping Bindings
 
-*Note: This is an advanced optimization that should not be necessary in most cases.*
+Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapModelWithMsg`.
 
-Occasionally you may want to limit the frequency of dispatches from a particular binding. You may therefore want to apply some kind of throttling or debouncing (dispatch at most one message every X millisecond, or only dispatch the latest message after there have been no messages for at least X milliseconds).
+#### Example use of `mapModel` and `mapMsg`
 
-To facilitate this, all `twoWay` and `cmd` bindings as well as `subModelSelectedItem` have an optional `wrapDispatch` parameter with the signature `Dispatch<'msg> -> Dispatch<'msg>`.
+Here is a simple example that uses these model and message types.
+```F#
+type ChildModel =
+  { GrandChild1: GrandChild1
+    GrandChild2: GrandChild2 }
 
-This is completely general and allows you to implement all manner of dispatch modifications. There are currently no built-in throttling or debouncing wrappers, but you can write your own. 
+type ChildMsg =
+  | SetGrandChild1 of GrandChild1
+  | SetGrandChild2 of GrandChild2
 
-To show you how you can write them from scratch, here is a throttling wrapper that dispatches the latest message every X milliseconds:
-
-```f#
-let throttle (durationMs: int) (dispatch: Dispatch<'msg>) : Dispatch<'msg> =
-  let locker = obj()
-  let mutable lastMessage = ValueNone
-  let timer = new System.Timers.Timer(Interval = float durationMs)
-  timer.Elapsed.Add (fun _ ->
-    lock locker (fun () ->
-      lastMessage |> ValueOption.iter dispatch
-      lastMessage <- ValueNone
-    )
-  )
-  timer.Start()
-  fun msg ->
-    async {
-      lock locker (fun () ->
-        lastMessage <- ValueSome msg
-      )
-    } |> Async.Start
+type ParentModel =
+  { Child: ChildModel }
+  
+type ParentMsg =
+  | ChildMsg of ChildMsg
 ```
 
-Note the use of `Async.Start`. It seems to be required in order to avoid deadlocks, see [#114 (comment)](https://github.com/elmish/Elmish.WPF/issues/114#issuecomment-532481275).
+It is possible to create bindings from the parent to the two grandchild fields, but there is duplicate mapping code.
 
-If you want a more general solution, you can make use of [FSharp.Control.Reactive](http://fsprojects.github.io/FSharp.Control.Reactive/) (which provides an F#-friendly wrapper over [System.Reactive](https://www.nuget.org/packages/System.Reactive), which you can also just use directly). You can write a general helper function to convert any `IObservable` combinator/extension to a dispatch wrapper:
-
-```f#
-open FSharp.Control.Reactive
-
-let asDispatchWrapper
-    (configure: IObservable<'msg> -> IObservable<'msg>)
-    (dispatch: Dispatch<'msg>)
-    : Dispatch<'msg> =
-  let subject = Subject.broadcast
-  subject |> configure |> Observable.add dispatch
-  fun msg -> async { return subject.OnNext msg } |> Async.Start
+```F#
+let parentBindings () : Binding<ParentModel, ParentMsg> list = [
+  "GrandChild1" |> Binding.twoWay((fun parent -> parent.Child.GrandChild1), SetGrandChild1 >> ChildMsg)
+  "GrandChild2" |> Binding.twoWay((fun parent -> parent.Child.GrandChild2), SetGrandChild2 >> ChildMsg)
+]
 ```
 
-Usage:
+The functions `mapModel` and `mapMsg` can remove this duplication.
+```F#
+let childBindings () : Binding<ChildModel, ChildMsg> list = [
+  "GrandChild1" |> Binding.twoWay((fun child -> child.GrandChild1), SetGrandChild1)
+  "GrandChild2" |> Binding.twoWay((fun child -> child.GrandChild2), SetGrandChild2)
+]
 
-```f#
-"SliderValue" |> Binding.twoWay(
-  (fun m -> float m.SliderValue),
-  int >> SetSliderValue,
-  (Observable.sample (TimeSpan.FromMilliseconds 50.) |> asDispatchWrapper))
+let parentBindings () : Binding<ParentModel, ParentMsg> list =
+  childBindings ()
+  |> Bindings.mapModel (fun parent -> parent.Child)
+  |> Bindings.mapMsg ChildMsg
 ```
 
-Note that since the `binding` function is only called once (or once per sub-model for the sub-model bindings), you can inline the wrapper creation as shown above. (For a “normal” Elmish architecture where `view` is called for each update, you’d have to define it outside).
+#### Benefit for design-time view models
 
-Note also that throttling as demonstrated above may cause suboptimal behavior for two-way bindings due to the value shown in the UI being locked to the value returned by `get`, which isn’t updated until the message is dispatched. For sliders, the slider will “lag” behind the mouse cursor when dragging it, only moving when a message is dispatched and the model updated. For text boxes, throttling will make the cursor jump to the start of the text box while typing, and only some of the characters will be entered.
+With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.
+
+The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.  It also contains an example use of `mapModelWithMsg`.
+
+#### Theory behind `mapModel` and `mapMsg`
+
+A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a functor in both type parameters. More specifically,
+- it a contravariant functor in `'model`, and `mapModel` is the corresponding mapping function for this functor; and
+- it is a covariant functor in `'msg`, and `mapMsg` is the corresponding mapping function for this functor.
 
 Additional resources
 --------------------
