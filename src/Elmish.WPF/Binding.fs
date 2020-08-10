@@ -253,9 +253,14 @@ module Binding =
     { Name = binding.Name
       Data = binding.Data |> f }
 
-  let mapModel        f = f |> BindingData.mapModel        |> mapData
-  let mapMsgWithModel f = f |> BindingData.mapMsgWithModel |> mapData
-  let mapMsg          f = f |> BindingData.mapMsg          |> mapData
+  /// Map the model type parameter of a binding via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = binding |> mapData (BindingData.mapModel f)
+  
+  /// Map the message type parameter of a binding with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'model -> 'a -> 'b) (binding: Binding<'model, 'a>) = binding |> mapData (BindingData.mapMsgWithModel f)
+  
+  /// Map the message type parameter of a binding via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = binding |> mapData (BindingData.mapMsg f)
 
   let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
@@ -263,9 +268,14 @@ module Binding =
 
 module Bindings =
 
-  let mapModel        f bindings = bindings |> List.map (Binding.mapModel        f)
-  let mapMsgWithModel f bindings = bindings |> List.map (Binding.mapMsgWithModel f)
-  let mapMsg          f bindings = bindings |> List.map (Binding.mapMsg          f)
+  /// Map the model type parameter of a list of bindings via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = bindings |> List.map (Binding.mapModel f)
+  
+  /// Map the message type parameter of a list of bindings with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = bindings |> List.map (Binding.mapMsgWithModel f)
+  
+  /// Map the message type parameter of a list of bindings via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = bindings |> List.map (Binding.mapMsg f)
 
 
 
