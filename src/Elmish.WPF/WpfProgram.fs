@@ -76,7 +76,7 @@ module WpfProgram =
       updateLogger.LogError(ex, msg)
 
     program.ElmishProgram
-    |> Program.withTrace logMsgAndModel
+    |> if updateLogger.IsEnabled(LogLevel.Trace) then Program.withTrace logMsgAndModel else id
     |> Program.withErrorHandler logError
     |> Program.withSetState setState
     |> Program.withSyncDispatch uiDispatch
