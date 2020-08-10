@@ -8,7 +8,8 @@ open Elmish
 
 type WpfProgram<'model, 'msg> =
   internal {
-    ElmishProgram: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>
+    ElmishProgram: Program<unit, 'model, 'msg, unit>
+    Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
@@ -19,8 +20,9 @@ type WpfProgram<'model, 'msg> =
 module WpfProgram =
 
 
-  let private fromElmishProgram program =
+  let private create getBindings program =
     { ElmishProgram = program
+      Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
       PerformanceLogThreshold = 1 }
 
@@ -30,8 +32,8 @@ module WpfProgram =
       (init: unit -> 'model)
       (update: 'msg  -> 'model -> 'model)
       (bindings: unit -> Binding<'model, 'msg> list) =
-    Program.mkSimple init update (fun _ _ -> bindings ())
-    |> fromElmishProgram
+    Program.mkSimple init update (fun _ _ -> ())
+    |> create bindings
 
 
   /// Creates a WpfProgram that uses commands
@@ -39,8 +41,8 @@ module WpfProgram =
       (init: unit -> 'model * Cmd<'msg>)
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
       (bindings: unit -> Binding<'model, 'msg> list) =
-    Program.mkProgram init update (fun _ _ -> bindings ())
-    |> fromElmishProgram
+    Program.mkProgram init update (fun _ _ -> ())
+    |> create bindings
 
 
   /// Starts the Elmish dispatch loop, setting the bindings as the DataContext
@@ -58,8 +60,7 @@ module WpfProgram =
     let setState model dispatch =
       match lastModel with
       | None ->
-          let bindings = Program.view program.ElmishProgram model dispatch
-          let vm = ViewModel<'model, 'msg>(model, dispatch, bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
+          let vm = ViewModel<'model, 'msg>(model, dispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
           element.DataContext <- vm
           lastModel <- Some vm
       | Some vm ->
