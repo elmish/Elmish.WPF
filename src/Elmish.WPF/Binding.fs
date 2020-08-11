@@ -461,14 +461,18 @@ type Binding private () =
       ItemEquals = fun x y -> itemEquals (unbox<'b> x) (unbox<'b> y)
     } |> createBinding
 
-
+    
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely
   ///   identified by the value returned by <paramref name="getId"/>. The
-  ///   binding is backed by a persistent <c>ObservableCollection</c>, so only
-  ///   changed items (as determined by <paramref name="itemEquals" />) will be
-  ///   replaced. If the items are complex and you want them updated instead of
-  ///   replaced, consider using <see cref="subModelSeq" />.
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
   /// </summary>
   /// <param name="get">Gets the collection from the model.</param>
   /// <param name="itemEquals">
@@ -482,13 +486,7 @@ type Binding private () =
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
       : string -> Binding<'model, 'msg> =
-    OneWaySeqLazyData {
-      Get = box
-      Map = unbox<'model> >> get >> Seq.map box
-      Equals = fun _ _ -> false
-      GetId = unbox<'a> >> getId >> box
-      ItemEquals = fun a b -> itemEquals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
+    Binding.oneWaySeqLazy(get, refEq, id, itemEquals, getId)
 
 
   /// <summary>Creates a two-way binding.</summary>
