@@ -1,7 +1,8 @@
 ﻿module Elmish.WPF.Samples.Validation.Program
 
 open System
-open Elmish
+open Serilog
+open Serilog.Extensions.Logging
 open Elmish.WPF
 
 
@@ -48,10 +49,16 @@ let bindings () : Binding<Model, Msg> list = [
 
 let designVm = ViewModel.designInstance (init ()) (bindings ())
 
-
 let main window =
-  Program.mkSimpleWpf init update bindings
-  |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
-    { ElmConfig.Default with LogConsole = true; Measure = true }
-    window
+
+  let logger =
+    LoggerConfiguration()
+      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+      .WriteTo.Console()
+      .CreateLogger()
+
+  WpfProgram.mkSimple init update bindings
+  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
+  |> WpfProgram.runWindow window

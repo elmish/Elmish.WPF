@@ -6,6 +6,7 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
+open Microsoft.Extensions.Logging
 
 open Elmish
 
@@ -273,8 +274,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
         bindings: Binding<'model, 'msg> list,
-        config: ElmConfig,
-        propNameChain: string)
+        performanceLogThresholdMs: int,
+        propNameChain: string,
+        log: ILogger,
+        logPerformance: ILogger)
       as this =
   inherit DynamicObject()
 
@@ -290,12 +293,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let withCaching b = Cached { Binding = b; Cache = ref None }
 
 
-  let log fmt =
-    let innerLog (str: string) =
-      if config.LogConsole then Console.WriteLine(str)
-      if config.LogTrace then Diagnostics.Trace.WriteLine(str)
-    Printf.kprintf innerLog fmt
-
   let getPropChainFor bindingName =
     sprintf "%s.%s" propNameChain bindingName
 
@@ -303,7 +300,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     sprintf "%s.%s.%s" propNameChain collectionBindingName itemId
 
   let notifyPropertyChanged propName =
-    log "[%s] PropertyChanged \"%s\"" propNameChain propName
+    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", propNameChain, propName)
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
 
   let raiseCanExecuteChanged (cmd: Command) =
@@ -313,13 +310,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     match errors.TryGetValue propName with
     | true, err when err = error -> ()
     | _ ->
-        log "[%s] ErrorsChanged \"%s\"" propNameChain propName
+        log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
         errors.[propName] <- error
         errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let removeError propName =
     if errors.Remove propName then
-      log "[%s] ErrorsChanged \"%s\"" propNameChain propName
+      log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let rec updateValidationError model name = function
@@ -340,18 +337,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | Cached b -> updateValidationError model name b.Binding
 
   let measure name callName f =
-    if not config.Measure then f
+    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else
       fun x ->
         let sw = System.Diagnostics.Stopwatch.StartNew ()
         let r = f x
         sw.Stop ()
-        if sw.ElapsedMilliseconds >= int64 config.MeasureLimitMs then
-          log "[%s] %s (%ims): %s" propNameChain callName sw.ElapsedMilliseconds name
+        if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
+          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", propNameChain, callName, sw.ElapsedMilliseconds, name)
         r
 
   let measure2 name callName f =
-    if not config.Measure then f
+    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else fun x -> measure name callName (f x)
 
   let showNewWindow
@@ -447,7 +444,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               Vm = ref ValueNone }
         | ValueSome m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             Some <| SubModel {
               GetModel = getModel
               GetBindings = getBindings
@@ -475,10 +472,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            log "[%s] Creating hidden window" chain
+            log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
             showNewWindow
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Hidden
@@ -495,10 +492,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Visible m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), config, chain)
+            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            log "[%s] Creating and opening window" chain
+            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain)
             showNewWindow
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Visible
@@ -523,7 +520,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           getModels initialModel
           |> Seq.map (fun m ->
                let chain = getPropChainForItem name (getId m |> string)
-               ViewModel(m, (fun msg -> toMsg1 (getId m, msg) |> dispatch), getBindings (), config, chain)
+               ViewModel(m, (fun msg -> toMsg1 (getId m, msg) |> dispatch), getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           )
           |> ObservableCollection
         Some <| SubModelSeq {
@@ -543,11 +540,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             SubModelSeqBinding = b
           } |> withCaching |> Some
         | _ ->
-          log "subModelSelectedItem binding referenced binding '%s', but no compatible binding was found with that name" d.SubModelSeqBindingName
+          log.LogError("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
           None
 
   let bindings =
-    log "[%s] Initializing bindings" propNameChain
+    log.LogTrace("[{BindingNameChain}] Initializing bindings", propNameChain)
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let dictAsFunc name =
       match dict.TryGetValue name with
@@ -556,7 +553,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
-        log "Binding name '%s' is duplicated. Only the first occurrence will be used." b.Name
+        log.LogError("Binding name '{BindingName}' is duplicated. Only the first occurrence will be used.", b.Name)
       else
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
@@ -596,7 +593,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             true
       | ValueNone, ValueSome m ->
           let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          b.Vm := ValueSome <| ViewModel(m, toMsg1 >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
+          b.Vm := ValueSome <| ViewModel(m, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
@@ -608,9 +605,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.PreventClose := false
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log "[%s] Attempted to close window, but did not find window reference" winPropChain
+              log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
           | true, w ->
-              log "[%s] Closing window" winPropChain
+              log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
               b.WinRef.SetTarget null
               w.Dispatcher.Invoke(fun () -> w.Close ())
           b.WinRef.SetTarget null
@@ -618,17 +615,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let hide () =
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log "[%s] Attempted to hide window, but did not find window reference" winPropChain
+              log.LogError("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
           | true, w ->
-              log "[%s] Hiding window" winPropChain
+              log.LogTrace("[{BindingNameChain}] Hiding window", winPropChain)
               w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Hidden)
 
         let showHidden () =
           match b.WinRef.TryGetTarget () with
           | false, _ ->
-              log "[%s] Attempted to show existing hidden window, but did not find window reference" winPropChain
+              log.LogError("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
           | true, w ->
-              log "[%s] Showing existing hidden window" winPropChain
+              log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
               w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
 
         let showNew vm initialVisibility =
@@ -639,7 +636,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
         let newVm model =
           let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          ViewModel(model, toMsg1 >> dispatch, b.GetBindings (), config, getPropChainFor bindingName)
+          ViewModel(model, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
 
         match !b.VmWinState, b.GetState newModel with
         | WindowState.Closed, WindowState.Closed ->
@@ -651,7 +648,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             true
         | WindowState.Closed, WindowState.Hidden m ->
             let vm = newVm m
-            log "[%s] Creating hidden window" winPropChain
+            log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
             showNew vm Visibility.Hidden
             b.VmWinState := WindowState.Hidden vm
             true
@@ -665,7 +662,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             false
         | WindowState.Closed, WindowState.Visible m ->
             let vm = newVm m
-            log "[%s] Creating and opening window" winPropChain
+            log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
             showNew vm Visibility.Visible
             b.VmWinState := WindowState.Visible vm
             true
@@ -682,7 +679,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let create m id = 
           let toMsg1 = fun msg -> b.ToMsg currentModel msg
           let chain = getPropChainForItem bindingName (id |> string)
-          ViewModel(m, (fun msg -> toMsg1 (id, msg) |> dispatch), b.GetBindings (), config, chain)
+          ViewModel(m, (fun msg -> toMsg1 (id, msg) |> dispatch), b.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
         let update (vm: ViewModel<_, _>) m _ = vm.UpdateModel m
         let newSubModels = newModel |> b.GetModels |> Seq.toArray
         elmStyleMerge b.GetId getTargetId create update b.Vms newSubModels
@@ -740,9 +737,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.SubModelSeqBinding.Vms 
           |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
             selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
-        log "[%s] Setting selected VM to %A"
-          propNameChain
+        log.LogTrace(
+          "[{BindingNameChain}] Setting selected VM to {SubModelId}",
+          propNameChain,
           (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+        )
         selected |> Option.toObj |> box
     | Cached b ->
         match !b.Cache with
@@ -798,25 +797,25 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       updateValidationError currentModel name binding
 
   override __.TryGetMember (binder, result) =
-    log "[%s] TryGetMember %s" propNameChain binder.Name
+    log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", propNameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log "[%s] TryGetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
+        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
         false
     | true, binding ->
         result <- tryGetMember currentModel binding
         true
 
   override __.TrySetMember (binder, value) =
-    log "[%s] TrySetMember %s" propNameChain binder.Name
+    log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", propNameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log "[%s] TrySetMember FAILED: Property %s doesn't exist" propNameChain binder.Name
+        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
         false
     | true, binding ->
         let success = trySetMember currentModel value binding
         if not success then
-          log "[%s] TrySetMember FAILED: Binding %s is read-only" propNameChain binder.Name
+          log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", propNameChain, binder.Name)
         success
 
 
@@ -830,7 +829,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.HasErrors =
       errors.Count > 0
     member __.GetErrors propName =
-      log "[%s] GetErrors %s" propNameChain (propName |> Option.ofObj |> Option.defaultValue "<null>")
+      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
       match errors.TryGetValue propName with
       | true, err -> upcast [err]
       | false, _ -> upcast []

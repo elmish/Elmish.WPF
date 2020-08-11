@@ -6,6 +6,7 @@ open System.Collections.ObjectModel
 open System.Collections.Specialized
 open System.ComponentModel
 open System.Windows.Input
+open Microsoft.Extensions.Logging.Abstractions
 open FSharp.Interop.Dynamic
 open Xunit
 open Hedgehog
@@ -26,7 +27,7 @@ module Extensions =
 
 
 type internal TestVm<'model, 'msg>(model, bindings) as this =
-  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, ElmConfig.Default, "")
+  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, 1, "", NullLogger.Instance, NullLogger.Instance)
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()

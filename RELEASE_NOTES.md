@@ -3,10 +3,17 @@
 * **Breaking:** Removed the obsolete binding functions in the `BindingFn` module
 * **Breaking:** Removed the obsolete function `Elmish.WPF.Cmd.showWindow`
 * **Breaking:** Removed all occurrences of the argument `wrapDispatch` from the methods used to create a binding. There is currently no migration path. Please create an issue if this is a negative impact for you.
+* **Breaking:** App initialization is now done using the `WpfProgram` module instead of the `Program` module
+* **Breaking:** Removed `ElmConfig`. For controlling logging, see below. For specifying a binding performance log threshold (corresponding to the old `ElmConfig.MeasureLimitMs` field), use `WpfProgram.withBindingPerformanceLogThreshold`
 * Added binding mapping functions
   * Added `mapModel`, `mapMsg`, and `mapMsgWithModel` in both the `Binding` and `Bindings` modules
   * These functions enable common model and message mapping logic to be extracted
   * See the `SubModelSeq` sample for an excellent use of `mapModel` and `mapMsgWithMsg`
+* Improved logging:
+  * Now uses `Microsoft.Extensions.Logging` for wide compatibility and easy integration into common log frameworks
+  * Use `WpfProgram.WithLogger` to pass an `ILoggerFactory` for your chosen log framework
+  * Can control specific log categories
+  * See the samples for a demonstration using Serilog
 
 #### 3.5.6
 
