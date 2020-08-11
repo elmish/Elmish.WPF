@@ -50,7 +50,7 @@ module WpfProgram =
   /// for normal usage, see runWindow and runWindowWithConfig.
   let startElmishLoop
       (element: FrameworkElement)
-      (program:  WpfProgram<'model, 'msg>) =
+      (program: WpfProgram<'model, 'msg>) =
     let mutable lastModel = None
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
