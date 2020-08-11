@@ -126,7 +126,7 @@ let timerTick dispatch =
 
 let main window =
 
-  Log.Logger <- 
+  let logger =
     LoggerConfiguration()
       .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
       .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
@@ -136,5 +136,5 @@ let main window =
 
   WpfProgram.mkProgramWithCmdMsg init update bindings toCmd
   |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
-  |> WpfProgram.withLogger (new SerilogLoggerFactory())
+  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.runWindow window

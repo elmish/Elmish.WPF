@@ -33,7 +33,7 @@ let designVm = ViewModel.designInstance (init ()) (bindings ())
 
 let main window =
 
-  Log.Logger <- 
+  let logger =
     LoggerConfiguration()
       .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
       .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
@@ -42,5 +42,5 @@ let main window =
       .CreateLogger()
 
   WpfProgram.mkSimple init update bindings
-  |> WpfProgram.withLogger (new SerilogLoggerFactory())
+  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.runWindow window

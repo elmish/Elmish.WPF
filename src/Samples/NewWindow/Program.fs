@@ -121,7 +121,7 @@ let window2DesignVm = ViewModel.designInstance App.initWindow2 (App.window2Bindi
 
 let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>) =
 
-  Log.Logger <- 
+  let logger =
     LoggerConfiguration()
       .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
       .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
@@ -136,5 +136,5 @@ let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>
     window
   let bindings = App.mainBindings createWindow1 createWindow2
   WpfProgram.mkSimple App.init App.update bindings
-  |> WpfProgram.withLogger (new SerilogLoggerFactory())
+  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.runWindow mainWindow
