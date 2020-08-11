@@ -367,14 +367,14 @@ module oneWaySeq =
 
 
   [<Fact>]
-  let ``final map returns value from original get`` () =
+  let ``final map returns the seq its given`` () =
     Property.check <| property {
-      let! x = GenX.auto<string>
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
 
-      let get : string -> char list = Seq.toList
-      let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
+      let list = array |> Array.toList
+      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Map (box x) |> Seq.map unbox |> Seq.toList = get x @>
+      test <@ list |> Seq.map box |> box |> d.Map |> Seq.map unbox |> Seq.toList = list @>
     }
 
 
