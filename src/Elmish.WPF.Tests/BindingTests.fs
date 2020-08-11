@@ -355,13 +355,14 @@ module oneWaySeq =
 
 
   [<Fact>]
-  let ``final get passes through model`` () =
+  let ``final get returns value from original get`` () =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
+      let get = string
+      let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Get x |> unbox = x @>
+      test <@ d.Get x |> unbox = get x @>
     }
 
 
