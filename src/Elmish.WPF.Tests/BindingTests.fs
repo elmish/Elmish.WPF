@@ -355,37 +355,52 @@ module oneWaySeq =
 
 
   [<Fact>]
-  let ``final get passes through model`` () =
+  let ``final get returns value from original get`` () =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Get x |> unbox = x @>
-    }
-
-
-  [<Fact>]
-  let ``final map returns value from original get`` () =
-    Property.check <| property {
-      let! x = GenX.auto<string>
-
-      let get : string -> char list = Seq.toList
+      let get = string
       let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Map (box x) |> Seq.map unbox |> Seq.toList = get x @>
+      test <@ d.Get x |> unbox = get x @>
     }
 
 
   [<Fact>]
-  let ``final equals returns false`` () =
+  let ``final map returns the seq its given`` () =
     Property.check <| property {
-      let! x = GenX.auto<int>
-      let! y = GenX.auto<int>
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
 
+      let list = array |> Array.toList
       let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Equals (box x) (box y) = false @>
+      test <@ list |> Seq.map box |> box |> d.Map |> Seq.map unbox |> Seq.toList = list @>
+    }
+
+
+  [<Fact>]
+  let ``final equals returns true for the same sequence references`` () =
+    Property.check <| property {
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
+
+      let list = array |> Seq.map box |> Seq.toList
+      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
+
+      test <@ d.Equals (box list) (box list) = true @>
+    }
+
+
+  [<Fact>]
+  let ``final equals returns false for different reference sequences`` () =
+    Property.check <| property {
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
+
+      let list1 = array |> Seq.map box |> Seq.toList
+      let list2 = list1 |> Seq.map id |> Seq.toList
+      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
+
+      test <@ refEq list1 list2 = false @> // ensure lists are not reference equal
+      test <@ d.Equals (box list1) (box list2) = false @>
     }
 
 

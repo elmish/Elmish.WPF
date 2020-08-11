@@ -5,6 +5,7 @@
 * **Breaking:** Removed all occurrences of the argument `wrapDispatch` from the methods used to create a binding. There is currently no migration path. Please create an issue if this is a negative impact for you.
 * **Breaking:** App initialization is now done using the `WpfProgram` module instead of the `Program` module
 * **Breaking:** Removed `ElmConfig`. For controlling logging, see below. For specifying a binding performance log threshold (corresponding to the old `ElmConfig.MeasureLimitMs` field), use `WpfProgram.withBindingPerformanceLogThreshold`
+* **Breaking:** The method `Binding.oneWaySeq` is implemented by calling the method `Binding.oneWaySeqLazy` with `equals` = `refEq` and `map` = `id`. This is a breaking change when using a mutable data structure for the sequence. Compensate by directly calling `Binding.oneWaySeqLazy` with `equals` = `fun _ _ = false`.
 * Added binding mapping functions
   * Added `mapModel`, `mapMsg`, and `mapMsgWithModel` in both the `Binding` and `Bindings` modules
   * These functions enable common model and message mapping logic to be extracted

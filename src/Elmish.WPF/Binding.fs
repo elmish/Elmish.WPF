@@ -426,42 +426,12 @@ type Binding private () =
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely
   ///   identified by the value returned by <paramref name="getId"/>. The
-  ///   binding is backed by a persistent <c>ObservableCollection</c>, so only
-  ///   changed items (as determined by <paramref name="itemEquals" />) will be
-  ///   replaced. If the items are complex and you want them updated instead of
-  ///   replaced, consider using <see cref="subModelSeq" />.
-  /// </summary>
-  /// <param name="get">Gets the collection from the model.</param>
-  /// <param name="itemEquals">
-  ///   Indicates whether two collection items are equal. Good candidates are
-  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
-  /// </param>
-  /// <param name="getId">Gets a unique identifier for a collection
-  /// item.</param>
-  static member oneWaySeq
-      (get: 'model -> #seq<'a>,
-       itemEquals: 'a -> 'a -> bool,
-       getId: 'a -> 'id)
-      : string -> Binding<'model, 'msg> =
-    OneWaySeqLazyData {
-      Get = box
-      Map = unbox<'model> >> get >> Seq.map box
-      Equals = fun _ _ -> false
-      GetId = unbox<'a> >> getId >> box
-      ItemEquals = fun a b -> itemEquals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
-
-
-  /// <summary>
-  ///   Creates a one-way binding to a sequence of items, each uniquely
-  ///   identified by the value returned by <paramref name="getId"/>. The
-  ///   binding will only be updated if the output of <paramref name="get" />
-  ///   changes, as determined by <paramref name="equals" />. The binding is
-  ///   backed by a persistent
-  ///   <c>ObservableCollection</c>, so only changed items (as determined by
-  ///   <paramref name="itemEquals" />) will be replaced. If the items are
-  ///   complex and you want them updated instead of replaced, consider using
-  ///   <see cref="subModelSeq" />.
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
   /// </summary>
   /// <param name="get">Gets the intermediate value from the model.</param>
   /// <param name="equals">
@@ -489,6 +459,33 @@ type Binding private () =
       GetId = unbox<'b> >> getId >> box
       ItemEquals = fun x y -> itemEquals (unbox<'b> x) (unbox<'b> y)
     } |> createBinding
+
+    
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection
+  /// item.</param>
+  static member oneWaySeq
+      (get: 'model -> #seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id)
+      : string -> Binding<'model, 'msg> =
+    Binding.oneWaySeqLazy(get, refEq, id, itemEquals, getId)
 
 
   /// <summary>Creates a two-way binding.</summary>
