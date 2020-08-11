@@ -427,12 +427,11 @@ type Binding private () =
   ///   Creates a one-way binding to a sequence of items, each uniquely
   ///   identified by the value returned by <paramref name="getId"/>. The
   ///   binding will not be updated if the output of <paramref name="get"/>
-  ///   does not change, as determined by <paramref name="equals"/>. The binding is
-  ///   backed by a persistent
-  ///   <c>ObservableCollection</c>, so only changed items (as determined by
-  ///   <paramref name="itemEquals" />) will be replaced. If the items are
-  ///   complex and you want them updated instead of replaced, consider using
-  ///   <see cref="subModelSeq" />.
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
   /// </summary>
   /// <param name="get">Gets the intermediate value from the model.</param>
   /// <param name="equals">
