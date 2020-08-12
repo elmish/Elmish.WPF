@@ -479,6 +479,11 @@ module internal BindingData2 =
     let boxOpt d = mapOther Option.box d
     let box d = mapOther box d
 
+    let mapFunctions
+        mGet
+        (d: OneWayData<'model, 'a>) =
+      { d with Get = mGet d.Get }
+
 
   module OneWayLazyData =
   
@@ -495,6 +500,15 @@ module internal BindingData2 =
     let boxVOpt d = mapOther box ValueOption.box unbox d
     let boxOpt d = mapOther box Option.box unbox d
     let box d = mapOther box box unbox d
+
+    let mapFunctions
+        mGet
+        mMap
+        mEquals
+        (d: OneWayLazyData<'model, 'a, 'b>) =
+      { d with Get = mGet d.Get
+               Map = mMap d.Map
+               Equals = mEquals d.Equals }
 
 
   module OneWaySeqLazyData =
@@ -515,6 +529,19 @@ module internal BindingData2 =
 
     let box d = mapOther box box box unbox unbox d
 
+    let mapFunctions
+        mGet
+        mMap
+        mEquals
+        mGetId
+        mItemEquals
+        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) =
+      { d with Get = mGet d.Get
+               Map = mMap d.Map
+               Equals = mEquals d.Equals
+               GetId = mGetId d.GetId
+               ItemEquals = mItemEquals d.ItemEquals }
+
 
   module TwoWayData =
   
@@ -529,6 +556,13 @@ module internal BindingData2 =
     let boxVOpt d = mapOther ValueOption.box ValueOption.unbox d
     let boxOpt d = mapOther Option.box Option.unbox d
     let box d = mapOther box unbox d
+
+    let mapFunctions
+        mGet
+        mSet
+        (d: TwoWayData<'model, 'msg, 'a>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set }
 
 
   module TwoWayValidateData =
@@ -546,13 +580,36 @@ module internal BindingData2 =
     let boxOpt d = mapOther Option.box Option.unbox d
     let box d = mapOther box unbox d
 
+    let mapFunctions
+        mGet
+        mSet
+        mValidate
+        (d: TwoWayValidateData<'model, 'msg, 'a>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set
+               Validate = mValidate d.Validate }
 
-  //module CmdData =
-  
-  
-  //module CmdParamData =
-  
-  
+
+  module CmdData =
+
+    let mapFunctions
+        mExec
+        mCanExec
+        (d: CmdData<'model, 'msg>) =
+      { d with Exec = mExec d.Exec
+               CanExec = mCanExec d.CanExec }
+
+
+  module cmdparamdata =
+
+    let mapFunctions
+        mExec
+        mCanExec
+        (d: CmdParamData<'model, 'msg>) =
+      { d with Exec = mExec d.Exec
+               CanExec = mCanExec d.CanExec }
+
+
   module SubModelSelectedItemData =
   
     let mapOther
@@ -565,6 +622,13 @@ module internal BindingData2 =
     }
 
     let box d = mapOther box unbox d
+
+    let mapFunctions
+        mGet
+        mSet
+        (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set }
 
 
   module SubModelData =
@@ -582,6 +646,15 @@ module internal BindingData2 =
     }
 
     let box d = mapOther box box unbox unbox d
+
+    let mapFunctions
+        mGetModel
+        mGetBindings
+        mToMsg
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with GetModel = mGetModel d.GetModel
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg }
 
 
   module SubModelWinData =
@@ -602,6 +675,19 @@ module internal BindingData2 =
 
     let box d = mapOther box box unbox unbox d
 
+    let mapFunctions
+        mGetState
+        mGetBindings
+        mToMsg
+        mGetWindow
+        mOnCloseRequested
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with GetState = mGetState d.GetState
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg
+               GetWindow = mGetWindow d.GetWindow
+               OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
+
 
   module SubModelSeqData =
   
@@ -620,6 +706,17 @@ module internal BindingData2 =
     }
 
     let box d = mapOther box box box unbox unbox unbox d
+
+    let mapFunctions
+        mGetModels
+        mGetId
+        mGetBindings
+        mToMsg
+        (d: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) =
+      { d with GetModels = mGetModels d.GetModels
+               GetId = mGetId d.GetId
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg }
 
 
 
