@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+namespace Elmish.WPF
 
 open System.Windows
 
@@ -276,6 +276,139 @@ module Bindings =
   
   /// Map the message type parameter of a list of bindings via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = bindings |> List.map (Binding.mapMsg f)
+
+
+
+module internal BindingData2 =
+
+
+  module OneWayData =
+  
+    let mapOther
+        (outMapA: 'a -> 'a0)
+        (d: OneWayData<'model, 'a>) = {
+      Get = d.Get >> outMapA
+    }
+
+
+  module OneWayLazyData =
+  
+    let mapOther
+        (outMapA: 'a -> 'a0)
+        (outMapB: 'b -> 'b0)
+        (inMapA: 'a0 -> 'a)
+        (d: OneWayLazyData<'model, 'a, 'b>) = {
+      Get = d.Get >> outMapA
+      Map = inMapA >> d.Map >> outMapB
+      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
+    }
+
+
+  module OneWaySeqLazyData =
+  
+    let mapOther
+        (outMapA: 'a -> 'a0)
+        (outMapB: 'b -> 'b0)
+        (outMapId: 'id -> 'id0)
+        (inMapA: 'a0 -> 'a)
+        (inMapB: 'b0 -> 'b)
+        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) = {
+      Get = d.Get >> outMapA
+      Map = inMapA >> d.Map >> Seq.map outMapB
+      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
+      GetId = inMapB >> d.GetId >> outMapId
+      ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
+    }
+
+
+  module TwoWayData =
+  
+    let mapOther
+        (outMapA: 'a -> 'a0)
+        (inMapA: 'a0 -> 'a)
+        (d: TwoWayData<'model, 'msg, 'a>) = {
+      Get = d.Get >> outMapA
+      Set = fun a m -> d.Set (inMapA a) m
+    }
+
+
+  module TwoWayValidateData =
+  
+    let mapOther
+        (outMapA: 'a -> 'a0)
+        (inMapA: 'a0 -> 'a)
+        (d: TwoWayValidateData<'model, 'msg, 'a>) = {
+      Get = d.Get >> outMapA
+      Set = fun a m -> d.Set (inMapA a) m
+      Validate = d.Validate
+    }
+
+
+  //module CmdData =
+  
+  
+  //module CmdParamData =
+  
+  
+  module SubModelSelectedItemData =
+  
+    let mapOther
+        (outMapId: 'id -> 'id0)
+        (inMapId: 'id0 -> 'id)
+        (d: SubModelSelectedItemData<'model, 'msg, 'id>) = {
+      Get = d.Get >> ValueOption.map outMapId
+      Set = ValueOption.map inMapId >> d.Set
+      SubModelSeqBindingName = d.SubModelSeqBindingName
+    }
+
+
+  module SubModelData =
+  
+    let mapOther
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+      Sticky = d.Sticky
+    }
+
+
+  module SubModelWinData =
+  
+    let mapOther
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetState = d.GetState >> WindowState.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+      GetWindow = d.GetWindow
+      IsModal = d.IsModal
+      OnCloseRequested = d.OnCloseRequested
+    }
+
+
+  module SubModelSeqData =
+  
+    let mapOther
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapId: 'id -> 'id0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (inMapId: 'id0 -> 'id)
+        (d: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) = {
+      GetModels = d.GetModels >> Seq.map outMapBindingModel
+      GetId = inMapBindingModel >> d.GetId >> outMapId
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
+    }
 
 
 
