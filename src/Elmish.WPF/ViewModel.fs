@@ -212,89 +212,83 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     )
 
   let initializeBinding name bindingData getInitializedBindingByName =
+    let measure x = x |> measure name
+    let measure2 x = x |> measure2 name
     match bindingData with
     | OneWayData d ->
+        let d = d |> OneWayData.measureFunctions measure
         Some <| OneWay {
-          Get = measure name "get" d.Get }
+          Get = d.Get }
     | OneWayLazyData d ->
-        let get = measure name "get" d.Get
-        let map = measure name "map" d.Map
+        let d = d |> OneWayLazyData.measureFunctions measure measure measure2
         OneWayLazy {
-          Get = get
-          Map = map
-          Equals = measure2 name "equals" d.Equals
+          Get = d.Get
+          Map = d.Map
+          Equals = d.Equals
         } |> withCaching |> Some
     | OneWaySeqLazyData d ->
-        let get = measure name "get" d.Get
-        let map = measure name "map" d.Map
-        let getId = measure name "getId" d.GetId
-        let values = ObservableCollection(initialModel |> get |> map)
+        let d = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
+        let values = ObservableCollection(initialModel |> d.Get |> d.Map)
         Some <| OneWaySeq {
-          Get = get
-          Map = map
-          Equals = measure2 name "equals" d.Equals
-          GetId = getId
-          ItemEquals = measure2 name "itemEquals" d.ItemEquals
+          Get = d.Get
+          Map = d.Map
+          Equals = d.Equals
+          GetId = d.GetId
+          ItemEquals = d.ItemEquals
           Values = values }
     | TwoWayData d ->
-        let set = measure2 name "set" d.Set
+        let d = d |> TwoWayData.measureFunctions measure measure
         Some <| TwoWay {
-          Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch }
+          Get = d.Get
+          Set = fun obj m -> d.Set obj m |> dispatch }
     | TwoWayValidateData d ->
-        let set = measure2 name "set" d.Set
+        let d = d |> TwoWayValidateData.measureFunctions measure measure measure
         Some <| TwoWayValidate {
-          Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch
-          Validate = measure name "validate" d.Validate }
+          Get = d.Get
+          Set = fun obj m -> d.Set obj m |> dispatch
+          Validate = d.Validate }
     | CmdData d ->
-        let exec = measure name "exec" d.Exec
-        let canExec = measure name "canExec" d.CanExec
-        let execute _ = exec currentModel |> ValueOption.iter dispatch
-        let canExecute _ = canExec currentModel
+        let d = d |> CmdData.measureFunctions measure measure
+        let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
+        let canExecute _ = d.CanExec currentModel
         Some <| Cmd {
           Cmd = Command(execute, canExecute, false)
-          CanExec = canExec }
+          CanExec = d.CanExec }
     | CmdParamData d ->
-        let exec = measure2 name "exec" d.Exec
-        let canExec = measure2 name "canExec" d.CanExec
-        let execute param = exec param currentModel |> ValueOption.iter dispatch
-        let canExecute param = canExec param currentModel
+        let d = d |> CmdParamData.measureFunctions measure2 measure2
+        let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
+        let canExecute param = d.CanExec param currentModel
         Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
     | SubModelData d ->
-        let getModel = measure name "getSubModel" d.GetModel
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure2 name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
-        match getModel initialModel with
+        let d = d |> SubModelData.measureFunctions measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
+        match d.GetModel initialModel with
         | ValueNone ->
             Some <| SubModel {
-              GetModel = getModel
-              GetBindings = getBindings
-              ToMsg = toMsg2
+              GetModel = d.GetModel
+              GetBindings = d.GetBindings
+              ToMsg = d.ToMsg
               Sticky = d.Sticky
               Vm = ref ValueNone }
         | ValueSome m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             Some <| SubModel {
-              GetModel = getModel
-              GetBindings = getBindings
-              ToMsg = toMsg2
+              GetModel = d.GetModel
+              GetBindings = d.GetBindings
+              ToMsg = d.ToMsg
               Sticky = d.Sticky
               Vm = ref <| ValueSome vm }
     | SubModelWinData d ->
-        let getState = measure name "getState" d.GetState
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
+        let d = d |> SubModelWinData.measureFunctions measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
         let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
-        match getState initialModel with
+        match d.GetState initialModel with
         | WindowState.Closed ->
             Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
+              GetState = d.GetState
+              GetBindings = d.GetBindings
+              ToMsg = d.ToMsg
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -304,7 +298,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
@@ -312,9 +306,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Hidden
             Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
+              GetState = d.GetState
+              GetBindings = d.GetBindings
+              ToMsg = d.ToMsg
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -324,7 +318,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             }
         | WindowState.Visible m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log.LogTrace("[{BindingNameChain}] Creating and opening window", chain)
@@ -332,9 +326,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               winRef d.GetWindow vm d.IsModal onCloseRequested
               preventClose Visibility.Visible
             Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
+              GetState = d.GetState
+              GetBindings = d.GetBindings
+              ToMsg = d.ToMsg
               GetWindow = d.GetWindow
               IsModal = d.IsModal
               OnCloseRequested = onCloseRequested
@@ -343,32 +337,28 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               VmWinState = ref <| WindowState.Visible vm
             }
     | SubModelSeqData d ->
-        let getModels = measure name "getSubModels" d.GetModels
-        let getId = measure name "getId" d.GetId
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
+        let d = d |> SubModelSeqData.measureFunctions measure measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
         let vms =
-          getModels initialModel
+          d.GetModels initialModel
           |> Seq.map (fun m ->
-               let chain = getPropChainForItem name (getId m |> string)
-               ViewModel(m, (fun msg -> toMsg1 (getId m, msg) |> dispatch), getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+               let chain = getPropChainForItem name (d.GetId m |> string)
+               ViewModel(m, (fun msg -> toMsg (d.GetId m, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           )
           |> ObservableCollection
         Some <| SubModelSeq {
-          GetModels = getModels
-          GetId = getId
-          GetBindings = getBindings
-          ToMsg = toMsg2
+          GetModels = d.GetModels
+          GetId = d.GetId
+          GetBindings = d.GetBindings
+          ToMsg = d.ToMsg
           Vms = vms }
     | SubModelSelectedItemData d ->
+        let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
         match getInitializedBindingByName d.SubModelSeqBindingName with
         | Some (SubModelSeq b) ->
-          let get = measure name "get" d.Get
-          let set = measure2 name "set" d.Set
           SubModelSelectedItem {
-            Get = get
-            Set = fun obj m -> set obj m |> dispatch
+            Get = d.Get
+            Set = fun obj m -> d.Set obj m |> dispatch
             SubModelSeqBinding = b
           } |> withCaching |> Some
         | _ ->
