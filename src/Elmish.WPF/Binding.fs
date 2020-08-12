@@ -281,6 +281,16 @@ module Bindings =
 
 module internal BindingData2 =
 
+  module Option =
+
+    let box ma = ma |> Option.map box |> Option.toObj
+    let unbox obj = obj |> Option.ofObj |> Option.map unbox
+
+  module ValueOption =
+
+    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
+    let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
+
 
   module OneWayData =
   
@@ -289,6 +299,10 @@ module internal BindingData2 =
         (d: OneWayData<'model, 'a>) = {
       Get = d.Get >> outMapA
     }
+
+    let boxVOpt d = mapOther ValueOption.box d
+    let boxOpt d = mapOther Option.box d
+    let box d = mapOther box d
 
 
   module OneWayLazyData =
@@ -302,6 +316,10 @@ module internal BindingData2 =
       Map = inMapA >> d.Map >> outMapB
       Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
     }
+
+    let boxVOpt d = mapOther box ValueOption.box unbox d
+    let boxOpt d = mapOther box Option.box unbox d
+    let box d = mapOther box box unbox d
 
 
   module OneWaySeqLazyData =
@@ -320,6 +338,8 @@ module internal BindingData2 =
       ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
     }
 
+    let box d = mapOther box box box unbox unbox d
+
 
   module TwoWayData =
   
@@ -330,6 +350,10 @@ module internal BindingData2 =
       Get = d.Get >> outMapA
       Set = fun a m -> d.Set (inMapA a) m
     }
+
+    let boxVOpt d = mapOther ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapOther Option.box Option.unbox d
+    let box d = mapOther box unbox d
 
 
   module TwoWayValidateData =
@@ -342,6 +366,10 @@ module internal BindingData2 =
       Set = fun a m -> d.Set (inMapA a) m
       Validate = d.Validate
     }
+
+    let boxVOpt d = mapOther ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapOther Option.box Option.unbox d
+    let box d = mapOther box unbox d
 
 
   //module CmdData =
@@ -361,6 +389,8 @@ module internal BindingData2 =
       SubModelSeqBindingName = d.SubModelSeqBindingName
     }
 
+    let box d = mapOther box unbox d
+
 
   module SubModelData =
   
@@ -375,6 +405,8 @@ module internal BindingData2 =
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
       Sticky = d.Sticky
     }
+
+    let box d = mapOther box box unbox unbox d
 
 
   module SubModelWinData =
@@ -393,6 +425,8 @@ module internal BindingData2 =
       OnCloseRequested = d.OnCloseRequested
     }
 
+    let box d = mapOther box box unbox unbox d
+
 
   module SubModelSeqData =
   
@@ -409,6 +443,8 @@ module internal BindingData2 =
       GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
       ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
     }
+
+    let box d = mapOther box box box unbox unbox unbox d
 
 
 
