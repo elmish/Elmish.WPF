@@ -469,15 +469,15 @@ module internal BindingData2 =
 
   module OneWayData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (d: OneWayData<'model, 'a>) = {
       Get = d.Get >> outMapA
     }
 
-    let boxVOpt d = mapOther ValueOption.box d
-    let boxOpt d = mapOther Option.box d
-    let box d = mapOther box d
+    let boxVOpt d = mapMinorTypes ValueOption.box d
+    let boxOpt d = mapMinorTypes Option.box d
+    let box d = mapMinorTypes box d
 
     let mapFunctions
         mGet
@@ -487,7 +487,7 @@ module internal BindingData2 =
 
   module OneWayLazyData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (outMapB: 'b -> 'b0)
         (inMapA: 'a0 -> 'a)
@@ -497,9 +497,9 @@ module internal BindingData2 =
       Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
     }
 
-    let boxVOpt d = mapOther box ValueOption.box unbox d
-    let boxOpt d = mapOther box Option.box unbox d
-    let box d = mapOther box box unbox d
+    let boxVOpt d = mapMinorTypes box ValueOption.box unbox d
+    let boxOpt d = mapMinorTypes box Option.box unbox d
+    let box d = mapMinorTypes box box unbox d
 
     let mapFunctions
         mGet
@@ -513,7 +513,7 @@ module internal BindingData2 =
 
   module OneWaySeqLazyData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (outMapB: 'b -> 'b0)
         (outMapId: 'id -> 'id0)
@@ -527,7 +527,7 @@ module internal BindingData2 =
       ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
     }
 
-    let box d = mapOther box box box unbox unbox d
+    let box d = mapMinorTypes box box box unbox unbox d
 
     let mapFunctions
         mGet
@@ -545,7 +545,7 @@ module internal BindingData2 =
 
   module TwoWayData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (inMapA: 'a0 -> 'a)
         (d: TwoWayData<'model, 'msg, 'a>) = {
@@ -553,9 +553,9 @@ module internal BindingData2 =
       Set = fun a m -> d.Set (inMapA a) m
     }
 
-    let boxVOpt d = mapOther ValueOption.box ValueOption.unbox d
-    let boxOpt d = mapOther Option.box Option.unbox d
-    let box d = mapOther box unbox d
+    let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapMinorTypes Option.box Option.unbox d
+    let box d = mapMinorTypes box unbox d
 
     let mapFunctions
         mGet
@@ -567,7 +567,7 @@ module internal BindingData2 =
 
   module TwoWayValidateData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (inMapA: 'a0 -> 'a)
         (d: TwoWayValidateData<'model, 'msg, 'a>) = {
@@ -576,9 +576,9 @@ module internal BindingData2 =
       Validate = d.Validate
     }
 
-    let boxVOpt d = mapOther ValueOption.box ValueOption.unbox d
-    let boxOpt d = mapOther Option.box Option.unbox d
-    let box d = mapOther box unbox d
+    let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapMinorTypes Option.box Option.unbox d
+    let box d = mapMinorTypes box unbox d
 
     let mapFunctions
         mGet
@@ -612,7 +612,7 @@ module internal BindingData2 =
 
   module SubModelSelectedItemData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapId: 'id -> 'id0)
         (inMapId: 'id0 -> 'id)
         (d: SubModelSelectedItemData<'model, 'msg, 'id>) = {
@@ -621,7 +621,7 @@ module internal BindingData2 =
       SubModelSeqBindingName = d.SubModelSeqBindingName
     }
 
-    let box d = mapOther box unbox d
+    let box d = mapMinorTypes box unbox d
 
     let mapFunctions
         mGet
@@ -633,7 +633,7 @@ module internal BindingData2 =
 
   module SubModelData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
@@ -645,7 +645,7 @@ module internal BindingData2 =
       Sticky = d.Sticky
     }
 
-    let box d = mapOther box box unbox unbox d
+    let box d = mapMinorTypes box box unbox unbox d
 
     let mapFunctions
         mGetModel
@@ -659,7 +659,7 @@ module internal BindingData2 =
 
   module SubModelWinData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
@@ -673,7 +673,7 @@ module internal BindingData2 =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let box d = mapOther box box unbox unbox d
+    let box d = mapMinorTypes box box unbox unbox d
 
     let mapFunctions
         mGetState
@@ -691,7 +691,7 @@ module internal BindingData2 =
 
   module SubModelSeqData =
   
-    let mapOther
+    let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (outMapId: 'id -> 'id0)
@@ -705,7 +705,7 @@ module internal BindingData2 =
       ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
     }
 
-    let box d = mapOther box box box unbox unbox unbox d
+    let box d = mapMinorTypes box box box unbox unbox unbox d
 
     let mapFunctions
         mGetModels
