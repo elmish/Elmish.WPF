@@ -484,6 +484,11 @@ module internal BindingData2 =
         (d: OneWayData<'model, 'a>) =
       { d with Get = mGet d.Get }
 
+    let measureFunctions
+        mGet =
+      mapFunctions
+        (mGet "get")
+
 
   module OneWayLazyData =
   
@@ -509,6 +514,15 @@ module internal BindingData2 =
       { d with Get = mGet d.Get
                Map = mMap d.Map
                Equals = mEquals d.Equals }
+
+    let measureFunctions
+        mGet
+        mMap
+        mEquals =
+      mapFunctions
+        (mGet "get")
+        (mMap "map")
+        (mEquals "equals")
 
 
   module OneWaySeqLazyData =
@@ -542,6 +556,19 @@ module internal BindingData2 =
                GetId = mGetId d.GetId
                ItemEquals = mItemEquals d.ItemEquals }
 
+    let measureFunctions
+        mGet
+        mMap
+        mEquals
+        mGetId
+        mItemEquals =
+      mapFunctions
+        (mGet "get")
+        (mMap "map")
+        (mEquals "equals")
+        (mGetId "getId")
+        (mItemEquals "itemEquals")
+
 
   module TwoWayData =
   
@@ -563,6 +590,13 @@ module internal BindingData2 =
         (d: TwoWayData<'model, 'msg, 'a>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set }
+
+    let measureFunctions
+        mGet
+        mSet =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
 
 
   module TwoWayValidateData =
@@ -589,6 +623,15 @@ module internal BindingData2 =
                Set = mSet d.Set
                Validate = mValidate d.Validate }
 
+    let measureFunctions
+        mGet
+        mSet
+        mValidate =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
+        (mValidate "validate")
+
 
   module CmdData =
 
@@ -599,8 +642,15 @@ module internal BindingData2 =
       { d with Exec = mExec d.Exec
                CanExec = mCanExec d.CanExec }
 
+    let measureFunctions
+        mExec
+        mCanExec =
+      mapFunctions
+        (mExec "exec")
+        (mCanExec "canExec")
 
-  module cmdparamdata =
+
+  module CmdParamData =
 
     let mapFunctions
         mExec
@@ -608,6 +658,13 @@ module internal BindingData2 =
         (d: CmdParamData<'model, 'msg>) =
       { d with Exec = mExec d.Exec
                CanExec = mCanExec d.CanExec }
+
+    let measureFunctions
+        mExec
+        mCanExec =
+      mapFunctions
+        (mExec "exec")
+        (mCanExec "canExec")
 
 
   module SubModelSelectedItemData =
@@ -629,6 +686,13 @@ module internal BindingData2 =
         (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set }
+
+    let measureFunctions
+        mGet
+        mSet =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
 
 
   module SubModelData =
@@ -655,6 +719,15 @@ module internal BindingData2 =
       { d with GetModel = mGetModel d.GetModel
                GetBindings = mGetBindings d.GetBindings
                ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModel
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetModel "getSubModel") // sic: "getModel" would be following the pattern
+        (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mToMsg "toMsg")
 
 
   module SubModelWinData =
@@ -688,6 +761,17 @@ module internal BindingData2 =
                GetWindow = mGetWindow d.GetWindow
                OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
 
+    let measureFunctions
+        mGetState
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetState "getState")
+        (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mToMsg "toMsg")
+        id // sic: could measure GetWindow
+        id // sic: could measure OnCloseRequested
+
 
   module SubModelSeqData =
   
@@ -717,6 +801,18 @@ module internal BindingData2 =
                GetId = mGetId d.GetId
                GetBindings = mGetBindings d.GetBindings
                ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModels
+        mGetId
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetModels "getSubModels") // sic: "getModels" would follow the pattern
+        (mGetId "getId")
+        (mGetBindings "bindings") // sic: "getBindings" would follow the pattern
+        (mToMsg "toMsg")
+
 
 
 
