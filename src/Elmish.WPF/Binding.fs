@@ -1,5 +1,7 @@
 ﻿namespace Elmish.WPF
 
+open System.Collections.Generic
+open System.Collections.ObjectModel
 open System.Windows
 
 open Elmish
@@ -8,9 +10,6 @@ open Elmish
 
 [<AutoOpen>]
 module internal BindingLogic =
-
-  open System.Collections.Generic
-  open System.Collections.ObjectModel
 
 
   let elmStyleMerge
@@ -229,13 +228,24 @@ type internal OneWayLazyData<'model, 'a, 'b> =
     model |> d.Get |> d.Map
 
 
-type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
-  Get: 'model -> 'a
-  Map: 'a -> 'b seq
-  Equals: 'a -> 'a -> bool
-  GetId: 'b -> 'id
-  ItemEquals: 'b -> 'b -> bool
-}
+type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
+  { Get: 'model -> 'a
+    Map: 'a -> 'b seq
+    Equals: 'a -> 'a -> bool
+    GetId: 'b -> 'id
+    ItemEquals: 'b -> 'b -> bool }
+    
+  member d.UpdateValue((values: ObservableCollection<'b>), (currentModel: 'model), (newModel: 'model)) =
+    let intermediate = d.Get newModel
+    if not <| d.Equals intermediate (d.Get currentModel) then
+      let create v _ = v
+      let update oldVal newVal oldIdx =
+        if not (d.ItemEquals newVal oldVal) then
+          values.[oldIdx] <- newVal
+      let newVals = intermediate |> d.Map |> Seq.toArray
+      elmStyleMerge d.GetId d.GetId create update values newVals
+    false
+
 
 type internal TwoWayData<'model, 'msg, 'a> = {
   Get: 'model -> 'a

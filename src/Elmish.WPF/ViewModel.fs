@@ -19,12 +19,8 @@ type internal OneWayLazyBinding<'model, 'a, 'b> = {
   OneWayLazyData: OneWayLazyData<'model, 'a, 'b>
 }
 
-type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
-  Get: 'model -> 'a
-  Equals: 'a -> 'a -> bool
-  Map: 'a -> 'b seq
-  GetId: 'b -> 'id
-  ItemEquals: 'b -> 'b -> bool
+type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
   Values: ObservableCollection<'b>
 }
 
@@ -223,15 +219,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> withCaching
         |> Some
     | OneWaySeqLazyData d ->
-        let d = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
-        let values = ObservableCollection(initialModel |> d.Get |> d.Map)
-        Some <| OneWaySeq {
-          Get = d.Get
-          Map = d.Map
-          Equals = d.Equals
-          GetId = d.GetId
-          ItemEquals = d.ItemEquals
-          Values = values }
+        { OneWaySeqData = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
+          Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
+        |> OneWaySeq
+        |> Some
     | TwoWayData d ->
         let d = d |> TwoWayData.measureFunctions measure measure
         Some <| TwoWay {
@@ -387,16 +378,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
     | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
-    | OneWaySeq b ->
-        let intermediate = b.Get newModel
-        if not <| b.Equals intermediate (b.Get currentModel) then
-          let create v _ = v
-          let update oldVal newVal oldIdx =
-            if not (b.ItemEquals newVal oldVal) then
-              b.Values.[oldIdx] <- newVal
-          let newVals = intermediate |> b.Map |> Seq.toArray
-          elmStyleMerge b.GetId b.GetId create update b.Values newVals
-        false
+    | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
     | Cmd _
     | CmdParam _ ->
         false
@@ -536,8 +518,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayValidate { Get = get } ->
         get model
     | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
-    | OneWaySeq { Values = vals } ->
-        box vals
+    | OneWaySeq { Values = vals } -> box vals
     | Cmd { Cmd = cmd }
     | CmdParam cmd ->
         box cmd
