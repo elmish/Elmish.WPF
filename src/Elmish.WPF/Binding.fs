@@ -315,12 +315,22 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   OnCloseRequested: 'model -> 'msg voption
 }
 
-and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  GetModels: 'model -> 'bindingModel seq
-  GetId: 'bindingModel -> 'id
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
-}
+and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+  { GetModels: 'model -> 'bindingModel seq
+    GetId: 'bindingModel -> 'id
+    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    ToMsg: 'model -> 'id * 'bindingMsg -> 'msg }
+    
+  member d.UpdateValue
+      ((getTargetId: ('bindingModel -> 'id) -> 'b -> 'id),
+       (create: 'bindingModel -> 'id -> 'b),
+       (update: 'b -> 'bindingModel -> Unit),
+       (values: ObservableCollection<'b>),
+       (newModel: 'model)) =
+    let update b bm _ = update b bm
+    let newSubModels = newModel |> d.GetModels |> Seq.toArray
+    elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
+    false
 
 
 /// Represents all necessary data used to create the different binding types.

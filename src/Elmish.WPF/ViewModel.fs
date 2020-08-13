@@ -49,11 +49,8 @@ and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
 }
 
-and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  GetModels: 'model -> 'bindingModel seq
-  GetId: 'bindingModel -> 'id
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
+and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
+  SubModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
@@ -285,12 +282,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                ViewModel(m, (fun msg -> toMsg (d.GetId m, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           )
           |> ObservableCollection
-        Some <| SubModelSeq {
-          GetModels = d.GetModels
-          GetId = d.GetId
-          GetBindings = d.GetBindings
-          ToMsg = d.ToMsg
+        { SubModelSeqData = d
           Vms = vms }
+        |> SubModelSeq
+        |> Some
     | SubModelSelectedItemData d ->
         let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
         match getInitializedBindingByName d.SubModelSeqBindingName with
@@ -427,15 +422,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
+        let d = b.SubModelSeqData
+        let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
         let create m id = 
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg currentModel msg
           let chain = getPropChainForItem bindingName (id |> string)
-          ViewModel(m, (fun msg -> toMsg1 (id, msg) |> dispatch), b.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-        let update (vm: ViewModel<_, _>) m _ = vm.UpdateModel m
-        let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        elmStyleMerge b.GetId getTargetId create update b.Vms newSubModels
-        false
+          ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+        let update (vm: ViewModel<_, _>) = vm.UpdateModel
+        d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
     | SubModelSelectedItem b ->
         b.Get newModel <> b.Get currentModel
     | Cached b ->
@@ -486,11 +480,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let selected =
           b.SubModelSeqBinding.Vms 
           |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-            selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
+            selectedId = ValueSome (b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
         log.LogTrace(
           "[{BindingNameChain}] Setting selected VM to {SubModelId}",
           propNameChain,
-          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
         )
         selected |> Option.toObj |> box
     | Cached b ->
@@ -512,7 +506,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let id =
           (value :?> ViewModel<obj, obj>)
           |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
+          |> ValueOption.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel)
         b.Set id model
         true
     | Cached b ->
