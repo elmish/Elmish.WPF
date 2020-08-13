@@ -142,11 +142,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let rec updateValidationError model name = function
+  let rec updateValidationError = function
     | TwoWayValidate { TwoWayValidateData = d } ->
-        match d.Validate model with
-        | ValueNone -> removeError name
-        | ValueSome error -> setError error name
+        fun model ->
+          match d.Validate model with
+          | ValueNone -> removeError
+          | ValueSome error -> setError error
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -156,8 +157,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModel _
     | SubModelWin _
     | SubModelSeq _
-    | SubModelSelectedItem _ -> ()
-    | Cached b -> updateValidationError model name b.Binding
+    | SubModelSelectedItem _ -> ignore2
+    | Cached b -> updateValidationError b.Binding
 
   let measure name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
@@ -361,7 +362,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
-          updateValidationError initialModel b.Name binding)
+          updateValidationError binding initialModel b.Name)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   /// Updates the binding value (for relevant bindings) and returns a value
@@ -585,7 +586,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     propsToNotify |> List.iter notifyPropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
     for Kvp (name, binding) in bindings do
-      updateValidationError currentModel name binding
+      updateValidationError binding currentModel name
 
   override __.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", propNameChain, binder.Name)
