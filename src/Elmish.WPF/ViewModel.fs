@@ -54,10 +54,9 @@ and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id wh
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
-and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  Get: 'model -> 'id voption
-  Set: 'id voption -> 'model -> unit
-  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
+and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
+  SubModelSelectedItemData: SubModelSelectedItemData<'model, 'msg, 'id>
+  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
 }
 
 and internal CachedBinding<'model, 'msg, 'value> = {
@@ -290,12 +289,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
         match getInitializedBindingByName d.SubModelSeqBindingName with
         | Some (SubModelSeq b) ->
-          SubModelSelectedItem {
-            Get = d.Get
-            Set = fun obj m -> d.Set obj m |> dispatch
-            SubModelSeqBinding = b
-          } |> withCaching |> Some
-        | _ ->
+          { SubModelSelectedItemData = d
+            SubModelSeqBinding = b }
+          |> SubModelSelectedItem
+          |> withCaching
+          |> Some
+        | _ -> // TODO: Create separate caes for (1) no binding of that name and (2) binding of that name but the wrong type
           log.LogError("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
           None
 
@@ -430,8 +429,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
         let update (vm: ViewModel<_, _>) = vm.UpdateModel
         d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
-    | SubModelSelectedItem b ->
-        b.Get newModel <> b.Get currentModel
+    | SubModelSelectedItem { SubModelSelectedItemData = d } ->
+        d.UpdateValue(currentModel, newModel)
     | Cached b ->
         let valueChanged = updateValue bindingName newModel b.Binding
         if valueChanged then
@@ -476,11 +475,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> ValueOption.toObj
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        let selectedId = b.Get model
         let selected =
-          b.SubModelSeqBinding.Vms 
-          |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-            selectedId = ValueSome (b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
+          b.SubModelSelectedItemData.TryGetMember
+            ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
+             b.SubModelSeqBinding.SubModelSeqData,
+             b.SubModelSeqBinding.Vms,
+             model)
         log.LogTrace(
           "[{BindingNameChain}] Setting selected VM to {SubModelId}",
           propNameChain,
@@ -503,11 +503,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         d.TrySetMember(value, model) |> dispatch
         true
     | SubModelSelectedItem b ->
-        let id =
+        let bindingModel =
           (value :?> ViewModel<obj, obj>)
           |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel)
-        b.Set id model
+          |> ValueOption.map (fun vm -> vm.CurrentModel)
+        b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
         true
     | Cached b ->
         let successful = trySetMember model value b.Binding

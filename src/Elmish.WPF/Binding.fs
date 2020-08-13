@@ -293,13 +293,32 @@ type internal CmdParamData<'model, 'msg> = {
   AutoRequery: bool
 }
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id> = {
-  Get: 'model -> 'id voption
-  Set: 'id voption -> 'model -> 'msg
-  SubModelSeqBindingName: string
-}
+type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
+  { Get: 'model -> 'id voption
+    Set: 'id voption -> 'model -> 'msg
+    SubModelSeqBindingName: string }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
 
-type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  member d.TryGetMember
+      ((getBindingModel: 'b -> 'bindingModel),
+       (subModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
+       (viewModels: ObservableCollection<'b>),
+       (model: 'model)) =
+    let selectedId = d.Get model
+    viewModels
+    |> Seq.tryFind (getBindingModel >> subModelSeqData.GetId >> ValueSome >> (=) selectedId)
+
+  member d.TrySetMember
+      ((subModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
+       (model: 'model),
+       (bindingModel: 'bindingModel voption)) =
+    let id = bindingModel |> ValueOption.map subModelSeqData.GetId
+    d.Set id model
+
+
+and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
