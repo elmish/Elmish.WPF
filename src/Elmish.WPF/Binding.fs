@@ -207,9 +207,15 @@ module WindowState =
     | ValueNone -> WindowState.Closed
 
 
-type internal OneWayData<'model, 'a> = {
-  Get: 'model -> 'a
-}
+type internal OneWayData<'model, 'a when 'a : equality> =
+  { Get: 'model -> 'a }
+
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
+
+  member d.TryGetMember(model: 'model) =
+    d.Get model
+
 
 type internal OneWayLazyData<'model, 'a, 'b> = {
   Get: 'model -> 'a

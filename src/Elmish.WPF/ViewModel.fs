@@ -11,8 +11,8 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
-type internal OneWayBinding<'model, 'a> = {
-  Get: 'model -> 'a
+type internal OneWayBinding<'model, 'a when 'a : equality> = {
+  OneWayData: OneWayData<'model, 'a>
 }
 
 type internal OneWayLazyBinding<'model, 'a, 'b> = {
@@ -216,9 +216,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let measure2 x = x |> measure2 name
     match bindingData with
     | OneWayData d ->
-        let d = d |> OneWayData.measureFunctions measure
-        Some <| OneWay {
-          Get = d.Get }
+        { OneWayData = d |> OneWayData.measureFunctions measure }
+        |> OneWay
+        |> Some 
     | OneWayLazyData d ->
         let d = d |> OneWayLazyData.measureFunctions measure measure measure2
         OneWayLazy {
@@ -386,7 +386,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
   let rec updateValue bindingName newModel = function
-    | OneWay { Get = get }
+    | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
@@ -536,7 +536,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | Cached b -> getCmdIfCanExecChanged newModel b.Binding
 
   let rec tryGetMember model = function
-    | OneWay { Get = get }
+    | OneWay { OneWayData = d } -> d.TryGetMember model
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get model
