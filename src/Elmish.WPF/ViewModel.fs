@@ -24,9 +24,8 @@ type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   Values: ObservableCollection<'b>
 }
 
-type internal TwoWayBinding<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> unit
+type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
+  TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
 type internal TwoWayValidateBinding<'model, 'msg, 'a> = {
@@ -224,10 +223,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> OneWaySeq
         |> Some
     | TwoWayData d ->
-        let d = d |> TwoWayData.measureFunctions measure measure
-        Some <| TwoWay {
-          Get = d.Get
-          Set = fun obj m -> d.Set obj m |> dispatch }
+        { TwoWayData = d |> TwoWayData.measureFunctions measure measure }
+        |> TwoWay
+        |> Some
     | TwoWayValidateData d ->
         let d = d |> TwoWayValidateData.measureFunctions measure measure measure
         Some <| TwoWayValidate {
@@ -374,7 +372,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// indicating whether to trigger PropertyChanged for this binding
   let rec updateValue bindingName newModel = function
     | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
-    | TwoWay { Get = get }
+    | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
     | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
@@ -514,7 +512,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let rec tryGetMember model = function
     | OneWay { OneWayData = d } -> d.TryGetMember model
-    | TwoWay { Get = get }
+    | TwoWay { TwoWayData = d } -> d.TryGetMember model
     | TwoWayValidate { Get = get } ->
         get model
     | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
@@ -549,7 +547,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             v
 
   let rec trySetMember model (value: obj) = function
-    | TwoWay { Set = set }
+    | TwoWay { TwoWayData = d } ->
+        d.TrySetMember(value, model) |> dispatch
+        true
     | TwoWayValidate { Set = set } ->
         set value model
         true

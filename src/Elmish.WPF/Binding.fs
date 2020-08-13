@@ -247,10 +247,19 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
     false
 
 
-type internal TwoWayData<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> 'msg
-}
+type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
+  { Get: 'model -> 'a
+    Set: 'a -> 'model -> 'msg }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
+
+  member d.TryGetMember(model: 'model) =
+    d.Get model
+
+  member d.TrySetMember((value: 'a), (model: 'model)) =
+    d.Set value model
+
 
 type internal TwoWayValidateData<'model, 'msg, 'a> = {
   Get: 'model -> 'a
