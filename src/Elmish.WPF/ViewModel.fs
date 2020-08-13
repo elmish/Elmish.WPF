@@ -38,10 +38,7 @@ type internal CmdBinding<'model, 'msg> = {
 }
 
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  GetModel: 'model -> 'bindingModel voption
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'bindingMsg -> 'msg
-  Sticky: bool
+  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>
   Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
 }
 
@@ -244,23 +241,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModelData d ->
         let d = d |> SubModelData.measureFunctions measure measure measure2
         let toMsg = fun msg -> d.ToMsg currentModel msg
-        match d.GetModel initialModel with
-        | ValueNone ->
-            Some <| SubModel {
-              GetModel = d.GetModel
-              GetBindings = d.GetBindings
-              ToMsg = d.ToMsg
-              Sticky = d.Sticky
-              Vm = ref ValueNone }
-        | ValueSome m ->
-            let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            Some <| SubModel {
-              GetModel = d.GetModel
-              GetBindings = d.GetBindings
-              ToMsg = d.ToMsg
-              Sticky = d.Sticky
-              Vm = ref <| ValueSome vm }
+        d.GetModel initialModel
+        |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance))
+        |> (fun vm -> { SubModelData = d; Vm = ref vm })
+        |> SubModel
+        |> Some
     | SubModelWinData d ->
         let d = d |> SubModelWinData.measureFunctions measure measure measure2
         let toMsg = fun msg -> d.ToMsg currentModel msg
@@ -377,16 +362,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | CmdParam _ ->
         false
     | SubModel b ->
-      match !b.Vm, b.GetModel newModel with
+      let d = b.SubModelData
+      match !b.Vm, d.GetModel newModel with
       | ValueNone, ValueNone -> false
       | ValueSome _, ValueNone ->
-          if b.Sticky then false
+          if d.Sticky then false
           else
             b.Vm := ValueNone
             true
       | ValueNone, ValueSome m ->
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          b.Vm := ValueSome <| ViewModel(m, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          let toMsg = fun msg -> d.ToMsg currentModel msg
+          b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
