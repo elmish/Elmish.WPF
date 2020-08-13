@@ -28,10 +28,8 @@ type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
   TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
-type internal TwoWayValidateBinding<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> unit
-  Validate: 'model -> string voption
+type internal TwoWayValidateBinding<'model, 'msg, 'a when 'a : equality> = {
+  TwoWayValidateData: TwoWayValidateData<'model, 'msg, 'a>
 }
 
 type internal CmdBinding<'model, 'msg> = {
@@ -145,8 +143,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let rec updateValidationError model name = function
-    | TwoWayValidate { Validate = validate } ->
-        match validate model with
+    | TwoWayValidate { TwoWayValidateData = d } ->
+        match d.Validate model with
         | ValueNone -> removeError name
         | ValueSome error -> setError error name
     | OneWay _
@@ -227,11 +225,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> TwoWay
         |> Some
     | TwoWayValidateData d ->
-        let d = d |> TwoWayValidateData.measureFunctions measure measure measure
-        Some <| TwoWayValidate {
-          Get = d.Get
-          Set = fun obj m -> d.Set obj m |> dispatch
-          Validate = d.Validate }
+        { TwoWayValidateData = d |> TwoWayValidateData.measureFunctions measure measure measure }
+        |> TwoWayValidate
+        |> Some
     | CmdData d ->
         let d = d |> CmdData.measureFunctions measure measure
         let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
@@ -373,8 +369,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let rec updateValue bindingName newModel = function
     | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
     | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
-    | TwoWayValidate { Get = get } ->
-        get currentModel <> get newModel
+    | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
     | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
     | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
     | Cmd _
@@ -513,8 +508,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let rec tryGetMember model = function
     | OneWay { OneWayData = d } -> d.TryGetMember model
     | TwoWay { TwoWayData = d } -> d.TryGetMember model
-    | TwoWayValidate { Get = get } ->
-        get model
+    | TwoWayValidate { TwoWayValidateData = d } -> d.TryGetMember model
     | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
     | OneWaySeq { Values = vals } -> box vals
     | Cmd { Cmd = cmd }
@@ -546,12 +540,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.Cache := Some v
             v
 
-  let rec trySetMember model (value: obj) = function
+  let rec trySetMember model (value: obj) = function // TOOD: return 'msg option
     | TwoWay { TwoWayData = d } ->
         d.TrySetMember(value, model) |> dispatch
         true
-    | TwoWayValidate { Set = set } ->
-        set value model
+    | TwoWayValidate { TwoWayValidateData = d } ->
+        d.TrySetMember(value, model) |> dispatch
         true
     | SubModelSelectedItem b ->
         let id =
