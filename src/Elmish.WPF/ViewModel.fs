@@ -43,12 +43,7 @@ type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
 }
 
 and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  GetState: 'model -> WindowState<'bindingModel>
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'bindingMsg -> 'msg
-  GetWindow: 'model -> Dispatch<'msg> -> Window
-  IsModal: bool
-  OnCloseRequested: 'model -> unit
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
@@ -252,57 +247,34 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         match d.GetState initialModel with
         | WindowState.Closed ->
-            Some <| SubModelWin {
-              GetState = d.GetState
-              GetBindings = d.GetBindings
-              ToMsg = d.ToMsg
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            { SubModelWinData = d
               WinRef = WeakReference<_>(null)
               PreventClose = ref true
-              VmWinState = ref WindowState.Closed
-            }
+              VmWinState = ref WindowState.Closed }
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-            showNewWindow
-              winRef d.GetWindow vm d.IsModal onCloseRequested
-              preventClose Visibility.Hidden
-            Some <| SubModelWin {
-              GetState = d.GetState
-              GetBindings = d.GetBindings
-              ToMsg = d.ToMsg
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            showNewWindow winRef d.GetWindow vm d.IsModal onCloseRequested preventClose Visibility.Hidden
+            { SubModelWinData = d
               WinRef = winRef
               PreventClose = preventClose
-              VmWinState = ref <| WindowState.Hidden vm
-            }
+              VmWinState = ref <| WindowState.Hidden vm }
         | WindowState.Visible m ->
             let chain = getPropChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain)
-            showNewWindow
-              winRef d.GetWindow vm d.IsModal onCloseRequested
-              preventClose Visibility.Visible
-            Some <| SubModelWin {
-              GetState = d.GetState
-              GetBindings = d.GetBindings
-              ToMsg = d.ToMsg
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain) // TODO: consider changing to "Creating visible window"
+            showNewWindow winRef d.GetWindow vm d.IsModal onCloseRequested preventClose Visibility.Visible
+            { SubModelWinData = d
               WinRef = winRef
               PreventClose = preventClose
-              VmWinState = ref <| WindowState.Visible vm
-            }
+              VmWinState = ref <| WindowState.Visible vm }
+        |> SubModelWin
+        |> Some
     | SubModelSeqData d ->
         let d = d |> SubModelSeqData.measureFunctions measure measure measure measure2
         let toMsg = fun msg -> d.ToMsg currentModel msg
@@ -378,8 +350,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           vm.UpdateModel m
           false
     | SubModelWin b ->
+        let d = b.SubModelWinData
         let winPropChain = getPropChainFor bindingName
-
+        let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         let close () =
           b.PreventClose := false
           match b.WinRef.TryGetTarget () with
@@ -410,14 +383,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let showNew vm initialVisibility =
           b.PreventClose := true
           showNewWindow
-            b.WinRef b.GetWindow vm b.IsModal b.OnCloseRequested
+            b.WinRef d.GetWindow vm d.IsModal onCloseRequested
             b.PreventClose initialVisibility
 
         let newVm model =
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          ViewModel(model, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          let toMsg = fun msg -> d.ToMsg currentModel msg
+          ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
 
-        match !b.VmWinState, b.GetState newModel with
+        match !b.VmWinState, d.GetState newModel with
         | WindowState.Closed, WindowState.Closed ->
             false
         | WindowState.Hidden _, WindowState.Closed
@@ -503,9 +476,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         box cmd
     | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
     | SubModelWin { VmWinState = vm } ->
-        match !vm with
-        | WindowState.Closed -> null
-        | WindowState.Hidden vm | WindowState.Visible vm -> box vm
+        !vm
+        |> WindowState.toVOption
+        |> ValueOption.map box
+        |> ValueOption.toObj
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
         let selectedId = b.Get model

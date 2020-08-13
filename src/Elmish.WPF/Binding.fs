@@ -185,11 +185,17 @@ type WindowState<'model> =
 
 module WindowState =
 
-  let map (f: 'a -> 'b) (state: WindowState<'a>) =
+  let map f state =
     match state with
     | WindowState.Closed -> WindowState.Closed
-    | WindowState.Hidden m -> WindowState.Hidden (f m)
-    | WindowState.Visible m -> WindowState.Visible (f m)
+    | WindowState.Hidden a -> WindowState.Hidden (f a)
+    | WindowState.Visible a -> WindowState.Visible (f a)
+
+  let toVOption state =
+    match state with
+    | WindowState.Closed -> ValueNone
+    | WindowState.Hidden a -> ValueSome a
+    | WindowState.Visible a -> ValueSome a
 
   /// Converts None to WindowState.Closed, and Some(x) to
   /// WindowState.Visible(x).
