@@ -16,9 +16,7 @@ type internal OneWayBinding<'model, 'a when 'a : equality> = {
 }
 
 type internal OneWayLazyBinding<'model, 'a, 'b> = {
-  Get: 'model -> 'a
-  Equals: 'a -> 'a -> bool
-  Map: 'a -> 'b
+  OneWayLazyData: OneWayLazyData<'model, 'a, 'b>
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
@@ -220,12 +218,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> OneWay
         |> Some 
     | OneWayLazyData d ->
-        let d = d |> OneWayLazyData.measureFunctions measure measure measure2
-        OneWayLazy {
-          Get = d.Get
-          Map = d.Map
-          Equals = d.Equals
-        } |> withCaching |> Some
+        { OneWayLazyData = d |> OneWayLazyData.measureFunctions measure measure measure2 }
+        |> OneWayLazy
+        |> withCaching
+        |> Some
     | OneWaySeqLazyData d ->
         let d = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
         let values = ObservableCollection(initialModel |> d.Get |> d.Map)
@@ -390,8 +386,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get currentModel <> get newModel
-    | OneWayLazy b ->
-        not <| b.Equals (b.Get newModel) (b.Get currentModel)
+    | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
     | OneWaySeq b ->
         let intermediate = b.Get newModel
         if not <| b.Equals intermediate (b.Get currentModel) then
@@ -540,8 +535,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWay { Get = get }
     | TwoWayValidate { Get = get } ->
         get model
-    | OneWayLazy b ->
-        model |> b.Get |> b.Map
+    | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
     | OneWaySeq { Values = vals } ->
         box vals
     | Cmd { Cmd = cmd }

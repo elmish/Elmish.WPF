@@ -217,11 +217,17 @@ type internal OneWayData<'model, 'a when 'a : equality> =
     d.Get model
 
 
-type internal OneWayLazyData<'model, 'a, 'b> = {
-  Get: 'model -> 'a
-  Map: 'a -> 'b
-  Equals: 'a -> 'a -> bool
-}
+type internal OneWayLazyData<'model, 'a, 'b> =
+  { Get: 'model -> 'a
+    Map: 'a -> 'b
+    Equals: 'a -> 'a -> bool }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    not <| d.Equals (d.Get newModel) (d.Get currentModel)
+
+  member d.TryGetMember(model: 'model) =
+    model |> d.Get |> d.Map
+
 
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
   Get: 'model -> 'a
