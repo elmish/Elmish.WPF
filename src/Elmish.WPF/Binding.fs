@@ -1,8 +1,181 @@
 ﻿namespace Elmish.WPF
 
+open System.Collections.Generic
+open System.Collections.ObjectModel
 open System.Windows
 
 open Elmish
+
+
+
+[<AutoOpen>]
+module internal BindingLogic =
+
+
+  let elmStyleMerge
+        getSourceId
+        getTargetId
+        create
+        update
+        (target: ObservableCollection<_>)
+        (source: _ array) =
+    (*
+     * Based on Elm's HTML.keyed
+     * https://guide.elm-lang.org/optimization/keyed.html
+     * https://github.com/elm/virtual-dom/blob/5a5bcf48720bc7d53461b3cd42a9f19f119c5503/src/Elm/Kernel/VirtualDom.js#L980-L1226
+     *)
+    let removals = Dictionary<_, _> ()
+    let additions = Dictionary<_, _> ()
+
+    let recordRemoval curTargetIdx curTarget curTargetId =
+      removals.Add(curTargetId, (curTargetIdx, curTarget))
+    let recordAddition curSourceIdx curSource curSourceId =
+      additions.Add(curSourceId, (curSourceIdx, curSource))
+
+    let mutable curSourceIdx = 0
+    let mutable curTargetIdx = 0
+
+    let mutable shouldContinue = true
+
+    let sourceCount = source.Length
+    let targetCount = target.Count
+
+    while (shouldContinue && curSourceIdx < sourceCount && curTargetIdx < targetCount) do
+      let curSource = source.[curSourceIdx]
+      let curTarget = target.[curTargetIdx]
+
+      let curSourceId = getSourceId curSource
+      let curTargetId = getTargetId curTarget
+
+      if curSourceId = curTargetId then
+        update curTarget curSource curTargetIdx
+
+        curSourceIdx <- curSourceIdx + 1
+        curTargetIdx <- curTargetIdx + 1
+      else
+        let mNextSource =
+          source
+          |> Array.tryItem (curSourceIdx + 1)
+          |> Option.map (fun s ->
+            let id = getSourceId s
+            s, id, id = curTargetId) // true => need to add
+
+        let mNextTarget =
+          if curTargetIdx + 1 < targetCount then target.[curTargetIdx + 1] |> Some else None
+          |> Option.map (fun t ->
+            let id = getTargetId t
+            t, id, id = curSourceId) // true => need to remove
+
+        match mNextSource, mNextTarget with
+        | Some (nextSource, _, true), Some (nextTarget, _, true) -> // swap adjacent
+            target.[curTargetIdx] <- nextTarget
+            target.[curTargetIdx + 1] <- curTarget
+
+            update curTarget nextSource (curTargetIdx + 1)
+            update nextTarget curSource curTargetIdx
+            
+            curSourceIdx <- curSourceIdx + 2
+            curTargetIdx <- curTargetIdx + 2
+        |               None, Some (nextTarget, _, true)
+        | Some (_, _, false), Some (nextTarget, _, true) -> // remove
+            recordRemoval curTargetIdx curTarget curTargetId
+            
+            update nextTarget curSource curTargetIdx
+
+            curSourceIdx <- curSourceIdx + 1
+            curTargetIdx <- curTargetIdx + 2
+        | Some (nextSource, _, true), None
+        | Some (nextSource, _, true), Some (_, _, false) -> // add
+            recordAddition curSourceIdx curSource curSourceId
+            
+            update curTarget nextSource (curTargetIdx + 1)
+            
+            curSourceIdx <- curSourceIdx + 2
+            curTargetIdx <- curTargetIdx + 1
+        | Some (_, _, false),               None
+        |               None, Some (_, _, false)
+        |               None,               None -> // source and target have different lengths and we have reached the end of one
+            shouldContinue <- false 
+        | Some (nextSource, nextSourceId, false), Some (nextTarget, nextTargetId, false) ->
+            if nextSourceId = nextTargetId then // replace
+              recordRemoval curTargetIdx curTarget curTargetId
+              recordAddition curSourceIdx curSource curSourceId
+              
+              update nextTarget nextSource (curTargetIdx + 1)
+
+              curSourceIdx <- curSourceIdx + 2
+              curTargetIdx <- curTargetIdx + 2
+            else // collections very different
+              shouldContinue <- false
+
+    // replace many
+    while (curSourceIdx < sourceCount && curTargetIdx < targetCount) do
+      let curSource = source.[curSourceIdx]
+      let curTarget = target.[curTargetIdx]
+
+      let curSourceId = getSourceId curSource
+      let curTargetId = getTargetId curTarget
+
+      recordRemoval curTargetIdx curTarget curTargetId
+      recordAddition curSourceIdx curSource curSourceId
+      
+      curSourceIdx <- curSourceIdx + 1
+      curTargetIdx <- curTargetIdx + 1
+
+    // remove many
+    for i in targetCount - 1..-1..curTargetIdx do
+      let t = target.[i]
+      let id = getTargetId t
+      recordRemoval i t id
+
+    // add many
+    for i in curSourceIdx..sourceCount - 1 do
+      let s = source.[i]
+      let id = getSourceId s
+      recordAddition i s id
+
+    let moves =
+      additions
+      |> Seq.toList
+      |> List.collect (fun (Kvp (id, (sIdx, s))) ->
+        match removals.TryGetValue id with
+        | (false, _) -> []
+        | (true, (tIdx, t)) ->
+            removals.Remove id |> ignore
+            additions.Remove id |> ignore
+            (tIdx, sIdx, t, s) |> List.singleton)
+
+    let actuallyRemove () =
+      Seq.empty
+      |> Seq.append (removals |> Seq.map (Kvp.value >> fst))
+      |> Seq.append (moves |> Seq.map (fun (tIdx, _, _, _) -> tIdx))
+      |> Seq.sortDescending
+      |> Seq.iter target.RemoveAt
+
+    let actuallyAdd () =
+      Seq.empty
+      |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
+      |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
+      |> Seq.sortBy fst
+      |> Seq.iter target.Insert
+
+    match moves, removals.Count, additions.Count with
+    | [ (tIdx, sIdx, _, _) ], 0, 0 -> // single move
+        target.Move(tIdx, sIdx)
+    | [ (t1Idx, s1Idx, _, _); (t2Idx, s2Idx, _, _) ], 0, 0 when t1Idx = s2Idx && t2Idx = s1Idx-> // single swap
+        let temp = target.[t1Idx]
+        target.[t1Idx] <- target.[t2Idx]
+        target.[t2Idx] <- temp
+    | _, rc, _ when rc = targetCount && rc > 0 -> // remove everything (implies moves = [])
+        target.Clear ()
+        actuallyAdd ()
+    | _ ->
+        actuallyRemove ()
+        actuallyAdd ()
+
+    // update moved elements
+    moves |> Seq.iter (fun (_, sIdx, t, s) -> update t s sIdx)
+
 
 [<RequireQualifiedAccess>]
 type WindowState<'model> =
@@ -12,11 +185,17 @@ type WindowState<'model> =
 
 module WindowState =
 
-  let map (f: 'a -> 'b) (state: WindowState<'a>) =
+  let map f state =
     match state with
     | WindowState.Closed -> WindowState.Closed
-    | WindowState.Hidden m -> WindowState.Hidden (f m)
-    | WindowState.Visible m -> WindowState.Visible (f m)
+    | WindowState.Hidden a -> WindowState.Hidden (f a)
+    | WindowState.Visible a -> WindowState.Visible (f a)
+
+  let toVOption state =
+    match state with
+    | WindowState.Closed -> ValueNone
+    | WindowState.Hidden a -> ValueSome a
+    | WindowState.Visible a -> ValueSome a
 
   /// Converts None to WindowState.Closed, and Some(x) to
   /// WindowState.Visible(x).
@@ -33,34 +212,75 @@ module WindowState =
     | ValueNone -> WindowState.Closed
 
 
-type internal OneWayData<'model, 'a> = {
-  Get: 'model -> 'a
-}
+type internal OneWayData<'model, 'a when 'a : equality> =
+  { Get: 'model -> 'a }
 
-type internal OneWayLazyData<'model, 'a, 'b> = {
-  Get: 'model -> 'a
-  Map: 'a -> 'b
-  Equals: 'a -> 'a -> bool
-}
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
 
-type internal OneWaySeqLazyData<'model, 'a, 'b, 'id> = {
-  Get: 'model -> 'a
-  Map: 'a -> 'b seq
-  Equals: 'a -> 'a -> bool
-  GetId: 'b -> 'id
-  ItemEquals: 'b -> 'b -> bool
-}
+  member d.TryGetMember(model: 'model) =
+    d.Get model
 
-type internal TwoWayData<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> 'msg
-}
 
-type internal TwoWayValidateData<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> 'msg
-  Validate: 'model -> string voption
-}
+type internal OneWayLazyData<'model, 'a, 'b> =
+  { Get: 'model -> 'a
+    Map: 'a -> 'b
+    Equals: 'a -> 'a -> bool }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    not <| d.Equals (d.Get newModel) (d.Get currentModel)
+
+  member d.TryGetMember(model: 'model) =
+    model |> d.Get |> d.Map
+
+
+type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
+  { Get: 'model -> 'a
+    Map: 'a -> 'b seq
+    Equals: 'a -> 'a -> bool
+    GetId: 'b -> 'id
+    ItemEquals: 'b -> 'b -> bool }
+    
+  member d.UpdateValue((values: ObservableCollection<'b>), (currentModel: 'model), (newModel: 'model)) =
+    let intermediate = d.Get newModel
+    if not <| d.Equals intermediate (d.Get currentModel) then
+      let create v _ = v
+      let update oldVal newVal oldIdx =
+        if not (d.ItemEquals newVal oldVal) then
+          values.[oldIdx] <- newVal
+      let newVals = intermediate |> d.Map |> Seq.toArray
+      elmStyleMerge d.GetId d.GetId create update values newVals
+    false
+
+
+type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
+  { Get: 'model -> 'a
+    Set: 'a -> 'model -> 'msg }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
+
+  member d.TryGetMember(model: 'model) =
+    d.Get model
+
+  member d.TrySetMember((value: 'a), (model: 'model)) =
+    d.Set value model
+
+
+type internal TwoWayValidateData<'model, 'msg, 'a when 'a : equality> =
+  { Get: 'model -> 'a
+    Set: 'a -> 'model -> 'msg
+    Validate: 'model -> string voption }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
+
+  member d.TryGetMember(model: 'model) =
+    d.Get model
+
+  member d.TrySetMember((value: 'a), (model: 'model)) =
+    d.Set value model
+
 
 type internal CmdData<'model, 'msg> = {
   Exec: 'model -> 'msg voption
@@ -73,13 +293,32 @@ type internal CmdParamData<'model, 'msg> = {
   AutoRequery: bool
 }
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id> = {
-  Get: 'model -> 'id voption
-  Set: 'id voption -> 'model -> 'msg
-  SubModelSeqBindingName: string
-}
+type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
+  { Get: 'model -> 'id voption
+    Set: 'id voption -> 'model -> 'msg
+    SubModelSeqBindingName: string }
+    
+  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+    d.Get currentModel <> d.Get newModel
 
-type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  member d.TryGetMember
+      ((getBindingModel: 'b -> 'bindingModel),
+       (subModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
+       (viewModels: ObservableCollection<'b>),
+       (model: 'model)) =
+    let selectedId = d.Get model
+    viewModels
+    |> Seq.tryFind (getBindingModel >> subModelSeqData.GetId >> ValueSome >> (=) selectedId)
+
+  member d.TrySetMember
+      ((subModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
+       (model: 'model),
+       (bindingModel: 'bindingModel voption)) =
+    let id = bindingModel |> ValueOption.map subModelSeqData.GetId
+    d.Set id model
+
+
+and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
@@ -95,12 +334,22 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   OnCloseRequested: 'model -> 'msg voption
 }
 
-and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  GetModels: 'model -> 'bindingModel seq
-  GetId: 'bindingModel -> 'id
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
-}
+and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+  { GetModels: 'model -> 'bindingModel seq
+    GetId: 'bindingModel -> 'id
+    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    ToMsg: 'model -> 'id * 'bindingMsg -> 'msg }
+    
+  member d.UpdateValue
+      ((getTargetId: ('bindingModel -> 'id) -> 'b -> 'id),
+       (create: 'bindingModel -> 'id -> 'b),
+       (update: 'b -> 'bindingModel -> Unit),
+       (values: ObservableCollection<'b>),
+       (newModel: 'model)) =
+    let update b bm _ = update b bm
+    let newSubModels = newModel |> d.GetModels |> Seq.toArray
+    elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
+    false
 
 
 /// Represents all necessary data used to create the different binding types.
@@ -280,16 +529,374 @@ module Bindings =
 
 
 [<AutoOpen>]
+module internal BindingData2 =
+
+  module Option =
+
+    let box ma = ma |> Option.map box |> Option.toObj
+    let unbox obj = obj |> Option.ofObj |> Option.map unbox
+
+  module ValueOption =
+
+    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
+    let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
+
+
+  module OneWayData =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (d: OneWayData<'model, 'a>) = {
+      Get = d.Get >> outMapA
+    }
+
+    let boxVOpt d = mapMinorTypes ValueOption.box d
+    let boxOpt d = mapMinorTypes Option.box d
+    let box d = mapMinorTypes box d
+
+    let mapFunctions
+        mGet
+        (d: OneWayData<'model, 'a>) =
+      { d with Get = mGet d.Get }
+
+    let measureFunctions
+        mGet =
+      mapFunctions
+        (mGet "get")
+
+
+  module OneWayLazyData =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (outMapB: 'b -> 'b0)
+        (inMapA: 'a0 -> 'a)
+        (d: OneWayLazyData<'model, 'a, 'b>) = {
+      Get = d.Get >> outMapA
+      Map = inMapA >> d.Map >> outMapB
+      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
+    }
+
+    let boxVOpt d = mapMinorTypes box ValueOption.box unbox d
+    let boxOpt d = mapMinorTypes box Option.box unbox d
+    let box d = mapMinorTypes box box unbox d
+
+    let mapFunctions
+        mGet
+        mMap
+        mEquals
+        (d: OneWayLazyData<'model, 'a, 'b>) =
+      { d with Get = mGet d.Get
+               Map = mMap d.Map
+               Equals = mEquals d.Equals }
+
+    let measureFunctions
+        mGet
+        mMap
+        mEquals =
+      mapFunctions
+        (mGet "get")
+        (mMap "map")
+        (mEquals "equals")
+
+
+  module OneWaySeqLazyData =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (outMapB: 'b -> 'b0)
+        (outMapId: 'id -> 'id0)
+        (inMapA: 'a0 -> 'a)
+        (inMapB: 'b0 -> 'b)
+        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) = {
+      Get = d.Get >> outMapA
+      Map = inMapA >> d.Map >> Seq.map outMapB
+      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
+      GetId = inMapB >> d.GetId >> outMapId
+      ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
+    }
+
+    let box d = mapMinorTypes box box box unbox unbox d
+
+    let mapFunctions
+        mGet
+        mMap
+        mEquals
+        mGetId
+        mItemEquals
+        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) =
+      { d with Get = mGet d.Get
+               Map = mMap d.Map
+               Equals = mEquals d.Equals
+               GetId = mGetId d.GetId
+               ItemEquals = mItemEquals d.ItemEquals }
+
+    let measureFunctions
+        mGet
+        mMap
+        mEquals
+        mGetId
+        mItemEquals =
+      mapFunctions
+        (mGet "get")
+        (mMap "map")
+        (mEquals "equals")
+        (mGetId "getId")
+        (mItemEquals "itemEquals")
+
+
+  module TwoWayData =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (inMapA: 'a0 -> 'a)
+        (d: TwoWayData<'model, 'msg, 'a>) = {
+      Get = d.Get >> outMapA
+      Set = fun a m -> d.Set (inMapA a) m
+    }
+
+    let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapMinorTypes Option.box Option.unbox d
+    let box d = mapMinorTypes box unbox d
+
+    let mapFunctions
+        mGet
+        mSet
+        (d: TwoWayData<'model, 'msg, 'a>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set }
+
+    let measureFunctions
+        mGet
+        mSet =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
+
+
+  module TwoWayValidateData =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (inMapA: 'a0 -> 'a)
+        (d: TwoWayValidateData<'model, 'msg, 'a>) = {
+      Get = d.Get >> outMapA
+      Set = fun a m -> d.Set (inMapA a) m
+      Validate = d.Validate
+    }
+
+    let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
+    let boxOpt d = mapMinorTypes Option.box Option.unbox d
+    let box d = mapMinorTypes box unbox d
+
+    let mapFunctions
+        mGet
+        mSet
+        mValidate
+        (d: TwoWayValidateData<'model, 'msg, 'a>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set
+               Validate = mValidate d.Validate }
+
+    let measureFunctions
+        mGet
+        mSet
+        mValidate =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
+        (mValidate "validate")
+
+
+  module CmdData =
+
+    let mapFunctions
+        mExec
+        mCanExec
+        (d: CmdData<'model, 'msg>) =
+      { d with Exec = mExec d.Exec
+               CanExec = mCanExec d.CanExec }
+
+    let measureFunctions
+        mExec
+        mCanExec =
+      mapFunctions
+        (mExec "exec")
+        (mCanExec "canExec")
+
+
+  module CmdParamData =
+
+    let mapFunctions
+        mExec
+        mCanExec
+        (d: CmdParamData<'model, 'msg>) =
+      { d with Exec = mExec d.Exec
+               CanExec = mCanExec d.CanExec }
+
+    let measureFunctions
+        mExec
+        mCanExec =
+      mapFunctions
+        (mExec "exec")
+        (mCanExec "canExec")
+
+
+  module SubModelSelectedItemData =
+  
+    let mapMinorTypes
+        (outMapId: 'id -> 'id0)
+        (inMapId: 'id0 -> 'id)
+        (d: SubModelSelectedItemData<'model, 'msg, 'id>) = {
+      Get = d.Get >> ValueOption.map outMapId
+      Set = ValueOption.map inMapId >> d.Set
+      SubModelSeqBindingName = d.SubModelSeqBindingName
+    }
+
+    let box d = mapMinorTypes box unbox d
+
+    let mapFunctions
+        mGet
+        mSet
+        (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set }
+
+    let measureFunctions
+        mGet
+        mSet =
+      mapFunctions
+        (mGet "get")
+        (mSet "set")
+
+
+  module SubModelData =
+  
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+      Sticky = d.Sticky
+    }
+
+    let box d = mapMinorTypes box box unbox unbox d
+
+    let mapFunctions
+        mGetModel
+        mGetBindings
+        mToMsg
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with GetModel = mGetModel d.GetModel
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModel
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetModel "getSubModel") // sic: "getModel" would be following the pattern
+        (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mToMsg "toMsg")
+
+
+  module SubModelWinData =
+  
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetState = d.GetState >> WindowState.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+      GetWindow = d.GetWindow
+      IsModal = d.IsModal
+      OnCloseRequested = d.OnCloseRequested
+    }
+
+    let box d = mapMinorTypes box box unbox unbox d
+
+    let mapFunctions
+        mGetState
+        mGetBindings
+        mToMsg
+        mGetWindow
+        mOnCloseRequested
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with GetState = mGetState d.GetState
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg
+               GetWindow = mGetWindow d.GetWindow
+               OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
+
+    let measureFunctions
+        mGetState
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetState "getState")
+        (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mToMsg "toMsg")
+        id // sic: could measure GetWindow
+        id // sic: could measure OnCloseRequested
+
+
+  module SubModelSeqData =
+  
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapId: 'id -> 'id0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (inMapId: 'id0 -> 'id)
+        (d: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) = {
+      GetModels = d.GetModels >> Seq.map outMapBindingModel
+      GetId = inMapBindingModel >> d.GetId >> outMapId
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
+    }
+
+    let box d = mapMinorTypes box box box unbox unbox unbox d
+
+    let mapFunctions
+        mGetModels
+        mGetId
+        mGetBindings
+        mToMsg
+        (d: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) =
+      { d with GetModels = mGetModels d.GetModels
+               GetId = mGetId d.GetId
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModels
+        mGetId
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetModels "getSubModels") // sic: "getModels" would follow the pattern
+        (mGetId "getId")
+        (mGetBindings "bindings") // sic: "getBindings" would follow the pattern
+        (mToMsg "toMsg")
+
+
+
+
+[<AutoOpen>]
 module internal Helpers =
 
   let createBinding data name =
     { Name = name
       Data = data }
-
-  let boxBinding (binding: Binding<'a, 'b>) : Binding<obj, obj> =
-    binding
-    |> Binding.mapMsg box
-    |> Binding.mapModel unbox
 
 
 
@@ -302,9 +909,10 @@ type Binding private () =
   static member oneWay
       (get: 'model -> 'a)
       : string -> Binding<'model, 'msg> =
-    OneWayData {
-      Get = get >> box
-    } |> createBinding
+    { Get = get }
+    |> OneWayData.box
+    |> OneWayData
+    |> createBinding
 
 
   /// <summary>
@@ -317,9 +925,10 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a option)
       : string -> Binding<'model, 'msg> =
-    OneWayData {
-      Get = get >> Option.map box >> Option.toObj
-    } |> createBinding
+    { Get = get }
+    |> OneWayData.boxOpt
+    |> OneWayData
+    |> createBinding
 
 
   /// <summary>
@@ -332,9 +941,10 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a voption)
       : string -> Binding<'model, 'msg> =
-    OneWayData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-    } |> createBinding
+    { Get = get }
+    |> OneWayData.boxVOpt
+    |> OneWayData
+    |> createBinding
 
 
   /// <summary>
@@ -356,11 +966,12 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b)
       : string -> Binding<'model, 'msg> =
-    OneWayLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> box
-      Equals = fun a b -> equals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
+    { Get = get
+      Map = map
+      Equals = equals }
+    |> OneWayLazyData.box
+    |> OneWayLazyData
+    |> createBinding
 
 
   /// <summary>
@@ -386,11 +997,12 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b option)
       : string -> Binding<'model, 'msg> =
-    OneWayLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> Option.map box >> Option.toObj
-      Equals = fun a b -> equals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
+    { Get = get
+      Map = map
+      Equals = equals }
+    |> OneWayLazyData.boxOpt
+    |> OneWayLazyData
+    |> createBinding
 
 
   /// <summary>
@@ -416,11 +1028,12 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b voption)
       : string -> Binding<'model, 'msg> =
-    OneWayLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> ValueOption.map box >> ValueOption.toObj
-      Equals = fun a b -> equals (unbox<'a> a) (unbox<'a> b)
-    } |> createBinding
+    { Get = get
+      Map = map
+      Equals = equals }
+    |> OneWayLazyData.boxVOpt
+    |> OneWayLazyData
+    |> createBinding
 
 
   /// <summary>
@@ -452,13 +1065,14 @@ type Binding private () =
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
       : string -> Binding<'model, 'msg> =
-    OneWaySeqLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> Seq.map box
-      Equals = fun x y -> equals (unbox<'a> x) (unbox<'a> y)
-      GetId = unbox<'b> >> getId >> box
-      ItemEquals = fun x y -> itemEquals (unbox<'b> x) (unbox<'b> y)
-    } |> createBinding
+    { Get = get
+      Map = fun a -> upcast map a
+      Equals = equals
+      GetId = getId
+      ItemEquals = itemEquals }
+    |> OneWaySeqLazyData.box
+    |> OneWaySeqLazyData
+    |> createBinding
 
     
   /// <summary>
@@ -495,10 +1109,11 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    TwoWayData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-    } |> createBinding
+    { Get = get
+      Set = set }
+    |> TwoWayData.box
+    |> TwoWayData
+    |> createBinding
 
 
   /// <summary>
@@ -512,10 +1127,11 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    TwoWayData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-    } |> createBinding
+    { Get = get
+      Set = set }
+    |> TwoWayData.boxOpt
+    |> TwoWayData
+    |> createBinding
 
 
   /// <summary>
@@ -529,10 +1145,11 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    TwoWayData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
-    } |> createBinding
+    { Get = get
+      Set = set }
+    |> TwoWayData.boxVOpt
+    |> TwoWayData
+    |> createBinding
 
 
   /// <summary>
@@ -549,11 +1166,12 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.box
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -570,11 +1188,12 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      Validate = validate >> ValueOption.ofOption
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofOption }
+    |> TwoWayValidateData.box
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -591,11 +1210,12 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      Validate = validate >> ValueOption.ofError
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofError }
+    |> TwoWayValidateData.box
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -614,11 +1234,12 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.boxVOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -637,11 +1258,12 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
-      Validate = validate >> ValueOption.ofOption
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofOption }
+    |> TwoWayValidateData.boxVOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -660,11 +1282,12 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
-      Validate = validate >> ValueOption.ofError
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofError }
+    |> TwoWayValidateData.boxVOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -683,11 +1306,12 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.boxOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -706,11 +1330,12 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-      Validate = validate >> ValueOption.ofOption
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofOption }
+    |> TwoWayValidateData.boxOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -729,11 +1354,12 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-      Validate = validate >> ValueOption.ofError
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate >> ValueOption.ofError }
+    |> TwoWayValidateData.boxOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -744,10 +1370,10 @@ type Binding private () =
   static member cmd
       (exec: 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    CmdData {
-      Exec = exec >> ValueSome
-      CanExec = fun _ -> true
-    } |> createBinding
+    { Exec = exec >> ValueSome
+      CanExec = fun _ -> true }
+    |> CmdData
+    |> createBinding
 
 
   /// <summary>
@@ -762,10 +1388,10 @@ type Binding private () =
       (exec: 'model -> 'msg,
        canExec: 'model -> bool)
       : string -> Binding<'model, 'msg> =
-    CmdData {
-      Exec = exec >> ValueSome
-      CanExec = canExec
-    } |> createBinding
+    { Exec = exec >> ValueSome
+      CanExec = canExec }
+    |> CmdData
+    |> createBinding
 
 
   /// <summary>
@@ -778,10 +1404,10 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg voption)
       : string -> Binding<'model, 'msg> =
-    CmdData {
-      Exec = exec
-      CanExec = exec >> ValueOption.isSome
-    } |> createBinding
+    { Exec = exec
+      CanExec = exec >> ValueOption.isSome }
+    |> CmdData
+    |> createBinding
 
 
   /// <summary>
@@ -794,10 +1420,10 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg option)
       : string -> Binding<'model, 'msg> =
-    CmdData {
-      Exec = exec >> ValueOption.ofOption
-      CanExec = exec >> Option.isSome
-    } |> createBinding
+    { Exec = exec >> ValueOption.ofOption
+      CanExec = exec >> Option.isSome }
+    |> CmdData
+    |> createBinding
 
 
   /// <summary>
@@ -813,10 +1439,10 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>)
       : string -> Binding<'model, 'msg> =
-    CmdData {
-      Exec = exec >> ValueOption.ofOk
-      CanExec = exec >> Result.isOk
-    } |> createBinding
+    { Exec = exec >> ValueOption.ofOk
+      CanExec = exec >> Result.isOk }
+    |> CmdData
+    |> createBinding
 
 
   /// <summary>
@@ -828,11 +1454,11 @@ type Binding private () =
   static member cmdParam
       (exec: obj -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    CmdParamData {
-      Exec = fun p model -> exec p model |> ValueSome
+    { Exec = fun p model -> exec p model |> ValueSome
       CanExec = fun _ _ -> true
-      AutoRequery = false
-    } |> createBinding
+      AutoRequery = false }
+    |> CmdParamData
+    |> createBinding
 
 
   /// <summary>
@@ -855,11 +1481,11 @@ type Binding private () =
        canExec: obj -> 'model -> bool,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    CmdParamData {
-      Exec = fun p m -> exec p m |> ValueSome
+    { Exec = fun p m -> exec p m |> ValueSome
       CanExec = canExec
-      AutoRequery = defaultArg uiBoundCmdParam false
-    } |> createBinding
+      AutoRequery = defaultArg uiBoundCmdParam false }
+    |> CmdParamData
+    |> createBinding
 
 
   /// <summary>
@@ -880,11 +1506,11 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg voption,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    CmdParamData {
-      Exec = exec
+    { Exec = exec
       CanExec = fun p m -> exec p m |> ValueOption.isSome
-      AutoRequery = defaultArg uiBoundCmdParam false
-    } |> createBinding
+      AutoRequery = defaultArg uiBoundCmdParam false }
+    |> CmdParamData
+    |> createBinding
 
 
   /// <summary>
@@ -905,11 +1531,11 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg option,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    CmdParamData {
-      Exec = fun p m -> exec p m |> ValueOption.ofOption
+    { Exec = fun p m -> exec p m |> ValueOption.ofOption
       CanExec = fun p m -> exec p m |> Option.isSome
-      AutoRequery = defaultArg uiBoundCmdParam false
-    } |> createBinding
+      AutoRequery = defaultArg uiBoundCmdParam false }
+    |> CmdParamData
+    |> createBinding
 
 
   /// <summary>
@@ -933,11 +1559,11 @@ type Binding private () =
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    CmdParamData {
-      Exec = fun p m -> exec p m |> ValueOption.ofOk
+    { Exec = fun p m -> exec p m |> ValueOption.ofOk
       CanExec = fun p m -> exec p m |> Result.isOk
-      AutoRequery = defaultArg uiBoundCmdParam false
-    } |> createBinding
+      AutoRequery = defaultArg uiBoundCmdParam false }
+    |> CmdParamData
+    |> createBinding
 
 
   /// <summary>
@@ -960,12 +1586,13 @@ type Binding private () =
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m -> toBindingModel (m, getSubModel m) |> box |> ValueSome
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
-      Sticky = false
-    } |> createBinding
+    { GetModel = fun m -> toBindingModel (m, getSubModel m) |> ValueSome
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -984,12 +1611,13 @@ type Binding private () =
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m -> (m, getSubModel m) |> box |> ValueSome
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
-      Sticky = false
-    } |> createBinding
+    { GetModel = fun m -> (m, getSubModel m) |> ValueSome
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1003,12 +1631,13 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m -> (m, getSubModel m) |> box |> ValueSome
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'msg>
-      Sticky = false
-    } |> createBinding
+    { GetModel = fun m -> (m, getSubModel m) |> ValueSome
+      GetBindings = bindings
+      ToMsg = fun _ -> id
+      Sticky = false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1045,13 +1674,15 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
-        getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
-      Sticky = defaultArg sticky false
-    } |> createBinding
+    { GetModel = fun m ->
+        getSubModel m
+        |> ValueOption.map (fun sub -> toBindingModel (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1088,15 +1719,16 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
+    { GetModel = fun m ->
         getSubModel m
         |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> toBindingModel (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
-      Sticky = defaultArg sticky false
-    } |> createBinding
+        |> ValueOption.map (fun sub -> toBindingModel (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1129,13 +1761,14 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
-        getSubModel m |> ValueOption.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
-      Sticky = defaultArg sticky false
-    } |> createBinding
+    { GetModel = fun m ->
+        getSubModel m |> ValueOption.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1168,15 +1801,16 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
+    { GetModel = fun m ->
         getSubModel m
         |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
-      Sticky = defaultArg sticky false
-    } |> createBinding
+        |> ValueOption.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1204,13 +1838,15 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
-        getSubModel m |> ValueOption.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'msg>
-      Sticky = defaultArg sticky false
-    } |> createBinding
+    { GetModel = fun m ->
+        getSubModel m
+        |> ValueOption.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> id
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
 
   /// <summary>
@@ -1238,15 +1874,16 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelData {
-      GetModel = fun m ->
+    { GetModel = fun m ->
         getSubModel m
         |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'msg>
-      Sticky = defaultArg sticky false
-    } |> createBinding
+        |> ValueOption.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> id
+      Sticky = defaultArg sticky false }
+    |> SubModelData.box
+    |> SubModelData
+    |> createBinding
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
@@ -1299,15 +1936,17 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelWinData {
-      GetState = fun m ->
-        getState m |> WindowState.map (fun sub -> toBindingModel (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'bindingMsg> >> toMsg
+    { GetState = fun m ->
+        getState m |>
+        WindowState.map (fun sub -> toBindingModel (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
-    } |> createBinding
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
+    |> SubModelWinData.box
+    |> SubModelWinData
+    |> createBinding
 
 
   /// <summary>
@@ -1415,15 +2054,17 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelWinData {
-      GetState = fun m ->
-        getState m |> WindowState.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'subMsg> >> toMsg
+    { GetState = fun m ->
+        getState m
+        |> WindowState.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
-    } |> createBinding
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
+    |> SubModelWinData.box
+    |> SubModelWinData
+    |> createBinding
 
 
   /// <summary>
@@ -1517,15 +2158,17 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    SubModelWinData {
-      GetState = fun m ->
-        getState m |> WindowState.map (fun sub -> (m, sub) |> box)
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ -> unbox<'msg>
+    { GetState = fun m ->
+        getState m
+        |> WindowState.map (fun sub -> (m, sub))
+      GetBindings = bindings
+      ToMsg = fun _ -> id
       GetWindow = fun m d -> upcast getWindow m d
       IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone
-    } |> createBinding
+      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
+    |> SubModelWinData.box
+    |> SubModelWinData
+    |> createBinding
 
 
   /// <summary>
@@ -1600,13 +2243,15 @@ type Binding private () =
        toMsg: 'id * 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelSeqData {
-      GetModels = fun m ->
-        m |> getSubModels |> Seq.map (fun sub -> toBindingModel (m, sub) |> box)
-      GetId = unbox<'bindingModel> >> getId >> box
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ (id, msg) -> toMsg (unbox<'id> id, unbox<'bindingMsg> msg)
-    } |> createBinding
+    { GetModels = fun m ->
+        getSubModels m
+        |> Seq.map (fun sub -> toBindingModel (m, sub))
+      GetId = getId
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg }
+    |> SubModelSeqData.box
+    |> SubModelSeqData
+    |> createBinding
 
 
   /// <summary>
@@ -1630,12 +2275,15 @@ type Binding private () =
        toMsg: 'id * 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelSeqData {
-      GetModels = fun m -> m |> getSubModels |> Seq.map (fun sub -> (m, sub) |> box)
-      GetId = unbox<'model * 'subModel> >> snd >> getId >> box
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
-    } |> createBinding
+    { GetModels = fun m ->
+        getSubModels m
+        |> Seq.map (fun sub -> (m, sub))
+      GetId = snd >> getId
+      GetBindings = bindings
+      ToMsg = fun _ -> toMsg }
+    |> SubModelSeqData.box
+    |> SubModelSeqData
+    |> createBinding
 
 
   /// <summary>
@@ -1653,12 +2301,15 @@ type Binding private () =
        getId: 'subModel -> 'id,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    SubModelSeqData {
-      GetModels = fun m -> m |> getSubModels |> Seq.map (fun sub -> (m, sub) |> box)
-      GetId = unbox<'model * 'subModel> >> snd >> getId >> box
-      GetBindings = bindings >> List.map boxBinding
-      ToMsg = fun _ (_, msg) -> unbox<'msg> msg
-    } |> createBinding
+    { GetModels = fun m ->
+        getSubModels m
+        |> Seq.map (fun sub -> (m, sub))
+      GetId = snd >> getId
+      GetBindings = bindings
+      ToMsg = fun _ (_, msg) -> msg }
+    |> SubModelSeqData.box
+    |> SubModelSeqData
+    |> createBinding
 
 
   /// <summary>
@@ -1692,11 +2343,12 @@ type Binding private () =
        get: 'model -> 'id voption,
        set: 'id voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    SubModelSelectedItemData {
-      Get = get >> ValueOption.map box
-      Set = ValueOption.map unbox<'id> >> set
-      SubModelSeqBindingName = subModelSeqBindingName
-    } |> createBinding
+    { Get = get
+      Set = set
+      SubModelSeqBindingName = subModelSeqBindingName }
+    |> SubModelSelectedItemData.box
+    |> SubModelSelectedItemData
+    |> createBinding
 
 
   /// <summary>
@@ -1730,11 +2382,12 @@ type Binding private () =
        get: 'model -> 'id option,
        set: 'id option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    SubModelSelectedItemData {
-      Get = get >> ValueOption.ofOption >> ValueOption.map box
-      Set = ValueOption.map unbox<'id> >> ValueOption.toOption >> set
-      SubModelSeqBindingName = subModelSeqBindingName
-    } |> createBinding
+    { Get = get >> ValueOption.ofOption
+      Set = ValueOption.toOption >> set
+      SubModelSeqBindingName = subModelSeqBindingName }
+    |> SubModelSelectedItemData.box
+    |> SubModelSelectedItemData
+    |> createBinding
 
 
 

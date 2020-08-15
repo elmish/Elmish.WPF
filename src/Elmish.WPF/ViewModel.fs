@@ -11,202 +11,25 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
-[<AutoOpen>]
-module internal ViewModelHelpers =
-
-  let elmStyleMerge
-        getSourceId
-        getTargetId
-        create
-        update
-        (target: ObservableCollection<_>)
-        (source: _ array) =
-    (*
-     * Based on Elm's HTML.keyed
-     * https://guide.elm-lang.org/optimization/keyed.html
-     * https://github.com/elm/virtual-dom/blob/5a5bcf48720bc7d53461b3cd42a9f19f119c5503/src/Elm/Kernel/VirtualDom.js#L980-L1226
-     *)
-    let removals = Dictionary<_, _> ()
-    let additions = Dictionary<_, _> ()
-
-    let recordRemoval curTargetIdx curTarget curTargetId =
-      removals.Add(curTargetId, (curTargetIdx, curTarget))
-    let recordAddition curSourceIdx curSource curSourceId =
-      additions.Add(curSourceId, (curSourceIdx, curSource))
-
-    let mutable curSourceIdx = 0
-    let mutable curTargetIdx = 0
-
-    let mutable shouldContinue = true
-
-    let sourceCount = source.Length
-    let targetCount = target.Count
-
-    while (shouldContinue && curSourceIdx < sourceCount && curTargetIdx < targetCount) do
-      let curSource = source.[curSourceIdx]
-      let curTarget = target.[curTargetIdx]
-
-      let curSourceId = getSourceId curSource
-      let curTargetId = getTargetId curTarget
-
-      if curSourceId = curTargetId then
-        update curTarget curSource curTargetIdx
-
-        curSourceIdx <- curSourceIdx + 1
-        curTargetIdx <- curTargetIdx + 1
-      else
-        let mNextSource =
-          source
-          |> Array.tryItem (curSourceIdx + 1)
-          |> Option.map (fun s ->
-            let id = getSourceId s
-            s, id, id = curTargetId) // true => need to add
-
-        let mNextTarget =
-          if curTargetIdx + 1 < targetCount then target.[curTargetIdx + 1] |> Some else None
-          |> Option.map (fun t ->
-            let id = getTargetId t
-            t, id, id = curSourceId) // true => need to remove
-
-        match mNextSource, mNextTarget with
-        | Some (nextSource, _, true), Some (nextTarget, _, true) -> // swap adjacent
-            target.[curTargetIdx] <- nextTarget
-            target.[curTargetIdx + 1] <- curTarget
-
-            update curTarget nextSource (curTargetIdx + 1)
-            update nextTarget curSource curTargetIdx
-            
-            curSourceIdx <- curSourceIdx + 2
-            curTargetIdx <- curTargetIdx + 2
-        |               None, Some (nextTarget, _, true)
-        | Some (_, _, false), Some (nextTarget, _, true) -> // remove
-            recordRemoval curTargetIdx curTarget curTargetId
-            
-            update nextTarget curSource curTargetIdx
-
-            curSourceIdx <- curSourceIdx + 1
-            curTargetIdx <- curTargetIdx + 2
-        | Some (nextSource, _, true), None
-        | Some (nextSource, _, true), Some (_, _, false) -> // add
-            recordAddition curSourceIdx curSource curSourceId
-            
-            update curTarget nextSource (curTargetIdx + 1)
-            
-            curSourceIdx <- curSourceIdx + 2
-            curTargetIdx <- curTargetIdx + 1
-        | Some (_, _, false),               None
-        |               None, Some (_, _, false)
-        |               None,               None -> // source and target have different lengths and we have reached the end of one
-            shouldContinue <- false 
-        | Some (nextSource, nextSourceId, false), Some (nextTarget, nextTargetId, false) ->
-            if nextSourceId = nextTargetId then // replace
-              recordRemoval curTargetIdx curTarget curTargetId
-              recordAddition curSourceIdx curSource curSourceId
-              
-              update nextTarget nextSource (curTargetIdx + 1)
-
-              curSourceIdx <- curSourceIdx + 2
-              curTargetIdx <- curTargetIdx + 2
-            else // collections very different
-              shouldContinue <- false
-
-    // replace many
-    while (curSourceIdx < sourceCount && curTargetIdx < targetCount) do
-      let curSource = source.[curSourceIdx]
-      let curTarget = target.[curTargetIdx]
-
-      let curSourceId = getSourceId curSource
-      let curTargetId = getTargetId curTarget
-
-      recordRemoval curTargetIdx curTarget curTargetId
-      recordAddition curSourceIdx curSource curSourceId
-      
-      curSourceIdx <- curSourceIdx + 1
-      curTargetIdx <- curTargetIdx + 1
-
-    // remove many
-    for i in targetCount - 1..-1..curTargetIdx do
-      let t = target.[i]
-      let id = getTargetId t
-      recordRemoval i t id
-
-    // add many
-    for i in curSourceIdx..sourceCount - 1 do
-      let s = source.[i]
-      let id = getSourceId s
-      recordAddition i s id
-
-    let moves =
-      additions
-      |> Seq.toList
-      |> List.collect (fun (Kvp (id, (sIdx, s))) ->
-        match removals.TryGetValue id with
-        | (false, _) -> []
-        | (true, (tIdx, t)) ->
-            removals.Remove id |> ignore
-            additions.Remove id |> ignore
-            (tIdx, sIdx, t, s) |> List.singleton)
-
-    let actuallyRemove () =
-      Seq.empty
-      |> Seq.append (removals |> Seq.map (Kvp.value >> fst))
-      |> Seq.append (moves |> Seq.map (fun (tIdx, _, _, _) -> tIdx))
-      |> Seq.sortDescending
-      |> Seq.iter target.RemoveAt
-
-    let actuallyAdd () =
-      Seq.empty
-      |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
-      |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
-      |> Seq.sortBy fst
-      |> Seq.iter target.Insert
-
-    match moves, removals.Count, additions.Count with
-    | [ (tIdx, sIdx, _, _) ], 0, 0 -> // single move
-        target.Move(tIdx, sIdx)
-    | [ (t1Idx, s1Idx, _, _); (t2Idx, s2Idx, _, _) ], 0, 0 when t1Idx = s2Idx && t2Idx = s1Idx-> // single swap
-        let temp = target.[t1Idx]
-        target.[t1Idx] <- target.[t2Idx]
-        target.[t2Idx] <- temp
-    | _, rc, _ when rc = targetCount && rc > 0 -> // remove everything (implies moves = [])
-        target.Clear ()
-        actuallyAdd ()
-    | _ ->
-        actuallyRemove ()
-        actuallyAdd ()
-
-    // update moved elements
-    moves |> Seq.iter (fun (_, sIdx, t, s) -> update t s sIdx)
-
-
-type internal OneWayBinding<'model, 'a> = {
-  Get: 'model -> 'a
+type internal OneWayBinding<'model, 'a when 'a : equality> = {
+  OneWayData: OneWayData<'model, 'a>
 }
 
 type internal OneWayLazyBinding<'model, 'a, 'b> = {
-  Get: 'model -> 'a
-  Equals: 'a -> 'a -> bool
-  Map: 'a -> 'b
+  OneWayLazyData: OneWayLazyData<'model, 'a, 'b>
 }
 
-type internal OneWaySeqBinding<'model, 'a, 'b, 'id> = {
-  Get: 'model -> 'a
-  Equals: 'a -> 'a -> bool
-  Map: 'a -> 'b seq
-  GetId: 'b -> 'id
-  ItemEquals: 'b -> 'b -> bool
+type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
   Values: ObservableCollection<'b>
 }
 
-type internal TwoWayBinding<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> unit
+type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
+  TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
-type internal TwoWayValidateBinding<'model, 'msg, 'a> = {
-  Get: 'model -> 'a
-  Set: 'a -> 'model -> unit
-  Validate: 'model -> string voption
+type internal TwoWayValidateBinding<'model, 'msg, 'a when 'a : equality> = {
+  TwoWayValidateData: TwoWayValidateData<'model, 'msg, 'a>
 }
 
 type internal CmdBinding<'model, 'msg> = {
@@ -215,37 +38,25 @@ type internal CmdBinding<'model, 'msg> = {
 }
 
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  GetModel: 'model -> 'bindingModel voption
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'bindingMsg -> 'msg
-  Sticky: bool
+  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>
   Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
 }
 
 and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  GetState: 'model -> WindowState<'bindingModel>
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'bindingMsg -> 'msg
-  GetWindow: 'model -> Dispatch<'msg> -> Window
-  IsModal: bool
-  OnCloseRequested: 'model -> unit
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
   VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
 }
 
-and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  GetModels: 'model -> 'bindingModel seq
-  GetId: 'bindingModel -> 'id
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
-  ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
+and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
+  SubModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
-and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> = {
-  Get: 'model -> 'id voption
-  Set: 'id voption -> 'model -> unit
-  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, obj, obj, obj>
+and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
+  SubModelSelectedItemData: SubModelSelectedItemData<'model, 'msg, 'id>
+  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
 }
 
 and internal CachedBinding<'model, 'msg, 'value> = {
@@ -319,11 +130,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
-  let rec updateValidationError model name = function
-    | TwoWayValidate { Validate = validate } ->
-        match validate model with
-        | ValueNone -> removeError name
-        | ValueSome error -> setError error name
+  let rec updateValidationError = function
+    | TwoWayValidate { TwoWayValidateData = d } ->
+        fun model ->
+          match d.Validate model with
+          | ValueNone -> removeError
+          | ValueSome error -> setError error
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -333,8 +145,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | SubModel _
     | SubModelWin _
     | SubModelSeq _
-    | SubModelSelectedItem _ -> ()
-    | Cached b -> updateValidationError model name b.Binding
+    | SubModelSelectedItem _ -> ignore2
+    | Cached b -> updateValidationError b.Binding
 
   let measure name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
@@ -380,166 +192,109 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     )
 
   let initializeBinding name bindingData getInitializedBindingByName =
+    let measure x = x |> measure name
+    let measure2 x = x |> measure2 name
     match bindingData with
     | OneWayData d ->
-        Some <| OneWay {
-          Get = measure name "get" d.Get }
+        { OneWayData = d |> OneWayData.measureFunctions measure }
+        |> OneWay
+        |> Some 
     | OneWayLazyData d ->
-        let get = measure name "get" d.Get
-        let map = measure name "map" d.Map
-        OneWayLazy {
-          Get = get
-          Map = map
-          Equals = measure2 name "equals" d.Equals
-        } |> withCaching |> Some
+        { OneWayLazyData = d |> OneWayLazyData.measureFunctions measure measure measure2 }
+        |> OneWayLazy
+        |> withCaching
+        |> Some
     | OneWaySeqLazyData d ->
-        let get = measure name "get" d.Get
-        let map = measure name "map" d.Map
-        let getId = measure name "getId" d.GetId
-        let values = ObservableCollection(initialModel |> get |> map)
-        Some <| OneWaySeq {
-          Get = get
-          Map = map
-          Equals = measure2 name "equals" d.Equals
-          GetId = getId
-          ItemEquals = measure2 name "itemEquals" d.ItemEquals
-          Values = values }
+        { OneWaySeqData = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
+          Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
+        |> OneWaySeq
+        |> Some
     | TwoWayData d ->
-        let set = measure2 name "set" d.Set
-        Some <| TwoWay {
-          Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch }
+        { TwoWayData = d |> TwoWayData.measureFunctions measure measure }
+        |> TwoWay
+        |> Some
     | TwoWayValidateData d ->
-        let set = measure2 name "set" d.Set
-        Some <| TwoWayValidate {
-          Get = measure name "get" d.Get
-          Set = fun obj m -> set obj m |> dispatch
-          Validate = measure name "validate" d.Validate }
+        { TwoWayValidateData = d |> TwoWayValidateData.measureFunctions measure measure measure }
+        |> TwoWayValidate
+        |> Some
     | CmdData d ->
-        let exec = measure name "exec" d.Exec
-        let canExec = measure name "canExec" d.CanExec
-        let execute _ = exec currentModel |> ValueOption.iter dispatch
-        let canExecute _ = canExec currentModel
+        let d = d |> CmdData.measureFunctions measure measure
+        let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
+        let canExecute _ = d.CanExec currentModel
         Some <| Cmd {
           Cmd = Command(execute, canExecute, false)
-          CanExec = canExec }
+          CanExec = d.CanExec }
     | CmdParamData d ->
-        let exec = measure2 name "exec" d.Exec
-        let canExec = measure2 name "canExec" d.CanExec
-        let execute param = exec param currentModel |> ValueOption.iter dispatch
-        let canExecute param = canExec param currentModel
+        let d = d |> CmdParamData.measureFunctions measure2 measure2
+        let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
+        let canExecute param = d.CanExec param currentModel
         Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
     | SubModelData d ->
-        let getModel = measure name "getSubModel" d.GetModel
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure2 name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
-        match getModel initialModel with
-        | ValueNone ->
-            Some <| SubModel {
-              GetModel = getModel
-              GetBindings = getBindings
-              ToMsg = toMsg2
-              Sticky = d.Sticky
-              Vm = ref ValueNone }
-        | ValueSome m ->
-            let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            Some <| SubModel {
-              GetModel = getModel
-              GetBindings = getBindings
-              ToMsg = toMsg2
-              Sticky = d.Sticky
-              Vm = ref <| ValueSome vm }
+        let d = d |> SubModelData.measureFunctions measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
+        d.GetModel initialModel
+        |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance))
+        |> (fun vm -> { SubModelData = d; Vm = ref vm })
+        |> SubModel
+        |> Some
     | SubModelWinData d ->
-        let getState = measure name "getState" d.GetState
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
+        let d = d |> SubModelWinData.measureFunctions measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
         let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
-        match getState initialModel with
+        match d.GetState initialModel with
         | WindowState.Closed ->
-            Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            { SubModelWinData = d
               WinRef = WeakReference<_>(null)
               PreventClose = ref true
-              VmWinState = ref WindowState.Closed
-            }
+              VmWinState = ref WindowState.Closed }
         | WindowState.Hidden m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
             log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-            showNewWindow
-              winRef d.GetWindow vm d.IsModal onCloseRequested
-              preventClose Visibility.Hidden
-            Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            showNewWindow winRef d.GetWindow vm d.IsModal onCloseRequested preventClose Visibility.Hidden
+            { SubModelWinData = d
               WinRef = winRef
               PreventClose = preventClose
-              VmWinState = ref <| WindowState.Hidden vm
-            }
+              VmWinState = ref <| WindowState.Hidden vm }
         | WindowState.Visible m ->
             let chain = getPropChainFor name
-            let vm = ViewModel(m, toMsg1 >> dispatch, getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain)
-            showNewWindow
-              winRef d.GetWindow vm d.IsModal onCloseRequested
-              preventClose Visibility.Visible
-            Some <| SubModelWin {
-              GetState = getState
-              GetBindings = getBindings
-              ToMsg = toMsg2
-              GetWindow = d.GetWindow
-              IsModal = d.IsModal
-              OnCloseRequested = onCloseRequested
+            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain) // TODO: consider changing to "Creating visible window"
+            showNewWindow winRef d.GetWindow vm d.IsModal onCloseRequested preventClose Visibility.Visible
+            { SubModelWinData = d
               WinRef = winRef
               PreventClose = preventClose
-              VmWinState = ref <| WindowState.Visible vm
-            }
+              VmWinState = ref <| WindowState.Visible vm }
+        |> SubModelWin
+        |> Some
     | SubModelSeqData d ->
-        let getModels = measure name "getSubModels" d.GetModels
-        let getId = measure name "getId" d.GetId
-        let getBindings = measure name "bindings" d.GetBindings
-        let toMsg2 = measure name "toMsg" d.ToMsg
-        let toMsg1 = fun msg -> toMsg2 currentModel msg
+        let d = d |> SubModelSeqData.measureFunctions measure measure measure measure2
+        let toMsg = fun msg -> d.ToMsg currentModel msg
         let vms =
-          getModels initialModel
+          d.GetModels initialModel
           |> Seq.map (fun m ->
-               let chain = getPropChainForItem name (getId m |> string)
-               ViewModel(m, (fun msg -> toMsg1 (getId m, msg) |> dispatch), getBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+               let chain = getPropChainForItem name (d.GetId m |> string)
+               ViewModel(m, (fun msg -> toMsg (d.GetId m, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           )
           |> ObservableCollection
-        Some <| SubModelSeq {
-          GetModels = getModels
-          GetId = getId
-          GetBindings = getBindings
-          ToMsg = toMsg2
+        { SubModelSeqData = d
           Vms = vms }
+        |> SubModelSeq
+        |> Some
     | SubModelSelectedItemData d ->
+        let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
         match getInitializedBindingByName d.SubModelSeqBindingName with
         | Some (SubModelSeq b) ->
-          let get = measure name "get" d.Get
-          let set = measure2 name "set" d.Set
-          SubModelSelectedItem {
-            Get = get
-            Set = fun obj m -> set obj m |> dispatch
-            SubModelSeqBinding = b
-          } |> withCaching |> Some
-        | _ ->
+          { SubModelSelectedItemData = d
+            SubModelSeqBinding = b }
+          |> SubModelSelectedItem
+          |> withCaching
+          |> Some
+        | _ -> // TODO: Create separate caes for (1) no binding of that name and (2) binding of that name but the wrong type
           log.LogError("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
           None
 
@@ -558,49 +313,40 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
-          updateValidationError initialModel b.Name binding)
+          updateValidationError binding initialModel b.Name)
     dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
   let rec updateValue bindingName newModel = function
-    | OneWay { Get = get }
-    | TwoWay { Get = get }
-    | TwoWayValidate { Get = get } ->
-        get currentModel <> get newModel
-    | OneWayLazy b ->
-        not <| b.Equals (b.Get newModel) (b.Get currentModel)
-    | OneWaySeq b ->
-        let intermediate = b.Get newModel
-        if not <| b.Equals intermediate (b.Get currentModel) then
-          let create v _ = v
-          let update oldVal newVal oldIdx =
-            if not (b.ItemEquals newVal oldVal) then
-              b.Values.[oldIdx] <- newVal
-          let newVals = intermediate |> b.Map |> Seq.toArray
-          elmStyleMerge b.GetId b.GetId create update b.Values newVals
-        false
+    | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
+    | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
+    | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
+    | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
+    | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
     | Cmd _
     | CmdParam _ ->
         false
     | SubModel b ->
-      match !b.Vm, b.GetModel newModel with
+      let d = b.SubModelData
+      match !b.Vm, d.GetModel newModel with
       | ValueNone, ValueNone -> false
       | ValueSome _, ValueNone ->
-          if b.Sticky then false
+          if d.Sticky then false
           else
             b.Vm := ValueNone
             true
       | ValueNone, ValueSome m ->
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          b.Vm := ValueSome <| ViewModel(m, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          let toMsg = fun msg -> d.ToMsg currentModel msg
+          b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
           false
     | SubModelWin b ->
+        let d = b.SubModelWinData
         let winPropChain = getPropChainFor bindingName
-
+        let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         let close () =
           b.PreventClose := false
           match b.WinRef.TryGetTarget () with
@@ -631,14 +377,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let showNew vm initialVisibility =
           b.PreventClose := true
           showNewWindow
-            b.WinRef b.GetWindow vm b.IsModal b.OnCloseRequested
+            b.WinRef d.GetWindow vm d.IsModal onCloseRequested
             b.PreventClose initialVisibility
 
         let newVm model =
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
-          ViewModel(model, toMsg1 >> dispatch, b.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          let toMsg = fun msg -> d.ToMsg currentModel msg
+          ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
 
-        match !b.VmWinState, b.GetState newModel with
+        match !b.VmWinState, d.GetState newModel with
         | WindowState.Closed, WindowState.Closed ->
             false
         | WindowState.Hidden _, WindowState.Closed
@@ -675,17 +421,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             vm.UpdateModel m
             false
     | SubModelSeq b ->
-        let getTargetId (vm: ViewModel<_, _>) = b.GetId vm.CurrentModel
+        let d = b.SubModelSeqData
+        let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
         let create m id = 
-          let toMsg1 = fun msg -> b.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg currentModel msg
           let chain = getPropChainForItem bindingName (id |> string)
-          ViewModel(m, (fun msg -> toMsg1 (id, msg) |> dispatch), b.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-        let update (vm: ViewModel<_, _>) m _ = vm.UpdateModel m
-        let newSubModels = newModel |> b.GetModels |> Seq.toArray
-        elmStyleMerge b.GetId getTargetId create update b.Vms newSubModels
-        false
-    | SubModelSelectedItem b ->
-        b.Get newModel <> b.Get currentModel
+          ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+        let update (vm: ViewModel<_, _>) = vm.UpdateModel
+        d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
+    | SubModelSelectedItem { SubModelSelectedItemData = d } ->
+        d.UpdateValue(currentModel, newModel)
     | Cached b ->
         let valueChanged = updateValue bindingName newModel b.Binding
         if valueChanged then
@@ -714,33 +459,32 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | Cached b -> getCmdIfCanExecChanged newModel b.Binding
 
   let rec tryGetMember model = function
-    | OneWay { Get = get }
-    | TwoWay { Get = get }
-    | TwoWayValidate { Get = get } ->
-        get model
-    | OneWayLazy b ->
-        model |> b.Get |> b.Map
-    | OneWaySeq { Values = vals } ->
-        box vals
+    | OneWay { OneWayData = d } -> d.TryGetMember model
+    | TwoWay { TwoWayData = d } -> d.TryGetMember model
+    | TwoWayValidate { TwoWayValidateData = d } -> d.TryGetMember model
+    | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
+    | OneWaySeq { Values = vals } -> box vals
     | Cmd { Cmd = cmd }
     | CmdParam cmd ->
         box cmd
     | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
     | SubModelWin { VmWinState = vm } ->
-        match !vm with
-        | WindowState.Closed -> null
-        | WindowState.Hidden vm | WindowState.Visible vm -> box vm
+        !vm
+        |> WindowState.toVOption
+        |> ValueOption.map box
+        |> ValueOption.toObj
     | SubModelSeq { Vms = vms } -> box vms
     | SubModelSelectedItem b ->
-        let selectedId = b.Get model
         let selected =
-          b.SubModelSeqBinding.Vms 
-          |> Seq.tryFind (fun (vm: ViewModel<obj, obj>) ->
-            selectedId = ValueSome (b.SubModelSeqBinding.GetId vm.CurrentModel))
+          b.SubModelSelectedItemData.TryGetMember
+            ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
+             b.SubModelSeqBinding.SubModelSeqData,
+             b.SubModelSeqBinding.Vms,
+             model)
         log.LogTrace(
           "[{BindingNameChain}] Setting selected VM to {SubModelId}",
           propNameChain,
-          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel))
+          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
         )
         selected |> Option.toObj |> box
     | Cached b ->
@@ -751,17 +495,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.Cache := Some v
             v
 
-  let rec trySetMember model (value: obj) = function
-    | TwoWay { Set = set }
-    | TwoWayValidate { Set = set } ->
-        set value model
+  let rec trySetMember model (value: obj) = function // TOOD: return 'msg option
+    | TwoWay { TwoWayData = d } ->
+        d.TrySetMember(value, model) |> dispatch
+        true
+    | TwoWayValidate { TwoWayValidateData = d } ->
+        d.TrySetMember(value, model) |> dispatch
         true
     | SubModelSelectedItem b ->
-        let id =
+        let bindingModel =
           (value :?> ViewModel<obj, obj>)
           |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> b.SubModelSeqBinding.GetId vm.CurrentModel)
-        b.Set id model
+          |> ValueOption.map (fun vm -> vm.CurrentModel)
+        b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
         true
     | Cached b ->
         let successful = trySetMember model value b.Binding
@@ -794,7 +540,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     propsToNotify |> List.iter notifyPropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
     for Kvp (name, binding) in bindings do
-      updateValidationError currentModel name binding
+      updateValidationError binding currentModel name
 
   override __.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", propNameChain, binder.Name)
