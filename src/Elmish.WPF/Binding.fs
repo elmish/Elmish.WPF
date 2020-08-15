@@ -136,14 +136,14 @@ module internal BindingLogic =
 
     let moves =
       additions
-      |> Seq.toList
-      |> List.collect (fun (Kvp (id, (sIdx, s))) ->
+      |> Seq.collect (fun (Kvp (id, (sIdx, s))) ->
         match removals.TryGetValue id with
-        | (false, _) -> []
+        | (false, _) -> Seq.empty
         | (true, (tIdx, t)) ->
             removals.Remove id |> ignore
             additions.Remove id |> ignore
-            (tIdx, sIdx, t, s) |> List.singleton)
+            (tIdx, sIdx, t, s) |> Seq.singleton)
+      |> Seq.toList
 
     let actuallyRemove () =
       Seq.empty
