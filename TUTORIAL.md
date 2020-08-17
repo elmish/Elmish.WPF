@@ -215,6 +215,8 @@ let timerTick (dispatch: Dispatch<Msg>) =
   timer.Start()
 ```
 
+This is the kind of function that you pass to `Program.withSubscription`, which allows you to start arbitrary non-UI message dispatchers when the app starts. For example, you can start timers (as shown above), subscribe to other non-UI events, start a `MailboxProcessor`, etc.
+
 The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
 
 In other words, you don’t call the impure functions yourself; the MVU library calls them for you. Furthermore, from the point of view of your model, everything happens asynchronously (in the sense that your app and update loop continues without waiting on a response, and reacts to the “response” message when it arrives).
