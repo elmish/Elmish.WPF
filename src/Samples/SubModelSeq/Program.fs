@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.SubModelSeq.Program
+module Elmish.WPF.Samples.SubModelSeq.Program
 
 open System
 open Elmish
@@ -17,7 +17,7 @@ module FuncOption =
 
   let inputIfNone f a = a |> f |> Option.defaultValue a
 
-  let bindFunc (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
+  let bind (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
     mb a |> Option.bind (fun b -> Some(f b a))
 
 
@@ -98,7 +98,6 @@ module RoseTree =
   module RoseTree =
 
     let getData m = m.Data
-    let setData v m = { Data = v; Children = m.Children }
     let rec mapData f t =
       { Data = t.Data |> f
         Children = t.Children |> (f |> mapData |> List.map) }
@@ -168,7 +167,7 @@ module App =
     nId
     |> hasId
     |> List.tryFindIndex
-    |> FuncOption.bindFunc swap
+    |> FuncOption.bind swap
     |> FuncOption.inputIfNone
     |> RoseTree.mapChildren
 
