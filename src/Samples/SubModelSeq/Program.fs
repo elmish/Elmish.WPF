@@ -247,8 +247,8 @@ module Bindings =
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
 
     "ChildCounters" |> Binding.subModelSeq(
-      (fun (_, (_, c)) -> c.Children |> Seq.map (fun gc -> (c, gc))),
-      (fun ((m, _), childCounter) -> (m, childCounter)),
+      (fun (_, (_, p)) -> p.Children |> Seq.map (fun c -> (p, c))),
+      (fun ((m, _), (p, c)) -> (m, (p, c))),
       (fun (_, (_, c)) -> c.Data.Id),
       (fun (id, msg) -> msg |> RoseTree.branchMsg id |> adjustMsgToParent),
       subtreeBindings)
