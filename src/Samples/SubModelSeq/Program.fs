@@ -207,18 +207,16 @@ module Bindings =
   open App
 
   let canMoveUp (_, (p, c)) =
-    p.Children
-    |> List.tryHead
-    |> Option.map (fun c -> c.Data.Id)
-    |> Option.filter ((<>) c.Data.Id)
-    |> Option.set (MoveUp c.Data.Id)
+    match p.Children |> List.tryHead with
+    | Some first when first.Data.Id <> c.Data.Id ->
+        c.Data.Id |> MoveUp |> Some
+    | _ -> None
 
   let canMoveDown (_, (p, c)) =
-    p.Children
-    |> List.tryLast
-    |> Option.map (fun c -> c.Data.Id)
-    |> Option.filter ((<>) c.Data.Id)
-    |> Option.set (MoveDown c.Data.Id)
+    match p.Children |> List.tryLast with
+    | Some first when first.Data.Id <> c.Data.Id ->
+        c.Data.Id |> MoveDown |> Some
+    | _ -> None
     
   let adjustMsgToParent msg =
     match msg with
