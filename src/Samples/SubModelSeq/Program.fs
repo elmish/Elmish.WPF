@@ -127,8 +127,6 @@ module RoseTree =
     let setChildren c t = { t with Children = c }
     let mapChildren f = map getChildren setChildren f
 
-    let branchMsg a t = BranchMsg (a, t)
-
     let addSubtree t = t |> List.cons |> mapChildren
     let addChildData a = a |> createLeaf |> addSubtree
 
@@ -254,7 +252,7 @@ module Bindings =
       (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
       (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
       (fun (_, { Self = c }) -> c.Data.Id),
-      (fun (id, msg) -> msg |> RoseTree.branchMsg id |> adjustMsgToParent),
+      BranchMsg >> adjustMsgToParent,
       subtreeBindings)
   ]
 
@@ -262,7 +260,7 @@ module Bindings =
     "Counters" |> Binding.subModelSeq(
       (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
       (fun { Self = c } -> c.Data.Id),
-      (fun (id, msg) -> msg |> RoseTree.branchMsg id |> adjustMsgToParent |> SubtreeMsg),
+      BranchMsg >> adjustMsgToParent >> SubtreeMsg,
       subtreeBindings)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
