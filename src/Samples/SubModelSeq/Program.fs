@@ -5,6 +5,11 @@ open Elmish
 open Elmish.WPF
 
 
+module Option =
+
+  let set a = Option.map (fun _ -> a)
+
+
 module Func =
 
   let flip f b a = f a b
@@ -114,12 +119,6 @@ module RoseTree =
         Children = [] }
 
     let addChild a = a |> asLeaf |> List.cons |> mapChildren
-    
-    let dataOfChildren t =
-      t.Children |> List.map getData
-    
-    let rec flatten t =
-      t :: List.collect flatten t.Children
 
 
 module App =
@@ -179,63 +178,50 @@ module App =
     | MoveUp nId -> nId |> swapCounters List.swapWithPrev |> RoseTree.map |> mapDummyRoot
     | MoveDown nId -> nId |> swapCounters List.swapWithNext |> RoseTree.map |> mapDummyRoot
 
-  /// Returns all top-level counters.
-  let topLevelCounters m =
-    m.DummyRoot |> RoseTree.dataOfChildren
-
-  /// Returns all immediate child counters of the specified parent counter ID.
-  let childCountersOf pid m =
-    m.DummyRoot
-    |> RoseTree.flatten
-    |> List.find (fun n -> n.Data.Id = pid)
-    |> RoseTree.dataOfChildren
-
-  /// Returns the parent of the specified child counter ID.
-  let parentOf cid m =
-    m.DummyRoot
-    |> RoseTree.flatten
-    |> List.find (RoseTree.dataOfChildren >> List.map Identifiable.getId >> List.contains cid)
-
-  /// Returns the sibling counters of the specified counter ID.
-  let childrenCountersOfParentOf cid =
-    cid |> parentOf >> RoseTree.dataOfChildren
-
 
 module Bindings =
 
   open App
 
-  let rec counterTreeBindings () : Binding<Model * Identifiable<Counter>, Msg> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, c) -> c.Id)
+  let canMoveUp (p, c) =
+    p.Children
+    |> List.tryHead
+    |> Option.map (fun c -> c.Data.Id)
+    |> Option.filter ((<>) c.Data.Id)
+    |> Option.set (MoveUp c.Data.Id)
 
-    "CounterValue" |> Binding.oneWay(fun (_, c) -> c.Value.Count)
-    "Increment" |> Binding.cmd(fun (_, c) -> CounterMsg (c.Id, Increment))
-    "Decrement" |> Binding.cmd(fun (_, c) -> CounterMsg (c.Id, Decrement))
+  let canMoveDown (p, c) =
+    p.Children
+    |> List.tryLast
+    |> Option.map (fun c -> c.Data.Id)
+    |> Option.filter ((<>) c.Data.Id)
+    |> Option.set (MoveDown c.Data.Id)
+
+  let rec counterTreeBindings () : Binding<Model * (RoseTree<Identifiable<Counter>> * RoseTree<Identifiable<Counter>>), Msg> list = [
+    "CounterIdText" |> Binding.oneWay(fun (_, (_, c)) -> c.Data.Id)
+  
+    "CounterValue" |> Binding.oneWay(fun (_, (_, c)) -> c.Data.Value.Count)
+    "Increment" |> Binding.cmd(fun (_, (_, c)) -> CounterMsg (c.Data.Id, Increment))
+    "Decrement" |> Binding.cmd(fun (_, (_, c)) -> CounterMsg (c.Data.Id, Decrement))
     "StepSize" |> Binding.twoWay(
-      (fun (_, c) -> float c.Value.StepSize),
-      (fun v (_, c) -> CounterMsg (c.Id, SetStepSize (int v))))
+      (fun (_, (_, c)) -> float c.Data.Value.StepSize),
+      (fun v (_, (_, c)) -> CounterMsg (c.Data.Id, SetStepSize (int v))))
     "Reset" |> Binding.cmdIf(
-      (fun (_, c) -> CounterMsg (c.Id, Reset)),
-      (fun (_, c) -> Counter.canReset c.Value))
-
-    "Remove" |> Binding.cmd(fun (_, c) -> Remove c.Id)
-
-    "AddChild" |> Binding.cmd(fun (_, c) -> AddChild c.Id)
-
-    "MoveUp" |> Binding.cmdIf(
-      (fun (_, c) -> MoveUp c.Id),
-      (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryHead <> Some c))
-
-    "MoveDown" |> Binding.cmdIf(
-      (fun (_, c) -> MoveDown c.Id),
-      (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryLast <> Some c))
-
+      (fun (_, (_, c)) -> CounterMsg (c.Data.Id, Reset)),
+      (fun (_, (_, c)) -> Counter.canReset c.Data.Value))
+  
+    "Remove" |> Binding.cmd(fun (_, (_, c)) -> Remove c.Data.Id)
+    "AddChild" |> Binding.cmd(fun (_, (_, c)) -> AddChild c.Data.Id)
+  
+    "MoveUp" |> Binding.cmdIf(snd >> canMoveUp)
+    "MoveDown" |> Binding.cmdIf(snd >> canMoveDown)
+  
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-
+  
     "ChildCounters" |> Binding.subModelSeq(
-      (fun (m, c) -> m |> childCountersOf c.Id),
+      (fun (_, (_, c)) -> c.Children |> Seq.map (fun gc -> (c, gc))),
       (fun ((m, _), childCounter) -> (m, childCounter)),
-      (fun (_, c) -> c.Id),
+      (fun (_, (_, c)) -> c.Data.Id),
       snd,
       counterTreeBindings)
   ]
@@ -243,12 +229,12 @@ module Bindings =
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m |> topLevelCounters),
-      (fun c -> c.Id),
+      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> (m.DummyRoot, c))),
+      (fun (_, c) -> c.Data.Id),
       counterTreeBindings)
-
+  
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
-
+  
     "AddCounter" |> Binding.cmd(fun m -> AddChild m.DummyRoot.Data.Id)
   ]
 
