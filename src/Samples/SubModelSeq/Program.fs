@@ -210,13 +210,13 @@ module Bindings =
     { Self: 'a
       Parent: 'a }
 
-  let canMoveUp (_, { Parent = p; Self = s }) =
+  let moveUpMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryHead with
     | Some c when c.Data.Id <> s.Data.Id ->
         s.Data.Id |> MoveUp |> Some
     | _ -> None
 
-  let canMoveDown (_, { Parent = p; Self = s }) =
+  let moveDownMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryLast with
     | Some c when c.Data.Id <> s.Data.Id ->
         s.Data.Id |> MoveDown |> Some
@@ -245,8 +245,8 @@ module Bindings =
     "Remove" |> Binding.cmd(fun (_, { Self = s }) -> s.Data.Id |> Remove |> LeafMsg)
     "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
 
-    "MoveUp" |> Binding.cmdIf(canMoveUp |> FuncOption.map LeafMsg)
-    "MoveDown" |> Binding.cmdIf(canMoveDown |> FuncOption.map LeafMsg)
+    "MoveUp" |> Binding.cmdIf(moveUpMsg |> FuncOption.map LeafMsg)
+    "MoveDown" |> Binding.cmdIf(moveDownMsg |> FuncOption.map LeafMsg)
 
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
 
