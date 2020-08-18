@@ -206,16 +206,20 @@ module Bindings =
 
   open App
 
-  let canMoveUp (_, (p, c)) =
+  type SelfWithParent<'a> =
+    { Self: 'a
+      Parent: 'a }
+
+  let canMoveUp (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryHead with
-    | Some first when first.Data.Id <> c.Data.Id ->
-        c.Data.Id |> MoveUp |> Some
+    | Some c when c.Data.Id <> s.Data.Id ->
+        s.Data.Id |> MoveUp |> Some
     | _ -> None
 
-  let canMoveDown (_, (p, c)) =
+  let canMoveDown (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryLast with
-    | Some first when first.Data.Id <> c.Data.Id ->
-        c.Data.Id |> MoveDown |> Some
+    | Some c when c.Data.Id <> s.Data.Id ->
+        s.Data.Id |> MoveDown |> Some
     | _ -> None
     
   let adjustMsgToParent msg =
@@ -225,20 +229,20 @@ module Bindings =
     | BranchMsg (pId, LeafMsg (MoveDown cId)) when pId = cId -> LeafMsg (MoveDown cId)
     | _ -> msg
 
-  let rec subtreeBindings () : Binding<Model * (RoseTree<Identifiable<Counter>> * RoseTree<Identifiable<Counter>>), RoseTreeMsg<Guid, SubtreeMsg>> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, (_, c)) -> c.Data.Id)
+  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, RoseTreeMsg<Guid, SubtreeMsg>> list = [
+    "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
 
-    "CounterValue" |> Binding.oneWay(fun (_, (_, c)) -> c.Data.Value.Count)
+    "CounterValue" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Value.Count)
     "Increment" |> Binding.cmd(Increment |> CounterMsg |> LeafMsg)
     "Decrement" |> Binding.cmd(Decrement |> CounterMsg |> LeafMsg)
     "StepSize" |> Binding.twoWay(
-      (fun (_, (_, c)) -> float c.Data.Value.StepSize),
+      (fun (_, { Self = s }) -> float s.Data.Value.StepSize),
       (fun v _ -> v |> int |> SetStepSize |> CounterMsg |> LeafMsg))
     "Reset" |> Binding.cmdIf(
       Reset |> CounterMsg |> LeafMsg,
-      (fun (_, (_, c)) -> Counter.canReset c.Data.Value))
+      (fun (_, { Self = s }) -> Counter.canReset s.Data.Value))
 
-    "Remove" |> Binding.cmd(fun (_, (_, c)) -> c.Data.Id |> Remove |> LeafMsg)
+    "Remove" |> Binding.cmd(fun (_, { Self = s }) -> s.Data.Id |> Remove |> LeafMsg)
     "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
 
     "MoveUp" |> Binding.cmdIf(canMoveUp |> FuncOption.map LeafMsg)
@@ -247,17 +251,17 @@ module Bindings =
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
 
     "ChildCounters" |> Binding.subModelSeq(
-      (fun (_, (_, p)) -> p.Children |> Seq.map (fun c -> (p, c))),
-      (fun ((m, _), (p, c)) -> (m, (p, c))),
-      (fun (_, (_, c)) -> c.Data.Id),
+      (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
+      (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
+      (fun (_, { Self = c }) -> c.Data.Id),
       (fun (id, msg) -> msg |> RoseTree.branchMsg id |> adjustMsgToParent),
       subtreeBindings)
   ]
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> (m.DummyRoot, c))),
-      (fun (_, c) -> c.Data.Id),
+      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
+      (fun { Self = c } -> c.Data.Id),
       (fun (id, msg) -> msg |> RoseTree.branchMsg id |> adjustMsgToParent |> SubtreeMsg),
       subtreeBindings)
 
