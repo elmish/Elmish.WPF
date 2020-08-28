@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.SubModelSeq.Program
+module Elmish.WPF.Samples.SubModelSeq.Program
 
 open System
 open Serilog
@@ -6,19 +6,24 @@ open Serilog.Extensions.Logging
 open Elmish.WPF
 
 
+module Option =
+
+  let set a = Option.map (fun _ -> a)
+
+
 module Func =
 
   let flip f b a = f a b
-
-  let applyIf p f a =
-    if p a then f a else a
 
 
 module FuncOption =
 
   let inputIfNone f a = a |> f |> Option.defaultValue a
+  
+  let map (f: 'b -> 'c) (mb: 'a -> 'b option) =
+    mb >> Option.map f
 
-  let bindFunc (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
+  let bind (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
     mb a |> Option.bind (fun b -> Some(f b a))
 
 
@@ -40,6 +45,17 @@ module List =
 
   let cons head tail = head :: tail
 
+  let mapFirst p f input =
+    let rec mapFirstRec reverseFront back =
+      match back with
+      | [] -> input
+      | a :: ma ->
+          if p a then
+            (reverseFront |> List.rev) @ (f a :: ma)
+          else
+            mapFirstRec (a :: reverseFront) ma
+    mapFirstRec [] input
+
         
 [<AutoOpen>]
 module Identifiable =
@@ -54,8 +70,6 @@ module Identifiable =
     let get m = m.Value
     let set v m = { m with Value = v }
     let map f = f |> map get set
-    let applyIf p f = f |> map |> Func.applyIf p
-    let applyIfId id f = f |> applyIf (fun m -> m.Id = id)
 
 
 [<AutoOpen>]
@@ -100,37 +114,37 @@ module Counter =
 [<AutoOpen>]
 module RoseTree =
 
-  type RoseTree<'a> =
-    { Data: 'a
-      Children: RoseTree<'a> list }
+  type RoseTree<'model> =
+    { Data: 'model
+      Children: RoseTree<'model> list }
 
+  type RoseTreeMsg<'a, 'msg> =
+    | BranchMsg of 'a * RoseTreeMsg<'a, 'msg>
+    | LeafMsg of 'msg
 
   module RoseTree =
 
-    let getData m = m.Data
-    let setData v m = { Data = v; Children = m.Children }
-    let rec mapData f t =
-      { Data = t.Data |> f
-        Children = t.Children |> (f |> mapData |> List.map) }
+    let create data children =
+      { Data = data
+        Children = children }
+    let createLeaf a = create a []
 
-    let getChildren m = m.Children
-    let setChildren v m = { m with Children = v }
+    let getData t = t.Data
+    let setData (d: 'a) (t: RoseTree<'a>) = { t with Data = d }
+    let mapData f = map getData setData f
+
+    let getChildren t = t.Children
+    let setChildren c t = { t with Children = c }
     let mapChildren f = map getChildren setChildren f
 
-    let rec map f t =
-      t |> f |> mapChildren (f |> map |> List.map)
+    let addSubtree t = t |> List.cons |> mapChildren
+    let addChildData a = a |> createLeaf |> addSubtree
 
-    let asLeaf a =
-      { Data = a
-        Children = [] }
-
-    let addChild a = a |> asLeaf |> List.cons |> mapChildren
-    
-    let dataOfChildren t =
-      t.Children |> List.map getData
-    
-    let rec flatten t =
-      t :: List.collect flatten t.Children
+    let update p (f: 'msg -> RoseTree<'model> -> RoseTree<'model>) =
+      let rec updateRec = function
+        | BranchMsg (a, msg) -> msg |> updateRec |> List.mapFirst (p a) |> mapChildren
+        | LeafMsg msg -> msg |> f
+      updateRec
 
 
 module App =
@@ -139,13 +153,16 @@ module App =
     { SomeGlobalState: bool
       DummyRoot: RoseTree<Identifiable<Counter>> }
 
-  type Msg =
-    | ToggleGlobalState
-    | AddChild of parent: Guid
-    | CounterMsg of Guid * CounterMsg
+  type SubtreeMsg =
+    | CounterMsg of CounterMsg
+    | AddChild
     | Remove of Guid
     | MoveUp of Guid
     | MoveDown of Guid
+
+  type Msg =
+    | ToggleGlobalState
+    | SubtreeMsg of RoseTreeMsg<Guid, SubtreeMsg>
 
 
   let getSomeGlobalState m = m.SomeGlobalState
@@ -156,95 +173,94 @@ module App =
   let setDummyRoot v m = { m with DummyRoot = v }
   let mapDummyRoot f = f |> map getDummyRoot setDummyRoot
 
-  let createIdentifiableCounter () =
+  let createNewIdentifiableCounter () =
     { Id = Guid.NewGuid ()
       Value = Counter.init }
 
+  let createNewLeaf () =
+    createNewIdentifiableCounter ()
+    |> RoseTree.createLeaf
+
   let init () =
+    let dummyRootData = createNewIdentifiableCounter () // Placeholder data to satisfy type system. User never sees this.
     { SomeGlobalState = false
       DummyRoot =
-        createIdentifiableCounter () // Placeholder data to satisfy type system. User never sees this.
-        |> RoseTree.asLeaf
-        |> RoseTree.addChild (createIdentifiableCounter ()) }
+        createNewLeaf ()
+        |> List.singleton
+        |> RoseTree.create dummyRootData } 
 
-  let hasId id n = n.Data.Id = id
-
-  let addChildCounter nId =
-    { Id = nId
-      Value = Counter.init }
-    |> RoseTree.addChild
+  let hasId id t = t.Data.Id = id
 
   let swapCounters swap nId =
     nId
     |> hasId
     |> List.tryFindIndex
-    |> FuncOption.bindFunc swap
+    |> FuncOption.bind swap
     |> FuncOption.inputIfNone
-    |> RoseTree.mapChildren
+
+  let updateSubtree = function
+    | CounterMsg msg -> msg |> Counter.update |> Identifiable.map |> RoseTree.mapData
+    | AddChild -> createNewLeaf () |> List.cons |> RoseTree.mapChildren
+    | Remove cId -> cId |> hasId >> not |> List.filter |> RoseTree.mapChildren
+    | MoveUp cId -> cId |> swapCounters List.swapWithPrev |> RoseTree.mapChildren
+    | MoveDown cId -> cId |> swapCounters List.swapWithNext |> RoseTree.mapChildren
 
   let update = function
     | ToggleGlobalState -> mapSomeGlobalState not
-    | CounterMsg (nId, msg) -> msg |> Counter.update |> Identifiable.applyIfId nId |> RoseTree.mapData |> mapDummyRoot
-    | AddChild pId -> Guid.NewGuid () |> addChildCounter |> Func.applyIf (hasId pId) |> RoseTree.map |> mapDummyRoot
-    | Remove nId -> nId |> hasId >> not |> List.filter |> RoseTree.mapChildren |> RoseTree.map |> mapDummyRoot
-    | MoveUp nId -> nId |> swapCounters List.swapWithPrev |> RoseTree.map |> mapDummyRoot
-    | MoveDown nId -> nId |> swapCounters List.swapWithNext |> RoseTree.map |> mapDummyRoot
-
-  /// Returns all top-level counters.
-  let topLevelCounters m =
-    m.DummyRoot |> RoseTree.dataOfChildren
-
-  /// Returns all immediate child counters of the specified parent counter ID.
-  let childCountersOf pid m =
-    m.DummyRoot
-    |> RoseTree.flatten
-    |> List.find (fun n -> n.Data.Id = pid)
-    |> RoseTree.dataOfChildren
-
-  /// Returns the parent of the specified child counter ID.
-  let parentOf cid m =
-    m.DummyRoot
-    |> RoseTree.flatten
-    |> List.find (RoseTree.dataOfChildren >> List.map Identifiable.getId >> List.contains cid)
-
-  /// Returns the sibling counters of the specified counter ID.
-  let childrenCountersOfParentOf cid =
-    cid |> parentOf >> RoseTree.dataOfChildren
+    | SubtreeMsg msg -> msg |> RoseTree.update hasId updateSubtree |> mapDummyRoot
 
 
 module Bindings =
 
   open App
 
-  let rec counterTreeBindings () : Binding<Model * Identifiable<Counter>, Msg> list =
+  type SelfWithParent<'a> =
+    { Self: 'a
+      Parent: 'a }
+
+  let moveUpMsg (_, { Parent = p; Self = s }) =
+    match p.Children |> List.tryHead with
+    | Some c when c.Data.Id <> s.Data.Id ->
+        s.Data.Id |> MoveUp |> Some
+    | _ -> None
+
+  let moveDownMsg (_, { Parent = p; Self = s }) =
+    match p.Children |> List.tryLast with
+    | Some c when c.Data.Id <> s.Data.Id ->
+        s.Data.Id |> MoveDown |> Some
+    | _ -> None
+    
+  let adjustMsgToParent msg =
+    match msg with
+    | BranchMsg (pId, LeafMsg (Remove   cId)) when pId = cId -> LeafMsg (Remove cId)
+    | BranchMsg (pId, LeafMsg (MoveUp   cId)) when pId = cId -> LeafMsg (MoveUp cId)
+    | BranchMsg (pId, LeafMsg (MoveDown cId)) when pId = cId -> LeafMsg (MoveDown cId)
+    | _ -> msg
+
+  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, RoseTreeMsg<Guid, SubtreeMsg>> list =
     let counterBindings =
       Counter.bindings ()
-      |> Bindings.mapModel (fun (_, c) -> c.Value)
-      |> Bindings.mapMsgWithModel (fun (_, c) msg -> CounterMsg (c.Id, msg))
+      |> Bindings.mapModel (fun (_, { Self = s }) -> s.Data.Value)
+      |> Bindings.mapMsg (CounterMsg >> LeafMsg)
     let newBindings =
       [
-        "CounterIdText" |> Binding.oneWay(fun (_, c) -> c.Id)
+        "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
       
-        "Remove" |> Binding.cmd(fun (_, c) -> Remove c.Id)
+        "Remove" |> Binding.cmd(fun (_, { Self = s }) -> s.Data.Id |> Remove |> LeafMsg)
       
-        "AddChild" |> Binding.cmd(fun (_, c) -> AddChild c.Id)
+        "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
       
-        "MoveUp" |> Binding.cmdIf(
-          (fun (_, c) -> MoveUp c.Id),
-          (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryHead <> Some c))
-      
-        "MoveDown" |> Binding.cmdIf(
-          (fun (_, c) -> MoveDown c.Id),
-          (fun (m, c) -> m |> childrenCountersOfParentOf c.Id |> List.tryLast <> Some c))
+        "MoveUp" |> Binding.cmdIf(moveUpMsg |> FuncOption.map LeafMsg)
+        "MoveDown" |> Binding.cmdIf(moveDownMsg |> FuncOption.map LeafMsg)
       
         "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
       
         "ChildCounters" |> Binding.subModelSeq(
-          (fun (m, c) -> m |> childCountersOf c.Id),
-          (fun ((m, _), childCounter) -> (m, childCounter)),
-          (fun (_, c) -> c.Id),
-          snd,
-          counterTreeBindings)
+          (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
+          (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
+          (fun (_, { Self = c }) -> c.Data.Id),
+          BranchMsg >> adjustMsgToParent,
+          subtreeBindings)
       ]
     [ counterBindings
       newBindings ]
@@ -253,13 +269,14 @@ module Bindings =
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m |> topLevelCounters),
-      (fun c -> c.Id),
-      counterTreeBindings)
+      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
+      (fun { Self = c } -> c.Data.Id),
+      BranchMsg >> adjustMsgToParent >> SubtreeMsg,
+      subtreeBindings)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
-    "AddCounter" |> Binding.cmd(fun m -> AddChild m.DummyRoot.Data.Id)
+    "AddCounter" |> Binding.cmd (AddChild |> LeafMsg |> SubtreeMsg)
   ]
 
 let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())

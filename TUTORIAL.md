@@ -217,6 +217,8 @@ let timerTick (dispatch: Dispatch<Msg>) =
   timer.Start()
 ```
 
+This is the kind of function that you pass to `Program.withSubscription`, which allows you to start arbitrary non-UI message dispatchers when the app starts. For example, you can start timers (as shown above), subscribe to other non-UI events, start a `MailboxProcessor`, etc.
+
 The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
 
 In other words, you don’t call the impure functions yourself; the MVU library calls them for you. Furthermore, from the point of view of your model, everything happens asynchronously (in the sense that your app and update loop continues without waiting on a response, and reacts to the “response” message when it arrives).
@@ -777,14 +779,12 @@ let parentBindings () : Binding<ParentModel, ParentMsg> list =
 
 #### Benefit for design-time view models
 
-With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.
-
-The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.  It also contains an example use of `mapModelWithMsg`.
+With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.  The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.
 
 #### Theory behind `mapModel` and `mapMsg`
 
 A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a functor in both type parameters. More specifically,
-- it a contravariant functor in `'model`, and `mapModel` is the corresponding mapping function for this functor; and
+- it is a contravariant functor in `'model`, and `mapModel` is the corresponding mapping function for this functor; and
 - it is a covariant functor in `'msg`, and `mapMsg` is the corresponding mapping function for this functor.
 
 Additional resources
