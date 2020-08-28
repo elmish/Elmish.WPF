@@ -3,20 +3,24 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelSeq;assembly=SubModelSeq"
         xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModelSeq"
+        xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelSeq;assembly=SubModelSeq"
         Title="SubModelSeq"
         Height="800"
         Width="1100"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         d:DataContext="{x:Static vm:Program.mainDesignVm}">
-  <StackPanel Margin="0,20,0,10">
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+  <Grid Margin="0,20,0,10">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center">
       <Button Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="10,0,10,20" />
       <Button Command="{Binding ToggleGlobalState}" Content="Toggle global state" Width="150" Margin="10,0,10,20" />
     </StackPanel>
-    <TreeView ItemsSource="{Binding Counters}">
+    <TreeView Grid.Row="1" ItemsSource="{Binding Counters}">
       <TreeView.ItemContainerStyle>
         <Style TargetType="{x:Type TreeViewItem}">
           <Setter Property="IsExpanded" Value="True"/>
@@ -36,5 +40,5 @@
         </HierarchicalDataTemplate>
       </TreeView.ItemTemplate>
     </TreeView>
-  </StackPanel>
+  </Grid>
 </Window>

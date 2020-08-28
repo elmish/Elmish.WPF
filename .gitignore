@@ -12,6 +12,7 @@ _ReSharper*
 *.psess
 *.vspx
 
+*wpftmp.csproj
 *.csproj.user
 *.resharper.user
 *.resharper
