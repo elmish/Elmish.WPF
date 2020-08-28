@@ -784,7 +784,7 @@ With such duplicate mapping code extracted, it is easier to create a design-time
 #### Theory behind `mapModel` and `mapMsg`
 
 A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a functor in both type parameters. More specifically,
-- it a contravariant functor in `'model`, and `mapModel` is the corresponding mapping function for this functor; and
+- it is a contravariant functor in `'model`, and `mapModel` is the corresponding mapping function for this functor; and
 - it is a covariant functor in `'msg`, and `mapMsg` is the corresponding mapping function for this functor.
 
 Additional resources
