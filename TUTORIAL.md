@@ -779,9 +779,7 @@ let parentBindings () : Binding<ParentModel, ParentMsg> list =
 
 #### Benefit for design-time view models
 
-With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.
-
-The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.  It also contains an example use of `mapModelWithMsg`.
+With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.  The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.
 
 #### Theory behind `mapModel` and `mapMsg`
 
