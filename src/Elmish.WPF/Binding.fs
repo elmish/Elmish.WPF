@@ -149,14 +149,14 @@ module internal BindingLogic =
       Seq.empty
       |> Seq.append (removals |> Seq.map (Kvp.value >> fst))
       |> Seq.append (moves |> Seq.map (fun (tIdx, _, _, _) -> tIdx))
-      |> Seq.sortDescending
+      |> Seq.sortDescending // so we remove by index from largest to smallest
       |> Seq.iter target.RemoveAt
 
     let actuallyAdd () =
       Seq.empty
       |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
       |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
-      |> Seq.sortBy fst
+      |> Seq.sortBy fst // so we insert by index from smallest to largest
       |> Seq.iter target.Insert
 
     match moves, removals.Count, additions.Count with
