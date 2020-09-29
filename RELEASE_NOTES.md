@@ -9,7 +9,7 @@
 * Added binding mapping functions
   * Added `mapModel`, `mapMsg`, and `mapMsgWithModel` in both the `Binding` and `Bindings` modules
   * These functions enable common model and message mapping logic to be extracted
-  * See the `SubModelSeq` sample for an excellent use of `mapModel` and `mapMsgWithMsg`
+  * See the `SubModelSeq` sample for an excellent use of `mapModel` and `mapMsg`
 * Improved logging:
   * Now uses `Microsoft.Extensions.Logging` for wide compatibility and easy integration into common log frameworks
   * Use `WpfProgram.WithLogger` to pass an `ILoggerFactory` for your chosen log framework
