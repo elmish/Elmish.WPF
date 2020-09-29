@@ -734,7 +734,7 @@ You may pass any function you want for `equals`; it does not have to be one of t
 
 ### Mapping Bindings
 
-Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapModelWithMsg`.
+Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapMsgWithModel`.
 
 #### Example use of `mapModel` and `mapMsg`
 
