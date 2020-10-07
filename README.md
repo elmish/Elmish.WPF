@@ -65,7 +65,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      
      <PropertyGroup>
        <OutputType>Exe</OutputType>  <!-- or WinExe -->
-       <TargetFramework>netcoreapp3.0</TargetFramework>
+       <TargetFramework>netcoreapp3.1</TargetFramework>
        <UseWpf>true</UseWpf>
      </PropertyGroup>
      
