@@ -1,3 +1,6 @@
+#### 3.5.7
+* `ViewModel<'model, 'msg>` now overrides `object.ToString()` and returns a string representation of the current `'model` instance.  This is only intended for deubgging.  No guarantees are given about the exact structure of the returned string.
+
 #### 3.5.6
 
 * The amount of time used to update `OneWaySeq` and `SubModelSeq` bindings has been significantly decreased.  This includes all cases of a `SubModelSeq` binding and all cases of a `OneWaySeq` binding for which `equals` returns `false`.
