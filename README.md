@@ -164,6 +164,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    ```F#
    open System
    open Elmish.WPF
+   open MyNamespace
    
    [<EntryPoint; STAThread>]
    let main argv =
