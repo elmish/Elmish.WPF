@@ -47,7 +47,15 @@ module List =
   let mapFirst p f input =
     let rec mapFirstRec reverseFront back =
       match back with
-      | [] -> input
+      | [] ->
+          (*
+           * Conceptually, the correct value to return is
+           * reverseFront |> List.rev
+           * but this is the same as
+           * input
+           * so returning that instead.
+           *)
+          input
       | a :: ma ->
           if p a then
             (reverseFront |> List.rev) @ (f a :: ma)
