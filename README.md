@@ -54,41 +54,29 @@ Recommended resources
 Getting started with Elmish.WPF
 -------------------------------
 
-See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are:
+See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are (assuming up-to-date VS2019):
 
 1. Create an F# Console Application. (You can create a Windows application, but the core Elmish logs are currently only written to the console.)
 
-   If targeting .NET Core 3, the project file should look like this:
-
-   ```fsproj
-   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
-     
-     <PropertyGroup>
-       <OutputType>Exe</OutputType>  <!-- or WinExe -->
-       <TargetFramework>netcoreapp3.1</TargetFramework>
-       <UseWpf>true</UseWpf>
-     </PropertyGroup>
-     
-     <!-- other stuff -->
-   ```
-
-   If targeting .NET Framework (4.6.1 or later), the project file should look like this:
+   If targeting .NET 5 or .NET Core, the project file should look like this:
 
    ```fsproj
    <Project Sdk="Microsoft.NET.Sdk">
      
      <PropertyGroup>
-       <OutputType>Exe</OutputType>  <!-- or WinExe -->
-       <TargetFramework>net471</TargetFramework>
+       <TargetFramework>net5.0-windows</TargetFramework>
+       <UseWpf>true</UseWpf>
+       <OutputType>Exe</OutputType>  <!-- or WinExe if you don't want the console window -->
+       <DisableWinExeOutputInference>true</DisableWinExeOutputInference>  <!-- If using Exe above -->
      </PropertyGroup>
      
-     <ItemGroup>
-       <Reference Include="PresentationCore" />
-       <Reference Include="PresentationFramework" />
-       <Reference Include="WindowsBase" />
-     </ItemGroup>
-     
      <!-- other stuff -->
+   ```
+
+   If targeting .NET Framework (4.6.1 or later), replace the first line with
+
+   ```fsproj
+   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
    ```
 
 2. Add NuGet reference to package `Elmish.WPF`.
