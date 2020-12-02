@@ -185,7 +185,7 @@ module App =
       DummyRoot =
         createNewLeaf ()
         |> List.singleton
-        |> RoseTree.create dummyRootData } 
+        |> RoseTree.create dummyRootData }
 
   let hasId id t = t.Data.Id = id
 
