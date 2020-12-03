@@ -81,7 +81,7 @@ module oneWay =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let d = Binding.oneWay(get) |> getOneWayData
 
       test <@ d.Get x |> unbox = get x @>
@@ -182,7 +182,7 @@ module oneWayLazy =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let d = Binding.oneWayLazy(get, fail2, fail) |> getOneWayLazyData
 
       test <@ d.Get x |> unbox = get x @>
@@ -207,7 +207,7 @@ module oneWayLazy =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let map = string
+      let map = string<int>
       let d = Binding.oneWayLazy(fail, fail2, map) |> getOneWayLazyData
 
       test <@ d.Map (box x) |> unbox = map x @>
@@ -235,7 +235,7 @@ module oneWayOptLazy =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.oneWayOptLazy(get, fail2, (fail: _ -> _ option)) |> getOneWayLazyData
 
         test <@ d.Get x |> unbox = get x @>
@@ -297,7 +297,7 @@ module oneWayOptLazy =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.oneWayOptLazy(get, fail2, (fail: _ -> _ voption)) |> getOneWayLazyData
 
         test <@ d.Get x |> unbox = get x @>
@@ -409,7 +409,7 @@ module oneWaySeq =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let getId = string
+      let getId = string<int>
       let d = Binding.oneWaySeq(fail, fail2, getId) |> getOneWaySeqLazyData
 
       test <@ d.GetId (box x) |> unbox = getId x @>
@@ -447,7 +447,7 @@ module oneWaySeqLazy =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let d = Binding.oneWaySeqLazy(get, fail2, fail, fail2, fail) |> getOneWaySeqLazyData
 
       test <@ d.Get x |> unbox = get x @>
@@ -484,7 +484,7 @@ module oneWaySeqLazy =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let getId = string
+      let getId = string<int>
       let d = Binding.oneWaySeqLazy(fail, fail2, fail, fail2, getId) |> getOneWaySeqLazyData
 
       test <@ d.GetId (box x) |> unbox = getId x @>
@@ -525,7 +525,7 @@ module twoWay =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWay(get, fail2) |> getTwoWayData
 
         test <@ d.Get x |> unbox = get x @>
@@ -563,7 +563,7 @@ module twoWay =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWay(get, (fail: string -> int)) |> getTwoWayData
 
         test <@ d.Get x |> unbox = get x @>
@@ -855,7 +855,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -906,7 +906,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -957,7 +957,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -1009,7 +1009,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -1060,7 +1060,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -1111,7 +1111,7 @@ module twoWayValidate =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let get = string
+        let get = string<int>
         let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
@@ -2073,7 +2073,7 @@ module cmd =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let exec = string
+        let exec = string<int>
         let d = Binding.cmd(exec) |> getCmdData
 
         test <@ d.Exec x = (exec x |> ValueSome) @>
@@ -2144,7 +2144,7 @@ module cmdIf =
       Property.check <| property {
         let! x = GenX.auto<int>
 
-        let exec = string
+        let exec = string<int>
         let d = Binding.cmdIf(exec, fail) |> getCmdData
 
         test <@ d.Exec x = (exec x |> ValueSome) @>
@@ -2412,7 +2412,7 @@ module cmdParam =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec p = string p
+        let exec (p: obj) = string p
         let d = Binding.cmdParam(exec) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p |> ValueSome) @>
@@ -2459,7 +2459,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m = unbox p + string m
+        let exec (p: obj) (m: int) = unbox p + string m
         let d = Binding.cmdParamIf(exec, fail) |> getCmdParamData
 
         test <@ d.Exec (box p) m = (exec p m |> ValueSome) @>
@@ -2990,7 +2990,7 @@ module subModel =
     let ``final getModel combines main model and return value of getSubModel, and wraps in ValueSome`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel = string
+        let getSubModel = string<int>
         let d = Binding.subModel(getSubModel, fail) |> getSubModelData
         test <@ d.GetModel x = ((x, getSubModel x) |> box |> ValueSome) @>
       }
@@ -3031,7 +3031,7 @@ module subModel =
     let ``final getModel combines main model and return value of getSubModel, and wraps in ValueSome`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel = string
+        let getSubModel = string<int>
         let d = Binding.subModel(getSubModel, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ((x, getSubModel x) |> box |> ValueSome) @>
       }
@@ -3043,7 +3043,7 @@ module subModel =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModel(fail, toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3074,7 +3074,7 @@ module subModel =
     let ``final getModel calls toBindingModel on main model and return value of getSubModel, and wraps in ValueSome`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let getSubModel = string
+        let getSubModel = string<int>
         let toBindingModel (m: int, s: string) = m + s.Length
         let d = Binding.subModel(getSubModel, toBindingModel, fail, fail) |> getSubModelData
         test <@ d.GetModel x = ((x, getSubModel x) |> toBindingModel |> box |> ValueSome) @>
@@ -3087,7 +3087,7 @@ module subModel =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModel(fail, fail, toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3263,7 +3263,7 @@ module subModelOpt =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ voption), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3326,7 +3326,7 @@ module subModelOpt =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ option), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3389,7 +3389,7 @@ module subModelOpt =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ voption), fail, toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3453,7 +3453,7 @@ module subModelOpt =
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
-        let toMsg = string
+        let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ option), fail, toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
@@ -3646,9 +3646,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
-        let get x = if useNone then ValueNone else x |> string |> ValueSome
+        let get (x: int) = if useNone then ValueNone else x |> string |> ValueSome
         let d = Binding.subModelSelectedItem("", get, fail2) |> getSubModelSelectedItemData
-        test <@ d.Get (box x) |> ValueOption.map unbox = get x @>
+        test <@ d.Get x |> ValueOption.map unbox<string> = get x @>
       }
 
 
@@ -3689,9 +3689,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
-        let get x = if useNone then None else x |> string |> Some
+        let get (x: int) = if useNone then None else x |> string |> Some
         let d = Binding.subModelSelectedItem("", get, fail2) |> getSubModelSelectedItemData
-        test <@ d.Get (box x) |> ValueOption.map unbox = (get x |> ValueOption.ofOption) @>
+        test <@ d.Get x |> ValueOption.map unbox = (get x |> ValueOption.ofOption) @>
       }
 
 
@@ -3732,9 +3732,9 @@ module subModelSelectedItem =
         Property.check <| property {
           let! x = GenX.auto<int>
           let! useNone = Gen.bool
-          let get x = if useNone then ValueNone else x |> string |> ValueSome
+          let get (x: int) = if useNone then ValueNone else x |> string |> ValueSome
           let d = Binding.subModelSelectedItem("", get, (fail: _ -> obj)) |> getSubModelSelectedItemData
-          test <@ d.Get (box x) |> ValueOption.map unbox = get x @>
+          test <@ d.Get x |> ValueOption.map unbox = get x @>
         }
 
 
@@ -3775,9 +3775,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
-        let get x = if useNone then None else x |> string |> Some
+        let get (x: int) = if useNone then None else x |> string |> Some
         let d = Binding.subModelSelectedItem("", get, (fail: _ -> obj)) |> getSubModelSelectedItemData
-        test <@ d.Get (box x) |> ValueOption.map unbox = (get x |> ValueOption.ofOption) @>
+        test <@ d.Get x |> ValueOption.map unbox = (get x |> ValueOption.ofOption) @>
       }
 
 

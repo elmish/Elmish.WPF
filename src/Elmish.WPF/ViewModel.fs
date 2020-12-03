@@ -564,6 +564,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", propNameChain, binder.Name)
         success
 
+  // to help with debugging
+  override __.ToString () =
+    sprintf "%A" currentModel
+
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]

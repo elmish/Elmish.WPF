@@ -48,7 +48,15 @@ module List =
   let mapFirst p f input =
     let rec mapFirstRec reverseFront back =
       match back with
-      | [] -> input
+      | [] ->
+          (*
+           * Conceptually, the correct value to return is
+           * reverseFront |> List.rev
+           * but this is the same as
+           * input
+           * so returning that instead.
+           *)
+          input
       | a :: ma ->
           if p a then
             (reverseFront |> List.rev) @ (f a :: ma)
@@ -187,7 +195,7 @@ module App =
       DummyRoot =
         createNewLeaf ()
         |> List.singleton
-        |> RoseTree.create dummyRootData } 
+        |> RoseTree.create dummyRootData }
 
   let hasId id t = t.Data.Id = id
 

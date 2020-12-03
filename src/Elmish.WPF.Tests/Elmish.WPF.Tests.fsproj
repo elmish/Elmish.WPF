@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;net461</TargetFrameworks>
+    <TargetFrameworks>net5.0-windows;netcoreapp3.0;net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!--Turn on warnings for unused values (arguments and let bindings) -->

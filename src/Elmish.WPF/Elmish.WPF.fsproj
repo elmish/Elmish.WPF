@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;net461</TargetFrameworks>
+    <TargetFrameworks>net5.0-windows;netcoreapp3.0;net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <DebugType>Embedded</DebugType>
     <EmbedAllSources>True</EmbedAllSources>
-    <Authors>jsacks, cmeeren, bender2k14</Authors>
+    <Authors>jsacks, cmeeren, TysonMN</Authors>
     <Description>F# bindings for using Elmish in WPF</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>

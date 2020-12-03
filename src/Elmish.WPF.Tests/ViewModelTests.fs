@@ -237,7 +237,7 @@ module OneWay =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
 
       let binding = oneWay name get
       let vm = TestVm(m1, binding)
@@ -257,7 +257,7 @@ module OneWay =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
 
       let binding = oneWay name get
       let vm = TestVm(m1, binding)
@@ -277,7 +277,7 @@ module OneWayLazy =
       let! name = GenX.auto<string>
       let! m = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let equals = (=)
       let map = String.length
 
@@ -295,7 +295,7 @@ module OneWayLazy =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let equals _ _ = false
       let map = String.length
 
@@ -314,7 +314,7 @@ module OneWayLazy =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let equals _ _ = true
       let map = String.length
 
@@ -726,7 +726,7 @@ module TwoWay =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let set _ _ = ()
 
       let binding = twoWay name get set
@@ -747,7 +747,7 @@ module TwoWay =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let set _ _ = ()
 
       let binding = twoWay name get set
@@ -788,7 +788,7 @@ module TwoWayValidate =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let set _ _ = ()
       let validate _ = ValueNone
 
@@ -810,7 +810,7 @@ module TwoWayValidate =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let set _ _ = ()
       let validate _ = ValueNone
 
@@ -897,7 +897,7 @@ module TwoWayValidate =
 
       let get _ = ()
       let set _ _ = ()
-      let validate m = ValueSome (string m)
+      let validate m = ValueSome (string<int> m)
 
       let binding = twoWayValidate name get set validate
       let vm = TestVm(m1, binding)
@@ -1193,7 +1193,7 @@ module SubModel =
 
       let getModel = snd >> ValueSome
       let toMsg _ = ()
-      let subGet = string
+      let subGet = string<int>
 
       let subBinding = oneWay subName subGet
       let binding = subModel name getModel toMsg [subBinding] sticky
