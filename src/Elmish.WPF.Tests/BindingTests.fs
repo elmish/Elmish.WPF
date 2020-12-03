@@ -359,7 +359,7 @@ module oneWaySeq =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let get = string
+      let get = string<int>
       let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
 
       test <@ d.Get x |> unbox = get x @>
