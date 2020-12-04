@@ -37,15 +37,13 @@
             d:DataContext="{Binding DataContext.Form1, RelativeSource={RelativeSource AncestorType=StackPanel}}"
             Visibility="{Binding DataContext.Form1Visible,
                          RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter},
-                         FallbackValue=Collapsed}" />
+                         Converter={StaticResource VisibilityConverter}}" />
         <local:Form2
             DataContext="{Binding Form2}"
             d:DataContext="{Binding DataContext.Form2, RelativeSource={RelativeSource AncestorType=StackPanel}}"
             Visibility="{Binding DataContext.Form2Visible,
                          RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter},
-                         FallbackValue=Collapsed}" />
+                         Converter={StaticResource VisibilityConverter}}" />
       </StackPanel>
     </Border>
   </Grid>
