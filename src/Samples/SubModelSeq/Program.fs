@@ -5,9 +5,9 @@ open Elmish
 open Elmish.WPF
 
 
-type InOutMsg<'InMsg, 'OutMsg> =
-  | InMsg of 'InMsg
-  | OutMsg of 'OutMsg
+type InOutMsg<'a, 'b> =
+  | InMsg of 'a
+  | OutMsg of 'b
 
 
 module Option =
