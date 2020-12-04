@@ -5,6 +5,11 @@ open Elmish
 open Elmish.WPF
 
 
+type InOutMsg<'InMsg, 'OutMsg> =
+  | InMsg of 'InMsg
+  | OutMsg of 'OutMsg
+
+
 module Option =
 
   let set a = Option.map (fun _ -> a)
@@ -158,6 +163,11 @@ module App =
     | MoveUp of Guid
     | MoveDown of Guid
 
+  type SubtreeOutMsg =
+    | OutRemove
+    | OutMoveUp
+    | OutMoveDown
+
   type Msg =
     | ToggleGlobalState
     | SubtreeMsg of RoseTreeMsg<Guid, SubtreeMsg>
@@ -207,6 +217,11 @@ module App =
     | ToggleGlobalState -> mapSomeGlobalState not
     | SubtreeMsg msg -> msg |> RoseTree.update hasId updateSubtree |> mapDummyRoot
 
+  let mapOutMsg = function
+    | OutRemove -> Remove
+    | OutMoveUp -> MoveUp
+    | OutMoveDown -> MoveDown
+
 
 module Bindings =
 
@@ -219,40 +234,33 @@ module Bindings =
   let moveUpMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryHead with
     | Some c when c.Data.Id <> s.Data.Id ->
-        s.Data.Id |> MoveUp |> Some
+        OutMoveUp |> OutMsg |> Some
     | _ -> None
 
   let moveDownMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryLast with
     | Some c when c.Data.Id <> s.Data.Id ->
-        s.Data.Id |> MoveDown |> Some
+        OutMoveDown |> OutMsg |> Some
     | _ -> None
-    
-  let adjustMsgToParent msg =
-    match msg with
-    | BranchMsg (pId, LeafMsg (Remove   cId)) when pId = cId -> LeafMsg (Remove cId)
-    | BranchMsg (pId, LeafMsg (MoveUp   cId)) when pId = cId -> LeafMsg (MoveUp cId)
-    | BranchMsg (pId, LeafMsg (MoveDown cId)) when pId = cId -> LeafMsg (MoveDown cId)
-    | _ -> msg
 
-  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, RoseTreeMsg<Guid, SubtreeMsg>> list = [
+  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list = [
     "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
 
     "CounterValue" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Value.Count)
-    "Increment" |> Binding.cmd(Increment |> CounterMsg |> LeafMsg)
-    "Decrement" |> Binding.cmd(Decrement |> CounterMsg |> LeafMsg)
+    "Increment" |> Binding.cmd(Increment |> CounterMsg |> LeafMsg |> InMsg)
+    "Decrement" |> Binding.cmd(Decrement |> CounterMsg |> LeafMsg |> InMsg)
     "StepSize" |> Binding.twoWay(
       (fun (_, { Self = s }) -> float s.Data.Value.StepSize),
-      (fun v _ -> v |> int |> SetStepSize |> CounterMsg |> LeafMsg))
+      (fun v _ -> v |> int |> SetStepSize |> CounterMsg |> LeafMsg |> InMsg))
     "Reset" |> Binding.cmdIf(
-      Reset |> CounterMsg |> LeafMsg,
+      Reset |> CounterMsg |> LeafMsg |> InMsg,
       (fun (_, { Self = s }) -> Counter.canReset s.Data.Value))
 
-    "Remove" |> Binding.cmd(fun (_, { Self = s }) -> s.Data.Id |> Remove |> LeafMsg)
-    "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
+    "Remove" |> Binding.cmd(OutRemove |> OutMsg)
+    "AddChild" |> Binding.cmd(AddChild |> LeafMsg |> InMsg)
 
-    "MoveUp" |> Binding.cmdIf(moveUpMsg |> FuncOption.map LeafMsg)
-    "MoveDown" |> Binding.cmdIf(moveDownMsg |> FuncOption.map LeafMsg)
+    "MoveUp" |> Binding.cmdIf moveUpMsg
+    "MoveDown" |> Binding.cmdIf moveDownMsg
 
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
 
@@ -260,7 +268,11 @@ module Bindings =
       (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
       (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
       (fun (_, { Self = c }) -> c.Data.Id),
-      BranchMsg >> adjustMsgToParent,
+      (fun (cId, inOutMsg) ->
+        match inOutMsg with
+        | InMsg msg -> (cId, msg) |> BranchMsg
+        | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
+        |> InMsg),
       subtreeBindings)
   ]
 
@@ -268,7 +280,11 @@ module Bindings =
     "Counters" |> Binding.subModelSeq(
       (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
       (fun { Self = c } -> c.Data.Id),
-      BranchMsg >> adjustMsgToParent >> SubtreeMsg,
+      (fun (cId, inOutMsg) ->
+        match inOutMsg with
+        | InMsg msg -> (cId, msg) |> BranchMsg
+        | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
+        |> SubtreeMsg),
       subtreeBindings)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
