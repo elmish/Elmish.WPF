@@ -24,26 +24,28 @@
     <Rectangle
         Fill="Black"
         Opacity="0.6"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}" />
+        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}, FallbackValue=Collapsed}" />
     <Border
         BorderBrush="Black"
         BorderThickness="2"
         Width="350"
         Height="200"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}">
+        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}, FallbackValue=Collapsed}">
       <StackPanel Background="White">
         <local:Form1
             DataContext="{Binding Form1}"
             d:DataContext="{Binding DataContext.Form1, RelativeSource={RelativeSource AncestorType=StackPanel}}"
             Visibility="{Binding DataContext.Form1Visible,
                          RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter}}" />
+                         Converter={StaticResource VisibilityConverter},
+                         FallbackValue=Collapsed}" />
         <local:Form2
             DataContext="{Binding Form2}"
             d:DataContext="{Binding DataContext.Form2, RelativeSource={RelativeSource AncestorType=StackPanel}}"
             Visibility="{Binding DataContext.Form2Visible,
                          RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter}}" />
+                         Converter={StaticResource VisibilityConverter},
+                         FallbackValue=Collapsed}" />
       </StackPanel>
     </Border>
   </Grid>
