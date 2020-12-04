@@ -244,13 +244,13 @@ module Bindings =
   let moveUpMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryHead with
     | Some c when c.Data.Id <> s.Data.Id ->
-        OutMoveUp |> OutMsg |> Some
+        OutMoveUp |> Some
     | _ -> None
 
   let moveDownMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryLast with
     | Some c when c.Data.Id <> s.Data.Id ->
-        OutMoveDown |> OutMsg |> Some
+        OutMoveDown |> Some
     | _ -> None
 
   let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list =
@@ -276,13 +276,12 @@ module Bindings =
       |> Bindings.mapMsg InMsg
 
     let outMsgBindings =
-      [ "Remove" |> Binding.cmd(OutRemove |> OutMsg)
+      [ "Remove" |> Binding.cmd OutRemove
         "MoveUp" |> Binding.cmdIf moveUpMsg
-        "MoveDown" |> Binding.cmdIf moveDownMsg ]
+        "MoveDown" |> Binding.cmdIf moveDownMsg
+      ] |> Bindings.mapMsg OutMsg
 
-    [ outMsgBindings
-      inMsgBindings ]
-    |> List.concat
+    outMsgBindings @ inMsgBindings
 
 
   let rootBindings () : Binding<Model, Msg> list = [
