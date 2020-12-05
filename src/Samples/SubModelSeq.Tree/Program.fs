@@ -1,4 +1,4 @@
-module Elmish.WPF.Samples.SubModelSeq.Program
+module Elmish.WPF.Samples.SubModelSeq.Tree.Program
 
 open System
 open Elmish
