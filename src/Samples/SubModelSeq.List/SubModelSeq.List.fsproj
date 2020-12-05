@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWpf>true</UseWpf>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\Elmish.WPF\Elmish.WPF.fsproj" />
+  </ItemGroup>
+  
+</Project>
