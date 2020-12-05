@@ -37,9 +37,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NewWindow", "Samples\NewWin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewWindow.Views", "Samples\NewWindow.Views\NewWindow.Views.csproj", "{7595D7F1-5B28-415F-97C2-470A375E3BCC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelSeq.Tree.Views", "Samples\SubModelSeq.Views\SubModelSeq.Tree.Views.csproj", "{DFAFDCF3-83E0-4440-AD8C-E45878C80F64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelSeq.Tree.Views", "Samples\SubModelSeq.Tree.Views\SubModelSeq.Tree.Views.csproj", "{DFAFDCF3-83E0-4440-AD8C-E45878C80F64}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelSeq.Tree", "Samples\SubModelSeq\SubModelSeq.Tree.fsproj", "{2946EBC5-5937-45EE-8F19-7AF0792B5A5B}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SubModelSeq.Tree", "Samples\SubModelSeq.Tree\SubModelSeq.Tree.fsproj", "{2946EBC5-5937-45EE-8F19-7AF0792B5A5B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SubModelSelectedItem.Views", "Samples\SubModelSelectedItem.Views\SubModelSelectedItem.Views.csproj", "{6023315A-BC97-4C4A-930E-D6D01E1DC549}"
 EndProject
