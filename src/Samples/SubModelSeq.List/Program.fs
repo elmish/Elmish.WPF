@@ -113,91 +113,43 @@ module Counter =
       | Reset -> init
 
 
-
-[<AutoOpen>]
-module RoseTree =
-
-  type RoseTree<'model> =
-    { Data: 'model
-      Children: RoseTree<'model> list }
-
-  type RoseTreeMsg<'a, 'msg> =
-    | BranchMsg of 'a * RoseTreeMsg<'a, 'msg>
-    | LeafMsg of 'msg
-
-  module RoseTree =
-
-    let create data children =
-      { Data = data
-        Children = children }
-    let createLeaf a = create a []
-
-    let getData t = t.Data
-    let setData (d: 'a) (t: RoseTree<'a>) = { t with Data = d }
-    let mapData f = map getData setData f
-
-    let getChildren t = t.Children
-    let setChildren c t = { t with Children = c }
-    let mapChildren f = map getChildren setChildren f
-
-    let addSubtree t = t |> List.cons |> mapChildren
-    let addChildData a = a |> createLeaf |> addSubtree
-
-    let update p (f: 'msg -> RoseTree<'model> -> RoseTree<'model>) =
-      let rec updateRec = function
-        | BranchMsg (a, msg) -> msg |> updateRec |> List.mapFirst (p a) |> mapChildren
-        | LeafMsg msg -> msg |> f
-      updateRec
-
-
 module App =
 
   type Model =
     { SomeGlobalState: bool
-      DummyRoot: RoseTree<Identifiable<Counter>> }
+      Counters: Identifiable<Counter> list }
 
-  type SubtreeMsg =
-    | CounterMsg of CounterMsg
-    | AddChild
+  type Msg =
+    | ToggleGlobalState
+    | CounterMsg of Guid * CounterMsg
+    | AddCounter
     | Remove of Guid
     | MoveUp of Guid
     | MoveDown of Guid
 
-  type SubtreeOutMsg =
+  type OutMsg =
     | OutRemove
     | OutMoveUp
     | OutMoveDown
-
-  type Msg =
-    | ToggleGlobalState
-    | SubtreeMsg of RoseTreeMsg<Guid, SubtreeMsg>
 
 
   let getSomeGlobalState m = m.SomeGlobalState
   let setSomeGlobalState v m = { m with SomeGlobalState = v }
   let mapSomeGlobalState f = f |> map getSomeGlobalState setSomeGlobalState
 
-  let getDummyRoot m = m.DummyRoot
-  let setDummyRoot v m = { m with DummyRoot = v }
-  let mapDummyRoot f = f |> map getDummyRoot setDummyRoot
+  let getCounters m = m.Counters
+  let setCounters v m = { m with Counters = v }
+  let mapCounters f = f |> map getCounters setCounters
 
   let createNewIdentifiableCounter () =
     { Id = Guid.NewGuid ()
       Value = Counter.init }
 
-  let createNewLeaf () =
-    createNewIdentifiableCounter ()
-    |> RoseTree.createLeaf
-
   let init () =
-    let dummyRootData = createNewIdentifiableCounter () // Placeholder data to satisfy type system. User never sees this.
     { SomeGlobalState = false
-      DummyRoot =
-        createNewLeaf ()
-        |> List.singleton
-        |> RoseTree.create dummyRootData }
+      Counters = [ createNewIdentifiableCounter () ] }
 
-  let hasId id t = t.Data.Id = id
+  let hasId id ic = ic.Id = id
 
   let swapCounters swap nId =
     nId
@@ -206,16 +158,13 @@ module App =
     |> FuncOption.bind swap
     |> FuncOption.inputIfNone
 
-  let updateSubtree = function
-    | CounterMsg msg -> msg |> Counter.update |> Identifiable.map |> RoseTree.mapData
-    | AddChild -> createNewLeaf () |> List.cons |> RoseTree.mapChildren
-    | Remove cId -> cId |> hasId >> not |> List.filter |> RoseTree.mapChildren
-    | MoveUp cId -> cId |> swapCounters List.swapWithPrev |> RoseTree.mapChildren
-    | MoveDown cId -> cId |> swapCounters List.swapWithNext |> RoseTree.mapChildren
-
   let update = function
     | ToggleGlobalState -> mapSomeGlobalState not
-    | SubtreeMsg msg -> msg |> RoseTree.update hasId updateSubtree |> mapDummyRoot
+    | CounterMsg (cId, msg) -> msg |> Counter.update |> Identifiable.map |> List.mapFirst (fun ic -> ic.Id = cId) |> mapCounters
+    | AddCounter -> createNewIdentifiableCounter () |> List.cons |> mapCounters
+    | Remove cId -> cId |> hasId >> not |> List.filter |> mapCounters
+    | MoveUp cId -> cId |> swapCounters List.swapWithPrev |> mapCounters
+    | MoveDown cId -> cId |> swapCounters List.swapWithNext |> mapCounters
 
   let mapOutMsg = function
     | OutRemove -> Remove
@@ -227,69 +176,52 @@ module Bindings =
 
   open App
 
-  type SelfWithParent<'a> =
-    { Self: 'a
-      Parent: 'a }
-
-  let moveUpMsg (_, { Parent = p; Self = s }) =
-    match p.Children |> List.tryHead with
-    | Some c when c.Data.Id <> s.Data.Id ->
+  let moveUpMsg (m, s) =
+    match m.Counters |> List.tryHead with
+    | Some c when c.Id <> s.Id ->
         OutMoveUp |> OutMsg |> Some
     | _ -> None
 
-  let moveDownMsg (_, { Parent = p; Self = s }) =
-    match p.Children |> List.tryLast with
-    | Some c when c.Data.Id <> s.Data.Id ->
+  let moveDownMsg (m, s) =
+    match m.Counters |> List.tryLast with
+    | Some c when c.Id <> s.Id ->
         OutMoveDown |> OutMsg |> Some
     | _ -> None
 
-  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
+  let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list = [
+    "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
 
-    "CounterValue" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Value.Count)
-    "Increment" |> Binding.cmd(Increment |> CounterMsg |> LeafMsg |> InMsg)
-    "Decrement" |> Binding.cmd(Decrement |> CounterMsg |> LeafMsg |> InMsg)
+    "CounterValue" |> Binding.oneWay(fun (_, s) -> s.Value.Count)
+    "Increment" |> Binding.cmd(Increment |> InMsg)
+    "Decrement" |> Binding.cmd(Decrement |> InMsg)
     "StepSize" |> Binding.twoWay(
-      (fun (_, { Self = s }) -> float s.Data.Value.StepSize),
-      (fun v _ -> v |> int |> SetStepSize |> CounterMsg |> LeafMsg |> InMsg))
+      (fun (_, s) -> float s.Value.StepSize),
+      (fun v _ -> v |> int |> SetStepSize |> InMsg))
     "Reset" |> Binding.cmdIf(
-      Reset |> CounterMsg |> LeafMsg |> InMsg,
-      (fun (_, { Self = s }) -> Counter.canReset s.Data.Value))
+      Reset |> InMsg,
+      (fun (_, s) -> Counter.canReset s.Value))
 
     "Remove" |> Binding.cmd(OutRemove |> OutMsg)
-    "AddChild" |> Binding.cmd(AddChild |> LeafMsg |> InMsg)
 
     "MoveUp" |> Binding.cmdIf moveUpMsg
     "MoveDown" |> Binding.cmdIf moveDownMsg
 
     "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-
-    "ChildCounters" |> Binding.subModelSeq(
-      (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
-      (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
-      (fun (_, { Self = c }) -> c.Data.Id),
-      (fun (cId, inOutMsg) ->
-        match inOutMsg with
-        | InMsg msg -> (cId, msg) |> BranchMsg
-        | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
-        |> InMsg),
-      subtreeBindings)
   ]
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
-      (fun { Self = c } -> c.Data.Id),
+      (fun m -> m.Counters),
+      (fun ic -> ic.Id),
       (fun (cId, inOutMsg) ->
         match inOutMsg with
-        | InMsg msg -> (cId, msg) |> BranchMsg
-        | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
-        |> SubtreeMsg),
-      subtreeBindings)
+        | InMsg msg -> (cId, msg) |> CounterMsg
+        | OutMsg msg -> cId |> mapOutMsg msg),
+      counterBindings)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
-    "AddCounter" |> Binding.cmd (AddChild |> LeafMsg |> SubtreeMsg)
+    "AddCounter" |> Binding.cmd AddCounter
   ]
 
 
