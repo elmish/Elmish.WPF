@@ -16,10 +16,7 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
-    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center">
-      <Button Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="10,0,10,20" />
-      <Button Command="{Binding ToggleGlobalState}" Content="Toggle global state" Width="150" Margin="10,0,10,20" />
-    </StackPanel>
+    <Button Grid.Row="0" Command="{Binding AddCounter}" Content="Add counter" Width="150" Margin="10,0,10,20" />
     <ListBox Grid.Row="1" ItemsSource="{Binding Counters}">
       <ListBox.ItemTemplate>
         <DataTemplate>
@@ -29,7 +26,6 @@
             <Button Command="{Binding Remove}" Content="×" Margin="0,5,10,5" Width="20" />
             <Button Command="{Binding MoveUp}" Content="↑" Margin="0,5,10,5" Width="20" />
             <Button Command="{Binding MoveDown}" Content="↓" Margin="0,5,10,5" Width="20"/>
-            <TextBlock Text="{Binding GlobalState, StringFormat='Global state: {0}'}" Margin="10,5,10,5" />
           </StackPanel>
         </DataTemplate>
       </ListBox.ItemTemplate>

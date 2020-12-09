@@ -128,11 +128,9 @@ module Counter =
 module App =
 
   type Model =
-    { SomeGlobalState: bool
-      Counters: Identifiable<Counter> list }
+    { Counters: Identifiable<Counter> list }
 
   type Msg =
-    | ToggleGlobalState
     | CounterMsg of Guid * CounterMsg
     | AddCounter
     | Remove of Guid
@@ -145,10 +143,6 @@ module App =
     | OutMoveDown
 
 
-  let getSomeGlobalState m = m.SomeGlobalState
-  let setSomeGlobalState v m = { m with SomeGlobalState = v }
-  let mapSomeGlobalState f = f |> map getSomeGlobalState setSomeGlobalState
-
   let getCounters m = m.Counters
   let setCounters v m = { m with Counters = v }
   let mapCounters f = f |> map getCounters setCounters
@@ -158,8 +152,7 @@ module App =
       Value = Counter.init }
 
   let init () =
-    { SomeGlobalState = false
-      Counters = [ createNewIdentifiableCounter () ] }
+    { Counters = [ createNewIdentifiableCounter () ] }
 
   let hasId id ic = ic.Id = id
 
@@ -171,7 +164,6 @@ module App =
     |> FuncOption.inputIfNone
 
   let update = function
-    | ToggleGlobalState -> mapSomeGlobalState not
     | CounterMsg (cId, msg) -> msg |> Counter.update |> Identifiable.map |> List.mapFirst (fun ic -> ic.Id = cId) |> mapCounters
     | AddCounter -> createNewIdentifiableCounter () |> List.cons |> mapCounters
     | Remove cId -> cId |> hasId >> not |> List.filter |> mapCounters
@@ -202,13 +194,9 @@ module Bindings =
 
   let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list =
     [ "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
-    
       "Remove" |> Binding.cmd(OutRemove |> OutMsg)
-    
       "MoveUp" |> Binding.cmdIf moveUpMsg
       "MoveDown" |> Binding.cmdIf moveDownMsg
-    
-      "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
     ] @ (Counter.bindings ())
 
   let rootBindings () : Binding<Model, Msg> list = [
@@ -220,8 +208,6 @@ module Bindings =
         | InMsg msg -> (cId, msg) |> CounterMsg
         | OutMsg msg -> cId |> mapOutMsg msg),
       counterBindings)
-
-    "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
     "AddCounter" |> Binding.cmd AddCounter
   ]
