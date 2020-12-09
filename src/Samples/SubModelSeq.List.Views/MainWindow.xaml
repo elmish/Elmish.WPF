@@ -24,8 +24,6 @@
             <TextBlock Text="{Binding CounterIdText}" Width="250" Margin="10,5,10,5" />
             <local:Counter/>
             <Button Command="{Binding Remove}" Content="×" Margin="0,5,10,5" Width="20" />
-            <Button Command="{Binding MoveUp}" Content="↑" Margin="0,5,10,5" Width="20" />
-            <Button Command="{Binding MoveDown}" Content="↓" Margin="0,5,10,5" Width="20"/>
           </StackPanel>
         </DataTemplate>
       </ListBox.ItemTemplate>

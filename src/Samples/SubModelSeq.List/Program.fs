@@ -20,17 +20,6 @@ module Func =
   let flip f b a = f a b
 
 
-module FuncOption =
-
-  let inputIfNone f a = a |> f |> Option.defaultValue a
-  
-  let map (f: 'b -> 'c) (mb: 'a -> 'b option) =
-    mb >> Option.map f
-
-  let bind (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
-    mb a |> Option.bind (fun b -> Some(f b a))
-
-
 let map get set f a =
   a |> get |> f |> Func.flip set a
 
@@ -134,13 +123,9 @@ module App =
     | CounterMsg of Guid * CounterMsg
     | AddCounter
     | Remove of Guid
-    | MoveUp of Guid
-    | MoveDown of Guid
 
   type OutMsg =
     | OutRemove
-    | OutMoveUp
-    | OutMoveDown
 
 
   let getCounters m = m.Counters
@@ -156,47 +141,22 @@ module App =
 
   let hasId id ic = ic.Id = id
 
-  let swapCounters swap nId =
-    nId
-    |> hasId
-    |> List.tryFindIndex
-    |> FuncOption.bind swap
-    |> FuncOption.inputIfNone
-
   let update = function
     | CounterMsg (cId, msg) -> msg |> Counter.update |> Identifiable.map |> List.mapFirst (fun ic -> ic.Id = cId) |> mapCounters
     | AddCounter -> createNewIdentifiableCounter () |> List.cons |> mapCounters
     | Remove cId -> cId |> hasId >> not |> List.filter |> mapCounters
-    | MoveUp cId -> cId |> swapCounters List.swapWithPrev |> mapCounters
-    | MoveDown cId -> cId |> swapCounters List.swapWithNext |> mapCounters
 
   let mapOutMsg = function
     | OutRemove -> Remove
-    | OutMoveUp -> MoveUp
-    | OutMoveDown -> MoveDown
 
 
 module Bindings =
 
   open App
 
-  let moveUpMsg (m, s) =
-    match m.Counters |> List.tryHead with
-    | Some c when c.Id <> s.Id ->
-        OutMoveUp |> OutMsg |> Some
-    | _ -> None
-
-  let moveDownMsg (m, s) =
-    match m.Counters |> List.tryLast with
-    | Some c when c.Id <> s.Id ->
-        OutMoveDown |> OutMsg |> Some
-    | _ -> None
-
   let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list =
     [ "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
       "Remove" |> Binding.cmd(OutRemove |> OutMsg)
-      "MoveUp" |> Binding.cmdIf moveUpMsg
-      "MoveDown" |> Binding.cmdIf moveDownMsg
     ] @ (Counter.bindings ())
 
   let rootBindings () : Binding<Model, Msg> list = [
