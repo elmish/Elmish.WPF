@@ -112,6 +112,18 @@ module Counter =
       | SetStepSize x -> { m with StepSize = x }
       | Reset -> init
 
+    let bindings () = [
+      "CounterValue" |> Binding.oneWay(fun (_, s) -> s.Value.Count)
+      "Increment" |> Binding.cmd(Increment |> InMsg)
+      "Decrement" |> Binding.cmd(Decrement |> InMsg)
+      "StepSize" |> Binding.twoWay(
+        (fun (_, s) -> float s.Value.StepSize),
+        (fun v _ -> v |> int |> SetStepSize |> InMsg))
+      "Reset" |> Binding.cmdIf(
+        Reset |> InMsg,
+        (fun (_, s) -> canReset s.Value))
+    ]
+
 
 module App =
 
@@ -188,26 +200,16 @@ module Bindings =
         OutMoveDown |> OutMsg |> Some
     | _ -> None
 
-  let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
-
-    "CounterValue" |> Binding.oneWay(fun (_, s) -> s.Value.Count)
-    "Increment" |> Binding.cmd(Increment |> InMsg)
-    "Decrement" |> Binding.cmd(Decrement |> InMsg)
-    "StepSize" |> Binding.twoWay(
-      (fun (_, s) -> float s.Value.StepSize),
-      (fun v _ -> v |> int |> SetStepSize |> InMsg))
-    "Reset" |> Binding.cmdIf(
-      Reset |> InMsg,
-      (fun (_, s) -> Counter.canReset s.Value))
-
-    "Remove" |> Binding.cmd(OutRemove |> OutMsg)
-
-    "MoveUp" |> Binding.cmdIf moveUpMsg
-    "MoveDown" |> Binding.cmdIf moveDownMsg
-
-    "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-  ]
+  let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list =
+    [ "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
+    
+      "Remove" |> Binding.cmd(OutRemove |> OutMsg)
+    
+      "MoveUp" |> Binding.cmdIf moveUpMsg
+      "MoveDown" |> Binding.cmdIf moveDownMsg
+    
+      "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
+    ] @ (Counter.bindings ())
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
