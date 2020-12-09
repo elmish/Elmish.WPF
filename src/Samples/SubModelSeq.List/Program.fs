@@ -38,39 +38,13 @@ module List =
 
   let cons head tail = head :: tail
 
-  let mapFirst p f input =
-    let rec mapFirstRec reverseFront back =
-      match back with
-      | [] ->
-          (*
-           * Conceptually, the correct value to return is
-           * reverseFront |> List.rev
-           * but this is the same as
-           * input
-           * so returning that instead.
-           *)
-          input
-      | a :: ma ->
-          if p a then
-            (reverseFront |> List.rev) @ (f a :: ma)
-          else
-            mapFirstRec (a :: reverseFront) ma
-    mapFirstRec [] input
+  let mapAtIndex idx f =
+    List.indexed >> List.map (fun (i, a) -> if i = idx then f a else a)
 
-        
-[<AutoOpen>]
-module Identifiable =
-
-  type Identifiable<'a> =
-    { Id: Guid
-      Value: 'a }
-  
-  module Identifiable =
-
-    let getId m = m.Id
-    let get m = m.Value
-    let set v m = { m with Value = v }
-    let map f = f |> map get set
+  let removeAtIndex idx ma =
+    [ ma |> List.take idx
+      ma |> List.skip (idx + 1)
+    ] |> List.concat
 
 
 [<AutoOpen>]
@@ -102,27 +76,27 @@ module Counter =
       | Reset -> init
 
     let bindings () = [
-      "CounterValue" |> Binding.oneWay(fun (_, s) -> s.Value.Count)
+      "CounterValue" |> Binding.oneWay(fun (_, _, c) -> c.Count)
       "Increment" |> Binding.cmd(Increment |> InMsg)
       "Decrement" |> Binding.cmd(Decrement |> InMsg)
       "StepSize" |> Binding.twoWay(
-        (fun (_, s) -> float s.Value.StepSize),
+        (fun (_, _, c) -> float c.StepSize),
         (fun v _ -> v |> int |> SetStepSize |> InMsg))
       "Reset" |> Binding.cmdIf(
         Reset |> InMsg,
-        (fun (_, s) -> canReset s.Value))
+        (fun (_, _, c) -> canReset c))
     ]
 
 
 module App =
 
   type Model =
-    { Counters: Identifiable<Counter> list }
+    { Counters: Counter list }
 
   type Msg =
-    | CounterMsg of Guid * CounterMsg
+    | CounterMsg of int * CounterMsg
     | AddCounter
-    | Remove of Guid
+    | Remove of int
 
   type OutMsg =
     | OutRemove
@@ -132,19 +106,13 @@ module App =
   let setCounters v m = { m with Counters = v }
   let mapCounters f = f |> map getCounters setCounters
 
-  let createNewIdentifiableCounter () =
-    { Id = Guid.NewGuid ()
-      Value = Counter.init }
-
   let init () =
-    { Counters = [ createNewIdentifiableCounter () ] }
-
-  let hasId id ic = ic.Id = id
+    { Counters = [ Counter.init ] }
 
   let update = function
-    | CounterMsg (cId, msg) -> msg |> Counter.update |> Identifiable.map |> List.mapFirst (fun ic -> ic.Id = cId) |> mapCounters
-    | AddCounter -> createNewIdentifiableCounter () |> List.cons |> mapCounters
-    | Remove cId -> cId |> hasId >> not |> List.filter |> mapCounters
+    | CounterMsg (idx, msg) -> msg |> Counter.update |> List.mapAtIndex idx |> mapCounters
+    | AddCounter -> Counter.init |> List.cons |> mapCounters
+    | Remove idx -> idx |> List.removeAtIndex |> mapCounters
 
   let mapOutMsg = function
     | OutRemove -> Remove
@@ -154,15 +122,15 @@ module Bindings =
 
   open App
 
-  let counterBindings () : Binding<Model * Identifiable<Counter>, InOutMsg<CounterMsg, OutMsg>> list =
-    [ "CounterIdText" |> Binding.oneWay(fun (_, s) -> s.Id)
-      "Remove" |> Binding.cmd(OutRemove |> OutMsg)
+  let counterBindings () : Binding<Model * int * Counter, InOutMsg<CounterMsg, OutMsg>> list =
+    [ "Remove" |> Binding.cmd(OutRemove |> OutMsg)
     ] @ (Counter.bindings ())
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m.Counters),
-      (fun ic -> ic.Id),
+      (fun m -> m.Counters |> List.indexed),
+      (fun (m, (idx, c)) -> (m, idx, c)),
+      (fun (_, idx, _) -> idx),
       (fun (cId, inOutMsg) ->
         match inOutMsg with
         | InMsg msg -> (cId, msg) |> CounterMsg

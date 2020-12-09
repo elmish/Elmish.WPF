@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelSeq.List;assembly=SubModelSeq.List"
         Title="SubModelSeq"
         Height="800"
-        Width="1100"
+        Width="500"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         d:DataContext="{x:Static vm:Program.mainDesignVm}">
@@ -21,7 +21,6 @@
       <ListBox.ItemTemplate>
         <DataTemplate>
           <StackPanel Orientation="Horizontal">
-            <TextBlock Text="{Binding CounterIdText}" Width="250" Margin="10,5,10,5" />
             <local:Counter/>
             <Button Command="{Binding Remove}" Content="×" Margin="0,5,10,5" Width="20" />
           </StackPanel>
