@@ -1,6 +1,5 @@
 module Elmish.WPF.Samples.SubModelSeq.List.Program
 
-open System
 open Elmish
 open Elmish.WPF
 
@@ -10,31 +9,7 @@ type InOutMsg<'a, 'b> =
   | OutMsg of 'b
 
 
-module Option =
-
-  let set a = Option.map (fun _ -> a)
-
-
-module Func =
-
-  let flip f b a = f a b
-
-
-let map get set f a =
-  a |> get |> f |> Func.flip set a
-
-
 module List =
-
-  let swap i j =
-    List.permute
-      (function
-        | a when a = i -> j
-        | a when a = j -> i
-        | a -> a)
-
-  let swapWithNext i = swap i (i + 1)
-  let swapWithPrev i = swap i (i - 1)
 
   let cons head tail = head :: tail
 
@@ -90,8 +65,7 @@ module Counter =
 
 module App =
 
-  type Model =
-    { Counters: Counter list }
+  type Model = Counter list
 
   type Msg =
     | CounterMsg of int * CounterMsg
@@ -102,17 +76,13 @@ module App =
     | OutRemove
 
 
-  let getCounters m = m.Counters
-  let setCounters v m = { m with Counters = v }
-  let mapCounters f = f |> map getCounters setCounters
-
   let init () =
-    { Counters = [ Counter.init ] }
+    [ Counter.init ]
 
   let update = function
-    | CounterMsg (idx, msg) -> msg |> Counter.update |> List.mapAtIndex idx |> mapCounters
-    | AddCounter -> Counter.init |> List.cons |> mapCounters
-    | Remove idx -> idx |> List.removeAtIndex |> mapCounters
+    | CounterMsg (idx, msg) -> msg |> Counter.update |> List.mapAtIndex idx
+    | AddCounter -> Counter.init |> List.cons
+    | Remove idx -> idx |> List.removeAtIndex
 
   let mapOutMsg = function
     | OutRemove -> Remove
@@ -128,7 +98,7 @@ module Bindings =
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m.Counters |> List.indexed),
+      (fun m -> m |> List.indexed),
       (fun (m, (idx, c)) -> (m, idx, c)),
       (fun (_, idx, _) -> idx),
       (fun (cId, inOutMsg) ->
