@@ -72,8 +72,9 @@ module App =
     | AddCounter
     | Remove of int
 
+  [<RequireQualifiedAccess>]
   type OutMsg =
-    | OutRemove
+    | Remove
 
 
   let init () =
@@ -85,7 +86,7 @@ module App =
     | Remove idx -> idx |> List.removeAtIndex
 
   let mapOutMsg = function
-    | OutRemove -> Remove
+    | OutMsg.Remove -> Remove
 
 
 module Bindings =
@@ -93,7 +94,7 @@ module Bindings =
   open App
 
   let counterBindings () : Binding<Model * int * Counter, InOutMsg<CounterMsg, OutMsg>> list =
-    [ "Remove" |> Binding.cmd(OutRemove |> OutMsg)
+    [ "Remove" |> Binding.cmd(OutMsg.Remove |> OutMsg)
     ] @ (Counter.bindings ())
 
   let rootBindings () : Binding<Model, Msg> list = [
