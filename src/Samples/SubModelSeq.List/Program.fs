@@ -65,7 +65,8 @@ module Counter =
 
 module App =
 
-  type Model = Counter list
+  type Model =
+    { Counters: Counter list }
 
   type Msg =
     | CounterMsg of int * CounterMsg
@@ -77,13 +78,16 @@ module App =
     | Remove
 
 
+  let mapCounters f m =
+    { m with Counters = f m.Counters }
+
   let init () =
-    [ Counter.init ]
+    { Counters = [ Counter.init ] }
 
   let update = function
-    | CounterMsg (idx, msg) -> msg |> Counter.update |> List.mapAtIndex idx
-    | AddCounter -> Counter.init |> List.cons
-    | Remove idx -> idx |> List.removeAtIndex
+    | CounterMsg (idx, msg) -> msg |> Counter.update |> List.mapAtIndex idx |> mapCounters
+    | AddCounter -> Counter.init |> List.cons |> mapCounters
+    | Remove idx -> idx |> List.removeAtIndex |> mapCounters
 
   let mapOutMsg = function
     | OutMsg.Remove -> Remove
@@ -99,7 +103,7 @@ module Bindings =
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
-      (fun m -> m |> List.indexed),
+      (fun m -> m.Counters |> List.indexed),
       (fun (m, (idx, c)) -> (m, idx, c)),
       (fun (_, idx, _) -> idx),
       (fun (cId, inOutMsg) ->
