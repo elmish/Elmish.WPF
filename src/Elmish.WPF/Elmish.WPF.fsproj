@@ -30,7 +30,9 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-    <Compile Include="AssemblyInfo.fs" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Elmish.WPF.Tests</_Parameter1>
+    </AssemblyAttribute>
     <Compile Include="InternalUtils.fs" />
     <Compile Include="InternalTypes.fs" />
     <Compile Include="Utils.fs" />
