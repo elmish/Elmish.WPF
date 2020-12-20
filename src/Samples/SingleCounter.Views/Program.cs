@@ -5,7 +5,10 @@ using static Elmish.WPF.Samples.SingleCounter.Program;
 namespace SingleCounter.Views {
   public static class Program {
     [STAThread]
-    public static void Main() =>
+    public static void Main()
+    {
+      new App();
       main(new MainWindow());
+    }
   }
 }

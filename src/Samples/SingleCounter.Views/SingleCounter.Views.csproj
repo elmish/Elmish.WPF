@@ -5,6 +5,7 @@
     <UseWpf>true</UseWpf>
     <OutputType>Exe</OutputType>
     <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+    <StartupObject>SingleCounter.Views.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
