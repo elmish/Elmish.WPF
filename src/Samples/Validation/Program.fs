@@ -1,6 +1,7 @@
 ﻿module Elmish.WPF.Samples.Validation.Program
 
 open System
+open System.Linq
 open Elmish
 open Elmish.WPF
 
@@ -22,28 +23,48 @@ let validateInt42 =
   >> Result.bind (requireExactly 42)
 
 
+let validatePassword (s: string) =
+  seq {
+    if s.All(fun c -> Char.IsDigit c |> not) then
+      "Must contain a digit"
+    if s.All(fun c -> Char.IsLower c |> not) then
+      "Must contain a lowercase letter"
+    if s.All(fun c -> Char.IsUpper c |> not) then
+      "Must contain an uppercase letter"
+  } |> Seq.toList
+
+
 type Model =
-  { RawValue: string }
+  { Value: string
+    Password: string }
 
 let init () =
-  { RawValue = "" }
+  { Value = ""
+    Password = "" }
 
 type Msg =
-  | Input of string
-  | Submit of int
+  | NewValue of string
+  | NewPassword of string
+  | Submit
 
 let update msg m =
   match msg with
-  | Input x -> { m with RawValue = x }
-  | Submit _ -> m
+  | NewValue x -> { m with Value = x }
+  | NewPassword x -> { m with Password = x }
+  | Submit -> m
 
 let bindings () : Binding<Model, Msg> list = [
-  "RawValue" |> Binding.twoWayValidate(
-    (fun m -> m.RawValue),
-    Input,
-    (fun m ->  validateInt42 m.RawValue))
+  "Value" |> Binding.twoWayValidate(
+    (fun m -> m.Value),
+    NewValue,
+    (fun m ->  validateInt42 m.Value))
+  "Password" |> Binding.twoWayValidate(
+    (fun m -> m.Password),
+    NewPassword,
+    (fun m -> validatePassword m.Password))
   "Submit" |> Binding.cmdIf(
-    fun m -> validateInt42 m.RawValue |> Result.map Submit)
+    (fun _ -> Submit),
+    (fun m -> (match validateInt42 m.Value with Ok _ -> true | Error _ -> false) && (validatePassword m.Password |> List.isEmpty)))
 ]
 
 let designVm = ViewModel.designInstance (init ()) (bindings ())
