@@ -11,30 +11,7 @@
         mc:Ignorable="d"
         d:DataContext="{x:Static vm:Program.designVm}">
   <Window.Resources>
-    <Style x:Key="textBoxInErrorSingle" TargetType="Control">
-      <Setter Property="Validation.ErrorTemplate">
-        <Setter.Value>
-          <ControlTemplate>
-            <DockPanel>
-              <TextBlock DockPanel.Dock="Left" Foreground="Red" FontWeight="Bold">*</TextBlock>
-              <TextBlock Text="{Binding ErrorContent}" DockPanel.Dock="Bottom" Foreground="Red"/>
-              <Border BorderBrush="Red" BorderThickness="2">
-                <AdornedElementPlaceholder/>
-              </Border>
-            </DockPanel>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-      <Style.Triggers>
-        <Trigger Property="Validation.HasError" Value="True">
-          <Setter
-            Property="ToolTip"
-            Value="{Binding RelativeSource={x:Static RelativeSource.Self},
-            Path=(Validation.Errors)/ErrorContent}" />
-        </Trigger>
-      </Style.Triggers>
-    </Style>
-    <Style x:Key="textBoxInErrorMultiple" TargetType="Control">
+    <Style x:Key="textBoxInError" TargetType="Control">
       <Setter Property="Validation.ErrorTemplate">
         <Setter.Value>
           <ControlTemplate>
@@ -59,11 +36,11 @@
   <StackPanel HorizontalAlignment="Center" Margin="0,25,0,0">
     <StackPanel Orientation="Horizontal">
       <TextBlock Text="Value:         "/>
-      <TextBox Style="{StaticResource textBoxInErrorSingle}"   Text="{Binding Value,    UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+      <TextBox Style="{StaticResource textBoxInError}"   Text="{Binding Value,    UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
     </StackPanel>
     <StackPanel Orientation="Horizontal">
       <TextBlock Text="Password:   "/>
-      <TextBox Style="{StaticResource textBoxInErrorMultiple}" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+      <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
     </StackPanel>
     <Button Command="{Binding Submit}" Content="Submit" Margin="0,40,10,5" Width="50" />
   </StackPanel>
