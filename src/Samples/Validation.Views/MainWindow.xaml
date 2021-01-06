@@ -36,11 +36,11 @@
   <StackPanel HorizontalAlignment="Center" Margin="0,25,0,0">
     <StackPanel Orientation="Horizontal">
       <TextBlock Text="Value:         "/>
-      <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+      <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,5,0,25" />
     </StackPanel>
     <StackPanel Orientation="Horizontal">
       <TextBlock Text="Password:   "/>
-      <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,5,0,25" />
+      <TextBox Style="{StaticResource textBoxInError}" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,5,0,25" />
     </StackPanel>
     <Button Command="{Binding Submit}" Content="Submit" Margin="0,40,10,5" Width="50" />
   </StackPanel>
