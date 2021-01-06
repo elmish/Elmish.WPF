@@ -24,14 +24,14 @@ let validateInt42 =
 
 
 let validatePassword (s: string) =
-  seq {
+  [
     if s.All(fun c -> Char.IsDigit c |> not) then
       "Must contain a digit"
     if s.All(fun c -> Char.IsLower c |> not) then
       "Must contain a lowercase letter"
     if s.All(fun c -> Char.IsUpper c |> not) then
       "Must contain an uppercase letter"
-  } |> Seq.toList
+  ]
 
 
 type Model =
