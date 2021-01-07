@@ -153,7 +153,7 @@ module Helpers =
     name |> createBinding (TwoWayValidateData {
       Get = get >> box
       Set = unbox<'a> >> set
-      Validate = validate
+      Validate = validate >> ValueOption.toList
       WrapDispatch = id
     })
 
