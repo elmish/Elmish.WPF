@@ -9,20 +9,5 @@ namespace Elmish.WPF.Samples.SingleCounter
         {
             InitializeComponent();
         }
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-
-            EventManager.RegisterClassHandler(
-                typeof(TextBox),
-                UIElement.GotFocusEvent,
-                new RoutedEventHandler(this.TextBox_GotFocus));
-        }
-
-        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            (sender as TextBox)?.SelectAll();
-        }
     }
 }
