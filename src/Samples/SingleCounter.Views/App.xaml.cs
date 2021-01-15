@@ -1,12 +1,20 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace Elmish.WPF.Samples.SingleCounter
 {
-    public partial class App : Application
+  public partial class App : Application
+  {
+    public App()
     {
-        public App()
-        {
-            InitializeComponent();
-        }
+      this.Activated += StartElmish;
     }
+
+    private void StartElmish(object sender, EventArgs e)
+    {
+      this.Activated -= StartElmish;
+      Program.main(MainWindow);
+    }
+
+  }
 }
