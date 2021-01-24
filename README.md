@@ -211,14 +211,18 @@ In short, for WPF apps, a solution based on static XAML views is currently the w
 
 #### Do I have to use the project structure outlined above?
 
-Not at all. The above example, as well as the samples, keep everything in a single project for simplicity (the samples have the XAML definitions in separate projects for technical reasons). For more complex apps, you might want to consider a more clear separation of UI and core logic. An example would be the following structure:
+Not at all. The above example, as well as the samples, keep all non-UI code in a single project for simplicity, and all the XAML in a C# project for better tooling.
+
+An alternative with a clearer separation of UI and core logic can be implemented by splitting the F# project into two projects:
 
 * A core library containing the model definitions and `update` functions.
-  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on certain WPF UI assemblies and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
-* An entry point project that contains the `bindings` (or `view`) function and the call to `Program.runWindow`.
+  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on WPF and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
+* An Elmish.WPF project that contains the `bindings` (or `view`) function and the call to `Program.runElmishLoop`.
   * This project would reference the core library and `Elmish.WPF`.
-* A view project containing the XAML-related stuff (windows, user controls, behaviors, etc.).
-  * This could also be part of the entry point project, but if you’re using the new project format (like the samples in this repo), this might not work properly until .NET Core 3.0.
+
+Another alternative is to turn the sample code on its head and have the F# project be a console app containing your entry point (with a call to `Program.runWindow`) and referencing the C#/XAML project (instead of the other way around, as demonstrated above).
+
+In general, you have a large amount of freedom in how you structure your solution and what kind of entry point you use.
 
 #### How can I test commands? What is the CmdMsg pattern?
 
@@ -231,18 +235,9 @@ Since the commands (`Cmd<Msg>`) returned by `init` and `update` are lists of fun
 
 The [FileDialogs.CmdMsg sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) demonstrates this approach. For more information, see the [Fabulous documentation](https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/update.html#replacing-commands-with-command-messages-for-better-testability). For reference, here is [the discussion that led to this pattern](https://github.com/fsprojects/Fabulous/pull/320#issuecomment-491522737).
 
-#### Can I instantiate `Application` myself?
-
-Yes, just do it before calling `Program.runWindow` and it will automatically be used. You might need this if you have application-wide resources in a `ResourceDictionary`, which might require you to instantiate the application before instantiating the main window you pass to `Program.runWindow`.
-
 #### Can I use design-time view models?
 
-Yes. You need to structure your code so you have some place in your code that satisfies the following requirements:
-
-* Must be able to instantiate a model and the associated bindings
-* Must be reachable by the XAML views
-
-There, use `ViewModel.designInstance` to create a view model instance that your XAML can use at design-time:
+Yes. Assuming you have a C# XAML and entry point project referencing the F# project, simply use `ViewModel.designInstance` (e.g. in the F# project) to create a view model instance that your XAML can use at design-time:
 
 ```F#
 module MyAssembly.DesignViewModels
@@ -261,7 +256,7 @@ Then use the following attributes wherever you need a design-time VM:
     d:DataContext="{x:Static vm:DesignViewModels.myVm}">
 ```
 
-When targeting .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
+When targeting legacy .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
 
 ##### .NET Core 3 workaround
 
