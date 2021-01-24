@@ -16,6 +16,6 @@
     <Button Command="{Binding Increment}" Content="+" Margin="0,5,10,5" Width="30" />
     <TextBlock Text="{Binding StepSize, StringFormat='Step size: {0}'}" Width="70" Margin="0,5,10,5" />
     <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
-    <Button Command="{Binding Reset}" Content="Reset" Margin="0,5,10,5" Width="50" Foreground="{StaticResource MyBlackColor}" />
+    <Button Command="{Binding Reset}" Content="Reset" Margin="0,5,10,5" Width="50" />
   </StackPanel>
 </Window>
