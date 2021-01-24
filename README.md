@@ -56,18 +56,14 @@ Getting started with Elmish.WPF
 
 See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are (assuming up-to-date VS2019):
 
-1. Create an F# Console Application. (You can create a Windows application, but the core Elmish logs are currently only written to the console.)
-
-   If targeting .NET 5 or .NET Core, the project file should look like this:
+1. Create an F# Class Library. If targeting .NET 5 or .NET Core, the project file should look like this:
 
    ```fsproj
-   <Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
      
      <PropertyGroup>
-       <TargetFramework>net5.0-windows</TargetFramework>
+       <TargetFramework>net5.0-windows</TargetFramework>  <!-- Or another target framework -->
        <UseWpf>true</UseWpf>
-       <OutputType>Exe</OutputType>  <!-- or WinExe if you don't want the console window -->
-       <DisableWinExeOutputInference>true</DisableWinExeOutputInference>  <!-- If using Exe above -->
      </PropertyGroup>
      
      <!-- other stuff -->
@@ -76,7 +72,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    If targeting .NET Framework (4.6.1 or later), replace the first line with
 
    ```fsproj
-   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
    ```
 
 2. Add NuGet reference to package `Elmish.WPF`.
@@ -112,7 +108,9 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize x -> { m with StepSize = x }
    ```
 
-6. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally in Elm/Elmish this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function is in general only run once and simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`.
+6. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF.
+
+   Normally in Elm/Elmish this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function is in general only run once and simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`.
 
    ```F#
    open Elmish.WPF
@@ -128,9 +126,46 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      ]
    ```
 
-   The strings identify the binding names to be used in the XAML views. The [Binding module](https://github.com/elmish/Elmish.WPF/blob/master/src/Elmish.WPF/Binding.fs) has many functions to create various types of bindings.
+   The strings identify the binding names to be used in the XAML views. The Binding module has many functions to create various types of bindings.
 
-7. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
+7. Create a function that accepts the app’s main window (to be created) and configures and starts the Elmish loop for the window with your `init`, `update` and `bindings`:
+
+   ```F#
+   open Elmish.WPF
+   
+   let main window =
+     Program.mkSimpleWpf init update bindings
+     |> Program.runElmishLoop window
+   ```
+
+   In the code above, `Program.runElmishLoop` will set the window’s `DataContext` to the specified bindings and start the Elmish dispatch loop for the window.
+
+8. Create a WPF app project (using the Visual Studio template called `WPF App (.NET)`). This will be your entry point and contain the XAML views. Add a reference to the F# project, and make the following changes in the `csproj` file:
+
+   * Currently, the core Elmish logs are only output to the console. If you want a console window for displaying Elmish logs, change `<OutputType>WinExe</OutputType>` to `<OutputType>Exe</OutputType>` and add `<DisableWinExeOutputInference>true</DisableWinExeOutputInference>`.
+   * If the project file starts with the now legacy `<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">`, change it to `<Project Sdk="Microsoft.NET.Sdk">`
+   * Change the target framework to match the one used in the F# project (e.g. `net5.0-windows`).
+
+   Make the following changes to `App.xaml.cs` to initialize Elmish when the app starts:
+
+   ```c#
+   public partial class App : Application
+   {
+     public App()
+     {
+       this.Activated += StartElmish;
+     }
+   
+     private void StartElmish(object sender, EventArgs e)
+     {
+       this.Activated -= StartElmish;
+       Program.main(MainWindow);
+     }
+   
+   }
+   ```
+
+9. Define your views and bindings in XAML:
 
    ```xaml
    <Window
@@ -147,22 +182,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    </Window>
    ```
 
-8. Add the entry point to your console project:
-
-   ```F#
-   open System
-   open Elmish.WPF
-   open MyNamespace
-   
-   [<EntryPoint; STAThread>]
-   let main argv =
-     Program.mkSimpleWpf init update bindings
-     |> Program.runWindow (MainWindow())
-   ```
-
-   `Program.runWindow` will instantiate an `Application` and set the window’s `DataContext` to the bindings you defined.
-
-9. Profit! :)
+10. Profit! :)
 
 Further resources:
 
@@ -173,7 +193,7 @@ Further resources:
 FAQ
 ---
 
-#### Static views? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
+#### Static views in MVU? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
 
 Not at all! 🙂
 
