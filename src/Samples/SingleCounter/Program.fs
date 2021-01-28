@@ -42,6 +42,6 @@ let designVm = ViewModel.designInstance init (bindings ())
 let main window =
   Program.mkSimpleWpf (fun () -> init) update bindings
   |> Program.withConsoleTrace
-  |> Program.runElmishLoopWithConfig
+  |> Program.startElmishLoop
     { ElmConfig.Default with LogConsole = true; Measure = true }
     window

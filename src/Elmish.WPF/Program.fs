@@ -1,7 +1,6 @@
 ﻿[<RequireQualifiedAccess>]
 module Elmish.WPF.Program
 
-open System
 open System.Windows
 open Elmish
 
@@ -9,7 +8,7 @@ open Elmish
 /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
 /// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
 /// you control app/window instantiation, runWindowWithConfig may be a better option.
-let runElmishLoopWithConfig
+let startElmishLoop
     (config: ElmConfig)
     (element: FrameworkElement)
     (program: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>) =
@@ -34,26 +33,6 @@ let runElmishLoopWithConfig
   |> Program.run
 
 
-/// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
-/// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
-/// you control app/window instantiation, runWindow may be a better option.
-let runElmishLoop
-    (element: FrameworkElement)
-    (program: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>) =
-  runElmishLoopWithConfig ElmConfig.Default element program
-
-
-/// Starts the Elmish dispatch loop, setting the bindings as the DataContext for the
-/// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
-/// you control app/window instantiation, runWindowWithConfig may be a better option.
-[<Obsolete("Renamed to runElmishLoopWithConfig. Also see runElmishLoop.")>]
-let startElmishLoop
-    (config: ElmConfig)
-    (element: FrameworkElement)
-    (program: Program<unit, 'model, 'msg, Binding<'model, 'msg> list>) =
-  runElmishLoopWithConfig config element program
-
-
 /// Instantiates Application and sets its MainWindow if it is not already
 /// running.
 let private initializeApplication window =
@@ -69,7 +48,7 @@ let private initializeApplication window =
 let runWindowWithConfig config (window: Window) program =
   initializeApplication window
   window.Show ()
-  runElmishLoopWithConfig config window program
+  startElmishLoop config window program
   Application.Current.Run window
 
 
