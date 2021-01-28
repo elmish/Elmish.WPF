@@ -44,7 +44,7 @@ let private initializeApplication window =
 /// Starts the Elmish and WPF dispatch loops with the specified configuration. Will
 /// instantiate Application and set its MainWindow if it is not already running, and then
 /// run the specified window. This is a blocking function. If you are using App.xaml as an
-/// implicit entry point, see runElmishLoopWithConfig.
+/// implicit entry point, see startElmishLoop.
 let runWindowWithConfig config (window: Window) program =
   initializeApplication window
   window.Show ()
@@ -55,7 +55,7 @@ let runWindowWithConfig config (window: Window) program =
 /// Starts the Elmish and WPF dispatch loops. Will instantiate Application and set its
 /// MainWindow if it is not already running, and then run the specified window. This is a
 /// blocking function. If you are using App.xaml as an implicit entry point, see
-/// runElmishLoop.
+/// startElmishLoop.
 let runWindow window program =
   runWindowWithConfig ElmConfig.Default window program
 
