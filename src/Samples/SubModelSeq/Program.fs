@@ -298,6 +298,6 @@ let mainDesignVm = ViewModel.designInstance (App.init ()) (Bindings.rootBindings
 let main window =
   Program.mkSimpleWpf App.init App.update Bindings.rootBindings
   |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
+  |> Program.startElmishLoop
     { ElmConfig.Default with LogConsole = true; Measure = true }
     window

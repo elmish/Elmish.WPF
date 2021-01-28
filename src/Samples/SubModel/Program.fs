@@ -152,6 +152,6 @@ let main window =
   Program.mkSimpleWpf App.init App.update App.bindings
   |> Program.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
+  |> Program.startElmishLoop
     { ElmConfig.Default with LogConsole = true; Measure = true }
     window
