@@ -7,7 +7,7 @@ open Elmish
 
 /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
 /// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
-/// you control app/window instantiation, runWindowWithConfig may be a better option.
+/// you control app/window instantiation, runWindowWithConfig might be a better option.
 let startElmishLoop
     (config: ElmConfig)
     (element: FrameworkElement)
