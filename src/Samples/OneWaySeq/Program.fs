@@ -33,6 +33,6 @@ let designVm = ViewModel.designInstance (init ()) (bindings ())
 let main window =
   Program.mkSimpleWpf init update bindings
   |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
+  |> Program.startElmishLoop
     { ElmConfig.Default with LogConsole = true }
     window

@@ -5,9 +5,9 @@ open System.Windows
 open Elmish
 
 
-/// Starts the Elmish dispatch loop, setting the bindings as the DataContext
-/// for the specified FrameworkElement. Non-blocking. This is a low-level function;
-/// for normal usage, see runWindow and runWindowWithConfig.
+/// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
+/// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
+/// you control app/window instantiation, runWindowWithConfig might be a better option.
 let startElmishLoop
     (config: ElmConfig)
     (element: FrameworkElement)
@@ -41,9 +41,10 @@ let private initializeApplication window =
     Application.Current.MainWindow <- window
 
 
-/// Starts the Elmish and WPF dispatch loops with the specified configuration.
-/// Will instantiate Application and set its MainWindow if it is not already
-/// running, and then run the specified window. This is a blocking function.
+/// Starts the Elmish and WPF dispatch loops with the specified configuration. Will
+/// instantiate Application and set its MainWindow if it is not already running, and then
+/// run the specified window. This is a blocking function. If you are using App.xaml as an
+/// implicit entry point, see startElmishLoop.
 let runWindowWithConfig config (window: Window) program =
   initializeApplication window
   window.Show ()
@@ -51,9 +52,10 @@ let runWindowWithConfig config (window: Window) program =
   Application.Current.Run window
 
 
-/// Starts the Elmish and WPF dispatch loops. Will instantiate Application and
-/// set its MainWindow if it is not already running, and then run the specified
-/// window. This is a blocking function.
+/// Starts the Elmish and WPF dispatch loops. Will instantiate Application and set its
+/// MainWindow if it is not already running, and then run the specified window. This is a
+/// blocking function. If you are using App.xaml as an implicit entry point, see
+/// startElmishLoop.
 let runWindow window program =
   runWindowWithConfig ElmConfig.Default window program
 
@@ -79,7 +81,7 @@ let mkProgramWpf
 /// to Cmd<'msg> using toCmd. This means that the init and update functions
 /// return only data, and thus are easier to unit test. The CmdMsg pattern is
 /// general; this is just a trivial convenience function that automatically
-/// converts CmdMsg to Cmd<'msg> for you in inint and update
+/// converts CmdMsg to Cmd<'msg> for you in init and update
 let mkProgramWpfWithCmdMsg
     (init: unit -> 'model * 'cmdMsg list)
     (update: 'msg -> 'model -> 'model * 'cmdMsg list)

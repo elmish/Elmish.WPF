@@ -56,18 +56,14 @@ Getting started with Elmish.WPF
 
 See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) sample for a very simple app. The central points are (assuming up-to-date VS2019):
 
-1. Create an F# Console Application. (You can create a Windows application, but the core Elmish logs are currently only written to the console.)
-
-   If targeting .NET 5 or .NET Core, the project file should look like this:
+1. Create an F# Class Library. If targeting .NET 5 or .NET Core, the project file should look like this:
 
    ```fsproj
-   <Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
      
      <PropertyGroup>
-       <TargetFramework>net5.0-windows</TargetFramework>
+       <TargetFramework>net5.0-windows</TargetFramework>  <!-- Or another target framework -->
        <UseWpf>true</UseWpf>
-       <OutputType>Exe</OutputType>  <!-- or WinExe if you don't want the console window -->
-       <DisableWinExeOutputInference>true</DisableWinExeOutputInference>  <!-- If using Exe above -->
      </PropertyGroup>
      
      <!-- other stuff -->
@@ -76,7 +72,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    If targeting .NET Framework (4.6.1 or later), replace the first line with
 
    ```fsproj
-   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
    ```
 
 2. Add NuGet reference to package `Elmish.WPF`.
@@ -112,7 +108,9 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      | SetStepSize x -> { m with StepSize = x }
    ```
 
-6. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF. Normally in Elm/Elmish this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function is in general only run once and simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`.
+6. Define the “view” function using the `Bindings` module. This is the central public API of Elmish.WPF.
+
+   Normally in Elm/Elmish this function is called `view` and would take a model and a dispatch function (to dispatch new messages to the update loop) and return the UI (e.g. a HTML DOM to be rendered), but in Elmish.WPF this function is in general only run once and simply sets up bindings that XAML-defined views can use. Therefore, let’s call it `bindings` instead of `view`.
 
    ```F#
    open Elmish.WPF
@@ -128,9 +126,46 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      ]
    ```
 
-   The strings identify the binding names to be used in the XAML views. The [Binding module](https://github.com/elmish/Elmish.WPF/blob/master/src/Elmish.WPF/Binding.fs) has many functions to create various types of bindings.
+   The strings identify the binding names to be used in the XAML views. The Binding module has many functions to create various types of bindings.
 
-7. Create a WPF user control library project to hold you XAML files, add a reference to this project from your Elmish project, and define your views and bindings in XAML:
+7. Create a function that accepts the app’s main window (to be created) and configures and starts the Elmish loop for the window with your `init`, `update` and `bindings`:
+
+   ```F#
+   open Elmish.WPF
+   
+   let main window =
+     Program.mkSimpleWpf init update bindings
+     |> Program.runElmishLoop window
+   ```
+
+   In the code above, `Program.runElmishLoop` will set the window’s `DataContext` to the specified bindings and start the Elmish dispatch loop for the window.
+
+8. Create a WPF app project (using the Visual Studio template called `WPF App (.NET)`). This will be your entry point and contain the XAML views. Add a reference to the F# project, and make the following changes in the `csproj` file:
+
+   * Currently, the core Elmish logs are only output to the console. If you want a console window for displaying Elmish logs, change `<OutputType>WinExe</OutputType>` to `<OutputType>Exe</OutputType>` and add `<DisableWinExeOutputInference>true</DisableWinExeOutputInference>`.
+   * If the project file starts with the now legacy `<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">`, change it to `<Project Sdk="Microsoft.NET.Sdk">`
+   * Change the target framework to match the one used in the F# project (e.g. `net5.0-windows`).
+
+   Make the following changes to `App.xaml.cs` to initialize Elmish when the app starts:
+
+   ```c#
+   public partial class App : Application
+   {
+     public App()
+     {
+       this.Activated += StartElmish;
+     }
+   
+     private void StartElmish(object sender, EventArgs e)
+     {
+       this.Activated -= StartElmish;
+       Program.main(MainWindow);
+     }
+   
+   }
+   ```
+
+9. Define your views and bindings in XAML:
 
    ```xaml
    <Window
@@ -147,22 +182,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    </Window>
    ```
 
-8. Add the entry point to your console project:
-
-   ```F#
-   open System
-   open Elmish.WPF
-   open MyNamespace
-   
-   [<EntryPoint; STAThread>]
-   let main argv =
-     Program.mkSimpleWpf init update bindings
-     |> Program.runWindow (MainWindow())
-   ```
-
-   `Program.runWindow` will instantiate an `Application` and set the window’s `DataContext` to the bindings you defined.
-
-9. Profit! :)
+10. Profit! :)
 
 Further resources:
 
@@ -173,7 +193,7 @@ Further resources:
 FAQ
 ---
 
-#### Static views? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
+#### Static views in MVU? Isn’t that just a half-baked solution that only exists due to a lack of better alternatives?
 
 Not at all! 🙂
 
@@ -191,14 +211,18 @@ In short, for WPF apps, a solution based on static XAML views is currently the w
 
 #### Do I have to use the project structure outlined above?
 
-Not at all. The above example, as well as the samples, keep everything in a single project for simplicity (the samples have the XAML definitions in separate projects for technical reasons). For more complex apps, you might want to consider a more clear separation of UI and core logic. An example would be the following structure:
+Not at all. The above example, as well as the samples, keep all non-UI code in a single project for simplicity, and all the XAML in a C# project for better tooling.
+
+An alternative with a clearer separation of UI and core logic can be implemented by splitting the F# project into two projects:
 
 * A core library containing the model definitions and `update` functions.
-  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on certain WPF UI assemblies and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
-* An entry point project that contains the `bindings` (or `view`) function and the call to `Program.runWindow`.
+  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on WPF and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
+* An Elmish.WPF project that contains the `bindings` (or `view`) function and the call to `Program.runElmishLoop`.
   * This project would reference the core library and `Elmish.WPF`.
-* A view project containing the XAML-related stuff (windows, user controls, behaviors, etc.).
-  * This could also be part of the entry point project, but if you’re using the new project format (like the samples in this repo), this might not work properly until .NET Core 3.0.
+
+Another alternative is to turn the sample code on its head and have the F# project be a console app containing your entry point (with a call to `Program.runWindow`) and referencing the C#/XAML project (instead of the other way around, as demonstrated above).
+
+In general, you have a large amount of freedom in how you structure your solution and what kind of entry point you use.
 
 #### How can I test commands? What is the CmdMsg pattern?
 
@@ -211,18 +235,9 @@ Since the commands (`Cmd<Msg>`) returned by `init` and `update` are lists of fun
 
 The [FileDialogs.CmdMsg sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) demonstrates this approach. For more information, see the [Fabulous documentation](https://fsprojects.github.io/Fabulous/Fabulous.XamarinForms/update.html#replacing-commands-with-command-messages-for-better-testability). For reference, here is [the discussion that led to this pattern](https://github.com/fsprojects/Fabulous/pull/320#issuecomment-491522737).
 
-#### Can I instantiate `Application` myself?
-
-Yes, just do it before calling `Program.runWindow` and it will automatically be used. You might need this if you have application-wide resources in a `ResourceDictionary`, which might require you to instantiate the application before instantiating the main window you pass to `Program.runWindow`.
-
 #### Can I use design-time view models?
 
-Yes. You need to structure your code so you have some place in your code that satisfies the following requirements:
-
-* Must be able to instantiate a model and the associated bindings
-* Must be reachable by the XAML views
-
-There, use `ViewModel.designInstance` to create a view model instance that your XAML can use at design-time:
+Yes. Assuming you have a C# XAML and entry point project referencing the F# project, simply use `ViewModel.designInstance` (e.g. in the F# project) to create a view model instance that your XAML can use at design-time:
 
 ```F#
 module MyAssembly.DesignViewModels
@@ -241,7 +256,7 @@ Then use the following attributes wherever you need a design-time VM:
     d:DataContext="{x:Static vm:DesignViewModels.myVm}">
 ```
 
-When targeting .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
+When targeting legacy .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
 
 ##### .NET Core 3 workaround
 

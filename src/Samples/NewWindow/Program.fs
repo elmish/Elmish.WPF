@@ -127,6 +127,6 @@ let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>
   let bindings = App.mainBindings createWindow1 createWindow2
   Program.mkSimpleWpf App.init App.update bindings
   |> Program.withConsoleTrace
-  |> Program.runWindowWithConfig
+  |> Program.startElmishLoop
     { ElmConfig.Default with LogConsole = true; Measure = true }
     mainWindow
