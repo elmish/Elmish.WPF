@@ -53,9 +53,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileDialogs.Views", "Sample
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FileDialogs", "Samples\FileDialogs\FileDialogs.fsproj", "{36A4AEAF-8282-47EC-B751-BB3D16AB1A20}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileDialogs.CmdMsg.Views", "Samples\FileDialogs.CmdMsg.Views\FileDialogs.CmdMsg.Views.csproj", "{F66F6E21-357E-4CE8-9807-042C5171AB06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileDialogsCmdMsg.Views", "Samples\FileDialogsCmdMsg.Views\FileDialogsCmdMsg.Views.csproj", "{F66F6E21-357E-4CE8-9807-042C5171AB06}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FileDialogs.CmdMsg", "Samples\FileDialogs.CmdMsg\FileDialogs.CmdMsg.fsproj", "{F095E7E4-28ED-4223-A92F-4E86922E34EF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FileDialogsCmdMsg", "Samples\FileDialogsCmdMsg\FileDialogsCmdMsg.fsproj", "{F095E7E4-28ED-4223-A92F-4E86922E34EF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51DF5F61-CE23-4BB5-A1D6-8421974B760B}"
 	ProjectSection(SolutionItems) = preProject

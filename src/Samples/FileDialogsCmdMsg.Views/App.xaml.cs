@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace Elmish.WPF.Samples.FileDialogs.CmdMsg
+namespace Elmish.WPF.Samples.FileDialogsCmdMsg
 {
   public partial class App : Application
   {
