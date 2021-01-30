@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FileDialogsCmdMsg\FileDialogsCmdMsg.fsproj" />
+    <ProjectReference Include="..\SingleCounter.Core\SingleCounter.Core.fsproj" />
   </ItemGroup>
 
 </Project>

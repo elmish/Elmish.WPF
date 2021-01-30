@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SubModel\SubModel.fsproj" />
+    <ProjectReference Include="..\Validation.Core\Validation.Core.fsproj" />
   </ItemGroup>
 
 </Project>
