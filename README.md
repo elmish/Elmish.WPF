@@ -59,7 +59,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 1. Create an F# Class Library. If targeting .NET 5 or .NET Core, the project file should look like this:
 
    ```fsproj
-<Project Sdk="Microsoft.NET.Sdk">
+   <Project Sdk="Microsoft.NET.Sdk">
      
      <PropertyGroup>
        <TargetFramework>net5.0-windows</TargetFramework>  <!-- Or another target framework -->
@@ -72,7 +72,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    If targeting .NET Framework (4.6.1 or later), replace the first line with
 
    ```fsproj
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+   <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
    ```
 
 2. Add NuGet reference to package `Elmish.WPF`.
