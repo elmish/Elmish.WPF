@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FileDialogs\FileDialogs.fsproj" />
+    <ProjectReference Include="..\FileDialogs.Core\FileDialogs.Core.fsproj" />
   </ItemGroup>
 
 </Project>

@@ -8,7 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NewWindow\NewWindow.fsproj" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EventBindingsAndBehaviors.Core\EventBindingsAndBehaviors.Core.fsproj" />
   </ItemGroup>
 
 </Project>
