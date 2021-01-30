@@ -1,4 +1,4 @@
-﻿module Elmish.WPF.Samples.FileDialogs.CmdMsg.Program
+﻿module Elmish.WPF.Samples.FileDialogsCmdMsg.Program
 
 open System
 open Serilog
