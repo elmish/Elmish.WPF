@@ -5,7 +5,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors"
-        xmlns:vm="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors;assembly=EventBindingsAndBehaviors"
+        xmlns:vm="clr-namespace:Elmish.WPF.Samples.EventBindingsAndBehaviors;assembly=EventBindingsAndBehaviors.Core"
         Title="EventBindings"
         Height="450"
         Width="400"
