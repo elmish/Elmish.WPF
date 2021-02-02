@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelOpt;assembly=SubModelOpt"
+             xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelOpt;assembly=SubModelOpt.Core"
              Padding="10"
              mc:Ignorable="d"
              d:DataContext="{x:Static vm:Program.form2DesignVm}">
