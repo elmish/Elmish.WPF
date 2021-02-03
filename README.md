@@ -281,6 +281,8 @@ where `T` is the type of the parent object that contains `local:MyControl` (or a
 
 Sure! Just use `Binding.subModelWin`. It works like `Binding.subModel`, but has a `WindowState` wrapper around the returned model to control whether the window is closed, hidden, or visible. You can use both modal and non-modal windows/dialogs, and everything is a part of the Elmish core loop. Check out the [NewWindow sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples).
 
+Note that if you use `App.xaml` startup, you may want to set `ShutdownMode="OnMainWindowClose"` in `App.xaml` if that’s the desired behavior.
+
 #### How can I use Save File / Open File dialogs?
 
 There’s a few things to remember regarding opening on the UI thread and not blocking the Elmish dispatch loop. Check out the [FileDialogs sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). In short, write a function like below, and call it using `Cmd.OfAsync`.
