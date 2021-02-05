@@ -1,5 +1,9 @@
 #### 3.5.7
+* Excluded 4.* prereleases from possibilities for version of Elmish dependency
+* Added support for multiple validation errors
+* Added target `net5.0-windows`
 * `ViewModel<'model, 'msg>` now overrides `object.ToString()` and returns a string representation of the current `'model` instance.  This is only intended for deubgging.  No guarantees are given about the exact structure of the returned string.
+* Fixed incorrect spelling of a word in a log message
 
 #### 3.5.6
 
