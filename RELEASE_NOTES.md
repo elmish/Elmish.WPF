@@ -1,4 +1,4 @@
-#### 4.0.0
+#### 4.0.0-beta-1
 
 * **Breaking:** Removed the obsolete binding functions in the `BindingFn` module
 * **Breaking:** Removed the obsolete function `Elmish.WPF.Cmd.showWindow`
@@ -6,6 +6,7 @@
 * **Breaking:** App initialization is now done using the `WpfProgram` module instead of the `Program` module
 * **Breaking:** Removed `ElmConfig`. For controlling logging, see below. For specifying a binding performance log threshold (corresponding to the old `ElmConfig.MeasureLimitMs` field), use `WpfProgram.withBindingPerformanceLogThreshold`
 * **Breaking:** The method `Binding.oneWaySeq` is implemented by calling the method `Binding.oneWaySeqLazy` with `equals` = `refEq` and `map` = `id`. This is a breaking change when using a mutable data structure for the sequence. Compensate by directly calling `Binding.oneWaySeqLazy` with `equals` = `fun _ _ = false`.
+* **Breaking:** Some calls to `Binding` methods now include an equality constraint. This only is only breaking if the corresponding type included the `NoEquality` attribute.
 * Added binding mapping functions
   * Added `mapModel`, `mapMsg`, and `mapMsgWithModel` in both the `Binding` and `Bindings` modules
   * These functions enable common model and message mapping logic to be extracted
