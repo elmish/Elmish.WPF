@@ -102,12 +102,12 @@ module WpfProgram =
     Application.Current.Run window
 
 
-  /// Same as mkProgram, except that init and update doesn't return Cmd<'msg>
+  /// Same as mkProgram, except that init and update don't return Cmd<'msg>
   /// directly, but instead return a CmdMsg discriminated union that is converted
   /// to Cmd<'msg> using toCmd. This means that the init and update functions
   /// return only data, and thus are easier to unit test. The CmdMsg pattern is
   /// general; this is just a trivial convenience function that automatically
-  /// converts CmdMsg to Cmd<'msg> for you in init and update
+  /// converts CmdMsg to Cmd<'msg> for you in init and update.
   let mkProgramWithCmdMsg
       (init: unit -> 'model * 'cmdMsg list)
       (update: 'msg -> 'model -> 'model * 'cmdMsg list)
