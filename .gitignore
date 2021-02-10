@@ -39,3 +39,9 @@ paket-files/
 .idea/
 
 deploy/
+
+# Ionide (cross platform F# VS Code tools) working folder
+.ionide/
+
+# VSCode working folder
+.vscode/
