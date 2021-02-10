@@ -163,4 +163,4 @@ let main window =
   WpfProgram.mkSimple App.init App.update App.bindings
   |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.runWindow window
+  |> WpfProgram.startElmishLoop window

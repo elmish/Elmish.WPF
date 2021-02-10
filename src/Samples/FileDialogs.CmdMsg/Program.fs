@@ -137,4 +137,4 @@ let main window =
   WpfProgram.mkProgramWithCmdMsg init update bindings toCmd
   |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.runWindow window
+  |> WpfProgram.startElmishLoop window

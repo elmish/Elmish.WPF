@@ -72,7 +72,6 @@ let bindings () : Binding<Model, Msg> list = [
 let designVm = ViewModel.designInstance (init ()) (bindings ())
 
 let main window =
-
   let logger =
     LoggerConfiguration()
       .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
@@ -83,4 +82,4 @@ let main window =
 
   WpfProgram.mkSimple init update bindings
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.runWindow window
+  |> WpfProgram.startElmishLoop window

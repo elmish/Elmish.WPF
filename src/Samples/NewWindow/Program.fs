@@ -137,4 +137,4 @@ let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>
   let bindings = App.mainBindings createWindow1 createWindow2
   WpfProgram.mkSimple App.init App.update bindings
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.runWindow mainWindow
+  |> WpfProgram.startElmishLoop mainWindow

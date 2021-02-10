@@ -133,4 +133,4 @@ let main window =
 
   WpfProgram.mkSimple App.init App.update App.bindings
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.runWindow window
+  |> WpfProgram.startElmishLoop window
