@@ -98,7 +98,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
   /// Error messages keyed by property name.
-  let errors = Dictionary<string, string>()
+  let errorsByBindingName = Dictionary<string, string list>()
 
 
   let withCaching b = Cached { Binding = b; Cache = ref None }
@@ -117,25 +117,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
 
-  let setError error propName =
-    match errors.TryGetValue propName with
-    | true, err when err = error -> ()
-    | _ ->
-        log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
-        errors.[propName] <- error
-        errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
-
-  let removeError propName =
-    if errors.Remove propName then
-      log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, propName)
-      errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
-
   let rec updateValidationError = function
-    | TwoWayValidate { TwoWayValidateData = d } ->
-        fun model ->
-          match d.Validate model with
-          | ValueNone -> removeError
-          | ValueSome error -> setError error
+    | TwoWayValidate b ->
+        fun model name ->
+          let oldErrors =
+            match errorsByBindingName.TryGetValue name with
+            | (true, errors) -> errors
+            | (false, _) -> []
+          let newErrors = b.TwoWayValidateData.Validate model
+          if oldErrors <> newErrors then
+            log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, name)
+            errorsByBindingName.[name] <- newErrors
+            errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -577,9 +570,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     [<CLIEvent>]
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
-      errors.Count > 0
+      errorsByBindingName.Count > 0
     member __.GetErrors propName =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
-      match errors.TryGetValue propName with
-      | true, err -> upcast [err]
+      match errorsByBindingName.TryGetValue propName with
+      | true, errs -> upcast errs
       | false, _ -> upcast []

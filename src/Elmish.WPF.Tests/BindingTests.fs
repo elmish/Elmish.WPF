@@ -881,7 +881,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -932,10 +932,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -981,13 +981,12 @@ module twoWayValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1035,7 +1034,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -1086,10 +1085,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1135,13 +1134,12 @@ module twoWayValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1216,7 +1214,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -1291,10 +1289,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1364,13 +1362,12 @@ module twoWayOptValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1442,7 +1439,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -1517,10 +1514,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1590,13 +1587,12 @@ module twoWayOptValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1668,7 +1664,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -1743,10 +1739,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1816,13 +1812,12 @@ module twoWayOptValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -1894,7 +1889,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then ValueSome err else ValueNone
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
 
         test <@ d.Validate x |> unbox = validate x @>
@@ -1969,10 +1964,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Some err else None
+        let validate x = if x < 0 then [ err ] else []
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofOption) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 
@@ -2042,13 +2037,12 @@ module twoWayOptValidate =
     let ``final validate returns value from original validate`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
-        let! ok = GenX.auto<byte>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then Ok ok else Error err
+        let validate x = if x < 0 then [] else [ err ]
         let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = (validate x |> ValueOption.ofError) @>
+        test <@ d.Validate x |> unbox = validate x @>
       }
 
 

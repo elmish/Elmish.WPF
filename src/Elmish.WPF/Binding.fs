@@ -270,7 +270,7 @@ type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
 type internal TwoWayValidateData<'model, 'msg, 'a when 'a : equality> =
   { Get: 'model -> 'a
     Set: 'a -> 'model -> 'msg
-    Validate: 'model -> string voption }
+    Validate: 'model -> string list }
     
   member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
     d.Get currentModel <> d.Get newModel
@@ -1159,6 +1159,27 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
   /// <param name="validate">
+  ///   Returns the validation messages from the updated model.
+  /// </param>
+  static member twoWayValidate
+      (get: 'model -> 'a,
+       set: 'a -> 'model -> 'msg,
+       validate: 'model -> string list)
+      : string -> Binding<'model, 'msg> =
+    TwoWayValidateData {
+      Get = get >> box
+      Set = unbox<'a> >> set
+      Validate = validate
+    } |> createBinding
+
+
+  /// <summary>
+  ///   Creates a two-way binding with validation using
+  ///   <c>INotifyDataErrorInfo</c>.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
   static member twoWayValidate
@@ -1168,7 +1189,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate }
+      Validate = validate >> ValueOption.toList }
     |> TwoWayValidateData.box
     |> TwoWayValidateData
     |> createBinding
@@ -1190,7 +1211,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofOption }
+      Validate = validate >> Option.toList }
     |> TwoWayValidateData.box
     |> TwoWayValidateData
     |> createBinding
@@ -1212,10 +1233,33 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofError }
+      Validate = validate >> ValueOption.ofError >> ValueOption.toList }
     |> TwoWayValidateData.box
     |> TwoWayValidateData
     |> createBinding
+
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation messages from the updated model.
+  /// </param>
+  static member twoWayOptValidate
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       validate: 'model -> string list)
+      : string -> Binding<'model, 'msg> =
+    TwoWayValidateData {
+      Get = get >> ValueOption.map box >> ValueOption.toObj
+      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
+      Validate = validate
+    } |> createBinding
 
 
   /// <summary>
@@ -1236,7 +1280,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate }
+      Validate = validate >> ValueOption.toList }
     |> TwoWayValidateData.boxVOpt
     |> TwoWayValidateData
     |> createBinding
@@ -1260,7 +1304,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofOption }
+      Validate = validate >> Option.toList }
     |> TwoWayValidateData.boxVOpt
     |> TwoWayValidateData
     |> createBinding
@@ -1284,10 +1328,33 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofError }
+      Validate = validate >> ValueOption.ofError >> ValueOption.toList }
     |> TwoWayValidateData.boxVOpt
     |> TwoWayValidateData
     |> createBinding
+
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation messages from the updated model.
+  /// </param>
+  static member twoWayOptValidate
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       validate: 'model -> string list)
+      : string -> Binding<'model, 'msg> =
+    TwoWayValidateData {
+      Get = get >> Option.map box >> Option.toObj
+      Set = Option.ofObj >> Option.map unbox<'a> >> set
+      Validate = validate
+    } |> createBinding
 
 
   /// <summary>
@@ -1308,7 +1375,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate }
+      Validate = validate >> ValueOption.toList }
     |> TwoWayValidateData.boxOpt
     |> TwoWayValidateData
     |> createBinding
@@ -1332,7 +1399,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofOption }
+      Validate = validate >> Option.toList }
     |> TwoWayValidateData.boxOpt
     |> TwoWayValidateData
     |> createBinding
@@ -1356,7 +1423,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     { Get = get
       Set = set
-      Validate = validate >> ValueOption.ofError }
+      Validate = validate >> ValueOption.ofError >> ValueOption.toList }
     |> TwoWayValidateData.boxOpt
     |> TwoWayValidateData
     |> createBinding
@@ -2451,6 +2518,27 @@ module Extensions =
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="validate">
+    ///   Returns the validation messages from the updated model.
+    /// </param>
+    static member twoWayValidate
+        (get: 'model -> 'a,
+         set: 'a -> 'msg,
+         validate: 'model -> string list)
+        : string -> Binding<'model, 'msg> =
+      TwoWayValidateData {
+        Get = get >> box
+        Set = fun p _ -> p |> unbox<'a> |> set
+        Validate = validate
+      } |> createBinding
+
+
+    /// <summary>
+    ///   Creates a two-way binding with validation using
+    ///   <c>INotifyDataErrorInfo</c>.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
     ///   Returns the validation message from the updated model.
     /// </param>
     static member twoWayValidate
@@ -2461,7 +2549,7 @@ module Extensions =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p _ -> p |> unbox<'a> |> set
-        Validate = validate
+        Validate = validate >> ValueOption.toList
       } |> createBinding
 
 
@@ -2482,7 +2570,7 @@ module Extensions =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p  _ -> p |> unbox<'a> |> set
-        Validate = validate >> ValueOption.ofOption
+        Validate = validate >> Option.toList
       } |> createBinding
 
 
@@ -2503,7 +2591,7 @@ module Extensions =
       TwoWayValidateData {
         Get = get >> box
         Set = fun p _ -> p |> unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList
       } |> createBinding
 
 
@@ -2516,12 +2604,12 @@ module Extensions =
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="validate">
-    ///   Returns the validation message from the updated model.
+    ///   Returns the validation messages from the updated model.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> string voption)
+         validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
@@ -2544,12 +2632,35 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
+         validate: 'model -> string voption)
+        : string -> Binding<'model, 'msg> =
+      TwoWayValidateData {
+        Get = get >> ValueOption.map box >> ValueOption.toObj
+        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
+        Validate = validate >> ValueOption.toList
+      } |> createBinding
+
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    static member twoWayOptValidate
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofOption
+        Validate = validate >> Option.toList
       } |> createBinding
 
 
@@ -2572,7 +2683,7 @@ module Extensions =
       TwoWayValidateData {
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList
       } |> createBinding
 
 
@@ -2585,12 +2696,12 @@ module Extensions =
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
     /// <param name="validate">
-    ///   Returns the validation message from the updated model.
+    ///   Returns the validation messages from the updated model.
     /// </param>
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> string voption)
+         validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
@@ -2613,12 +2724,35 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
+         validate: 'model -> string voption)
+        : string -> Binding<'model, 'msg> =
+      TwoWayValidateData {
+        Get = get >> Option.map box >> Option.toObj
+        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
+        Validate = validate >> ValueOption.toList
+      } |> createBinding
+
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    static member twoWayOptValidate
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofOption
+        Validate = validate >> Option.toList
       } |> createBinding
 
 
@@ -2641,7 +2775,7 @@ module Extensions =
       TwoWayValidateData {
         Get = get >> Option.map box >> Option.toObj
         Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList
       } |> createBinding
 
 
