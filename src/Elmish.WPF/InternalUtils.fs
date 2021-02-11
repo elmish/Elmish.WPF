@@ -32,6 +32,12 @@ module Patterns =
     Kvp (kvp.Key, kvp.Value)
 
 
+[<AutoOpen>]
+module Func2AutoOpen =
+
+  let ignore2 _ _ = ()
+
+
 [<RequireQualifiedAccess>]
 module Kvp =
 

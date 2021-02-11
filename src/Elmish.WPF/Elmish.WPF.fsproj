@@ -14,8 +14,8 @@
     <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>
     <PackageTags>WPF F# fsharp Elmish Elm</PackageTags>
     <PackageIcon>elmish-wpf-logo-128x128.png</PackageIcon>
-    <Version>3.5.7</Version>
-    <PackageReleaseNotes>Support for multiple validation errors and other minor improvements.</PackageReleaseNotes>
+    <Version>4.0.0-beta-1</Version>
+    <PackageReleaseNotes>https://github.com/elmish/Elmish.WPF/blob/master/RELEASE_NOTES.md</PackageReleaseNotes>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
@@ -35,17 +35,16 @@
     </AssemblyAttribute>
     <Compile Include="InternalUtils.fs" />
     <Compile Include="InternalTypes.fs" />
-    <Compile Include="Config.fs" />
-    <Compile Include="Binding.fs" />
     <Compile Include="Utils.fs" />
+    <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="ViewModelModule.fs" />
-    <Compile Include="Cmd.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="WpfProgram.fs" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.0.3, 3.99]" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
   </ItemGroup>
   
   <ItemGroup>

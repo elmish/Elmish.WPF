@@ -1,7 +1,8 @@
 module Elmish.WPF.Samples.SubModelSeq.Program
 
 open System
-open Elmish
+open Serilog
+open Serilog.Extensions.Logging
 open Elmish.WPF
 
 
@@ -112,6 +113,15 @@ module Counter =
       | SetStepSize x -> { m with StepSize = x }
       | Reset -> init
 
+    let bindings () : Binding<Counter, CounterMsg> list = [
+      "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+      "Increment" |> Binding.cmd Increment
+      "Decrement" |> Binding.cmd Decrement
+      "StepSize" |> Binding.twoWay(
+        (fun m -> float m.StepSize),
+        int >> SetStepSize)
+      "Reset" |> Binding.cmdIf(Reset, canReset)
+    ]
 
 
 [<AutoOpen>]
@@ -234,47 +244,45 @@ module Bindings =
   let moveUpMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryHead with
     | Some c when c.Data.Id <> s.Data.Id ->
-        OutMoveUp |> OutMsg |> Some
+        OutMoveUp |> Some
     | _ -> None
 
   let moveDownMsg (_, { Parent = p; Self = s }) =
     match p.Children |> List.tryLast with
     | Some c when c.Data.Id <> s.Data.Id ->
-        OutMoveDown |> OutMsg |> Some
+        OutMoveDown |> Some
     | _ -> None
 
-  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list = [
-    "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
+  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list =
+    let counterBindings =
+      Counter.bindings ()
+      |> Bindings.mapModel (fun (_, { Self = s }) -> s.Data.Value)
+      |> Bindings.mapMsg (CounterMsg >> LeafMsg)
 
-    "CounterValue" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Value.Count)
-    "Increment" |> Binding.cmd(Increment |> CounterMsg |> LeafMsg |> InMsg)
-    "Decrement" |> Binding.cmd(Decrement |> CounterMsg |> LeafMsg |> InMsg)
-    "StepSize" |> Binding.twoWay(
-      (fun (_, { Self = s }) -> float s.Data.Value.StepSize),
-      (fun v _ -> v |> int |> SetStepSize |> CounterMsg |> LeafMsg |> InMsg))
-    "Reset" |> Binding.cmdIf(
-      Reset |> CounterMsg |> LeafMsg |> InMsg,
-      (fun (_, { Self = s }) -> Counter.canReset s.Data.Value))
+    let inMsgBindings =
+      [ "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
+        "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
+        "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
+        "ChildCounters" |> Binding.subModelSeq(
+          (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
+          (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
+          (fun (_, { Self = c }) -> c.Data.Id),
+          (fun (cId, inOutMsg) ->
+            match inOutMsg with
+            | InMsg msg -> (cId, msg) |> BranchMsg
+            | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg),
+          subtreeBindings)
+      ] @ counterBindings
+      |> Bindings.mapMsg InMsg
 
-    "Remove" |> Binding.cmd(OutRemove |> OutMsg)
-    "AddChild" |> Binding.cmd(AddChild |> LeafMsg |> InMsg)
+    let outMsgBindings =
+      [ "Remove" |> Binding.cmd OutRemove
+        "MoveUp" |> Binding.cmdIf moveUpMsg
+        "MoveDown" |> Binding.cmdIf moveDownMsg
+      ] |> Bindings.mapMsg OutMsg
 
-    "MoveUp" |> Binding.cmdIf moveUpMsg
-    "MoveDown" |> Binding.cmdIf moveDownMsg
+    outMsgBindings @ inMsgBindings
 
-    "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-
-    "ChildCounters" |> Binding.subModelSeq(
-      (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
-      (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
-      (fun (_, { Self = c }) -> c.Data.Id),
-      (fun (cId, inOutMsg) ->
-        match inOutMsg with
-        | InMsg msg -> (cId, msg) |> BranchMsg
-        | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
-        |> InMsg),
-      subtreeBindings)
-  ]
 
   let rootBindings () : Binding<Model, Msg> list = [
     "Counters" |> Binding.subModelSeq(
@@ -292,12 +300,18 @@ module Bindings =
     "AddCounter" |> Binding.cmd (AddChild |> LeafMsg |> SubtreeMsg)
   ]
 
-
+let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
 let mainDesignVm = ViewModel.designInstance (App.init ()) (Bindings.rootBindings ())
 
 let main window =
-  Program.mkSimpleWpf App.init App.update Bindings.rootBindings
-  |> Program.withConsoleTrace
-  |> Program.startElmishLoop
-    { ElmConfig.Default with LogConsole = true; Measure = true }
-    window
+  let logger =
+    LoggerConfiguration()
+      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+      .WriteTo.Console()
+      .CreateLogger()
+
+  WpfProgram.mkSimple App.init App.update Bindings.rootBindings
+  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
+  |> WpfProgram.startElmishLoop window

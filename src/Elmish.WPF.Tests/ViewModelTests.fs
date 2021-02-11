@@ -6,6 +6,7 @@ open System.Collections.ObjectModel
 open System.Collections.Specialized
 open System.ComponentModel
 open System.Windows.Input
+open Microsoft.Extensions.Logging.Abstractions
 open FSharp.Interop.Dynamic
 open Xunit
 open Hedgehog
@@ -26,7 +27,7 @@ module Extensions =
 
 
 type internal TestVm<'model, 'msg>(model, bindings) as this =
-  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, ElmConfig.Default, "")
+  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, 1, "", NullLogger.Instance, NullLogger.Instance)
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
@@ -101,9 +102,9 @@ module Helpers =
   let internal oneWay
       name
       (get: 'model -> 'a) =
-    name |> createBinding (OneWayData {
-      Get = get >> box
-    })
+    ({ Get = get >> box }
+     |> OneWayData
+     |> createBinding) name
 
 
   let internal oneWayLazy
@@ -111,11 +112,12 @@ module Helpers =
       (get: 'model -> 'a)
       (equals: 'a -> 'a -> bool)
       (map: 'a -> 'b) =
-    name |> createBinding (OneWayLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> box
-      Equals = fun a b -> equals (unbox<'a> a) (unbox<'a> b)
-    })
+    ({ Get = get
+       Map = map
+       Equals = equals }
+     |> OneWayLazyData.box
+     |> OneWayLazyData
+     |> createBinding) name
 
 
   let internal oneWaySeqLazy
@@ -125,24 +127,25 @@ module Helpers =
       (map: 'a -> #seq<'b>)
       (itemEquals: 'b -> 'b -> bool)
       (getId: 'b -> 'id) =
-    name |> createBinding (OneWaySeqLazyData {
-      Get = get >> box
-      Map = unbox<'a> >> map >> Seq.map box
-      Equals = fun x y -> equals (unbox<'a> x) (unbox<'a> y)
-      GetId = unbox<'b> >> getId >> box
-      ItemEquals = fun x y -> itemEquals (unbox<'b> x) (unbox<'b> y)
-    })
+    ({ Get = get
+       Map = fun a -> upcast map a
+       Equals = equals
+       GetId = getId
+       ItemEquals = itemEquals }
+     |> OneWaySeqLazyData.box
+     |> OneWaySeqLazyData
+     |> createBinding) name
 
 
   let internal twoWay
       name
       (get: 'model -> 'a)
       (set: 'a -> 'model -> 'msg) =
-    name |> createBinding (TwoWayData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      WrapDispatch = id
-    })
+    ({ Get = get
+       Set = set }
+     |> TwoWayData.box
+     |> TwoWayData
+     |> createBinding) name
 
 
   let internal twoWayValidate
@@ -150,23 +153,22 @@ module Helpers =
       (get: 'model -> 'a)
       (set: 'a -> 'model -> 'msg)
       (validate: 'model -> string voption) =
-    name |> createBinding (TwoWayValidateData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      Validate = validate >> ValueOption.toList
-      WrapDispatch = id
-    })
+    ({ Get = get
+       Set = set
+       Validate = validate >> ValueOption.toList }
+     |> TwoWayValidateData.box
+     |> TwoWayValidateData
+     |> createBinding) name
 
 
   let internal cmd
       name
       (exec: 'model -> 'msg voption)
       (canExec: 'model -> bool) =
-    name |> createBinding (CmdData {
-      Exec = exec
-      CanExec = canExec
-      WrapDispatch = id
-    })
+    ({ Exec = exec
+       CanExec = canExec }
+     |> CmdData
+     |> createBinding) name
 
 
   let internal cmdParam
@@ -174,12 +176,11 @@ module Helpers =
       (exec: 'a -> 'model -> 'msg voption)
       (canExec: 'a -> 'model -> bool)
       (autoRequery: bool) =
-    name |> createBinding (CmdParamData {
-      Exec = unbox >> exec
-      CanExec = unbox >> canExec
-      AutoRequery = autoRequery
-      WrapDispatch = id
-    })
+    ({ Exec = unbox >> exec
+       CanExec = unbox >> canExec
+       AutoRequery = autoRequery }
+     |> CmdParamData
+     |> createBinding) name
 
 
   let internal subModel
@@ -188,12 +189,13 @@ module Helpers =
       (toMsg: 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list)
       (sticky: bool) =
-    name |> createBinding (SubModelData {
-      GetModel = getModel >> ValueOption.map box
-      GetBindings = fun () -> bindings |> List.map boxBinding
-      ToMsg = unbox<'subMsg> >> toMsg
-      Sticky = sticky
-    })
+    ({ GetModel = getModel
+       GetBindings = fun () -> bindings
+       ToMsg = fun _ -> toMsg
+       Sticky = sticky }
+     |> SubModelData.box
+     |> SubModelData
+     |> createBinding) name
 
 
   let internal subModelSeq
@@ -202,12 +204,13 @@ module Helpers =
       (getId: 'subModel -> 'id)
       (toMsg: 'id * 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list) =
-    name |> createBinding (SubModelSeqData {
-      GetModels = getModels >> Seq.map box
-      GetId = unbox<'subModel> >> getId >> box
-      GetBindings = fun () -> bindings |> List.map boxBinding
-      ToMsg = fun (id, msg) -> toMsg (unbox<'id> id, unbox<'subMsg> msg)
-    })
+    ({ GetModels = fun m -> upcast getModels m
+       GetId = getId
+       GetBindings = fun () -> bindings
+       ToMsg = fun _ -> toMsg }
+     |> SubModelSeqData.box
+     |> SubModelSeqData
+     |> createBinding) name
 
 
   let internal subModelSelectedItem
@@ -215,12 +218,12 @@ module Helpers =
       subModelSeqBindingName
       (get: 'model -> 'id voption)
       (set: 'id voption -> 'model -> 'msg) =
-    name |> createBinding (SubModelSelectedItemData {
-      Get = get >> ValueOption.map box
-      Set = ValueOption.map unbox<'id> >> set
-      SubModelSeqBindingName = subModelSeqBindingName
-      WrapDispatch = id
-    })
+    ({ Get = get
+       Set = set
+       SubModelSeqBindingName = subModelSeqBindingName }
+     |> SubModelSelectedItemData.box
+     |> SubModelSelectedItemData
+     |> createBinding) name
 
 
 

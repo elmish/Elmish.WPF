@@ -355,37 +355,52 @@ module oneWaySeq =
 
 
   [<Fact>]
-  let ``final get passes through model`` () =
+  let ``final get returns value from original get`` () =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Get x |> unbox = x @>
-    }
-
-
-  [<Fact>]
-  let ``final map returns value from original get`` () =
-    Property.check <| property {
-      let! x = GenX.auto<string>
-
-      let get : string -> char list = Seq.toList
+      let get = string<int>
       let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Map (box x) |> Seq.map unbox |> Seq.toList = get x @>
+      test <@ d.Get x |> unbox = get x @>
     }
 
 
   [<Fact>]
-  let ``final equals returns false`` () =
+  let ``final map returns the seq its given`` () =
     Property.check <| property {
-      let! x = GenX.auto<int>
-      let! y = GenX.auto<int>
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
 
+      let list = array |> Array.toList
       let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
 
-      test <@ d.Equals (box x) (box y) = false @>
+      test <@ list |> Seq.map box |> box |> d.Map |> Seq.map unbox |> Seq.toList = list @>
+    }
+
+
+  [<Fact>]
+  let ``final equals returns true for the same sequence references`` () =
+    Property.check <| property {
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
+
+      let list = array |> Seq.map box |> Seq.toList
+      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
+
+      test <@ d.Equals (box list) (box list) = true @>
+    }
+
+
+  [<Fact>]
+  let ``final equals returns false for different reference sequences`` () =
+    Property.check <| property {
+      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
+
+      let list1 = array |> Seq.map box |> Seq.toList
+      let list2 = list1 |> Seq.map id |> Seq.toList
+      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
+
+      test <@ refEq list1 list2 = false @> // ensure lists are not reference equal
+      test <@ d.Equals (box list1) (box list2) = false @>
     }
 
 
@@ -2113,7 +2128,7 @@ module cmdIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdIf(fail, fail, id)
+        let binding = bindingName |> Binding.cmdIf(fail, fail)
         test <@ binding.Name = bindingName @>
       }
 
@@ -2470,7 +2485,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam, wrapDispatch = id) |> getCmdParamData
+        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam) |> getCmdParamData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 
@@ -2978,9 +2993,10 @@ module subModel =
     [<Fact>]
     let ``final toMsg simply unboxes`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
         let d = Binding.subModel(fail, fail) |> getSubModelData
-        test <@ d.ToMsg (box x) = x @>
+        test <@ d.ToMsg m (box x) = x @>
       }
 
 
@@ -3018,12 +3034,13 @@ module subModel =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModel(fail, toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3061,12 +3078,13 @@ module subModel =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModel(fail, fail, toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3117,9 +3135,10 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg simply unboxes`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
         let d = Binding.subModelOpt((fail: _ -> _ voption), fail) |> getSubModelData
-        test <@ d.ToMsg (box x) = x @>
+        test <@ d.ToMsg m (box x) = x @>
       }
 
 
@@ -3176,9 +3195,10 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg simply unboxes`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
         let d = Binding.subModelOpt((fail: _ -> _ option), fail) |> getSubModelData
-        test <@ d.ToMsg (box x) = x @>
+        test <@ d.ToMsg m (box x) = x @>
       }
 
 
@@ -3234,12 +3254,13 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ voption), toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3296,12 +3317,13 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ option), toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3358,12 +3380,13 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ voption), fail, toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3421,12 +3444,13 @@ module subModelOpt =
     [<Fact>]
     let ``final toMsg returns value from original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
         let d = Binding.subModelOpt((fail: _ -> _ option), fail, toMsg, fail) |> getSubModelData
 
-        test <@ d.ToMsg (box x) = toMsg x @>
+        test <@ d.ToMsg m (box x) = toMsg x @>
       }
 
 
@@ -3486,10 +3510,11 @@ module subModelSeq =
     [<Fact>]
     let ``final toMsg extracts and unboxes the second tuple element`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! x = GenX.auto<int>
         let! y = GenX.auto<string>
         let d = Binding.subModelSeq(fail, fail, fail) |> getSubModelSeqData
-        test <@ d.ToMsg (box x, box y) |> unbox = y @>
+        test <@ d.ToMsg m (box x, box y) |> unbox = y @>
       }
 
 
@@ -3529,11 +3554,12 @@ module subModelSeq =
     [<Fact>]
     let ``final toMsg returns the value of original toMsg`` () =
       Property.check <| property {
+        let! m = GenX.auto<int>
         let! id = GenX.auto<int>
         let! msg = GenX.auto<string>
         let toMsg (id: int, msg: string) = msg.Length + id
         let d = Binding.subModelSeq(fail, fail, toMsg, fail) |> getSubModelSeqData
-        test <@ d.ToMsg (box id, box msg) |> unbox = toMsg (id, msg) @>
+        test <@ d.ToMsg m (box id, box msg) |> unbox = toMsg (id, msg) @>
       }
 
 
@@ -3575,11 +3601,12 @@ module subModelSeq =
       [<Fact>]
       let ``final toMsg returns the value of original toMsg`` () =
         Property.check <| property {
+          let! m = GenX.auto<int>
           let! id = GenX.auto<int>
           let! msg = GenX.auto<string>
           let toMsg (id: int, msg: string) = msg.Length + id
           let d = Binding.subModelSeq(fail, fail, fail, toMsg, fail) |> getSubModelSeqData
-          test <@ d.ToMsg (box id, box msg) |> unbox = toMsg (id, msg) @>
+          test <@ d.ToMsg m (box id, box msg) |> unbox = toMsg (id, msg) @>
         }
 
 
@@ -3767,20 +3794,19 @@ module sorting =
       Property.check <| property {
         let! s = GenX.auto<string>
         let! b = GenX.auto<bool>
-        let! vo = GenX.auto<obj voption>
         let data =
-          [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+          [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
             OneWayData { Get = fail }
             OneWayLazyData { Get = fail; Map = fail; Equals = fail2 }
             OneWaySeqLazyData { Get = fail; Map = fail; Equals = fail2; GetId = fail; ItemEquals = fail2 }
-            TwoWayData { Get = fail; Set = fail2; WrapDispatch = fail }
-            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail }
-            CmdData { Exec = fail; CanExec = fail; WrapDispatch = fail }
-            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
+            TwoWayData { Get = fail; Set = fail2 }
+            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail }
+            CmdData { Exec = fail; CanExec = fail }
+            CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b }
             SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
-            SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = vo }
+            SubModelWinData { GetState = fail; GetBindings = fail; ToMsg = fail; GetWindow = fail2; IsModal = b; OnCloseRequested = fail }
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
-            SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s; WrapDispatch = fail }
+            SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ]
         let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast
         match sorted with
