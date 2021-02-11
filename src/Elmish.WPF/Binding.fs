@@ -1319,35 +1319,6 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
   /// <param name="validate">
-  ///   Returns the validation messages from the updated model.
-  /// </param>
-  /// <param name="wrapDispatch">
-  ///   Wraps the dispatch function with additional behavior, such as
-  ///   throttling, debouncing, or limiting.
-  /// </param>
-  static member twoWayOptValidate
-      (get: 'model -> 'a option,
-       set: 'a option -> 'model -> 'msg,
-       validate: 'model -> string list,
-       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-      Validate = validate
-      WrapDispatch = defaultArg wrapDispatch id
-    } |> createBinding
-
-
-  /// <summary>
-  ///   Creates a two-way binding to an optional value with validation using
-  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
-  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
-  ///   on the view side.
-  /// </summary>
-  /// <param name="get">Gets the value from the model.</param>
-  /// <param name="set">Returns the message to dispatch.</param>
-  /// <param name="validate">
   ///   Returns the validation message from the updated model.
   /// </param>
   static member twoWayOptValidate
@@ -2690,35 +2661,6 @@ module Extensions =
         Get = get >> ValueOption.map box >> ValueOption.toObj
         Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
         Validate = validate >> Option.toList
-      } |> createBinding
-
-
-    /// <summary>
-    ///   Creates a two-way binding to an optional value with validation using
-    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
-    ///   between the optional source value and an unwrapped (possibly
-    ///   <c>null</c>) value on the view side.
-    /// </summary>
-    /// <param name="get">Gets the value from the model.</param>
-    /// <param name="set">Returns the message to dispatch.</param>
-    /// <param name="validate">
-    ///   Returns the validation messages from the updated model.
-    /// </param>
-    /// <param name="wrapDispatch">
-    ///   Wraps the dispatch function with additional behavior, such as
-    ///   throttling, debouncing, or limiting.
-    /// </param>
-    static member twoWayOptValidate
-        (get: 'model -> 'a option,
-         set: 'a option -> 'msg,
-         validate: 'model -> string list,
-         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate
-        WrapDispatch = defaultArg wrapDispatch id
       } |> createBinding
 
 
