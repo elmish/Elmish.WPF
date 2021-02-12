@@ -15,14 +15,14 @@ type internal Command(execute, canExecute, autoRequery) as this =
 
   do if autoRequery then CommandManager.RequerySuggested.AddHandler(handler)
 
-  // CommandManager only keeps a weak reference to the event handler, so a
-  // strong handler must be maintained
-  member private x._Handler = handler
+  // CommandManager only keeps a weak reference to the event handler,
+  // so a strong reference must be maintained
+  member private _._Handler = handler
 
-  member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x,EventArgs.Empty)
+  member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x, EventArgs.Empty)
 
   interface ICommand with
     [<CLIEvent>]
-    member x.CanExecuteChanged = canExecuteChanged.Publish
-    member x.CanExecute p = canExecute p
-    member x.Execute p = execute p
+    member _.CanExecuteChanged = canExecuteChanged.Publish
+    member _.CanExecute p = canExecute p
+    member _.Execute p = execute p
