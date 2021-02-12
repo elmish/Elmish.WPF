@@ -34,7 +34,7 @@
       <_Parameter1>Elmish.WPF.Tests</_Parameter1>
     </AssemblyAttribute>
     <Compile Include="InternalUtils.fs" />
-    <Compile Include="InternalTypes.fs" />
+    <Compile Include="Command.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModel.fs" />

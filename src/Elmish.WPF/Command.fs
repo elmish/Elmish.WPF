@@ -1,5 +1,4 @@
-﻿[<AutoOpen>]
-module internal Elmish.WPF.InternalTypes
+﻿namespace Elmish.WPF
 
 open System
 open System.Windows.Input
@@ -9,7 +8,7 @@ open System.Windows.Input
 /// conditions that might change the output of canExecute. It's necessary to use
 /// this feature for command bindings where the CommandParameter is bound to
 /// another UI control (e.g. a ListView.SelectedItem).
-type Command(execute, canExecute, autoRequery) as this =
+type internal Command(execute, canExecute, autoRequery) as this =
 
   let canExecuteChanged = Event<EventHandler,EventArgs>()
   let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
