@@ -567,6 +567,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     [<CLIEvent>]
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
+      log.LogTrace("[{BindingNameChain}] HasErrors", propNameChain)
       errorsByBindingName.Count > 0
     member __.GetErrors propName =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))

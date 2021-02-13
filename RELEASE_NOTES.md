@@ -1,3 +1,6 @@
+#### 4.0.0-beta-2
+* Added logging when INotifyDataErrorInfo.HasErrors is called
+
 #### 4.0.0-beta-1
 
 * **Breaking:** Removed the obsolete binding functions in the `BindingFn` module
