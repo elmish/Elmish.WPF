@@ -434,24 +434,26 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
-  let rec getCmdIfCanExecChanged newModel = function
-    | OneWay _
-    | OneWayLazy _
-    | OneWaySeq _
-    | TwoWay _
-    | TwoWayValidate _
-    | SubModel _
-    | SubModelWin _
-    | SubModelSeq _
-    | SubModelSelectedItem _ ->
-        None
-    | Cmd { Cmd = cmd; CanExec = canExec } ->
-        if canExec newModel = canExec currentModel
-        then None
-        else Some cmd
-    | CmdParam cmd ->
-        Some cmd
-    | Cached b -> getCmdIfCanExecChanged newModel b.Binding
+  let getCmdIfCanExecChanged newModel =
+    let rec getCmdIfCanExecChangedRec = function
+      | OneWay _
+      | OneWayLazy _
+      | OneWaySeq _
+      | TwoWay _
+      | TwoWayValidate _
+      | SubModel _
+      | SubModelWin _
+      | SubModelSeq _
+      | SubModelSelectedItem _ ->
+          None
+      | Cmd { Cmd = cmd; CanExec = canExec } ->
+          if canExec newModel = canExec currentModel
+          then None
+          else Some cmd
+      | CmdParam cmd ->
+          Some cmd
+      | Cached b -> getCmdIfCanExecChangedRec b.Binding
+    getCmdIfCanExecChangedRec
 
   let rec tryGetMember model = function
     | OneWay { OneWayData = d } -> d.TryGetMember model
