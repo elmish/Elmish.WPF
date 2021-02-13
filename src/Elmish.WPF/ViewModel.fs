@@ -311,7 +311,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
-  let rec updateValue bindingName newModel = function
+  let rec updateValue name newModel = function
     | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
     | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
     | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
@@ -331,14 +331,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             true
       | ValueNone, ValueSome m ->
           let toMsg = fun msg -> d.ToMsg currentModel msg
-          b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
           true
       | ValueSome vm, ValueSome m ->
           vm.UpdateModel m
           false
     | SubModelWin b ->
         let d = b.SubModelWinData
-        let winPropChain = getPropChainFor bindingName
+        let winPropChain = getPropChainFor name
         let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
         let close () =
           b.PreventClose := false
@@ -375,7 +375,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
         let newVm model =
           let toMsg = fun msg -> d.ToMsg currentModel msg
-          ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor bindingName, log, logPerformance)
+          ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
 
         match !b.VmWinState, d.GetState newModel with
         | WindowState.Closed, WindowState.Closed ->
@@ -418,14 +418,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
         let create m id = 
           let toMsg = fun msg -> d.ToMsg currentModel msg
-          let chain = getPropChainForItem bindingName (id |> string)
+          let chain = getPropChainForItem name (id |> string)
           ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
         let update (vm: ViewModel<_, _>) = vm.UpdateModel
         d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
     | SubModelSelectedItem { SubModelSelectedItemData = d } ->
         d.UpdateValue(currentModel, newModel)
     | Cached b ->
-        let valueChanged = updateValue bindingName newModel b.Binding
+        let valueChanged = updateValue name newModel b.Binding
         if valueChanged then
           b.Cache := None
         valueChanged
