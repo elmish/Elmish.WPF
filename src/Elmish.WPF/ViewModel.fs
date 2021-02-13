@@ -97,6 +97,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
+  let triggerErrorsChangedFor name =
+    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, name)
+    errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
+
   /// Error messages keyed by property name.
   let errorsByBindingName = Dictionary<string, string list>()
 
@@ -126,9 +130,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> Option.defaultValue []
           let newErrors = b.TwoWayValidateData.Validate model
           if oldErrors <> newErrors then
-            log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, name)
             errorsByBindingName.[name] <- newErrors
-            errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
+            triggerErrorsChangedFor name
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
