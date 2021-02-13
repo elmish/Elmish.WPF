@@ -494,34 +494,36 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               v
     tryGetMemberRec
 
-  let rec trySetMember model (value: obj) = function // TOOD: return 'msg option
-    | TwoWay { TwoWayData = d } ->
-        d.TrySetMember(value, model) |> dispatch
-        true
-    | TwoWayValidate { TwoWayValidateData = d } ->
-        d.TrySetMember(value, model) |> dispatch
-        true
-    | SubModelSelectedItem b ->
-        let bindingModel =
-          (value :?> ViewModel<obj, obj>)
-          |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> vm.CurrentModel)
-        b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
-        true
-    | Cached b ->
-        let successful = trySetMember model value b.Binding
-        if successful then
-          b.Cache := None  // TODO #185: write test
-        successful
-    | OneWay _
-    | OneWayLazy _
-    | OneWaySeq _
-    | Cmd _
-    | CmdParam _
-    | SubModel _
-    | SubModelWin _
-    | SubModelSeq _ ->
-        false
+  let trySetMember model (value: obj) =
+    let rec trySetMemberRec = function // TOOD: return 'msg option
+      | TwoWay { TwoWayData = d } ->
+          d.TrySetMember(value, model) |> dispatch
+          true
+      | TwoWayValidate { TwoWayValidateData = d } ->
+          d.TrySetMember(value, model) |> dispatch
+          true
+      | SubModelSelectedItem b ->
+          let bindingModel =
+            (value :?> ViewModel<obj, obj>)
+            |> ValueOption.ofObj
+            |> ValueOption.map (fun vm -> vm.CurrentModel)
+          b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
+          true
+      | Cached b ->
+          let successful = trySetMemberRec b.Binding
+          if successful then
+            b.Cache := None  // TODO #185: write test
+          successful
+      | OneWay _
+      | OneWayLazy _
+      | OneWaySeq _
+      | Cmd _
+      | CmdParam _
+      | SubModel _
+      | SubModelWin _
+      | SubModelSeq _ ->
+          false
+    trySetMemberRec
 
   member __.CurrentModel : 'model = currentModel
 
