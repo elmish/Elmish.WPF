@@ -86,7 +86,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         dispatch: 'msg -> unit,
         bindings: Binding<'model, 'msg> list,
         performanceLogThresholdMs: int,
-        propNameChain: string,
+        nameChain: string,
         log: ILogger,
         logPerformance: ILogger)
       as this =
@@ -98,7 +98,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
   let triggerErrorsChangedFor name =
-    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, name)
+    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
   /// Error messages keyed by property name.
@@ -109,13 +109,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
 
   let getPropChainFor bindingName =
-    sprintf "%s.%s" propNameChain bindingName
+    sprintf "%s.%s" nameChain bindingName
 
   let getPropChainForItem collectionBindingName itemId =
-    sprintf "%s.%s.%s" propNameChain collectionBindingName itemId
+    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
   let notifyPropertyChanged propName =
-    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", propNameChain, propName)
+    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, propName)
     propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
 
   let raiseCanExecuteChanged (cmd: Command) =
@@ -152,7 +152,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let r = f x
         sw.Stop ()
         if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
-          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", propNameChain, callName, sw.ElapsedMilliseconds, name)
+          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
         r
 
   let measure2 name callName f =
@@ -295,7 +295,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           None
 
   let bindings =
-    log.LogTrace("[{BindingNameChain}] Initializing bindings", propNameChain)
+    log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let dictAsFunc = flip Dictionary.tryFind dict
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
@@ -476,7 +476,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
              model)
         log.LogTrace(
           "[{BindingNameChain}] Setting selected VM to {SubModelId}",
-          propNameChain,
+          nameChain,
           (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
         )
         selected |> Option.toObj |> box
@@ -536,25 +536,25 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       updateValidationError binding currentModel name
 
   override __.TryGetMember (binder, result) =
-    log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", propNameChain, binder.Name)
+    log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
+        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
         false
     | true, binding ->
         result <- tryGetMember currentModel binding
         true
 
   override __.TrySetMember (binder, value) =
-    log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", propNameChain, binder.Name)
+    log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", nameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
-        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", propNameChain, binder.Name)
+        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
         false
     | true, binding ->
         let success = trySetMember currentModel value binding
         if not success then
-          log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", propNameChain, binder.Name)
+          log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
         success
 
   // to help with debugging
@@ -570,13 +570,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     [<CLIEvent>]
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
-      log.LogTrace("[{BindingNameChain}] HasErrors", propNameChain)
+      log.LogTrace("[{BindingNameChain}] HasErrors", nameChain)
       errorsByBindingName
       |> Seq.map Kvp.value
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member __.GetErrors propName =
-      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
+      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
       errorsByBindingName
       |> Dictionary.tryFind propName
       |> Option.defaultValue []
