@@ -387,64 +387,64 @@ module internal BindingData =
   let mapModel f data =
     let binaryHelper binary x m = (x, f m) ||> binary
     match data with
-    | OneWayData d ->
-        { Get = f >> d.Get
-        } |> OneWayData
-    | OneWayLazyData d ->
-        { Get = f >> d.Get
-          Map = d.Map;
-          Equals = d.Equals
-        } |> OneWayLazyData
-    | OneWaySeqLazyData d ->
-        { Get = f >> d.Get
-          Map = d.Map
-          Equals = d.Equals
-          GetId = d.GetId
-          ItemEquals = d.ItemEquals
-        } |> OneWaySeqLazyData
-    | TwoWayData d ->
-        { Get = f >> d.Get
-          Set = binaryHelper d.Set
-        } |> TwoWayData
-    | TwoWayValidateData d ->
-        { Get = f >> d.Get
-          Set = binaryHelper d.Set
-          Validate = f >> d.Validate
-        } |> TwoWayValidateData
-    | CmdData d ->
-        { Exec = f >> d.Exec
-          CanExec = f >> d.CanExec
-        } |> CmdData
-    | CmdParamData d ->
-        { Exec = binaryHelper d.Exec
-          CanExec = binaryHelper d.CanExec
-          AutoRequery = d.AutoRequery
-        } |> CmdParamData
-    | SubModelData d ->
-        { GetModel = f >> d.GetModel
-          GetBindings = d.GetBindings
-          ToMsg = f >> d.ToMsg
-          Sticky = d.Sticky
-        } |> SubModelData
-    | SubModelWinData d ->
-        { GetState = f >> d.GetState
-          GetBindings = d.GetBindings
-          ToMsg = f >> d.ToMsg
-          GetWindow = f >> d.GetWindow
-          IsModal = d.IsModal
-          OnCloseRequested = f >> d.OnCloseRequested
-        } |> SubModelWinData
-    | SubModelSeqData d ->
-        { GetModels = f >> d.GetModels
-          GetId = d.GetId
-          GetBindings = d.GetBindings
-          ToMsg = f >> d.ToMsg
-        } |> SubModelSeqData
-    | SubModelSelectedItemData d ->
-        { Get = f >> d.Get
-          Set = binaryHelper d.Set
-          SubModelSeqBindingName = d.SubModelSeqBindingName
-        } |> SubModelSelectedItemData
+    | OneWayData d -> OneWayData {
+        Get = f >> d.Get
+      }
+    | OneWayLazyData d -> OneWayLazyData  {
+        Get = f >> d.Get
+        Map = d.Map;
+        Equals = d.Equals
+      }
+    | OneWaySeqLazyData d -> OneWaySeqLazyData {
+        Get = f >> d.Get
+        Map = d.Map
+        Equals = d.Equals
+        GetId = d.GetId
+        ItemEquals = d.ItemEquals
+      }
+    | TwoWayData d -> TwoWayData {
+        Get = f >> d.Get
+        Set = binaryHelper d.Set
+      }
+    | TwoWayValidateData d -> TwoWayValidateData {
+        Get = f >> d.Get
+        Set = binaryHelper d.Set
+        Validate = f >> d.Validate
+      }
+    | CmdData d -> CmdData {
+        Exec = f >> d.Exec
+        CanExec = f >> d.CanExec
+      }
+    | CmdParamData d -> CmdParamData {
+        Exec = binaryHelper d.Exec
+        CanExec = binaryHelper d.CanExec
+        AutoRequery = d.AutoRequery
+      }
+    | SubModelData d -> SubModelData {
+        GetModel = f >> d.GetModel
+        GetBindings = d.GetBindings
+        ToMsg = f >> d.ToMsg
+        Sticky = d.Sticky
+      }
+    | SubModelWinData d -> SubModelWinData {
+        GetState = f >> d.GetState
+        GetBindings = d.GetBindings
+        ToMsg = f >> d.ToMsg
+        GetWindow = f >> d.GetWindow
+        IsModal = d.IsModal
+        OnCloseRequested = f >> d.OnCloseRequested
+      }
+    | SubModelSeqData d -> SubModelSeqData {
+        GetModels = f >> d.GetModels
+        GetId = d.GetId
+        GetBindings = d.GetBindings
+        ToMsg = f >> d.ToMsg
+      }
+    | SubModelSelectedItemData d -> SubModelSelectedItemData {
+        Get = f >> d.Get
+        Set = binaryHelper d.Set
+        SubModelSeqBindingName = d.SubModelSeqBindingName
+      }
 
   let mapMsgWithModel f = function
     | OneWayData d -> d |> OneWayData
