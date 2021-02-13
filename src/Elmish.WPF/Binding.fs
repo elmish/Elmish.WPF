@@ -447,53 +447,55 @@ module internal BindingData =
         }
     mapModelRec
 
-  let mapMsgWithModel f = function
-    | OneWayData d -> d |> OneWayData
-    | OneWayLazyData d -> d |> OneWayLazyData
-    | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
-    | TwoWayData d -> TwoWayData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> f m
-      }
-    | TwoWayValidateData d -> TwoWayValidateData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> f m
-        Validate = unbox >> d.Validate
-      }
-    | CmdData d -> CmdData {
-        Exec = fun m -> m |> d.Exec |> ValueOption.map (f m)
-        CanExec = d.CanExec
-      }
-    | CmdParamData d -> CmdParamData {
-        Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
-        CanExec = fun p m -> d.CanExec p m
-        AutoRequery = d.AutoRequery
-      }
-    | SubModelData d -> SubModelData {
-        GetModel = d.GetModel
-        GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
-        Sticky = d.Sticky
-      }
-    | SubModelWinData d -> SubModelWinData {
-        GetState = d.GetState
-        GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
-        GetWindow = fun m dispatch -> d.GetWindow m (m |> f >> dispatch)
-        IsModal = d.IsModal
-        OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
-      }
-    | SubModelSeqData d -> SubModelSeqData {
-        GetModels = d.GetModels
-        GetId = d.GetId
-        GetBindings = d.GetBindings
-        ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
-      }
-    | SubModelSelectedItemData d -> SubModelSelectedItemData {
-        Get = d.Get
-        Set = fun v m -> d.Set v m |> f m
-        SubModelSeqBindingName = d.SubModelSeqBindingName
-      }
+  let mapMsgWithModel f =
+    let mapMsgWithModelRec = function
+      | OneWayData d -> d |> OneWayData
+      | OneWayLazyData d -> d |> OneWayLazyData
+      | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
+      | TwoWayData d -> TwoWayData {
+          Get = d.Get
+          Set = fun v m -> d.Set v m |> f m
+        }
+      | TwoWayValidateData d -> TwoWayValidateData {
+          Get = d.Get
+          Set = fun v m -> d.Set v m |> f m
+          Validate = unbox >> d.Validate
+        }
+      | CmdData d -> CmdData {
+          Exec = fun m -> m |> d.Exec |> ValueOption.map (f m)
+          CanExec = d.CanExec
+        }
+      | CmdParamData d -> CmdParamData {
+          Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
+          CanExec = fun p m -> d.CanExec p m
+          AutoRequery = d.AutoRequery
+        }
+      | SubModelData d -> SubModelData {
+          GetModel = d.GetModel
+          GetBindings = d.GetBindings
+          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          Sticky = d.Sticky
+        }
+      | SubModelWinData d -> SubModelWinData {
+          GetState = d.GetState
+          GetBindings = d.GetBindings
+          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          GetWindow = fun m dispatch -> d.GetWindow m (m |> f >> dispatch)
+          IsModal = d.IsModal
+          OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
+        }
+      | SubModelSeqData d -> SubModelSeqData {
+          GetModels = d.GetModels
+          GetId = d.GetId
+          GetBindings = d.GetBindings
+          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+        }
+      | SubModelSelectedItemData d -> SubModelSelectedItemData {
+          Get = d.Get
+          Set = fun v m -> d.Set v m |> f m
+          SubModelSeqBindingName = d.SubModelSeqBindingName
+        }
+    mapMsgWithModelRec
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
 
