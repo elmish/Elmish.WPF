@@ -455,42 +455,44 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | Cached b -> getCmdIfCanExecChangedRec b.Binding
     getCmdIfCanExecChangedRec
 
-  let rec tryGetMember model = function
-    | OneWay { OneWayData = d } -> d.TryGetMember model
-    | TwoWay { TwoWayData = d } -> d.TryGetMember model
-    | TwoWayValidate { TwoWayValidateData = d } -> d.TryGetMember model
-    | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
-    | OneWaySeq { Values = vals } -> box vals
-    | Cmd { Cmd = cmd }
-    | CmdParam cmd ->
-        box cmd
-    | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
-    | SubModelWin { VmWinState = vm } ->
-        !vm
-        |> WindowState.toVOption
-        |> ValueOption.map box
-        |> ValueOption.toObj
-    | SubModelSeq { Vms = vms } -> box vms
-    | SubModelSelectedItem b ->
-        let selected =
-          b.SubModelSelectedItemData.TryGetMember
-            ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
-             b.SubModelSeqBinding.SubModelSeqData,
-             b.SubModelSeqBinding.Vms,
-             model)
-        log.LogTrace(
-          "[{BindingNameChain}] Setting selected VM to {SubModelId}",
-          nameChain,
-          (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
-        )
-        selected |> Option.toObj |> box
-    | Cached b ->
-        match !b.Cache with
-        | Some v -> v
-        | None ->
-            let v = tryGetMember model b.Binding
-            b.Cache := Some v
-            v
+  let tryGetMember model =
+    let rec tryGetMemberRec = function
+      | OneWay { OneWayData = d } -> d.TryGetMember model
+      | TwoWay { TwoWayData = d } -> d.TryGetMember model
+      | TwoWayValidate { TwoWayValidateData = d } -> d.TryGetMember model
+      | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
+      | OneWaySeq { Values = vals } -> box vals
+      | Cmd { Cmd = cmd }
+      | CmdParam cmd ->
+          box cmd
+      | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
+      | SubModelWin { VmWinState = vm } ->
+          !vm
+          |> WindowState.toVOption
+          |> ValueOption.map box
+          |> ValueOption.toObj
+      | SubModelSeq { Vms = vms } -> box vms
+      | SubModelSelectedItem b ->
+          let selected =
+            b.SubModelSelectedItemData.TryGetMember
+              ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
+               b.SubModelSeqBinding.SubModelSeqData,
+               b.SubModelSeqBinding.Vms,
+               model)
+          log.LogTrace(
+            "[{BindingNameChain}] Setting selected VM to {SubModelId}",
+            nameChain,
+            (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
+          )
+          selected |> Option.toObj |> box
+      | Cached b ->
+          match !b.Cache with
+          | Some v -> v
+          | None ->
+              let v = tryGetMemberRec b.Binding
+              b.Cache := Some v
+              v
+    tryGetMemberRec
 
   let rec trySetMember model (value: obj) = function // TOOD: return 'msg option
     | TwoWay { TwoWayData = d } ->
