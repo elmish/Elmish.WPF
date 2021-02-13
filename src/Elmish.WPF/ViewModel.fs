@@ -311,124 +311,126 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
-  let rec updateValue name newModel = function
-    | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
-    | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
-    | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
-    | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
-    | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
-    | Cmd _
-    | CmdParam _ ->
-        false
-    | SubModel b ->
-      let d = b.SubModelData
-      match !b.Vm, d.GetModel newModel with
-      | ValueNone, ValueNone -> false
-      | ValueSome _, ValueNone ->
-          if d.Sticky then false
-          else
-            b.Vm := ValueNone
-            true
-      | ValueNone, ValueSome m ->
-          let toMsg = fun msg -> d.ToMsg currentModel msg
-          b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
-          true
-      | ValueSome vm, ValueSome m ->
-          vm.UpdateModel m
+  let updateValue name newModel =
+    let rec updateValueRec = function
+      | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
+      | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
+      | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
+      | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
+      | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
+      | Cmd _
+      | CmdParam _ ->
           false
-    | SubModelWin b ->
-        let d = b.SubModelWinData
-        let winPropChain = getPropChainFor name
-        let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
-        let close () =
-          b.PreventClose := false
-          match b.WinRef.TryGetTarget () with
-          | false, _ ->
-              log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
-          | true, w ->
-              log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
-              b.WinRef.SetTarget null
-              w.Dispatcher.Invoke(fun () -> w.Close ())
-          b.WinRef.SetTarget null
-
-        let hide () =
-          match b.WinRef.TryGetTarget () with
-          | false, _ ->
-              log.LogError("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
-          | true, w ->
-              log.LogTrace("[{BindingNameChain}] Hiding window", winPropChain)
-              w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Hidden)
-
-        let showHidden () =
-          match b.WinRef.TryGetTarget () with
-          | false, _ ->
-              log.LogError("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
-          | true, w ->
-              log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
-              w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
-
-        let showNew vm initialVisibility =
-          b.PreventClose := true
-          showNewWindow
-            b.WinRef d.GetWindow vm d.IsModal onCloseRequested
-            b.PreventClose initialVisibility
-
-        let newVm model =
-          let toMsg = fun msg -> d.ToMsg currentModel msg
-          ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
-
-        match !b.VmWinState, d.GetState newModel with
-        | WindowState.Closed, WindowState.Closed ->
-            false
-        | WindowState.Hidden _, WindowState.Closed
-        | WindowState.Visible _, WindowState.Closed ->
-            close ()
-            b.VmWinState := WindowState.Closed
+      | SubModel b ->
+        let d = b.SubModelData
+        match !b.Vm, d.GetModel newModel with
+        | ValueNone, ValueNone -> false
+        | ValueSome _, ValueNone ->
+            if d.Sticky then false
+            else
+              b.Vm := ValueNone
+              true
+        | ValueNone, ValueSome m ->
+            let toMsg = fun msg -> d.ToMsg currentModel msg
+            b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
             true
-        | WindowState.Closed, WindowState.Hidden m ->
-            let vm = newVm m
-            log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
-            showNew vm Visibility.Hidden
-            b.VmWinState := WindowState.Hidden vm
-            true
-        | WindowState.Hidden vm, WindowState.Hidden m ->
+        | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
             false
-        | WindowState.Visible vm, WindowState.Hidden m ->
-            hide ()
-            vm.UpdateModel m
-            b.VmWinState := WindowState.Hidden vm
-            false
-        | WindowState.Closed, WindowState.Visible m ->
-            let vm = newVm m
-            log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
-            showNew vm Visibility.Visible
-            b.VmWinState := WindowState.Visible vm
-            true
-        | WindowState.Hidden vm, WindowState.Visible m ->
-            vm.UpdateModel m
-            showHidden ()
-            b.VmWinState := WindowState.Visible vm
-            false
-        | WindowState.Visible vm, WindowState.Visible m ->
-            vm.UpdateModel m
-            false
-    | SubModelSeq b ->
-        let d = b.SubModelSeqData
-        let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
-        let create m id = 
-          let toMsg = fun msg -> d.ToMsg currentModel msg
-          let chain = getPropChainForItem name (id |> string)
-          ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-        let update (vm: ViewModel<_, _>) = vm.UpdateModel
-        d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
-    | SubModelSelectedItem { SubModelSelectedItemData = d } ->
-        d.UpdateValue(currentModel, newModel)
-    | Cached b ->
-        let valueChanged = updateValue name newModel b.Binding
-        if valueChanged then
-          b.Cache := None
-        valueChanged
+      | SubModelWin b ->
+          let d = b.SubModelWinData
+          let winPropChain = getPropChainFor name
+          let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
+          let close () =
+            b.PreventClose := false
+            match b.WinRef.TryGetTarget () with
+            | false, _ ->
+                log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
+            | true, w ->
+                log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
+                b.WinRef.SetTarget null
+                w.Dispatcher.Invoke(fun () -> w.Close ())
+            b.WinRef.SetTarget null
+
+          let hide () =
+            match b.WinRef.TryGetTarget () with
+            | false, _ ->
+                log.LogError("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
+            | true, w ->
+                log.LogTrace("[{BindingNameChain}] Hiding window", winPropChain)
+                w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Hidden)
+
+          let showHidden () =
+            match b.WinRef.TryGetTarget () with
+            | false, _ ->
+                log.LogError("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
+            | true, w ->
+                log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
+                w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
+
+          let showNew vm initialVisibility =
+            b.PreventClose := true
+            showNewWindow
+              b.WinRef d.GetWindow vm d.IsModal onCloseRequested
+              b.PreventClose initialVisibility
+
+          let newVm model =
+            let toMsg = fun msg -> d.ToMsg currentModel msg
+            ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
+
+          match !b.VmWinState, d.GetState newModel with
+          | WindowState.Closed, WindowState.Closed ->
+              false
+          | WindowState.Hidden _, WindowState.Closed
+          | WindowState.Visible _, WindowState.Closed ->
+              close ()
+              b.VmWinState := WindowState.Closed
+              true
+          | WindowState.Closed, WindowState.Hidden m ->
+              let vm = newVm m
+              log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
+              showNew vm Visibility.Hidden
+              b.VmWinState := WindowState.Hidden vm
+              true
+          | WindowState.Hidden vm, WindowState.Hidden m ->
+              vm.UpdateModel m
+              false
+          | WindowState.Visible vm, WindowState.Hidden m ->
+              hide ()
+              vm.UpdateModel m
+              b.VmWinState := WindowState.Hidden vm
+              false
+          | WindowState.Closed, WindowState.Visible m ->
+              let vm = newVm m
+              log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
+              showNew vm Visibility.Visible
+              b.VmWinState := WindowState.Visible vm
+              true
+          | WindowState.Hidden vm, WindowState.Visible m ->
+              vm.UpdateModel m
+              showHidden ()
+              b.VmWinState := WindowState.Visible vm
+              false
+          | WindowState.Visible vm, WindowState.Visible m ->
+              vm.UpdateModel m
+              false
+      | SubModelSeq b ->
+          let d = b.SubModelSeqData
+          let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
+          let create m id = 
+            let toMsg = fun msg -> d.ToMsg currentModel msg
+            let chain = getPropChainForItem name (id |> string)
+            ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+          let update (vm: ViewModel<_, _>) = vm.UpdateModel
+          d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
+      | SubModelSelectedItem { SubModelSelectedItemData = d } ->
+          d.UpdateValue(currentModel, newModel)
+      | Cached b ->
+          let valueChanged = updateValueRec b.Binding
+          if valueChanged then
+            b.Cache := None
+          valueChanged
+    updateValueRec
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
