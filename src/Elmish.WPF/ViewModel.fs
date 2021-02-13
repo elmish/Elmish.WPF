@@ -110,14 +110,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let getPropChainForItem collectionBindingName itemId =
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
-  let notifyPropertyChanged name =
+  let raisePropertyChanged name =
     log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, name)
     propertyChanged.Trigger(this, PropertyChangedEventArgs name)
 
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
 
-  let triggerErrorsChangedFor name =
+  let raiseErrorsChanged name =
     log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
@@ -131,7 +131,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let newErrors = b.TwoWayValidateData.Validate model
           if oldErrors <> newErrors then
             errorsByName.[name] <- newErrors
-            triggerErrorsChangedFor name
+            raiseErrorsChanged name
     | OneWay _
     | OneWayLazy _
     | OneWaySeq _
@@ -538,7 +538,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged newModel)
       |> Seq.toList
     currentModel <- newModel
-    propsToNotify |> List.iter notifyPropertyChanged
+    propsToNotify |> List.iter raisePropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
     for Kvp (name, binding) in bindings do
       updateValidationError binding currentModel name
