@@ -98,7 +98,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
   /// Error messages keyed by property name.
-  let errorsByBindingName = Dictionary<string, string list>()
+  let errorsByName = Dictionary<string, string list>()
 
 
   let withCaching b = Cached { Binding = b; Cache = ref None }
@@ -125,12 +125,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayValidate b ->
         fun model name ->
           let oldErrors =
-            errorsByBindingName
+            errorsByName
             |> Dictionary.tryFind name
             |> Option.defaultValue []
           let newErrors = b.TwoWayValidateData.Validate model
           if oldErrors <> newErrors then
-            errorsByBindingName.[name] <- newErrors
+            errorsByName.[name] <- newErrors
             triggerErrorsChangedFor name
     | OneWay _
     | OneWayLazy _
@@ -571,13 +571,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
       log.LogTrace("[{BindingNameChain}] HasErrors", nameChain)
-      errorsByBindingName
+      errorsByName
       |> Seq.map Kvp.value
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member __.GetErrors name =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
-      errorsByBindingName
+      errorsByName
       |> Dictionary.tryFind name
       |> Option.defaultValue []
       |> (fun x -> upcast x)
