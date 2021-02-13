@@ -913,6 +913,34 @@ module TwoWayValidate =
     }
 
 
+  [<Fact>]
+  let ``when validate returns no ValueNone after returning ValueSome, HasErrors should return false and GetErrors should return an empty collection`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int> |> GenX.notEqualTo m1
+
+      let get _ = ()
+      let set _ _ = ()
+      let validate m =
+        if m = m1
+        then ValueSome (string<int> m)
+        else ValueNone
+
+      let binding = twoWayValidate name get set validate
+      let vm = TestVm(m1, binding)
+      let vm' = vm :> INotifyDataErrorInfo
+
+      test <@ vm'.HasErrors = true @>
+      test <@ vm'.GetErrors name |> Seq.cast |> Seq.toList = [(validate m1).Value] @>
+
+      vm.UpdateModel m2
+
+      test <@ vm'.HasErrors = false @>
+      test <@ vm'.GetErrors name |> Seq.cast |> Seq.isEmpty @>
+    }
+
+
 
 module Cmd =
 
