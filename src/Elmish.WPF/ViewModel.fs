@@ -307,7 +307,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
           updateValidationError binding initialModel b.Name)
-    dict :> IReadOnlyDictionary<string, VmBinding<'model, 'msg>>
+    dict :> IReadOnlyDictionary<_, _>
 
   /// Updates the binding value (for relevant bindings) and returns a value
   /// indicating whether to trigger PropertyChanged for this binding
