@@ -2,42 +2,6 @@
 module internal Elmish.WPF.InternalUtils
 
 
-open System
-open System.Linq.Expressions
-open System.Reflection
-
-/// Returns a fast, untyped getter for the property specified by the PropertyInfo.
-/// The getter takes an instance and returns a property value.
-let buildUntypedGetter (propertyInfo: PropertyInfo) : obj -> obj =
-  let method = propertyInfo.GetMethod
-  let objExpr = Expression.Parameter(typeof<obj>, "o")
-  let expr =
-    Expression.Lambda<Func<obj, obj>>(
-      Expression.Convert(
-        Expression.Call(
-          Expression.Convert(objExpr, method.DeclaringType), method),
-          typeof<obj>),
-      objExpr)
-  let action = expr.Compile()
-  fun target -> action.Invoke(target)
-
-
-[<AutoOpen>]
-module Patterns =
-
-  open System.Collections.Generic
-
-  /// Deconstructs a KeyValuePair into a tuple.
-  let (|Kvp|) (kvp: KeyValuePair<_,_>) =
-    Kvp (kvp.Key, kvp.Value)
-
-
-[<AutoOpen>]
-module Func2AutoOpen =
-
-  let ignore2 _ _ = ()
-
-
 [<RequireQualifiedAccess>]
 module Kvp =
 
@@ -70,13 +34,29 @@ module ValueOption =
     | None -> ValueNone
 
   let toOption = function
-  | ValueSome x -> Some x
-  | ValueNone -> None
+    | ValueSome x -> Some x
+    | ValueNone -> None
 
   let ofError = function
     | Ok _ -> ValueNone
     | Error x -> ValueSome x
 
   let ofOk = function
-  | Ok x -> ValueSome x
-  | Error _ -> ValueNone
+    | Ok x -> ValueSome x
+    | Error _ -> ValueNone
+
+
+[<RequireQualifiedAccess>]
+module ByRefPair =
+
+  let toOption (b, a) =
+    if b then Some a else None
+
+
+[<RequireQualifiedAccess>]
+module Dictionary =
+
+  open System.Collections.Generic
+
+  let tryFind key (d: Dictionary<_, _>) =
+    key |> d.TryGetValue |> ByRefPair.toOption

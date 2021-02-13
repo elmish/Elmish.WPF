@@ -121,9 +121,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     | TwoWayValidate b ->
         fun model name ->
           let oldErrors =
-            match errorsByBindingName.TryGetValue name with
-            | (true, errors) -> errors
-            | (false, _) -> []
+            errorsByBindingName
+            |> Dictionary.tryFind name
+            |> Option.defaultValue []
           let newErrors = b.TwoWayValidateData.Validate model
           if oldErrors <> newErrors then
             log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", propNameChain, name)
@@ -294,10 +294,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let bindings =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", propNameChain)
     let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let dictAsFunc name =
-      match dict.TryGetValue name with
-      | true, b -> Some b
-      | _ -> None
+    let dictAsFunc = flip Dictionary.tryFind dict
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
@@ -573,6 +570,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       errorsByBindingName.Count > 0
     member __.GetErrors propName =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
-      match errorsByBindingName.TryGetValue propName with
-      | true, errs -> upcast errs
-      | false, _ -> upcast []
+      errorsByBindingName
+      |> Dictionary.tryFind propName
+      |> Option.defaultValue []
+      |> (fun x -> upcast x)

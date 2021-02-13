@@ -7,6 +7,25 @@ module Elmish.WPF.Utils
 let refEq = LanguagePrimitives.PhysicalEquality
 
 
+open System
+open System.Linq.Expressions
+open System.Reflection
+
+/// Returns a fast, untyped getter for the property specified by the PropertyInfo.
+/// The getter takes an instance and returns a property value.
+let buildUntypedGetter (propertyInfo: PropertyInfo) : obj -> obj =
+  let method = propertyInfo.GetMethod
+  let objExpr = Expression.Parameter(typeof<obj>, "o")
+  let expr =
+    Expression.Lambda<Func<obj, obj>>(
+      Expression.Convert(
+        Expression.Call(
+          Expression.Convert(objExpr, method.DeclaringType), method),
+          typeof<obj>),
+      objExpr)
+  let action = expr.Compile()
+  fun target -> action.Invoke(target)
+
 
 type private ElmEq<'a>() =
 

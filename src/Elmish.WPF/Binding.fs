@@ -138,12 +138,13 @@ module internal BindingLogic =
       additions
       |> Seq.toList
       |> List.collect (fun (Kvp (id, (sIdx, s))) ->
-        match removals.TryGetValue id with
-        | (false, _) -> []
-        | (true, (tIdx, t)) ->
+        removals
+        |> Dictionary.tryFind id
+        |> Option.map (fun (tIdx, t) ->
             removals.Remove id |> ignore
             additions.Remove id |> ignore
             (tIdx, sIdx, t, s) |> List.singleton)
+        |> Option.defaultValue [])
 
     let actuallyRemove () =
       Seq.empty
