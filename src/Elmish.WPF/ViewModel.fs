@@ -97,10 +97,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
-  let triggerErrorsChangedFor name =
-    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
-    errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
-
   /// Error messages keyed by property name.
   let errorsByBindingName = Dictionary<string, string list>()
 
@@ -120,6 +116,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
+
+  let triggerErrorsChangedFor name =
+    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
+    errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
   let rec updateValidationError = function
     | TwoWayValidate b ->
