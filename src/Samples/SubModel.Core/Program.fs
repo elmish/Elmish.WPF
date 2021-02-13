@@ -44,29 +44,38 @@ module Counter =
 
 module Clock =
 
+  type TimeType =
+    | Utc
+    | Local
+
   type Model =
     { Time: DateTimeOffset
-      UseUtc: bool }
+      TimeType: TimeType }
 
   let init () =
     { Time = DateTimeOffset.Now
-      UseUtc = false }
+      TimeType = Local }
 
   let getTime m =
-    if m.UseUtc then m.Time.UtcDateTime else m.Time.LocalDateTime
+    match m.TimeType with
+    | Utc -> m.Time.UtcDateTime
+    | Local -> m.Time.LocalDateTime
 
   type Msg =
     | Tick of DateTimeOffset
-    | ToggleUtc
+    | SetTimeType of TimeType
 
   let update msg m =
     match msg with
     | Tick t -> { m with Time = t }
-    | ToggleUtc -> { m with UseUtc = not m.UseUtc }
+    | SetTimeType t -> { m with TimeType = t }
 
   let bindings () : Binding<Model, Msg> list = [
     "Time" |> Binding.oneWay getTime
-    "ToggleUtc" |> Binding.cmd ToggleUtc
+    "IsLocal" |> Binding.oneWay (fun m -> m.TimeType = Local)
+    "SetLocal" |> Binding.cmd (SetTimeType Local)
+    "IsUtc" |> Binding.oneWay (fun m -> m.TimeType = Utc)
+    "SetUtc" |> Binding.cmd (SetTimeType Utc)
   ]
 
 

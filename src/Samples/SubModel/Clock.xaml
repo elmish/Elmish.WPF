@@ -8,6 +8,7 @@
              d:DataContext="{x:Static vm:Program.clockDesignVm}">
   <StackPanel Orientation="Horizontal">
     <TextBlock Text="{Binding Time, StringFormat='Today is {0:MMMM dd, yyyy}. The time is {0:HH:mm:ssK}. It is {0:dddd}.'}" />
-    <Button Command="{Binding ToggleUtc}" Content="Toggle UTC" Margin="10,0,0,0" />
+    <RadioButton Command="{Binding SetLocal}" IsChecked="{Binding IsLocal, Mode=OneWay}" Content="Local" Margin="10,0,0,0"/>
+    <RadioButton Command="{Binding SetUtc}" IsChecked="{Binding IsUtc, Mode=OneWay}" Content="Utc" Margin="10,0,0,0"/>
   </StackPanel>
 </UserControl>
