@@ -568,7 +568,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
       log.LogTrace("[{BindingNameChain}] HasErrors", propNameChain)
-      errorsByBindingName.Count > 0
+      errorsByBindingName
+      |> Seq.map Kvp.value
+      |> Seq.filter (not << List.isEmpty)
+      |> (not << Seq.isEmpty)
     member __.GetErrors propName =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", propNameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
       errorsByBindingName

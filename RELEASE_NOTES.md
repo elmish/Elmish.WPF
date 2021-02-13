@@ -1,5 +1,6 @@
 #### 4.0.0-beta-2
 * Added logging when INotifyDataErrorInfo.HasErrors is called
+* Fixed bug in INotifyDataErrorInfo.HasErrors where `true` always returned after `true` first correctly returned
 
 #### 4.0.0-beta-1
 
