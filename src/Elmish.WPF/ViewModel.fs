@@ -108,15 +108,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let withCaching b = Cached { Binding = b; Cache = ref None }
 
 
-  let getPropChainFor bindingName =
-    sprintf "%s.%s" nameChain bindingName
+  let getPropChainFor name =
+    sprintf "%s.%s" nameChain name
 
   let getPropChainForItem collectionBindingName itemId =
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
-  let notifyPropertyChanged propName =
-    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, propName)
-    propertyChanged.Trigger(this, PropertyChangedEventArgs propName)
+  let notifyPropertyChanged name =
+    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, name)
+    propertyChanged.Trigger(this, PropertyChangedEventArgs name)
 
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
@@ -575,9 +575,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Seq.map Kvp.value
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
-    member __.GetErrors propName =
-      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (propName |> Option.ofObj |> Option.defaultValue "<null>"))
+    member __.GetErrors name =
+      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
       errorsByBindingName
-      |> Dictionary.tryFind propName
+      |> Dictionary.tryFind name
       |> Option.defaultValue []
       |> (fun x -> upcast x)
