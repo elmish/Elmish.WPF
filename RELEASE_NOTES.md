@@ -1,6 +1,7 @@
 #### 4.0.0-beta-3
 * Added support for composable binding stickiness
 * Improved logging
+* Changed CurrentModel and UpdateModel on ViewModel<_,_> from public to internal
 
 #### 4.0.0-beta-2
 * Added logging when INotifyDataErrorInfo.HasErrors is called

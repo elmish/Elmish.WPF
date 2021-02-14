@@ -525,9 +525,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           false
     trySetMemberRec
 
-  member __.CurrentModel : 'model = currentModel
+  member internal __.CurrentModel : 'model = currentModel
 
-  member __.UpdateModel (newModel: 'model) : unit =
+  member internal __.UpdateModel (newModel: 'model) : unit =
     let propsToNotify =
       bindings
       |> Seq.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
