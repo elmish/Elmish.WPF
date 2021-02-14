@@ -918,6 +918,13 @@ module internal Helpers =
 [<AbstractClass; Sealed>]
 type Binding private () =
 
+  ///<summary>Creates a one-way binding with the model as the value.</summary>
+  static member internal id () : string -> Binding<'model, 'msg> =
+    { Get = id }
+    |> OneWayData.box
+    |> OneWayData
+    |> createBinding
+
 
   /// <summary>Creates a one-way binding.</summary>
   /// <param name="get">Gets the value from the model.</param>
