@@ -110,12 +110,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
   let raisePropertyChanged name =
-    log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, name)
+    log.LogTrace("[{BindingNameChain}] PropertyChanged {BindingName}", nameChain, name)
     propertyChanged.Trigger(this, PropertyChangedEventArgs name)
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
   let raiseErrorsChanged name =
-    log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
+    log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
   let rec updateValidationError = function
@@ -288,7 +288,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> withCaching
           |> Some
         | _ -> // TODO: Create separate caes for (1) no binding of that name and (2) binding of that name but the wrong type
-          log.LogError("subModelSelectedItem binding referenced binding '{SubModelSeqBindingName}', but no compatible binding was found with that name", d.SubModelSeqBindingName)
+          log.LogError("subModelSelectedItem binding referenced binding {SubModelSeqBindingName}, but no compatible binding was found with that name", d.SubModelSeqBindingName)
           None
 
   let bindings =
@@ -298,7 +298,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if dict.ContainsKey b.Name then
-        log.LogError("Binding name '{BindingName}' is duplicated. Only the first occurrence will be used.", b.Name)
+        log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
