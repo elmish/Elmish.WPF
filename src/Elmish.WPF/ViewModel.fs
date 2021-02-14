@@ -256,7 +256,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
-            log.LogTrace("[{BindingNameChain}] Creating and opening window", chain) // TODO: consider changing to "Creating visible window"
+            log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
             showNewWindow winRef d.GetWindow vm d.IsModal onCloseRequested preventClose Visibility.Visible
             { SubModelWinData = d
               WinRef = winRef
