@@ -317,7 +317,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
       | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
       | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
-      | OneWaySeq b -> b.OneWaySeqData.UpdateValue(b.Values, currentModel, newModel)
+      | OneWaySeq b ->
+          b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
+          false
       | Cmd _
       | CmdParam _ ->
           false
@@ -422,7 +424,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             let chain = getNameChainForItem name (id |> string)
             ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
-          d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
+          d.Merge(getTargetId, create, update, b.Vms, newModel)
+          false
       | SubModelSelectedItem { SubModelSelectedItemData = d } ->
           d.UpdateValue(currentModel, newModel)
       | Cached b ->

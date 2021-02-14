@@ -242,7 +242,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
     GetId: 'b -> 'id
     ItemEquals: 'b -> 'b -> bool }
     
-  member d.UpdateValue((values: ObservableCollection<'b>), (currentModel: 'model), (newModel: 'model)) =
+  member d.Merge((values: ObservableCollection<'b>), (currentModel: 'model), (newModel: 'model)) =
     let intermediate = d.Get newModel
     if not <| d.Equals intermediate (d.Get currentModel) then
       let create v _ = v
@@ -251,7 +251,6 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
           values.[oldIdx] <- newVal
       let newVals = intermediate |> d.Map |> Seq.toArray
       elmStyleMerge d.GetId d.GetId create update values newVals
-    false
 
 
 type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
@@ -341,7 +340,7 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
     GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg }
     
-  member d.UpdateValue
+  member d.Merge
       ((getTargetId: ('bindingModel -> 'id) -> 'b -> 'id),
        (create: 'bindingModel -> 'id -> 'b),
        (update: 'b -> 'bindingModel -> Unit),
@@ -350,7 +349,6 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
     let update b bm _ = update b bm
     let newSubModels = newModel |> d.GetModels |> Seq.toArray
     elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
-    false
 
 
 /// Represents all necessary data used to create the different binding types.
