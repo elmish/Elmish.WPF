@@ -1,5 +1,6 @@
 #### 4.0.0-beta-3
 * Added support for composable binding stickiness
+* Improved logging
 
 #### 4.0.0-beta-2
 * Added logging when INotifyDataErrorInfo.HasErrors is called
