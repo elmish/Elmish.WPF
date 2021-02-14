@@ -120,12 +120,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let rec updateValidationError = function
     | TwoWayValidate b ->
-        fun model name ->
+        fun newModel name ->
           let oldErrors =
             errorsByName
             |> Dictionary.tryFind name
             |> Option.defaultValue []
-          let newErrors = b.TwoWayValidateData.Validate model
+          let newErrors = b.TwoWayValidateData.Validate newModel
           if oldErrors <> newErrors then
             errorsByName.[name] <- newErrors
             raiseErrorsChanged name
