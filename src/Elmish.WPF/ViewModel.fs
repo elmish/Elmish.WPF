@@ -282,14 +282,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
         match getInitializedBindingByName d.SubModelSeqBindingName with
         | Some (SubModelSeq b) ->
-          { SubModelSelectedItemData = d
-            SubModelSeqBinding = b }
-          |> SubModelSelectedItem
-          |> withCaching
-          |> Some
+            { SubModelSelectedItemData = d
+              SubModelSeqBinding = b }
+            |> SubModelSelectedItem
+            |> withCaching
+            |> Some
         | _ -> // TODO: Create separate caes for (1) no binding of that name and (2) binding of that name but the wrong type
-          log.LogError("subModelSelectedItem binding referenced binding {SubModelSeqBindingName}, but no compatible binding was found with that name", d.SubModelSeqBindingName)
-          None
+            log.LogError("subModelSelectedItem binding referenced binding {SubModelSeqBindingName}, but no compatible binding was found with that name", d.SubModelSeqBindingName)
+            None
 
   let bindings =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
