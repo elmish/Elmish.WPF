@@ -104,10 +104,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let withCaching b = Cached { Binding = b; Cache = ref None }
 
 
-  let getPropChainFor name =
+  let getNameChainFor name =
     sprintf "%s.%s" nameChain name
 
-  let getPropChainForItem collectionBindingName itemId =
+  let getNameChainForItem collectionBindingName itemId =
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
   let raisePropertyChanged name =
@@ -229,7 +229,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let d = d |> SubModelData.measureFunctions measure measure measure2
         let toMsg = fun msg -> d.ToMsg currentModel msg
         d.GetModel initialModel
-        |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance))
+        |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
         |> (fun vm -> { SubModelData = d; Vm = ref vm })
         |> SubModel
         |> Some
@@ -244,7 +244,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               PreventClose = ref true
               VmWinState = ref WindowState.Closed }
         | WindowState.Hidden m ->
-            let chain = getPropChainFor name
+            let chain = getNameChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
@@ -255,7 +255,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               PreventClose = preventClose
               VmWinState = ref <| WindowState.Hidden vm }
         | WindowState.Visible m ->
-            let chain = getPropChainFor name
+            let chain = getNameChainFor name
             let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
             let winRef = WeakReference<_>(null)
             let preventClose = ref true
@@ -273,7 +273,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         let vms =
           d.GetModels initialModel
           |> Seq.map (fun m ->
-               let chain = getPropChainForItem name (d.GetId m |> string)
+               let chain = getNameChainForItem name (d.GetId m |> string)
                ViewModel(m, (fun msg -> toMsg (d.GetId m, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           )
           |> ObservableCollection
@@ -332,14 +332,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               true
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
+            b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
             true
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
             false
       | SubModelWin b ->
           let d = b.SubModelWinData
-          let winPropChain = getPropChainFor name
+          let winPropChain = getNameChainFor name
           let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
           let close () =
             b.PreventClose := false
@@ -376,7 +376,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getPropChainFor name, log, logPerformance)
+            ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
 
           match !b.VmWinState, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
@@ -419,7 +419,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
           let create m id = 
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            let chain = getPropChainForItem name (id |> string)
+            let chain = getNameChainForItem name (id |> string)
             ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           d.UpdateValue(getTargetId, create, update, b.Vms, newModel)
