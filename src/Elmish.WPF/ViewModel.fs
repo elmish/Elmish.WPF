@@ -106,17 +106,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let getNameChainFor name =
     sprintf "%s.%s" nameChain name
-
   let getNameChainForItem collectionBindingName itemId =
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
   let raisePropertyChanged name =
     log.LogTrace("[{BindingNameChain}] PropertyChanged \"{BindingName}\"", nameChain, name)
     propertyChanged.Trigger(this, PropertyChangedEventArgs name)
-
   let raiseCanExecuteChanged (cmd: Command) =
     cmd.RaiseCanExecuteChanged ()
-
   let raiseErrorsChanged name =
     log.LogTrace("[{BindingNameChain}] ErrorsChanged \"{BindingName}\"", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
