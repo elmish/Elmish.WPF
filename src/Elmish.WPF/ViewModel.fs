@@ -287,8 +287,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> SubModelSelectedItem
             |> withCaching
             |> Some
-        | _ -> // TODO: Create separate caes for (1) no binding of that name and (2) binding of that name but the wrong type
-            log.LogError("subModelSelectedItem binding referenced binding {SubModelSeqBindingName}, but no compatible binding was found with that name", d.SubModelSeqBindingName)
+        | Some _ ->
+            log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", d.SubModelSeqBindingName)
+            None
+        | None ->
+            log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
             None
 
   let bindings =
