@@ -60,3 +60,10 @@ module Dictionary =
 
   let tryFind key (d: Dictionary<_, _>) =
     key |> d.TryGetValue |> ByRefPair.toOption
+
+
+[<RequireQualifiedAccess>]
+module Option =
+
+  let fromBool a b =
+    if b then Some a else None

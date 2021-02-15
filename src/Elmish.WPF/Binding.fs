@@ -216,7 +216,7 @@ module WindowState =
 type internal OneWayData<'model, 'a when 'a : equality> =
   { Get: 'model -> 'a }
 
-  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
@@ -228,7 +228,7 @@ type internal OneWayLazyData<'model, 'a, 'b> =
     Map: 'a -> 'b
     Equals: 'a -> 'a -> bool }
     
-  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+  member d.DidProeprtyChange((currentModel: 'model), (newModel: 'model)) =
     not <| d.Equals (d.Get newModel) (d.Get currentModel)
 
   member d.TryGetMember(model: 'model) =
@@ -257,7 +257,7 @@ type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
   { Get: 'model -> 'a
     Set: 'a -> 'model -> 'msg }
     
-  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
@@ -272,7 +272,7 @@ type internal TwoWayValidateData<'model, 'msg, 'a when 'a : equality> =
     Set: 'a -> 'model -> 'msg
     Validate: 'model -> string list }
     
-  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
@@ -298,7 +298,7 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
     
-  member d.UpdateValue((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember

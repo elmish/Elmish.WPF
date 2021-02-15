@@ -11,6 +11,12 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
+type internal UpdateData =
+  | ErrorsChanged
+  | PropertyChanged
+  | CanExecuteChanged of Command
+
+
 type internal OneWayBinding<'model, 'a when 'a : equality> = {
   OneWayData: OneWayData<'model, 'a>
 }
@@ -117,32 +123,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let raiseErrorsChanged name =
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
-
-  let getErrorsToNotify name newModel =
-    let rec getErrorsToNotifyRec = function
-      | TwoWayValidate b ->
-          let oldErrors =
-            errorsByName
-            |> Dictionary.tryFind name
-            |> Option.defaultValue []
-          let newErrors = b.TwoWayValidateData.Validate newModel
-          if oldErrors <> newErrors then
-            errorsByName.[name] <- newErrors
-            Some name
-          else
-            None
-      | OneWay _
-      | OneWayLazy _
-      | OneWaySeq _
-      | TwoWay _
-      | Cmd _
-      | CmdParam _
-      | SubModel _
-      | SubModelWin _
-      | SubModelSeq _
-      | SubModelSelectedItem _ -> None
-      | Cached b -> getErrorsToNotifyRec b.Binding
-    getErrorsToNotifyRec
 
   let measure name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
@@ -312,36 +292,64 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           dict.Add(b.Name, binding))
     dict :> IReadOnlyDictionary<_, _>
 
-  /// Updates the binding value (for relevant bindings) and returns a value
-  /// indicating whether to trigger PropertyChanged for this binding
-  let updateValue name newModel =
-    let rec updateValueRec = function
-      | OneWay { OneWayData = d } -> d.UpdateValue(currentModel, newModel)
-      | TwoWay { TwoWayData = d } -> d.UpdateValue(currentModel, newModel)
-      | TwoWayValidate { TwoWayValidateData = d } -> d.UpdateValue(currentModel, newModel)
-      | OneWayLazy { OneWayLazyData = d } -> d.UpdateValue(currentModel, newModel)
+  /// Updates the binding and returns a list indicating what events to raise
+  /// for this binding
+  let updateBinding name newModel =
+    let rec updateBindingRec = function
+      | OneWay { OneWayData = d } ->
+          d.DidPropertyChange(currentModel, newModel)
+          |> Option.fromBool PropertyChanged
+          |> Option.toList
+      | TwoWay { TwoWayData = d } ->
+          d.DidPropertyChange(currentModel, newModel)
+          |> Option.fromBool PropertyChanged
+          |> Option.toList
+      | TwoWayValidate { TwoWayValidateData = d } ->
+          let propertyChanged =
+            d.DidPropertyChange(currentModel, newModel)
+            |> Option.fromBool PropertyChanged
+          let oldErrors =
+            errorsByName
+            |> Dictionary.tryFind name
+            |> Option.defaultValue []
+          let newErrors = d.Validate newModel
+          let errorsChanged =
+            if oldErrors <> newErrors then
+              errorsByName.[name] <- newErrors
+              Some ErrorsChanged
+            else
+              None
+          [ propertyChanged; errorsChanged ]
+          |> List.collect Option.toList
+      | OneWayLazy { OneWayLazyData = d } ->
+          d.DidProeprtyChange(currentModel, newModel)
+          |> Option.fromBool PropertyChanged
+          |> Option.toList
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
-          false
-      | Cmd _
-      | CmdParam _ ->
-          false
+          List.empty
+      | Cmd { Cmd = cmd; CanExec = canExec } ->
+          canExec newModel <> canExec currentModel
+          |> Option.fromBool (CanExecuteChanged cmd)
+          |> Option.toList
+      | CmdParam cmd ->
+          cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
         let d = b.SubModelData
         match !b.Vm, d.GetModel newModel with
-        | ValueNone, ValueNone -> false
+        | ValueNone, ValueNone -> List.empty
         | ValueSome _, ValueNone ->
-            if d.Sticky then false
+            if d.Sticky then List.empty
             else
               b.Vm := ValueNone
-              true
+              PropertyChanged |> List.singleton
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
             b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
-            true
+            PropertyChanged |> List.singleton
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
-            false
+            List.empty
       | SubModelWin b ->
           let d = b.SubModelWinData
           let winPropChain = getNameChainFor name
@@ -385,40 +393,40 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           match !b.VmWinState, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
-              false
+              List.empty
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
               close ()
               b.VmWinState := WindowState.Closed
-              true
+              PropertyChanged |> List.singleton
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden
               b.VmWinState := WindowState.Hidden vm
-              true
+              PropertyChanged |> List.singleton
           | WindowState.Hidden vm, WindowState.Hidden m ->
               vm.UpdateModel m
-              false
+              List.empty
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               vm.UpdateModel m
               b.VmWinState := WindowState.Hidden vm
-              false
+              List.empty
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
               showNew vm Visibility.Visible
               b.VmWinState := WindowState.Visible vm
-              true
+              PropertyChanged |> List.singleton
           | WindowState.Hidden vm, WindowState.Visible m ->
               vm.UpdateModel m
               showHidden ()
               b.VmWinState := WindowState.Visible vm
-              false
+              List.empty
           | WindowState.Visible vm, WindowState.Visible m ->
               vm.UpdateModel m
-              false
+              List.empty
       | SubModelSeq b ->
           let d = b.SubModelSeqData
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
@@ -428,38 +436,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           d.Merge(getTargetId, create, update, b.Vms, newModel)
-          false
+          List.empty
       | SubModelSelectedItem { SubModelSelectedItemData = d } ->
-          d.UpdateValue(currentModel, newModel)
+          d.DidPropertyChange(currentModel, newModel)
+          |> Option.fromBool PropertyChanged
+          |> Option.toList
       | Cached b ->
-          let valueChanged = updateValueRec b.Binding
-          if valueChanged then
-            b.Cache := None
-          valueChanged
-    updateValueRec
-
-  /// Returns the command associated with a command binding if the command's
-  /// CanExecuteChanged should be triggered.
-  let getCmdIfCanExecChanged currentModel newModel =
-    let rec getCmdIfCanExecChangedRec = function
-      | OneWay _
-      | OneWayLazy _
-      | OneWaySeq _
-      | TwoWay _
-      | TwoWayValidate _
-      | SubModel _
-      | SubModelWin _
-      | SubModelSeq _
-      | SubModelSelectedItem _ ->
-          None
-      | Cmd { Cmd = cmd; CanExec = canExec } ->
-          if canExec newModel = canExec currentModel
-          then None
-          else Some cmd
-      | CmdParam cmd ->
-          Some cmd
-      | Cached b -> getCmdIfCanExecChangedRec b.Binding
-    getCmdIfCanExecChangedRec
+          let updates = updateBindingRec b.Binding
+          updates
+          |> List.filter ((=) PropertyChanged)
+          |> List.iter (fun _ -> b.Cache := None)
+          updates
+    updateBindingRec
 
   let tryGetMember model =
     let rec tryGetMemberRec = function
@@ -534,23 +522,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal __.CurrentModel : 'model = currentModel
 
   member internal __.UpdateModel (newModel: 'model) : unit =
-    let propsToNotify =
+    let eventsToRaise =
       bindings
-      |> Seq.filter (fun (Kvp (name, binding)) -> updateValue name newModel binding)
-      |> Seq.map Kvp.key
-      |> Seq.toList
-    let cmdsToNotify =
-      bindings
-      |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged currentModel newModel)
-      |> Seq.toList
-    let errorsToNotify =
-      bindings
-      |> Seq.choose (fun (Kvp (name, binding)) -> getErrorsToNotify name newModel binding)
+      |> Seq.collect (fun (Kvp (name, binding)) ->
+        updateBinding name newModel binding
+        |> Seq.map (fun ud -> name, ud))
       |> Seq.toList
     currentModel <- newModel
-    propsToNotify |> List.iter raisePropertyChanged
-    cmdsToNotify |> List.iter raiseCanExecuteChanged
-    errorsToNotify |> List.iter raiseErrorsChanged
+    eventsToRaise |> List.iter (fun (name, updateData) ->
+      match updateData with
+      | ErrorsChanged -> raiseErrorsChanged name
+      | PropertyChanged -> raisePropertyChanged name
+      | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
 
   override __.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
