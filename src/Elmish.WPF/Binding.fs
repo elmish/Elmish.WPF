@@ -517,14 +517,16 @@ module Binding =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
   let sticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
-    let mutable lastModel = None
-    let f cm =
-      match lastModel with
-      | Some lm when cm |> predicate |> not ->
-          lm
-      | _ ->
-          lastModel <- Some cm
-          cm
+    let mutable stickyModel = None
+    let f newModel =
+      match predicate newModel, stickyModel with
+      | false, Some sm ->
+          sm
+      | false, None ->
+          newModel
+      | true, _ ->
+          stickyModel <- Some newModel
+          newModel
     binding |> mapModel f
 
 
