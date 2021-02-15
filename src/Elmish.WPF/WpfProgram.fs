@@ -51,18 +51,18 @@ module WpfProgram =
   let startElmishLoop
       (element: FrameworkElement)
       (program: WpfProgram<'model, 'msg>) =
-    let mutable lastModel = None
+    let mutable viewModel = None
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
     let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
     let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
 
     let setState model dispatch =
-      match lastModel with
+      match viewModel with
       | None ->
           let vm = ViewModel<'model, 'msg>(model, dispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
           element.DataContext <- vm
-          lastModel <- Some vm
+          viewModel <- Some vm
       | Some vm ->
           vm.UpdateModel model
 
