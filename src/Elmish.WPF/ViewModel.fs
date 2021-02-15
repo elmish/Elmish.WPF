@@ -210,6 +210,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> TwoWay
         |> Some
     | TwoWayValidateData d ->
+        errorsByName.[name] <- d.Validate currentModel
         { TwoWayValidateData = d |> TwoWayValidateData.measureFunctions measure measure measure }
         |> TwoWayValidate
         |> Some
@@ -308,9 +309,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       else
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
-          dict.Add(b.Name, binding)
-          getErrorsToNotify b.Name initialModel binding
-          |> Option.iter raiseErrorsChanged)
+          dict.Add(b.Name, binding))
     dict :> IReadOnlyDictionary<_, _>
 
   /// Updates the binding value (for relevant bindings) and returns a value
