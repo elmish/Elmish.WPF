@@ -118,9 +118,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
-  let rec updateValidationError = function
-    | TwoWayValidate b ->
-        fun newModel name ->
+  let getErrorsToNotify name newModel =
+    let rec getErrorsToNotifyRec = function
+      | TwoWayValidate b ->
           let oldErrors =
             errorsByName
             |> Dictionary.tryFind name
@@ -128,18 +128,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let newErrors = b.TwoWayValidateData.Validate newModel
           if oldErrors <> newErrors then
             errorsByName.[name] <- newErrors
-            raiseErrorsChanged name
-    | OneWay _
-    | OneWayLazy _
-    | OneWaySeq _
-    | TwoWay _
-    | Cmd _
-    | CmdParam _
-    | SubModel _
-    | SubModelWin _
-    | SubModelSeq _
-    | SubModelSelectedItem _ -> ignore2
-    | Cached b -> updateValidationError b.Binding
+            Some name
+          else
+            None
+      | OneWay _
+      | OneWayLazy _
+      | OneWaySeq _
+      | TwoWay _
+      | Cmd _
+      | CmdParam _
+      | SubModel _
+      | SubModelWin _
+      | SubModelSeq _
+      | SubModelSelectedItem _ -> None
+      | Cached b -> getErrorsToNotifyRec b.Binding
+    getErrorsToNotifyRec
 
   let measure name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
@@ -306,7 +309,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         initializeBinding b.Name b.Data dictAsFunc
         |> Option.iter (fun binding ->
           dict.Add(b.Name, binding)
-          updateValidationError binding initialModel b.Name)
+          getErrorsToNotify b.Name initialModel binding
+          |> Option.iter raiseErrorsChanged)
     dict :> IReadOnlyDictionary<_, _>
 
   /// Updates the binding value (for relevant bindings) and returns a value
@@ -540,11 +544,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       bindings
       |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged currentModel newModel)
       |> Seq.toList
+    let errorsToNotify =
+      bindings
+      |> Seq.choose (fun (Kvp (name, binding)) -> getErrorsToNotify name newModel binding)
+      |> Seq.toList
     currentModel <- newModel
     propsToNotify |> List.iter raisePropertyChanged
     cmdsToNotify |> List.iter raiseCanExecuteChanged
-    for Kvp (name, binding) in bindings do
-      updateValidationError binding currentModel name
+    errorsToNotify |> List.iter raiseErrorsChanged
 
   override __.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
