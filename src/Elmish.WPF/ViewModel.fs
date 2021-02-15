@@ -437,7 +437,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Returns the command associated with a command binding if the command's
   /// CanExecuteChanged should be triggered.
-  let getCmdIfCanExecChanged newModel =
+  let getCmdIfCanExecChanged currentModel newModel =
     let rec getCmdIfCanExecChangedRec = function
       | OneWay _
       | OneWayLazy _
@@ -538,7 +538,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Seq.toList
     let cmdsToNotify =
       bindings
-      |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged newModel)
+      |> Seq.choose (Kvp.value >> getCmdIfCanExecChanged currentModel newModel)
       |> Seq.toList
     currentModel <- newModel
     propsToNotify |> List.iter raisePropertyChanged
