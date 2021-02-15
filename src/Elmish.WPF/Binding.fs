@@ -516,6 +516,7 @@ module Binding =
   let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
+  /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
   let sticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
