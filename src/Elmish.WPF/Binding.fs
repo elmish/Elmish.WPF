@@ -892,12 +892,11 @@ module Binding =
   /// <param name="valdiate">Returns the errors associated with the given model.</param>
   /// <param name="binding">The binding to which validation is added.</param>
   let withValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
-    let data =
-      { BindingData = binding.Data
+    binding
+    |> BindingData.Binding.mapData (fun d ->
+      { BindingData = d
         Validate = validate }
-      |> ValidationData
-    { Name = binding.Name
-      Data = data }
+      |> ValidationData)
 
 
 module Bindings =
