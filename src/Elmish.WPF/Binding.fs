@@ -287,11 +287,13 @@ type internal CmdData<'model, 'msg> = {
   CanExec: 'model -> bool
 }
 
+
 type internal CmdParamData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
 }
+
 
 type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
   { Get: 'model -> 'id voption
@@ -325,6 +327,7 @@ and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   Sticky: bool
 }
 
+
 and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetState: 'model -> WindowState<'bindingModel>
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
@@ -333,6 +336,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   IsModal: bool
   OnCloseRequested: 'model -> 'msg voption
 }
+
 
 and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
   { GetModels: 'model -> 'bindingModel seq
