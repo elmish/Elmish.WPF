@@ -353,6 +353,11 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
     let update b bm _ = update b bm
     let newSubModels = newModel |> d.GetModels |> Seq.toArray
     elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
+    
+    
+and internal ValidationData<'model, 'msg> =
+  { BindingData: BindingData<'model, 'msg>
+    Validate: 'model -> string list }
 
 
 /// Represents all necessary data used to create the different binding types.
@@ -368,6 +373,7 @@ and internal BindingData<'model, 'msg> =
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
+  | ValidationData of ValidationData<'model, 'msg>
 
 
 /// Represents all necessary data used to create a binding.
@@ -388,7 +394,7 @@ module internal BindingData =
 
   let mapModel f =
     let binaryHelper binary x m = (x, f m) ||> binary
-    let mapModelRec = function
+    let rec mapModelRec = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
         }
@@ -447,10 +453,14 @@ module internal BindingData =
           Set = binaryHelper d.Set
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
+      | ValidationData d -> ValidationData {
+          BindingData = mapModelRec d.BindingData
+          Validate = f >> d.Validate
+        }
     mapModelRec
 
   let mapMsgWithModel f =
-    let mapMsgWithModelRec = function
+    let rec mapMsgWithModelRec = function
       | OneWayData d -> d |> OneWayData
       | OneWayLazyData d -> d |> OneWayLazyData
       | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
@@ -497,6 +507,10 @@ module internal BindingData =
           Set = fun v m -> d.Set v m |> f m
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
+      | ValidationData d -> ValidationData {
+          BindingData = mapMsgWithModelRec d.BindingData
+          Validate = d.Validate
+        }
     mapMsgWithModelRec
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
@@ -533,6 +547,19 @@ module Binding =
           stickyModel <- Some newModel
           newModel
     binding |> mapModel f
+
+  /// <summary>
+  ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
+  /// </summary>
+  /// <param name="valdiate">Returns the errors associated with the given model.</param>
+  /// <param name="binding">The binding to which validation is added.</param>
+  let withValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+    let data =
+      { BindingData = binding.Data
+        Validate = validate }
+      |> ValidationData
+    { Name = binding.Name
+      Data = data }
 
 
 module Bindings =
@@ -907,6 +934,18 @@ module internal BindingData2 =
         (mGetId "getId")
         (mGetBindings "bindings") // sic: "getBindings" would follow the pattern
         (mToMsg "toMsg")
+
+  module ValidationData =
+
+    let mapFunctions
+        mValidate
+        (d: ValidationData<'model, 'msg>) =
+      { d with Validate = mValidate d.Validate }
+
+    let measureFunctions
+        mValidate =
+      mapFunctions
+        (mValidate "validate")
 
 
 

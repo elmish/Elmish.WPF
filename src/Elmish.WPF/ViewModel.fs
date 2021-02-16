@@ -70,6 +70,11 @@ and internal CachedBinding<'model, 'msg, 'value> = {
   Cache: 'value option ref
 }
 
+and internal ValidationBinding<'model, 'msg> = {
+  Binding: VmBinding<'model, 'msg>
+  Validate: 'model -> string list
+}
+
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
@@ -85,6 +90,7 @@ and internal VmBinding<'model, 'msg> =
   | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
   | Cached of CachedBinding<'model, 'msg, obj>
+  | Validatation of ValidationBinding<'model, 'msg>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -170,7 +176,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name getInitializedBindingByName =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let initializeBindingRec = function
+    let rec initializeBindingRec = function
       | OneWayData d ->
           { OneWayData = d |> OneWayData.measureFunctions measure }
           |> OneWay
@@ -277,6 +283,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
+      | ValidationData d ->
+          let d = d |> ValidationData.measureFunctions measure
+          errorsByName.[name] <- d.Validate currentModel
+          d.BindingData
+          |> initializeBindingRec
+          |> Option.map (fun b ->
+            { Binding = b
+              Validate = d.Validate }
+            |> Validatation)
     initializeBindingRec
 
   let bindings =
@@ -448,6 +463,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> List.filter ((=) PropertyChanged)
           |> List.iter (fun _ -> b.Cache := None)
           updates
+      | Validatation b ->
+          let updates = updateBindingRec b.Binding
+          let oldErrors =
+            errorsByName
+            |> Dictionary.tryFind name
+            |> Option.defaultValue []
+          let newErrors = b.Validate newModel
+          if oldErrors <> newErrors then
+            errorsByName.[name] <- newErrors
+            ErrorsChanged :: updates
+          else
+            updates
     updateBindingRec
 
   let tryGetMember model =
@@ -487,6 +514,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let v = tryGetMemberRec b.Binding
               b.Cache := Some v
               v
+      | Validatation b ->
+          tryGetMemberRec b.Binding
     tryGetMemberRec
 
   let trySetMember model (value: obj) =
@@ -509,6 +538,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if successful then
             b.Cache := None  // TODO #185: write test
           successful
+      | Validatation b ->
+          trySetMemberRec b.Binding
       | OneWay _
       | OneWayLazy _
       | OneWaySeq _
