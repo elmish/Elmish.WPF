@@ -316,7 +316,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Option.toList
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
-          List.empty
+          []
       | Cmd { Cmd = cmd; CanExec = canExec } ->
           canExec newModel <> canExec currentModel
           |> Option.fromBool (CanExecuteChanged cmd)
@@ -326,9 +326,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModel b ->
         let d = b.SubModelData
         match !b.Vm, d.GetModel newModel with
-        | ValueNone, ValueNone -> List.empty
+        | ValueNone, ValueNone -> []
         | ValueSome _, ValueNone ->
-            if d.Sticky then List.empty
+            if d.Sticky then []
             else
               b.Vm := ValueNone
               PropertyChanged |> List.singleton
@@ -338,7 +338,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             PropertyChanged |> List.singleton
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
-            List.empty
+            []
       | SubModelWin b ->
           let d = b.SubModelWinData
           let winPropChain = getNameChainFor name
@@ -382,7 +382,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           match !b.VmWinState, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
-              List.empty
+              []
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
               close ()
@@ -396,12 +396,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               PropertyChanged |> List.singleton
           | WindowState.Hidden vm, WindowState.Hidden m ->
               vm.UpdateModel m
-              List.empty
+              []
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               vm.UpdateModel m
               b.VmWinState := WindowState.Hidden vm
-              List.empty
+              []
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
@@ -412,10 +412,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               vm.UpdateModel m
               showHidden ()
               b.VmWinState := WindowState.Visible vm
-              List.empty
+              []
           | WindowState.Visible vm, WindowState.Visible m ->
               vm.UpdateModel m
-              List.empty
+              []
       | SubModelSeq b ->
           let d = b.SubModelSeqData
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
@@ -425,7 +425,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           d.Merge(getTargetId, create, update, b.Vms, newModel)
-          List.empty
+          []
       | SubModelSelectedItem { SubModelSelectedItemData = d } ->
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged

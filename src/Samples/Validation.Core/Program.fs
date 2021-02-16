@@ -12,7 +12,7 @@ module Result =
   module Error =
 
     let toList = function
-      | Ok _ -> List.empty
+      | Ok _ -> []
       | Error e -> [ e ] 
 
 
