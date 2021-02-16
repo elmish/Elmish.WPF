@@ -865,6 +865,13 @@ module Binding =
   let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
+  ///Creates a one-way binding with the model as the value.
+  let internal id<'model, 'msg when 'model : equality> : string -> Binding<'model, 'msg> =
+    { Get = id }
+    |> BindingData.OneWay.box
+    |> OneWayData
+    |> createBinding
+
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
   let sticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
     let mutable stickyModel = None
@@ -908,14 +915,6 @@ module Bindings =
 
 [<AbstractClass; Sealed>]
 type Binding private () =
-
-  ///<summary>Creates a one-way binding with the model as the value.</summary>
-  static member internal id () : string -> Binding<'model, 'msg> =
-    { Get = id }
-    |> BindingData.OneWay.box
-    |> OneWayData
-    |> createBinding
-
 
   /// <summary>Creates a one-way binding.</summary>
   /// <param name="get">Gets the value from the model.</param>
