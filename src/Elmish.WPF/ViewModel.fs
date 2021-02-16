@@ -69,6 +69,7 @@ and internal CachedBinding<'model, 'msg, 'value> = {
 and internal ValidationBinding<'model, 'msg> = {
   Binding: VmBinding<'model, 'msg>
   Validate: 'model -> string list
+  Errors: string list ref
 }
 
 
@@ -103,9 +104,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
-
-  /// Error messages keyed by property name.
-  let errorsByName = Dictionary<string, string list>()
 
 
   let withCaching b = Cached { Binding = b; Cache = ref None }
@@ -168,7 +166,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       } |> Async.StartImmediate
     )
 
-  let initializeBinding name getInitializedBindingByName =
+  let initializeBinding name getInitializedBindingByName addValdiationBinding =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
     let rec initializeBindingRec = function
@@ -275,28 +273,33 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               None
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
-          errorsByName.[name] <- d.Validate currentModel
           d.BindingData
           |> initializeBindingRec
           |> Option.map (fun b ->
-            { Binding = b
-              Validate = d.Validate }
-            |> Validatation)
+            let binding =
+              { Binding = b
+                Validate = d.Validate
+                Errors = currentModel |> d.Validate |> ref }
+            addValdiationBinding name binding
+            Validatation binding)
     initializeBindingRec
 
-  let bindings =
+  let (bindings, validationBindingsByName) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
-    let dict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let dictAsFunc = flip Dictionary.tryFind dict
+    let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
+    let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
+    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict
+    let validationDictAsFunc k v = validationDict.[k] <- v
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
-      if dict.ContainsKey b.Name then
+      if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding b.Name dictAsFunc b.Data
+        initializeBinding b.Name bindingDictAsFunc validationDictAsFunc b.Data
         |> Option.iter (fun binding ->
-          dict.Add(b.Name, binding))
-    dict :> IReadOnlyDictionary<_, _>
+          bindingDict.Add(b.Name, binding))
+    (bindingDict    :> IReadOnlyDictionary<_,_>,
+     validationDict :> IReadOnlyDictionary<_,_>)
 
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
@@ -438,13 +441,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           updates
       | Validatation b ->
           let updates = updateBindingRec b.Binding
-          let oldErrors =
-            errorsByName
-            |> Dictionary.tryFind name
-            |> Option.defaultValue []
           let newErrors = b.Validate newModel
-          if oldErrors <> newErrors then
-            errorsByName.[name] <- newErrors
+          if !b.Errors <> newErrors then
+            b.Errors := newErrors
             ErrorsChanged :: updates
           else
             updates
@@ -572,13 +571,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
       log.LogTrace("[{BindingNameChain}] HasErrors", nameChain)
-      errorsByName
-      |> Seq.map Kvp.value
+      validationBindingsByName
+      |> Seq.map (fun (Kvp(_, b)) -> !b.Errors)
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member __.GetErrors name =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
-      errorsByName
-      |> Dictionary.tryFind name
+      validationBindingsByName
+      |> IReadOnlyDictionary.tryFind name
+      |> Option.map (fun b -> !b.Errors)
       |> Option.defaultValue []
       |> (fun x -> upcast x)

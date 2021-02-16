@@ -63,6 +63,15 @@ module Dictionary =
 
 
 [<RequireQualifiedAccess>]
+module IReadOnlyDictionary =
+
+  open System.Collections.Generic
+
+  let tryFind key (d: IReadOnlyDictionary<_, _>) =
+    key |> d.TryGetValue |> ByRefPair.toOption
+
+
+[<RequireQualifiedAccess>]
 module Option =
 
   let fromBool a b =
