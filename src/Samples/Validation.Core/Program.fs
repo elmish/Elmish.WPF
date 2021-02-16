@@ -4,8 +4,16 @@ open System
 open System.Linq
 open Serilog
 open Serilog.Extensions.Logging
-open Elmish
 open Elmish.WPF
+
+
+module Result =
+
+  module Error =
+
+    let toList = function
+      | Ok _ -> List.empty
+      | Error e -> [ e ] 
 
 
 let requireNotEmpty s =
@@ -37,11 +45,13 @@ let validatePassword (s: string) =
 
 
 type Model =
-  { Value: string
+  { UpdateCount: int
+    Value: string
     Password: string }
 
 let init () =
-  { Value = ""
+  { UpdateCount = 0
+    Value = ""
     Password = "" }
 
 type Msg =
@@ -49,21 +59,32 @@ type Msg =
   | NewPassword of string
   | Submit
 
+let increaseUpdateCount m =
+  { m with UpdateCount = m.UpdateCount + 1 }
+
 let update msg m =
+  let m = increaseUpdateCount m
   match msg with
   | NewValue x -> { m with Value = x }
   | NewPassword x -> { m with Password = x }
   | Submit -> m
 
+let errorOnEven m =
+  if m.UpdateCount % 2 = 0 then
+    [ "Even counts have this error" ]
+  else
+    []
+
 let bindings () : Binding<Model, Msg> list = [
-  "Value" |> Binding.twoWayValidate(
-    (fun m -> m.Value),
-    NewValue,
-    (fun m ->  validateInt42 m.Value))
-  "Password" |> Binding.twoWayValidate(
-    (fun m -> m.Password),
-    NewPassword,
-    (fun m -> validatePassword m.Password))
+  "UpdateCount"
+    |> Binding.oneWay(fun m -> m.UpdateCount)
+    |> Binding.withValidation errorOnEven
+  "Value"
+    |> Binding.twoWay((fun m -> m.Value), NewValue)
+    |> Binding.withValidation(fun m ->  m.Value |> validateInt42 |> Result.Error.toList)
+  "Password"
+    |> Binding.twoWay((fun m -> m.Password), NewPassword)
+    |> Binding.withValidation(fun m -> m.Password |> validatePassword)
   "Submit" |> Binding.cmdIf(
     (fun _ -> Submit),
     (fun m -> (match validateInt42 m.Value with Ok _ -> true | Error _ -> false) && (validatePassword m.Password |> List.isEmpty)))
