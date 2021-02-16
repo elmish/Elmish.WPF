@@ -367,6 +367,14 @@ and Binding<'model, 'msg> =
       Data: BindingData<'model, 'msg> }
 
 
+[<AutoOpen>]
+module internal Helpers =
+
+  let createBinding data name =
+    { Name = name
+      Data = data }
+
+
 module internal BindingData =
 
   let subModelSelectedItemLast a b =
@@ -886,16 +894,6 @@ module internal BindingData2 =
         mValidate =
       mapFunctions
         (mValidate "validate")
-
-
-
-
-[<AutoOpen>]
-module internal Helpers =
-
-  let createBinding data name =
-    { Name = name
-      Data = data }
 
 
 
