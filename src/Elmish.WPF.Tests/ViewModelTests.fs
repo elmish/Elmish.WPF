@@ -154,11 +154,11 @@ module Helpers =
       (set: 'a -> 'model -> 'msg)
       (validate: 'model -> string voption) =
     ({ Get = get
-       Set = set
-       Validate = validate >> ValueOption.toList }
-     |> TwoWayValidateData.box
-     |> TwoWayValidateData
-     |> createBinding) name
+       Set = set }
+     |> TwoWayData.box
+     |> TwoWayData
+     |> createBinding
+     >> Binding.withValidation (validate >> ValueOption.toList)) name
 
 
   let internal cmd

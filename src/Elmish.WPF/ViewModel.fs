@@ -34,10 +34,6 @@ type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
   TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
-type internal TwoWayValidateBinding<'model, 'msg, 'a when 'a : equality> = {
-  TwoWayValidateData: TwoWayValidateData<'model, 'msg, 'a>
-}
-
 type internal CmdBinding<'model, 'msg> = {
   Cmd: Command
   CanExec: 'model -> bool
@@ -82,7 +78,6 @@ and internal VmBinding<'model, 'msg> =
   | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
-  | TwoWayValidate of TwoWayValidateBinding<'model, 'msg, obj>
   | Cmd of CmdBinding<'model, 'msg>
   | CmdParam of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
@@ -194,11 +189,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | TwoWayData d ->
           { TwoWayData = d |> TwoWayData.measureFunctions measure measure }
           |> TwoWay
-          |> Some
-      | TwoWayValidateData d ->
-          errorsByName.[name] <- d.Validate currentModel
-          { TwoWayValidateData = d |> TwoWayValidateData.measureFunctions measure measure measure }
-          |> TwoWayValidate
           |> Some
       | CmdData d ->
           let d = d |> CmdData.measureFunctions measure measure
@@ -320,23 +310,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
           |> Option.toList
-      | TwoWayValidate { TwoWayValidateData = d } ->
-          let propertyChanged =
-            d.DidPropertyChange(currentModel, newModel)
-            |> Option.fromBool PropertyChanged
-          let oldErrors =
-            errorsByName
-            |> Dictionary.tryFind name
-            |> Option.defaultValue []
-          let newErrors = d.Validate newModel
-          let errorsChanged =
-            if oldErrors <> newErrors then
-              errorsByName.[name] <- newErrors
-              Some ErrorsChanged
-            else
-              None
-          [ propertyChanged; errorsChanged ]
-          |> List.collect Option.toList
       | OneWayLazy { OneWayLazyData = d } ->
           d.DidProeprtyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
@@ -481,7 +454,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let rec tryGetMemberRec = function
       | OneWay { OneWayData = d } -> d.TryGetMember model
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
-      | TwoWayValidate { TwoWayValidateData = d } -> d.TryGetMember model
       | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
       | Cmd { Cmd = cmd }
@@ -521,9 +493,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let trySetMember model (value: obj) =
     let rec trySetMemberRec = function // TOOD: return 'msg option
       | TwoWay { TwoWayData = d } ->
-          d.TrySetMember(value, model) |> dispatch
-          true
-      | TwoWayValidate { TwoWayValidateData = d } ->
           d.TrySetMember(value, model) |> dispatch
           true
       | SubModelSelectedItem b ->
