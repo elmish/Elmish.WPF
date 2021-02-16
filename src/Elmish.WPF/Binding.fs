@@ -1193,11 +1193,12 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> box
-      Set = unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.box
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -1282,11 +1283,12 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> ValueOption.map box >> ValueOption.toObj
-      Set = ValueOption.ofObj >> ValueOption.map unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.boxVOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -1377,11 +1379,12 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    TwoWayValidateData {
-      Get = get >> Option.map box >> Option.toObj
-      Set = Option.ofObj >> Option.map unbox<'a> >> set
-      Validate = validate
-    } |> createBinding
+    { Get = get
+      Set = set
+      Validate = validate }
+    |> TwoWayValidateData.boxOpt
+    |> TwoWayValidateData
+    |> createBinding
 
 
   /// <summary>
@@ -2552,11 +2555,12 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> box
-        Set = fun p _ -> p |> unbox<'a> |> set
-        Validate = validate
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate }
+      |> TwoWayValidateData.box
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2573,11 +2577,12 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> box
-        Set = fun p _ -> p |> unbox<'a> |> set
-        Validate = validate >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.toList }
+      |> TwoWayValidateData.box
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2594,11 +2599,12 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> box
-        Set = fun p  _ -> p |> unbox<'a> |> set
-        Validate = validate >> Option.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p  _ -> set p
+        Validate = validate >> Option.toList }
+      |> TwoWayValidateData.box
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2615,11 +2621,12 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> box
-        Set = fun p _ -> p |> unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList }
+      |> TwoWayValidateData.box
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2638,11 +2645,12 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate }
+      |> TwoWayValidateData.boxVOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2661,11 +2669,12 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.toList }
+      |> TwoWayValidateData.boxVOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2684,11 +2693,12 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate >> Option.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> Option.toList }
+      |> TwoWayValidateData.boxVOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2707,11 +2717,12 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList }
+      |> TwoWayValidateData.boxVOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2730,11 +2741,12 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate }
+      |> TwoWayValidateData.boxOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2753,11 +2765,12 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.toList }
+      |> TwoWayValidateData.boxOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2776,11 +2789,12 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate >> Option.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> Option.toList }
+      |> TwoWayValidateData.boxOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
@@ -2799,11 +2813,12 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      TwoWayValidateData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-        Validate = validate >> ValueOption.ofError >> ValueOption.toList
-      } |> createBinding
+      { Get = get
+        Set = fun p _ -> set p
+        Validate = validate >> ValueOption.ofError >> ValueOption.toList }
+      |> TwoWayValidateData.boxOpt
+      |> TwoWayValidateData
+      |> createBinding
 
 
     /// <summary>
