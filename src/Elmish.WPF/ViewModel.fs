@@ -173,37 +173,37 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let measure2 x = x |> measure2 name
     let rec initializeBindingRec = function
       | OneWayData d ->
-          { OneWayData = d |> OneWayData.measureFunctions measure }
+          { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
           |> Some 
       | OneWayLazyData d ->
-          { OneWayLazyData = d |> OneWayLazyData.measureFunctions measure measure measure2 }
+          { OneWayLazyData = d |> BindingData.OneWayLazy.measureFunctions measure measure measure2 }
           |> OneWayLazy
           |> withCaching
           |> Some
       | OneWaySeqLazyData d ->
-          { OneWaySeqData = d |> OneWaySeqLazyData.measureFunctions measure measure measure2 measure measure2
+          { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
             Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
           |> OneWaySeq
           |> Some
       | TwoWayData d ->
-          { TwoWayData = d |> TwoWayData.measureFunctions measure measure }
+          { TwoWayData = d |> BindingData.TwoWay.measureFunctions measure measure }
           |> TwoWay
           |> Some
       | CmdData d ->
-          let d = d |> CmdData.measureFunctions measure measure
+          let d = d |> BindingData.Cmd.measureFunctions measure measure
           let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
           let canExecute _ = d.CanExec currentModel
           Some <| Cmd {
             Cmd = Command(execute, canExecute, false)
             CanExec = d.CanExec }
       | CmdParamData d ->
-          let d = d |> CmdParamData.measureFunctions measure2 measure2
+          let d = d |> BindingData.CmdParam.measureFunctions measure2 measure2
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
           let canExecute param = d.CanExec param currentModel
           Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
       | SubModelData d ->
-          let d = d |> SubModelData.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg currentModel msg
           d.GetModel initialModel
           |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
@@ -211,7 +211,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> SubModel
           |> Some
       | SubModelWinData d ->
-          let d = d |> SubModelWinData.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg currentModel msg
           let onCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.iter dispatch
           match d.GetState initialModel with
@@ -245,7 +245,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> SubModelWin
           |> Some
       | SubModelSeqData d ->
-          let d = d |> SubModelSeqData.measureFunctions measure measure measure measure2
+          let d = d |> BindingData.SubModelSeq.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg currentModel msg
           let vms =
             d.GetModels initialModel
@@ -259,7 +259,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> SubModelSeq
           |> Some
       | SubModelSelectedItemData d ->
-          let d = d |> SubModelSelectedItemData.measureFunctions measure measure2
+          let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
           match getInitializedBindingByName d.SubModelSeqBindingName with
           | Some (SubModelSeq b) ->
               { SubModelSelectedItemData = d
@@ -274,7 +274,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
       | ValidationData d ->
-          let d = d |> ValidationData.measureFunctions measure
+          let d = d |> BindingData.Validation.measureFunctions measure
           errorsByName.[name] <- d.Validate currentModel
           d.BindingData
           |> initializeBindingRec

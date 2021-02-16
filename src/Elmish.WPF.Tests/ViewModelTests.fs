@@ -115,7 +115,7 @@ module Helpers =
     ({ Get = get
        Map = map
        Equals = equals }
-     |> OneWayLazyData.box
+     |> BindingData.OneWayLazy.box
      |> OneWayLazyData
      |> createBinding) name
 
@@ -132,7 +132,7 @@ module Helpers =
        Equals = equals
        GetId = getId
        ItemEquals = itemEquals }
-     |> OneWaySeqLazyData.box
+     |> BindingData.OneWaySeqLazy.box
      |> OneWaySeqLazyData
      |> createBinding) name
 
@@ -143,7 +143,7 @@ module Helpers =
       (set: 'a -> 'model -> 'msg) =
     ({ Get = get
        Set = set }
-     |> TwoWayData.box
+     |> BindingData.TwoWay.box
      |> TwoWayData
      |> createBinding) name
 
@@ -155,7 +155,7 @@ module Helpers =
       (validate: 'model -> string voption) =
     ({ Get = get
        Set = set }
-     |> TwoWayData.box
+     |> BindingData.TwoWay.box
      |> TwoWayData
      |> createBinding
      >> Binding.withValidation (validate >> ValueOption.toList)) name
@@ -193,7 +193,7 @@ module Helpers =
        GetBindings = fun () -> bindings
        ToMsg = fun _ -> toMsg
        Sticky = sticky }
-     |> SubModelData.box
+     |> BindingData.SubModel.box
      |> SubModelData
      |> createBinding) name
 
@@ -208,7 +208,7 @@ module Helpers =
        GetId = getId
        GetBindings = fun () -> bindings
        ToMsg = fun _ -> toMsg }
-     |> SubModelSeqData.box
+     |> BindingData.SubModelSeq.box
      |> SubModelSeqData
      |> createBinding) name
 
@@ -221,7 +221,7 @@ module Helpers =
     ({ Get = get
        Set = set
        SubModelSeqBindingName = subModelSeqBindingName }
-     |> SubModelSelectedItemData.box
+     |> BindingData.SubModelSelectedItem.box
      |> SubModelSelectedItemData
      |> createBinding) name
 
