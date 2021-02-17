@@ -866,7 +866,7 @@ module Binding =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
   ///Creates a one-way binding with the model as the value.
-  let internal id<'model, 'msg when 'model : equality> : string -> Binding<'model, 'msg> =
+  let id<'model, 'msg when 'model : equality> : string -> Binding<'model, 'msg> =
     { Get = id }
     |> BindingData.OneWay.box
     |> OneWayData
