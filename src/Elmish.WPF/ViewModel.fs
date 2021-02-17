@@ -72,6 +72,11 @@ and internal ValidationBinding<'model, 'msg> = {
   Errors: string list ref
 }
 
+and internal LazyBinding<'model, 'msg> = {
+  Binding: VmBinding<'model, 'msg>
+  Equals: 'model -> 'model -> bool
+}
+
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
@@ -87,6 +92,7 @@ and internal VmBinding<'model, 'msg> =
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
+  | Lazy of LazyBinding<'model, 'msg>
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -282,6 +288,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 Errors = currentModel |> d.Validate |> ref }
             addValdiationBinding name binding
             Validatation binding)
+      | LazyData d ->
+          let d = d |> BindingData.Lazy.measureFunctions measure
+          d.BindingData
+          |> initializeBindingRec
+          |> Option.map (fun b ->
+            { Binding = b
+              Equals = d.Equals }
+            |> Lazy)
     initializeBindingRec
 
   let (bindings, validationBindingsByName) =
@@ -447,6 +461,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             ErrorsChanged :: updates
           else
             updates
+      | Lazy b ->
+          if b.Equals currentModel newModel then
+            []
+          else
+            updateBindingRec b.Binding
     updateBindingRec
 
   let tryGetMember model =
@@ -487,6 +506,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               v
       | Validatation b ->
           tryGetMemberRec b.Binding
+      | Lazy b ->
+          tryGetMemberRec b.Binding
     tryGetMemberRec
 
   let trySetMember model (value: obj) =
@@ -507,6 +528,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             b.Cache := None  // TODO #185: write test
           successful
       | Validatation b ->
+          trySetMemberRec b.Binding
+      | Lazy b ->
           trySetMemberRec b.Binding
       | OneWay _
       | OneWayLazy _

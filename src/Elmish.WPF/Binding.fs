@@ -343,6 +343,11 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
 and internal ValidationData<'model, 'msg> =
   { BindingData: BindingData<'model, 'msg>
     Validate: 'model -> string list }
+    
+    
+and internal LazyData<'model, 'msg> =
+  { BindingData: BindingData<'model, 'msg>
+    Equals: 'model -> 'model -> bool }
 
 
 /// Represents all necessary data used to create the different binding types.
@@ -358,6 +363,7 @@ and internal BindingData<'model, 'msg> =
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
   | ValidationData of ValidationData<'model, 'msg>
+  | LazyData of LazyData<'model, 'msg>
 
 
 /// Represents all necessary data used to create a binding.
@@ -444,6 +450,10 @@ module internal BindingData =
           BindingData = mapModelRec d.BindingData
           Validate = f >> d.Validate
         }
+      | LazyData d -> LazyData {
+          BindingData = mapModelRec d.BindingData
+          Equals = fun a b -> d.Equals (f a) (f b)
+        }
     mapModelRec
 
   let mapMsgWithModel f =
@@ -492,6 +502,10 @@ module internal BindingData =
       | ValidationData d -> ValidationData {
           BindingData = mapMsgWithModelRec d.BindingData
           Validate = d.Validate
+        }
+      | LazyData d -> LazyData {
+          BindingData = mapMsgWithModelRec d.BindingData
+          Equals = d.Equals
         }
     mapMsgWithModelRec
 
@@ -850,6 +864,18 @@ module internal BindingData =
       mapFunctions
         (mValidate "validate")
 
+  module Lazy =
+
+    let mapFunctions
+        mEquals
+        (d: LazyData<'model, 'msg>) =
+      { d with Equals = mEquals d.Equals }
+
+    let measureFunctions
+        mEquals =
+      mapFunctions
+        (mEquals "equals")
+
 
 module Binding =
 
@@ -897,6 +923,13 @@ module Binding =
       { BindingData = d
         Validate = validate }
       |> ValidationData)
+
+  let lazy' (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+    binding
+    |> BindingData.Binding.mapData (fun d ->
+      { BindingData = d
+        Equals = equals }
+      |> LazyData)
 
 
 module Bindings =
