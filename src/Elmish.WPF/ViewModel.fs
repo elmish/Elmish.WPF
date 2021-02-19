@@ -552,7 +552,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         |> Seq.map (fun ud -> name, ud))
       |> Seq.toList
     currentModel <- newModel
-    eventsToRaise |> List.iter (fun (name, updateData) ->
+    eventsToRaise
+    |> List.iter (fun (name, updateData) ->
       match updateData with
       | ErrorsChanged -> raiseErrorsChanged name
       | PropertyChanged -> raisePropertyChanged name
