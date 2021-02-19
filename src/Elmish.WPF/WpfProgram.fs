@@ -97,8 +97,8 @@ module WpfProgram =
   /// startElmishLoop.
   let runWindow window program =
     initializeApplication window
-    window.Show ()
     startElmishLoop window program
+    window.Show ()
     Application.Current.Run window
 
 
