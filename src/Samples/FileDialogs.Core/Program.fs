@@ -1,9 +1,7 @@
-﻿module Elmish.WPF.Samples.FileDialogs.Program
+module Elmish.WPF.Samples.FileDialogs.Program
 
 open System
 open System.IO
-open System.Threading
-open System.Windows
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
@@ -36,36 +34,28 @@ type Msg =
 
 
 let save text =
-  Application.Current.Dispatcher.Invoke(fun () ->
-    let guiCtx = SynchronizationContext.Current
-    async {
-      do! Async.SwitchToContext guiCtx
-      let dlg = Microsoft.Win32.SaveFileDialog ()
-      dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
-      let result = dlg.ShowDialog ()
-      if result.HasValue && result.Value then
-        do! File.WriteAllTextAsync(dlg.FileName, text) |> Async.AwaitTask
-        return SaveSuccess
-      else return SaveCanceled
-    }
-  )
+  async {
+    let dlg = Microsoft.Win32.SaveFileDialog ()
+    dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
+    let result = dlg.ShowDialog ()
+    if result.HasValue && result.Value then
+      do! File.WriteAllTextAsync(dlg.FileName, text) |> Async.AwaitTask
+      return SaveSuccess
+    else return SaveCanceled
+  }
 
 
 let load () =
-  Application.Current.Dispatcher.Invoke(fun () ->
-    let guiCtx = SynchronizationContext.Current
-    async {
-      do! Async.SwitchToContext guiCtx
-      let dlg = Microsoft.Win32.OpenFileDialog ()
-      dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
-      dlg.DefaultExt <- "txt"
-      let result = dlg.ShowDialog ()
-      if result.HasValue && result.Value then
-        let! contents = File.ReadAllTextAsync(dlg.FileName) |> Async.AwaitTask
-        return LoadSuccess contents
-      else return LoadCanceled
-    }
-  )
+  async {
+    let dlg = Microsoft.Win32.OpenFileDialog ()
+    dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
+    dlg.DefaultExt <- "txt"
+    let result = dlg.ShowDialog ()
+    if result.HasValue && result.Value then
+      let! contents = File.ReadAllTextAsync(dlg.FileName) |> Async.AwaitTask
+      return LoadSuccess contents
+    else return LoadCanceled
+  }
 
 
 let update msg m =
