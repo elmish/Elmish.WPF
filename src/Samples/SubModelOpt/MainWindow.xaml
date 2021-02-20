@@ -24,13 +24,13 @@
     <Rectangle
         Fill="Black"
         Opacity="0.6"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}, FallbackValue=Collapsed}" />
+        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}" />
     <Border
         BorderBrush="Black"
         BorderThickness="2"
         Width="350"
         Height="200"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}, FallbackValue=Collapsed}">
+        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}">
       <StackPanel Background="White">
         <local:Form1
             DataContext="{Binding Form1}"

@@ -3,6 +3,7 @@
 * Improved logging
 * Changed CurrentModel and UpdateModel on ViewModel<_,_> from public to internal
 * Added support for composable binding validation
+* `runWindow` now shows the given window after settings its `DataContext`.  This removes the need to have `Visibility` values default to `Collapsed`.
 
 #### 4.0.0-beta-2
 * Added logging when INotifyDataErrorInfo.HasErrors is called

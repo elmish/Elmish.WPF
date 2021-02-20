@@ -96,9 +96,18 @@ module WpfProgram =
   /// blocking function. If you are using App.xaml as an implicit entry point, see
   /// startElmishLoop.
   let runWindow window program =
+    (*
+     * This is the correct order for these four statements.
+     * 1. Initialize Application.Current and set its MainWindow in case the
+     *    user code accesses either of these when initializing the bindings.
+     * 2. Start the Elmish loop, which will cause the main view model to be
+     *    created and assigned to the window's DataContext before returning.
+     * 3. Show the window now that the DataContext is set.
+     * 4. Run the current application, which must be last because it is blocking.
+     *)
     initializeApplication window
-    window.Show ()
     startElmishLoop window program
+    window.Show ()
     Application.Current.Run window
 
 
