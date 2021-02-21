@@ -283,22 +283,6 @@ Sure! Just use `Binding.subModelWin`. It works like `Binding.subModel`, but has 
 
 Note that if you use `App.xaml` startup, you may want to set `ShutdownMode="OnMainWindowClose"` in `App.xaml` if that’s the desired behavior.
 
-#### How can I use Save File / Open File dialogs?
-
-There’s a few things to remember regarding opening on the UI thread and not blocking the Elmish dispatch loop. Check out the [FileDialogs sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). In short, write a function like below, and call it using `Cmd.OfAsync`.
-
-```f#
-let save text =
-  Application.Current.Dispatcher.Invoke(fun () ->
-    let guiCtx = SynchronizationContext.Current
-    async {
-      do! Async.SwitchToContext guiCtx
-      let dlg = Microsoft.Win32.SaveFileDialog ()
-      // configure dialog (extensions etc.), show it, handle result
-    }
-  )
-```
-
 #### Can I bind to events and use behaviors?
 
 Sure! Check out the [EventBindingsAndBehaviors sample](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples). Note that you have to install the NuGet package `Microsoft.Xaml.Behaviors.Wpf`.

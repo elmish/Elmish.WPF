@@ -4,6 +4,7 @@
 * Changed CurrentModel and UpdateModel on ViewModel<_,_> from public to internal
 * Added support for composable binding validation
 * `runWindow` now shows the given window after settings its `DataContext`.  This removes the need to have `Visibility` values default to `Collapsed`.
+* Changed minimum Elmish version from 3.0.3 to 3.1.0 (which is currently the latest).  Commands created with `OfAsync` are now executed on a threadpool thread.  For example, it is now easier to show file dialogs without blocking the Elmish dispatch loop.  See [this diff](https://github.com/elmish/Elmish.WPF/commit/d1ec823ccd7f377a860b76bc2358706dc6a70c84).
 
 #### 4.0.0-beta-2
 * Added logging when INotifyDataErrorInfo.HasErrors is called
