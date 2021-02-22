@@ -3,7 +3,7 @@ WPF done the Elmish Way
 
 <img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/logo/elmish-wpf-logo-ghreadme.png" width="300" align="right" />
 
-[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://img.shields.io/appveyor/ci/cmeeren/elmish-wpf/master.svg?label=master)](https://ci.appveyor.com/project/cmeeren/elmish-wpf/branch/master)
+[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://github.com/elmish/Elmish.WPF/workflows/master/badge.svg)](https://github.com/elmish/Elmish.WPF/actions/workflows/master.yml)
 
 **The good parts of MVVM (the data bindings) with the simplicity and robustness of an MVU architecture for the rest of your app. Never write a ViewModel class again!**
 
