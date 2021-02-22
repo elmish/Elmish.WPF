@@ -1,0 +1,35 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Install .NET SDK 3.0.x
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.0.x
+
+    - name: Install .NET SDK 5.0.103
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.103
+
+    - name: Restore
+      run: dotnet restore src/Elmish.WPF.sln
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release src/Elmish.WPF.sln
+
+    - name: Test
+      run: dotnet test --no-build --configuration Release src/Elmish.WPF.Tests/Elmish.WPF.Tests.fsproj
