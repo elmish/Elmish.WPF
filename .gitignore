@@ -43,5 +43,10 @@ deploy/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-# VSCode working folder
-.vscode/
+### VS Code ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
