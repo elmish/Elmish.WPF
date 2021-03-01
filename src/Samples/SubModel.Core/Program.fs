@@ -1,6 +1,9 @@
 module Elmish.WPF.Samples.SubModel.Program
 
 open System
+open System.Threading
+open System.Threading.Tasks
+open System.Windows
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
@@ -146,20 +149,7 @@ let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init (
 let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
 
 
-let timerTick dispatch =
-  let timer = new System.Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ ->
-    let clockMsg =
-      DateTimeOffset.Now
-      |> Clock.Tick
-      |> CounterWithClock.ClockMsg
-    dispatch <| App.ClockCounter1Msg clockMsg
-    dispatch <| App.ClockCounter2Msg clockMsg
-  )
-  timer.Start()
-
-
-let main window =
+let main (window: Window) =
 
   let logger =
     LoggerConfiguration()
@@ -168,6 +158,27 @@ let main window =
       .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
+
+  let tcs = TaskCompletionSource<unit> ()
+  let cts = new CancellationTokenSource ()
+
+  let timerTick dispatch =
+    let async =
+      async {
+        use! d = Async.OnCancel (tcs.TrySetResult >> ignore)
+        while true do
+          do! Async.Sleep 1000
+          let clockMsg = DateTimeOffset.Now |> Clock.Tick |> CounterWithClock.ClockMsg
+          clockMsg |> App.ClockCounter1Msg |> dispatch
+          clockMsg |> App.ClockCounter2Msg |> dispatch
+      }
+    Async.Start(async, cts.Token)
+
+  let onClosing _ =
+    cts.Cancel ()
+    tcs.Task |> Async.AwaitTask |> Async.RunSynchronously
+
+  let d = window.Closing.Subscribe onClosing
 
   WpfProgram.mkSimple App.init App.update App.bindings
   |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)

@@ -1,6 +1,9 @@
 ﻿module Elmish.WPF.Samples.FileDialogsCmdMsg.Program
 
 open System
+open System.Threading
+open System.Threading.Tasks
+open System.Windows
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
@@ -108,13 +111,7 @@ open Platform
 let designVm = ViewModel.designInstance (init () |> fst) (bindings ())
 
 
-let timerTick dispatch =
-  let timer = new Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ -> dispatch (SetTime DateTimeOffset.Now))
-  timer.Start()
-
-
-let main window =
+let main (window: Window) =
 
   let logger =
     LoggerConfiguration()
@@ -123,6 +120,25 @@ let main window =
       .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
+
+  let tcs = TaskCompletionSource<unit> ()
+  let cts = new CancellationTokenSource ()
+
+  let timerTick dispatch =
+    let async =
+      async {
+        use! d = Async.OnCancel (tcs.TrySetResult >> ignore)
+        while true do
+          do! Async.Sleep 1000
+          DateTimeOffset.Now |> SetTime |> dispatch
+      }
+    Async.Start(async, cts.Token)
+
+  let onClosing (args: System.ComponentModel.CancelEventArgs) =
+    cts.Cancel ()
+    tcs.Task |> Async.AwaitTask |> Async.RunSynchronously
+
+  window.Closing.Subscribe onClosing |> ignore
 
   WpfProgram.mkProgramWithCmdMsg init update bindings toCmd
   |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
