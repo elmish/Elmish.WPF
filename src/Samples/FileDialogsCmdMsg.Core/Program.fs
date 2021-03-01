@@ -50,8 +50,8 @@ module Core =
     | LoadSuccess s -> { m with Text = s; StatusMsg = sprintf "Successfully loaded at %O" DateTimeOffset.Now }, []
     | SaveCanceled -> { m with StatusMsg = "Saving canceled" }, []
     | LoadCanceled -> { m with StatusMsg = "Loading canceled" }, []
-    | SaveFailed ex -> { m with StatusMsg = sprintf "Saving failed with excption %s: %s" (ex.GetType().Name) ex.Message }, []
-    | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with excption %s: %s" (ex.GetType().Name) ex.Message }, []
+    | SaveFailed ex -> { m with StatusMsg = sprintf "Saving failed with exception %s: %s" (ex.GetType().Name) ex.Message }, []
+    | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with exception %s: %s" (ex.GetType().Name) ex.Message }, []
 
 
 

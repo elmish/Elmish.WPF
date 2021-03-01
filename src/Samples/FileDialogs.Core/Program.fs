@@ -68,8 +68,8 @@ let update msg m =
   | LoadSuccess s -> { m with Text = s; StatusMsg = sprintf "Successfully loaded at %O" DateTimeOffset.Now }, Cmd.none
   | SaveCanceled -> { m with StatusMsg = "Saving canceled" }, Cmd.none
   | LoadCanceled -> { m with StatusMsg = "Loading canceled" }, Cmd.none
-  | SaveFailed ex -> { m with StatusMsg = sprintf "Saving failed with excption %s: %s" (ex.GetType().Name) ex.Message }, Cmd.none
-  | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with excption %s: %s" (ex.GetType().Name) ex.Message }, Cmd.none
+  | SaveFailed ex -> { m with StatusMsg = sprintf "Saving failed with exception %s: %s" (ex.GetType().Name) ex.Message }, Cmd.none
+  | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with exception %s: %s" (ex.GetType().Name) ex.Message }, Cmd.none
 
 
 let bindings () : Binding<Model, Msg> list = [
