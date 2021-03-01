@@ -594,7 +594,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     [<CLIEvent>]
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
-      log.LogTrace("[{BindingNameChain}] HasErrors", nameChain)
+      // WPF calls to too often, so don't log https://github.com/elmish/Elmish.WPF/issues/354
       validationBindingsByName
       |> Seq.map (fun (Kvp(_, b)) -> !b.Errors)
       |> Seq.filter (not << List.isEmpty)
