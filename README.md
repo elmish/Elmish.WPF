@@ -216,7 +216,7 @@ Not at all. The above example, as well as the samples, keep all non-UI code in a
 An alternative with a clearer separation of UI and core logic can be implemented by splitting the F# project into two projects:
 
 * A core library containing the model definitions and `update` functions.
-  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on WPF and has a UI-centred API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
+  * This library can include a reference to Elmish (e.g. for the `Cmd` module helpers), but not to Elmish.WPF, which depends on WPF and has a UI-centered API (specifying bindings). This will ensure your core logic (such as the `update` function) is free from any UI concerns, and allow you to re-use the core library should you want to port your app to another Elmish-based solution (e.g. Fable.React).
 * An Elmish.WPF project that contains the `bindings` (or `view`) function and the call to `Program.runElmishLoop`.
   * This project would reference the core library and `Elmish.WPF`.
 

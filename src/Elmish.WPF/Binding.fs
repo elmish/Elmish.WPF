@@ -2016,7 +2016,7 @@ type Binding private () =
   ///   will not confuse a user trying to close the window (e.g. by closing it,
   ///   or displaying relevant feedback to the user.)
   ///
-  ///   If you don't nead a sub-model, you can use
+  ///   If you don't need a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
   ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
   /// </summary>
@@ -2080,7 +2080,7 @@ type Binding private () =
   ///   will not confuse a user trying to close the window (e.g. by closing it,
   ///   or displaying relevant feedback to the user.)
   ///
-  ///   If you don't nead a sub-model, you can use
+  ///   If you don't need a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
   ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
   /// </summary>
@@ -2440,7 +2440,7 @@ type Binding private () =
   ///   binding. This binding is less type-safe. It will throw when initializing
   ///   the bindings if <paramref name="subModelSeqBindingName" />
   ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
-  ///   throw at runtime if if the inferred <c>'id</c> type does not match the
+  ///   throw at runtime if the inferred <c>'id</c> type does not match the
   ///   actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
@@ -2479,7 +2479,7 @@ type Binding private () =
   ///   binding. This binding is less type-safe. It will throw when initializing
   ///   the bindings if <paramref name="subModelSeqBindingName" />
   ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
-  ///   throw at runtime if if the inferred <c>'id</c> type does not match the
+  ///   throw at runtime if the inferred <c>'id</c> type does not match the
   ///   actual ID type used in that binding.
   /// </summary>
   /// <param name="subModelSeqBindingName">
@@ -3004,7 +3004,7 @@ module Extensions =
     ///   initializing the bindings if <paramref name="subModelSeqBindingName"
     ///   />
     ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
-    ///   will throw at runtime if if the inferred <c>'id</c> type does not
+    ///   will throw at runtime if the inferred <c>'id</c> type does not
     ///   match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">
@@ -3043,7 +3043,7 @@ module Extensions =
     ///   initializing the bindings if <paramref name="subModelSeqBindingName"
     ///   />
     ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
-    ///   will throw at runtime if if the inferred <c>'id</c> type does not
+    ///   will throw at runtime if the inferred <c>'id</c> type does not
     ///   match the actual ID type used in that binding.
     /// </summary>
     /// <param name="subModelSeqBindingName">
