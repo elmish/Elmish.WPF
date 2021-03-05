@@ -3,6 +3,7 @@ module internal AutoOpen
 
 open System
 open System.Collections.Generic
+open System.Threading.Tasks
 open System.Windows.Threading
 
 
@@ -17,5 +18,6 @@ let (|Kvp|) (kvp: KeyValuePair<_,_>) =
 
 type Dispatcher with
   member this.InvokeIfActive(callback: Action) =
-    if not this.HasShutdownStarted then
+    try
       this.Invoke(callback)
+    with :? TaskCanceledException -> ()
