@@ -154,7 +154,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       initialVisibility =
     let win = getWindow currentModel dispatch
     winRef.SetTarget win
-    win.Dispatcher.Invoke(fun () ->
+    win.Dispatcher.InvokeIfActive(fun () ->
       let guiCtx = System.Threading.SynchronizationContext.Current
       async {
         win.DataContext <- dataContext
@@ -368,7 +368,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             | true, w ->
                 log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
                 b.WinRef.SetTarget null
-                w.Dispatcher.Invoke(fun () -> w.Close ())
+                w.Dispatcher.InvokeIfActive(fun () -> w.Close ())
             b.WinRef.SetTarget null
 
           let hide () =
@@ -377,7 +377,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 log.LogError("[{BindingNameChain}] Attempted to hide window, but did not find window reference", winPropChain)
             | true, w ->
                 log.LogTrace("[{BindingNameChain}] Hiding window", winPropChain)
-                w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Hidden)
+                w.Dispatcher.InvokeIfActive(fun () -> w.Visibility <- Visibility.Hidden)
 
           let showHidden () =
             match b.WinRef.TryGetTarget () with
@@ -385,7 +385,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 log.LogError("[{BindingNameChain}] Attempted to show existing hidden window, but did not find window reference", winPropChain)
             | true, w ->
                 log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
-                w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
+                w.Dispatcher.InvokeIfActive(fun () -> w.Visibility <- Visibility.Visible)
 
           let showNew vm initialVisibility =
             b.PreventClose := true
