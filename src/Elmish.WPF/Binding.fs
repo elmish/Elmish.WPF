@@ -915,7 +915,7 @@ module Binding =
   /// <summary>
   ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
   /// </summary>
-  /// <param name="valdiate">Returns the errors associated with the given model.</param>
+  /// <param name="validate">Returns the errors associated with the given model.</param>
   /// <param name="binding">The binding to which validation is added.</param>
   let withValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
