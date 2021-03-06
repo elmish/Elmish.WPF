@@ -368,7 +368,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             | true, w ->
                 log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
                 b.WinRef.SetTarget null
-                w.Dispatcher.Invoke(fun () -> w.Close ())
+                (*
+                 * The Window might be in the process of closing,
+                 * so instead of immediately exeucting Window.Close via Dispatcher.Invoke,
+                 * queue a call to Window.Close via Dispatcher.InvokeAsync.
+                 * https://github.com/elmish/Elmish.WPF/issues/330
+                 *)
+                w.Dispatcher.InvokeAsync(w.Close) |> ignore
             b.WinRef.SetTarget null
 
           let hide () =
