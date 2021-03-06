@@ -6,7 +6,6 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
-open System.Windows.Threading
 open Microsoft.Extensions.Logging
 
 open Elmish
@@ -372,10 +371,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 (*
                  * The Window might be in the process of closing,
                  * so instead of immediately exeucting Window.Close via Dispatcher.Invoke,
-                 * queue a call to Window.Close via Dispatcher.BeginInvoke.
+                 * queue a call to Window.Close via Dispatcher.InvokeAsync.
                  * https://github.com/elmish/Elmish.WPF/issues/330
                  *)
-                w.Dispatcher.BeginInvoke(DispatcherPriority.Normal, Action(w.Close)) |> ignore
+                w.Dispatcher.InvokeAsync(w.Close) |> ignore
             b.WinRef.SetTarget null
 
           let hide () =

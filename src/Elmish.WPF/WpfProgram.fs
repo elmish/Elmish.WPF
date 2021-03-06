@@ -1,8 +1,6 @@
 ﻿namespace Elmish.WPF
 
-open System
 open System.Windows
-open System.Windows.Threading
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Abstractions
 open Elmish
@@ -69,9 +67,7 @@ module WpfProgram =
           vm.UpdateModel model
 
     let uiDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
-      fun msg ->
-        let f () = innerDispatch msg
-        element.Dispatcher.BeginInvoke(DispatcherPriority.Normal, Action(f)) |> ignore
+      fun msg -> element.Dispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
 
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
