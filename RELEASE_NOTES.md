@@ -1,3 +1,8 @@
+#### 4.0.0-beta-4
+* Removed recently added trace logging of INotifyDataErrorInfo.HasErrors (#354)
+* Fixed typos in documentation and logging (#357)
+* Fixed race condition with Dispatcher (#359)
+
 #### 4.0.0-beta-3
 * Added support for composable binding stickiness
 * Improved logging
