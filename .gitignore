@@ -8,6 +8,7 @@ Directory.Build.props
 bin
 obj
 _ReSharper*
+**/.cr/personal
 
 *.psess
 *.vspx

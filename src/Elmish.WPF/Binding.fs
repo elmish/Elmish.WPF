@@ -60,7 +60,7 @@ type internal TwoWayData<'model, 'msg, 'a> = {
 type internal TwoWayValidateData<'model, 'msg, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> 'msg
-  Validate: 'model -> string list
+  Validate: 'model -> obj seq voption
   WrapDispatch: Dispatch<'msg> -> Dispatch<'msg>
 }
 
@@ -608,7 +608,7 @@ type Binding private () =
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> string voption,
+       validate: 'model -> obj seq voption,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -635,7 +635,7 @@ type Binding private () =
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> string option,
+       validate: 'model -> obj seq option,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -662,7 +662,7 @@ type Binding private () =
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<'ignored, obj seq>,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -720,7 +720,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> string voption,
+       validate: 'model -> obj seq voption,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -749,7 +749,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> string option,
+       validate: 'model -> obj seq option,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -778,7 +778,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<'ignored, obj seq>,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -836,7 +836,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> string voption,
+       validate: 'model -> obj seq voption,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -865,7 +865,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> string option,
+       validate: 'model -> obj seq option,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -894,7 +894,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<'ignored, obj seq>,
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     TwoWayValidateData {
@@ -2093,7 +2093,7 @@ module Extensions =
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> string voption,
+         validate: 'model -> obj seq voption,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2120,7 +2120,7 @@ module Extensions =
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> string option,
+         validate: 'model -> obj seq option,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2147,7 +2147,7 @@ module Extensions =
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<'ignored, obj seq>,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2205,7 +2205,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> string voption,
+         validate: 'model -> obj seq voption,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2234,7 +2234,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> string option,
+         validate: 'model -> obj seq option,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2263,7 +2263,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<'ignored, obj seq>,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2321,7 +2321,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> string voption,
+         validate: 'model -> obj seq voption,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2350,7 +2350,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> string option,
+         validate: 'model -> obj seq option,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2379,7 +2379,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<'ignored, obj seq>,
          ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       TwoWayValidateData {
@@ -2749,7 +2749,7 @@ module BindingFn =
   let twoWayValidate
       (get: 'model -> 'a)
       (set: 'a -> 'model -> 'msg)
-      (validate: 'model -> Result<'ignored, string>)
+      (validate: 'model -> Result<'ignored, obj seq>)
       (name: string)
       : Binding<'model, 'msg> =
     Binding.twoWayValidate(get, set, validate) name
