@@ -154,36 +154,37 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       initialVisibility =
     let win = getWindow currentModel dispatch
     winRef.SetTarget win
-    win.Dispatcher.Invoke(fun () ->
-      let guiCtx = System.Threading.SynchronizationContext.Current
-      async {
-        win.DataContext <- dataContext
-        win.Closing.Add(fun ev ->
-          ev.Cancel <- !preventClose
-          async {
-            do! Async.SwitchToThreadPool()
-            onCloseRequested currentModel
-          } |> Async.StartImmediate
-        )
-        do! Async.SwitchToContext guiCtx
-        if isDialog then
-          win.ShowDialog () |> ignore
-        else
-          (*
-           * Calling Show achieves the same end result as setting Visibility
-           * property of the Window object to Visible. However, there is a
-           * difference between the two from a timing perspective.
-           *
-           * Calling Show is a synchronous operation that returns only after
-           * the Loaded event on the child window has been raised.
-           *
-           * Setting Visibility, however, is an asynchronous operation that
-           * returns immediately
-           * https://docs.microsoft.com/en-us/dotnet/api/system.windows.window.show
-           *)
-          win.Visibility <- initialVisibility
-      } |> Async.StartImmediate
-    )
+    (*
+     * A different thread might own this Window, so must use its Dispatcher.
+     * Invoking asynchronously since ShowDialog is a blocking call. Otherwise,
+     * invoking ShowDialog synchronously blocks the Elmish dispatch loop.
+     *)
+    win.Dispatcher.InvokeAsync(fun () ->
+      win.DataContext <- dataContext
+      win.Closing.Add(fun ev ->
+        ev.Cancel <- !preventClose
+        async {
+          do! Async.SwitchToThreadPool()
+          onCloseRequested currentModel
+        } |> Async.StartImmediate
+      )
+      if isDialog then
+        win.ShowDialog () |> ignore
+      else
+        (*
+         * Calling Show achieves the same end result as setting Visibility
+         * property of the Window object to Visible. However, there is a
+         * difference between the two from a timing perspective.
+         *
+         * Calling Show is a synchronous operation that returns only after
+         * the Loaded event on the child window has been raised.
+         *
+         * Setting Visibility, however, is an asynchronous operation that
+         * returns immediately
+         * https://docs.microsoft.com/en-us/dotnet/api/system.windows.window.show
+         *)
+        win.Visibility <- initialVisibility
+    ) |> ignore
 
   let initializeBinding name getInitializedBindingByName addValdiationBinding =
     let measure x = x |> measure name
