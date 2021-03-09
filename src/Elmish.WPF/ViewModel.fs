@@ -409,9 +409,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           let showNew vm initialVisibility =
             b.PreventClose := true
-            showNewWindow
-              b.WinRef d.GetWindow vm d.IsModal onCloseRequested
-              b.PreventClose initialVisibility
+            showNewWindow b.WinRef d.GetWindow vm d.IsModal onCloseRequested b.PreventClose initialVisibility
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
