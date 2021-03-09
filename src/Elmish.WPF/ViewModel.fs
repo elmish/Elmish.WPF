@@ -163,10 +163,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       win.DataContext <- dataContext
       win.Closing.Add(fun ev ->
         ev.Cancel <- !preventClose
-        async {
-          do! Async.SwitchToThreadPool()
-          currentModel |> onCloseRequested |> ValueOption.iter dispatch
-        } |> Async.StartImmediate
+        currentModel |> onCloseRequested |> ValueOption.iter dispatch
       )
       if isDialog then
         win.ShowDialog () |> ignore
