@@ -149,7 +149,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       (getWindow: 'model -> Dispatch<'msg> -> Window)
       dataContext
       isDialog
-      (onCloseRequested: 'model -> 'msg voption)
+      onCloseRequested
       (preventClose: bool ref)
       initialVisibility =
     let win = getWindow currentModel dispatch
