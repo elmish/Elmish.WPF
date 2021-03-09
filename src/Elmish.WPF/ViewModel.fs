@@ -147,10 +147,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let showNewWindow
       (winRef: WeakReference<Window>)
       (getWindow: 'model -> Dispatch<'msg> -> Window)
-      dataContext
       isDialog
       onCloseRequested
       (preventClose: bool ref)
+      dataContext
       initialVisibility =
     let win = getWindow currentModel dispatch
     winRef.SetTarget win
@@ -243,7 +243,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-              showNewWindow winRef d.GetWindow vm d.IsModal d.OnCloseRequested preventClose Visibility.Hidden
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -254,7 +254,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              showNewWindow winRef d.GetWindow vm d.IsModal d.OnCloseRequested preventClose Visibility.Visible
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -407,7 +407,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           let showNew vm initialVisibility =
             b.PreventClose := true
-            showNewWindow b.WinRef d.GetWindow vm d.IsModal d.OnCloseRequested b.PreventClose initialVisibility
+            showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm initialVisibility
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
