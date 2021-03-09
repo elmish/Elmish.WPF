@@ -425,28 +425,28 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               close ()
               b.VmWinState := WindowState.Closed
               PropertyChanged |> List.singleton
+          | WindowState.Visible vm, WindowState.Hidden m ->
+              hide ()
+              vm.UpdateModel m
+              b.VmWinState := WindowState.Hidden vm
+              []
+          | WindowState.Hidden vm, WindowState.Visible m ->
+              vm.UpdateModel m
+              showHidden ()
+              b.VmWinState := WindowState.Visible vm
+              []
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden
               b.VmWinState := WindowState.Hidden vm
               PropertyChanged |> List.singleton
-          | WindowState.Visible vm, WindowState.Hidden m ->
-              hide ()
-              vm.UpdateModel m
-              b.VmWinState := WindowState.Hidden vm
-              []
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
               showNew vm Visibility.Visible
               b.VmWinState := WindowState.Visible vm
               PropertyChanged |> List.singleton
-          | WindowState.Hidden vm, WindowState.Visible m ->
-              vm.UpdateModel m
-              showHidden ()
-              b.VmWinState := WindowState.Visible vm
-              []
       | SubModelSeq b ->
           let d = b.SubModelSeqData
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
