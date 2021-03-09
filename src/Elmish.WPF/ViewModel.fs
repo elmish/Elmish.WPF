@@ -416,9 +416,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           match !b.VmWinState, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
               []
-          | WindowState.Hidden vm, WindowState.Hidden m ->
-              vm.UpdateModel m
-              []
+          | WindowState.Hidden vm, WindowState.Hidden m
           | WindowState.Visible vm, WindowState.Visible m ->
               vm.UpdateModel m
               []
