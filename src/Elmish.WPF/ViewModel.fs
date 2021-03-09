@@ -416,6 +416,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           match !b.VmWinState, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
               []
+          | WindowState.Hidden vm, WindowState.Hidden m ->
+              vm.UpdateModel m
+              []
+          | WindowState.Visible vm, WindowState.Visible m ->
+              vm.UpdateModel m
+              []
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
               close ()
@@ -427,9 +433,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               showNew vm Visibility.Hidden
               b.VmWinState := WindowState.Hidden vm
               PropertyChanged |> List.singleton
-          | WindowState.Hidden vm, WindowState.Hidden m ->
-              vm.UpdateModel m
-              []
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               vm.UpdateModel m
@@ -445,9 +448,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               vm.UpdateModel m
               showHidden ()
               b.VmWinState := WindowState.Visible vm
-              []
-          | WindowState.Visible vm, WindowState.Visible m ->
-              vm.UpdateModel m
               []
       | SubModelSeq b ->
           let d = b.SubModelSeqData
