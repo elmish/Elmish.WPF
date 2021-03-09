@@ -405,9 +405,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 log.LogTrace("[{BindingNameChain}] Showing existing hidden window", winPropChain)
                 w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
 
-          let showNew vm initialVisibility =
+          let showNew vm =
             b.PreventClose := true
-            showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm initialVisibility
+            showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
