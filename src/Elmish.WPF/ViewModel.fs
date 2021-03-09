@@ -443,7 +443,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               PropertyChanged |> List.singleton
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
-              log.LogTrace("[{BindingNameChain}] Creating and opening window", winPropChain)
+              log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm Visibility.Visible
               b.VmWinState := WindowState.Visible vm
               PropertyChanged |> List.singleton
