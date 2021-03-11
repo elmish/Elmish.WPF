@@ -57,6 +57,17 @@ module WpfProgram =
     let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
     let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
 
+    (*
+     * Capture the dispatch function before wrapping it with Dispatcher.InvokeAsync
+     * so that the UI can sychrononously dispatch messages.
+     * In additional to being slightly more efficient,
+     * it also helps keep WPF in the correct state.
+     * https://github.com/elmish/Elmish.WPF/issues/371
+     * https://github.com/elmish/Elmish.WPF/issues/373
+     *
+     * This is definitely a hack.
+     * Maybe something with Elmish can change so this hack can be avoided.
+     *)
     let mutable dispatch = Unchecked.defaultof<Dispatch<'msg>>
 
     let setState model _ =
@@ -71,6 +82,11 @@ module WpfProgram =
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
+      (*
+       * Have commands asychrononously dispatch messages.
+       * This avoids race conditions like can occur when shutting down.
+       * https://github.com/elmish/Elmish.WPF/issues/353
+       *)
       fun msg -> element.Dispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
 
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
