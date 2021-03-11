@@ -57,16 +57,20 @@ module WpfProgram =
     let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
     let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
 
-    let setState model dispatch =
+    let mutable dispatch = Unchecked.defaultof<Dispatch<'msg>>
+
+    let setState model _ =
       match viewModel with
       | None ->
-          let vm = ViewModel<'model, 'msg>(model, dispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
+          let uiDispatch msg = element.Dispatcher.Invoke(fun () -> dispatch msg)
+          let vm = ViewModel<'model, 'msg>(model, uiDispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
           vm.UpdateModel model
 
-    let uiDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
+    let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
+      dispatch <- innerDispatch
       fun msg -> element.Dispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
 
     let logMsgAndModel (msg: 'msg) (model: 'model) = 
@@ -79,7 +83,7 @@ module WpfProgram =
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
     |> Program.withErrorHandler logError
     |> Program.withSetState setState
-    |> Program.withSyncDispatch uiDispatch
+    |> Program.withSyncDispatch cmdDispatch
     |> Program.run
 
 
