@@ -205,7 +205,7 @@ type internal TwoWayBinding<'model, 'msg, 'a> = {
 type internal TwoWayValidateBinding<'model, 'msg, 'a, 'e> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> unit
-  Validate: 'model -> obj seq voption
+  Validate: 'model -> obj array
   Errors : ObservableCollection<'e> Lazy
 }
 
@@ -326,10 +326,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let rec updateValidationError model name = function
     | TwoWayValidate { Validate = validate; Errors = errors } ->
         match validate model with
-        | ValueNone ->
+        | [||] ->
           errors.Value.Clear()
           removeError name
-        | ValueSome propErrors ->
+        | propErrors ->
           let errors = errors.Value
           errors.Clear()
           propErrors |> Seq.iter errors.Add
@@ -841,7 +841,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     [<CLIEvent>]
     member __.ErrorsChanged = errorsChanged.Publish
     member __.HasErrors =
-      errorsByBindingName.Count > 0
+      errors.Count > 0
     member __.GetErrors propName =
       log "[%s] GetErrors %s" propNameChain (propName |> Option.ofObj |> Option.defaultValue "<null>")
       match errors.TryGetValue propName with
