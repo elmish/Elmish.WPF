@@ -11,7 +11,7 @@ WPF done the Elmish Way
 
 Elmish.WPF is a **production-ready** library that allows you to write WPF apps with the robust, simple, well-known, and battle-tested MVU architecture, while still allowing you to use all your XAML knowledge and tooling to create UIs.
 
-Some benefits of MVU you’ll get with Elmish.WPF is:
+Some benefits of MVU you’ll get with Elmish.WPF include:
 
 * Simple-to-understand, unidirectional data flow
 * Single source of truth for all the state in your app
