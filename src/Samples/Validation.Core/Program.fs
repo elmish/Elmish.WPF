@@ -21,16 +21,17 @@ let validateInt42 =
   requireNotEmpty
   >> Result.bind parseInt
   >> Result.bind (requireExactly 42)
+  >> Result.mapError box
 
 
 let validatePassword (s: string) =
   [
     if s.All(fun c -> Char.IsDigit c |> not) then
-      "Must contain a digit"
+      "Must contain a digit" |> box
     if s.All(fun c -> Char.IsLower c |> not) then
-      "Must contain a lowercase letter"
+      "Must contain a lowercase letter" |> box
     if s.All(fun c -> Char.IsUpper c |> not) then
-      "Must contain an uppercase letter"
+      "Must contain an uppercase letter" |> box
   ]
 
 
@@ -57,11 +58,15 @@ let bindings () : Binding<Model, Msg> list = [
   "Value" |> Binding.twoWayValidate(
     (fun m -> m.Value),
     NewValue,
-    (fun m ->  validateInt42 m.Value))
+    (fun m ->  validateInt42 m.Value),
+    id,
+    (=))
   "Password" |> Binding.twoWayValidate(
     (fun m -> m.Password),
     NewPassword,
-    (fun m -> validatePassword m.Password))
+    (fun m -> validatePassword m.Password),
+    id,
+    (=))
   "Submit" |> Binding.cmdIf(
     (fun _ -> Submit),
     (fun m -> (match validateInt42 m.Value with Ok _ -> true | Error _ -> false) && (validatePassword m.Password |> List.isEmpty)))

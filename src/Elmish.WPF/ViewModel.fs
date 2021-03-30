@@ -202,10 +202,12 @@ type internal TwoWayBinding<'model, 'msg, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type internal TwoWayValidateBinding<'model, 'msg, 'a, 'e> = {
+type internal TwoWayValidateBinding<'model, 'msg,'id, 'a, 'e> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> unit
   Validate: 'model -> obj array
+  GetErrorId: 'e -> 'id
+  ErrorItemEquals: 'e -> 'e -> bool
   Errors : ObservableCollection<'e> Lazy
 }
 
@@ -260,7 +262,7 @@ and internal VmBinding<'model, 'msg> =
   | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
-  | TwoWayValidate of TwoWayValidateBinding<'model, 'msg, obj, obj>
+  | TwoWayValidate of TwoWayValidateBinding<'model, 'msg, obj, obj, obj>
   | Cmd of CmdBinding<'model, 'msg>
   | CmdParam of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
@@ -324,17 +326,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs propName |])
 
   let rec updateValidationError model name = function
-    | TwoWayValidate { Validate = validate; Errors = errors } ->
+    | TwoWayValidate { Validate = validate; Errors = errors; GetErrorId = getErrorId; ErrorItemEquals = errorItemEquals} ->
         match validate model with
         | [||] ->
           errors.Value.Clear()
           removeError name
         | propErrors ->
-          let errors = errors.Value
-          errors.Clear()
-          propErrors |> Seq.iter errors.Add
-          //TODO : Implement Merge
-          setError errors name
+          let create v _ = v
+          let update oldVal newVal oldIdx =
+            if not (errorItemEquals newVal oldVal) then
+              errors.Value.[oldIdx] <- newVal
+          setError errors.Value name
+          elmStyleMerge getErrorId getErrorId create update errors.Value propErrors
         notifyPropertyChanged "HasErrors"
     | OneWay _
     | OneWayLazy _
@@ -424,9 +427,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           Set = fun obj m -> set obj m |> dispatch' }
     | TwoWayValidateData d ->
         let set = measure2 name "set" d.Set
+        let getErrorId = measure name "getErrorId" d.GetErrorId
         let dispatch' = d.WrapDispatch dispatch
         Some <| TwoWayValidate {
           Get = measure name "get" d.Get
+          GetErrorId = getErrorId
+          ErrorItemEquals =  measure2 name "errorItemEquals" d.ErrorItemEquals
           Set = fun obj m -> set obj m |> dispatch'
           Validate = measure name "validate" d.Validate
           Errors = Lazy<_>()   }

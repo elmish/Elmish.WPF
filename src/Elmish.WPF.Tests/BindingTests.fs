@@ -830,7 +830,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -841,7 +841,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -854,7 +854,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) (m: int) = p + string m
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p m @>
       }
@@ -866,10 +866,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayValidate(fail, fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -881,7 +881,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -892,7 +892,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -905,7 +905,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) (m: int) = p + string m
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p m @>
       }
@@ -917,10 +917,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayValidate(fail, fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -932,7 +932,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -943,7 +943,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, fail2, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -956,7 +956,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) (m: int) = p + string m
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p m @>
       }
@@ -968,10 +968,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayValidate(fail, fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayValidate(fail, fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -983,7 +983,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -994,7 +994,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -1007,7 +1007,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) = p + p
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p @>
       }
@@ -1019,10 +1019,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1034,7 +1034,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1045,7 +1045,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -1058,7 +1058,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) = p + p
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p @>
       }
@@ -1070,10 +1070,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1085,7 +1085,7 @@ module twoWayValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1096,7 +1096,7 @@ module twoWayValidate =
         let! x = GenX.auto<int>
 
         let get = string<int>
-        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(get, (fail: string -> int), (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = get x @>
       }
@@ -1109,7 +1109,7 @@ module twoWayValidate =
         let! p = GenX.auto<string>
 
         let set (p: string) = p + p
-        let d = Binding.twoWayValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set p @>
       }
@@ -1121,10 +1121,10 @@ module twoWayValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayValidate(fail, (fail: string -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1139,7 +1139,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1150,7 +1150,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1162,7 +1162,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1175,7 +1175,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) m @>
       }
@@ -1187,7 +1187,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone m @>
       }
@@ -1199,10 +1199,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail2: _ voption -> _ -> _), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1214,7 +1214,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1225,7 +1225,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1237,7 +1237,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1250,7 +1250,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) m @>
       }
@@ -1262,7 +1262,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone m @>
       }
@@ -1274,10 +1274,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1289,7 +1289,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1300,7 +1300,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1312,7 +1312,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1325,7 +1325,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) m @>
       }
@@ -1337,7 +1337,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone m @>
       }
@@ -1349,10 +1349,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1364,7 +1364,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1375,7 +1375,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1387,7 +1387,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1400,7 +1400,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) m @>
       }
@@ -1412,7 +1412,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None m @>
       }
@@ -1424,10 +1424,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1439,7 +1439,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1450,7 +1450,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1462,7 +1462,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1475,7 +1475,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) m @>
       }
@@ -1487,7 +1487,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None m @>
       }
@@ -1499,10 +1499,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1514,7 +1514,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1525,7 +1525,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1537,7 +1537,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, fail2, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1550,7 +1550,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) m @>
       }
@@ -1562,7 +1562,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None m @>
       }
@@ -1574,10 +1574,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), fail2, validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1589,7 +1589,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1600,7 +1600,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1612,7 +1612,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1625,7 +1625,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) @>
       }
@@ -1637,7 +1637,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone @>
       }
@@ -1649,10 +1649,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1664,7 +1664,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1675,7 +1675,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1687,7 +1687,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1700,7 +1700,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) @>
       }
@@ -1712,7 +1712,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone @>
       }
@@ -1724,10 +1724,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1739,7 +1739,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1750,7 +1750,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> ValueSome
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1762,7 +1762,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = ValueNone
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1775,7 +1775,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) @>
       }
@@ -1787,7 +1787,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string voption) = p |> ValueOption.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set ValueNone @>
       }
@@ -1799,10 +1799,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1814,7 +1814,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ voption))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ voption), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1825,7 +1825,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1837,7 +1837,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1850,7 +1850,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) @>
       }
@@ -1862,7 +1862,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ voption), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None @>
       }
@@ -1874,10 +1874,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1889,7 +1889,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ option))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ option), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1900,7 +1900,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1912,7 +1912,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -1925,7 +1925,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) @>
       }
@@ -1937,7 +1937,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> _ option), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None @>
       }
@@ -1949,10 +1949,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [ err ] else []
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [ err |> box ] else []
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -1964,7 +1964,7 @@ module twoWayOptValidate =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> Result<_,_>))
+        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=))
         test <@ binding.Name = bindingName @>
       }
 
@@ -1975,7 +1975,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get = string >> Some
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Get x |> unbox = (get x).Value @>
       }
@@ -1987,7 +1987,7 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
 
         let get _ = None
-        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(get, (fail: _ -> int), (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ isNull (d.Get x) @>
       }
@@ -2000,7 +2000,7 @@ module twoWayOptValidate =
         let! p = GenX.auto<string>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) @>
       }
@@ -2012,7 +2012,7 @@ module twoWayOptValidate =
         let! m = GenX.auto<int>
 
         let set (p: string option) = p |> Option.map (fun x -> x + x)
-        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>)) |> getTwoWayValidateData
+        let d = Binding.twoWayOptValidate(fail, set, (fail: _ -> Result<_,_>), id, (=)) |> getTwoWayValidateData
 
         test <@ d.Set null m |> unbox = set None @>
       }
@@ -2024,10 +2024,10 @@ module twoWayOptValidate =
         let! x = GenX.auto<int>
         let! err = GenX.auto<string>
 
-        let validate x = if x < 0 then [] else [ err ]
-        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate) |> getTwoWayValidateData
+        let validate x = if x < 0 then [] else [ err |> box ]
+        let d = Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), validate, id, (=)) |> getTwoWayValidateData
 
-        test <@ d.Validate x |> unbox = validate x @>
+        test <@ d.Validate x |> unbox = ((validate x) |> Seq.toArray) @>
       }
 
 
@@ -3774,7 +3774,7 @@ module sorting =
             OneWayLazyData { Get = fail; Map = fail; Equals = fail2 }
             OneWaySeqLazyData { Get = fail; Map = fail; Equals = fail2; GetId = fail; ItemEquals = fail2 }
             TwoWayData { Get = fail; Set = fail2; WrapDispatch = fail }
-            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail }
+            TwoWayValidateData { Get = fail; Set = fail2; Validate = fail; WrapDispatch = fail; GetErrorId = fail; ErrorItemEquals = fail2 }
             CmdData { Exec = fail; CanExec = fail; WrapDispatch = fail }
             CmdParamData { Exec = fail2; CanExec = fail2; AutoRequery = b; WrapDispatch = fail }
             SubModelData { GetModel = fail; GetBindings = fail; ToMsg = fail; Sticky = b }
