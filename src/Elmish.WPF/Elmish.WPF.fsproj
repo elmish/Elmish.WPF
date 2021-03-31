@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFrameworks>net5.0-windows;netcoreapp3.0;net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
@@ -16,7 +20,6 @@
     <PackageIcon>elmish-wpf-logo-128x128.png</PackageIcon>
     <Version>4.0.0-beta-41</Version>
     <PackageReleaseNotes>https://github.com/elmish/Elmish.WPF/blob/master/RELEASE_NOTES.md</PackageReleaseNotes>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
