@@ -38,6 +38,9 @@
   * Can control specific log categories
   * See the samples for a demonstration using Serilog
 
+#### 3.5.8
+* Removed overload of `ViewModel<_,_>.ToString` because of slow performance (#370)
+
 #### 3.5.7
 * Excluded 4.* prereleases from possibilities for version of Elmish dependency
 * Added support for multiple validation errors
