@@ -1,9 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
   
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWpf>true</UseWpf>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
   <ItemGroup>
