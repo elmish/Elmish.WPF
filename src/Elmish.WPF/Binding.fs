@@ -1,4 +1,4 @@
-namespace Elmish.WPF
+﻿namespace Elmish.WPF
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
@@ -176,41 +176,6 @@ module internal BindingLogic =
 
     // update moved elements
     moves |> Seq.iter (fun (_, sIdx, t, s) -> update t s sIdx)
-
-
-[<RequireQualifiedAccess>]
-type WindowState<'model> =
-  | Closed
-  | Hidden of 'model
-  | Visible of 'model
-
-module WindowState =
-
-  let map f state =
-    match state with
-    | WindowState.Closed -> WindowState.Closed
-    | WindowState.Hidden a -> WindowState.Hidden (f a)
-    | WindowState.Visible a -> WindowState.Visible (f a)
-
-  let toVOption state =
-    match state with
-    | WindowState.Closed -> ValueNone
-    | WindowState.Hidden a -> ValueSome a
-    | WindowState.Visible a -> ValueSome a
-
-  /// Converts None to WindowState.Closed, and Some(x) to
-  /// WindowState.Visible(x).
-  let ofOption (model: 'model option) =
-    match model with
-    | Some x -> WindowState.Visible x
-    | None -> WindowState.Closed
-
-  /// Converts ValueNone to WindowState.Closed, and ValueSome(x) to
-  /// WindowState.Visible(x).
-  let ofVOption (model: 'model voption) =
-    match model with
-    | ValueSome x -> WindowState.Visible x
-    | ValueNone -> WindowState.Closed
 
 
 type internal OneWayData<'model, 'a when 'a : equality> =
