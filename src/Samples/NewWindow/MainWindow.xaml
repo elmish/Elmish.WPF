@@ -9,7 +9,7 @@
         Width="300"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
-        d:DataContext="{x:Static vm:Program.mainDesignVm}">
+        d:DataContext="{x:Static vm:AppModule.designVm}">
   <Window.Resources>
     <ResourceDictionary>
       <BooleanToVisibilityConverter x:Key="VisibilityConverter" />
@@ -18,14 +18,14 @@
   <StackPanel VerticalAlignment="Center">
     <TextBlock HorizontalAlignment="Center" FontWeight="Bold">Window 1</TextBlock>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-      <Button Command="{Binding ShowWin1}" Content="Show" Width="70" Margin="5" />
-      <Button Command="{Binding HideWin1}" Content="Hide" Width="70" Margin="5" />
-      <Button Command="{Binding CloseWin1}" Content="Close" Width="70" Margin="5" />
+      <Button Command="{Binding Window1Show}"  Content="Show"  Width="70" Margin="5" />
+      <Button Command="{Binding Window1Hide}"  Content="Hide"  Width="70" Margin="5" />
+      <Button Command="{Binding Window1Close}" Content="Close" Width="70" Margin="5" />
     </StackPanel>
     <TextBlock HorizontalAlignment="Center" FontWeight="Bold" Margin="0 10 0 0">Window 2</TextBlock>
-    <Button Command="{Binding ShowWin2}" Content="Show" Width="70" Margin="0,5,0,5" />
-    <TextBlock Text="{Binding Win1.Input, StringFormat='Window 1 text: {0}'}" />
-    <TextBlock Text="{Binding Win2.Input, StringFormat='Window 2 input: {0}'}" />
-    <TextBlock Text="{Binding Win2.IsChecked, StringFormat='Window 2 checkbox: {0}'}" />
+    <Button Command="{Binding Window2Show}" Content="Show" Width="70" Margin="0,5,0,5" />
+    <TextBlock Text="{Binding Window1.Input, StringFormat='Window 1 input: {0}'}" />
+    <TextBlock Text="{Binding Window2.Input, StringFormat='Window 2 input: {0}'}" />
+    <TextBlock Text="{Binding Window2.IsChecked, StringFormat='Window 2 checkbox: {0}'}" />
   </StackPanel>
 </Window>

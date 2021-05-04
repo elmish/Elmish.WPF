@@ -9,6 +9,10 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <Compile Include="AutoOpen.fs" />
+    <Compile Include="Window1.fs" />
+    <Compile Include="Window2.fs" />
+    <Compile Include="App.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
