@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+namespace Elmish.WPF
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
@@ -2051,8 +2051,8 @@ type Binding private () =
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
     { GetState = fun m ->
-        getState m |>
-        WindowState.map (fun sub -> toBindingModel (m, sub))
+        getState m
+        |> WindowState.map (fun sub -> toBindingModel (m, sub))
       GetBindings = bindings
       ToMsg = fun _ -> toMsg
       GetWindow = fun m d -> upcast getWindow m d
