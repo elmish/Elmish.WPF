@@ -17,7 +17,7 @@ type Model =
     MousePosition: Position }
 
 let visibleButtonText = "Hide text box"
-let hiddenButonText = "Show text box"
+let hiddenButtonText = "Show text box"
 
 let init () =
   { Msg1 = ""
@@ -42,7 +42,7 @@ let update msg m =
   | LostFocus2 -> { m with Msg2 = "Not focused" }
   | ToggleVisibility ->
     if m.Visibility = Visibility.Visible
-    then { m with Visibility = Visibility.Hidden; ButtonText = hiddenButonText }
+    then { m with Visibility = Visibility.Hidden; ButtonText = hiddenButtonText }
     else { m with Visibility = Visibility.Visible; ButtonText = visibleButtonText }
   | NewMousePosition p -> { m with MousePosition = p }
 
