@@ -4,7 +4,7 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 
 
-let elmStyleMerge
+let keyed
       getSourceId
       getTargetId
       create

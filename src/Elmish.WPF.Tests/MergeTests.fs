@@ -12,7 +12,7 @@ open Elmish.WPF
 let getIdAsId = id
 let createAsId a _ = a
 let updateNoOp _ _ _ = ()
-let merge x = x |> Merge.elmStyleMerge
+let merge x = x |> Merge.keyed
 
 
 let private trackCC (observableCollection: ObservableCollection<_>) =
