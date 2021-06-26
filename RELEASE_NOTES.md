@@ -1,5 +1,6 @@
 #### 4.0.0-beta-43
 * Added `setMsg` in the `Binding` module
+* Lazy effect is now exposed under the name `addLazy`
 
 #### 4.0.0-beta-42
 * Improved API of WindowState<_>

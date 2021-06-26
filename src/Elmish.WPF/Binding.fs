@@ -724,7 +724,7 @@ module Binding =
         Validate = validate }
       |> ValidationData)
 
-  let lazy' (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
     |> BindingData.Binding.mapData (fun d ->
       { BindingData = d
