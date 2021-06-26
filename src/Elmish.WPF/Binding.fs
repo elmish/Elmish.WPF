@@ -306,6 +306,8 @@ module internal BindingData =
   let mapMsg f = mapMsgWithModel (fun _ -> f)
   let setMsg msg = mapMsg (fun _ -> msg)
 
+  let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
+
 
   module Binding =
   
@@ -317,6 +319,8 @@ module internal BindingData =
     let mapMsgWithModel f = f |> mapMsgWithModel |> mapData
     let mapMsg f = f |> mapMsg |> mapData
     let setMsg msg = msg |> setMsg |> mapData
+
+    let addValidation vaidate = vaidate |> addValidation |> mapData
 
 
   module Bindings =
@@ -719,10 +723,7 @@ module Binding =
   /// <param name="binding">The binding to which validation is added.</param>
   let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.mapData (fun d ->
-      { BindingData = d
-        Validate = validate }
-      |> ValidationData)
+    |> BindingData.Binding.addValidation validate
 
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
