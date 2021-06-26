@@ -30,7 +30,7 @@ let update msg m =
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue"
     |> Binding.id
-    |> Binding.sticky (fun v -> v % 2 = 0)
+    |> Binding.addSticky (fun v -> v % 2 = 0)
     |> Binding.mapModel (fun m -> m.Count)
   "Increment" |> Binding.cmd Increment
   "Decrement" |> Binding.cmd Decrement

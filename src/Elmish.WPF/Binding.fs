@@ -705,7 +705,7 @@ module Binding =
     |> createBinding
 
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
-  let sticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
+  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
       match predicate newModel, stickyModel with
