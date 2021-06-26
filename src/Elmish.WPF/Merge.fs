@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Elmish.WPF.BindingLogic
+module internal Elmish.WPF.Merge
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
