@@ -553,9 +553,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           false
     trySetMemberRec
 
-  member internal __.CurrentModel : 'model = currentModel
+  member internal _.CurrentModel : 'model = currentModel
 
-  member internal __.UpdateModel (newModel: 'model) : unit =
+  member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
       |> Seq.collect (fun (Kvp (name, binding)) ->
@@ -570,7 +570,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | PropertyChanged -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
 
-  override __.TryGetMember (binder, result) =
+  override _.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
@@ -580,7 +580,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         result <- tryGetMember currentModel binding
         true
 
-  override __.TrySetMember (binder, value) =
+  override _.TrySetMember (binder, value) =
     log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", nameChain, binder.Name)
     match bindings.TryGetValue binder.Name with
     | false, _ ->
@@ -595,18 +595,18 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
-    member __.PropertyChanged = propertyChanged.Publish
+    member _.PropertyChanged = propertyChanged.Publish
 
   interface INotifyDataErrorInfo with
     [<CLIEvent>]
-    member __.ErrorsChanged = errorsChanged.Publish
-    member __.HasErrors =
+    member _.ErrorsChanged = errorsChanged.Publish
+    member _.HasErrors =
       // WPF calls this too often, so don't log https://github.com/elmish/Elmish.WPF/issues/354
       validationBindingsByName
       |> Seq.map (fun (Kvp(_, b)) -> !b.Errors)
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
-    member __.GetErrors name =
+    member _.GetErrors name =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
       validationBindingsByName
       |> IReadOnlyDictionary.tryFind name
