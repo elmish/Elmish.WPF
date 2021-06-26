@@ -246,7 +246,7 @@ module internal BindingData =
         }
       | LazyData d -> LazyData {
           BindingData = mapModelRec d.BindingData
-          Equals = fun a b -> d.Equals (f a) (f b)
+          Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
         }
     mapModelRec
 
