@@ -113,6 +113,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
 
   let withCaching b = Cached { Binding = b; Cache = ref None }
+  let addLazy equals b = { Binding = b; Equals = equals } |> Lazy
 
 
   let getNameChainFor name =
@@ -306,10 +307,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
           |> initializeBindingRec
-          |> Option.map (fun b ->
-            { Binding = b
-              Equals = d.Equals }
-            |> Lazy)
+          |> Option.map (addLazy d.Equals)
     initializeBindingRec
 
   let (bindings, validationBindingsByName) =
