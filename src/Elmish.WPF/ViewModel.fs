@@ -34,11 +34,6 @@ type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
   TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
-type internal CmdBinding<'model, 'msg> = {
-  Cmd: Command
-  CanExec: 'model -> bool
-}
-
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>
   Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
@@ -84,7 +79,6 @@ and internal VmBinding<'model, 'msg> =
   | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
-  | Cmd of CmdBinding<'model, 'msg>
   | CmdParam of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
@@ -210,10 +204,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Cmd.measureFunctions measure measure
           let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
           let canExecute _ = d.CanExec currentModel
-          Cmd {
-            Cmd = Command(execute, canExecute, false)
-            CanExec = d.CanExec
-          }
+          Command(execute, canExecute, false)
+          |> CmdParam
+          |> addLazy (fun a b -> d.CanExec a = d.CanExec b)
           |> Some
       | CmdParamData d ->
           let d = d |> BindingData.CmdParam.measureFunctions measure2 measure2
@@ -346,10 +339,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
           []
-      | Cmd { Cmd = cmd; CanExec = canExec } ->
-          canExec newModel <> canExec currentModel
-          |> Option.fromBool (CanExecuteChanged cmd)
-          |> Option.toList
       | CmdParam cmd ->
           cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
@@ -487,7 +476,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
       | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
-      | Cmd { Cmd = cmd }
       | CmdParam cmd ->
           box cmd
       | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
@@ -547,7 +535,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWay _
       | OneWayLazy _
       | OneWaySeq _
-      | Cmd _
       | CmdParam _
       | SubModel _
       | SubModelWin _
