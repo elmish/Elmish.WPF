@@ -61,12 +61,6 @@ type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
     d.Set value model
 
 
-type internal CmdData<'model, 'msg> = {
-  Exec: 'model -> 'msg voption
-  CanExec: 'model -> bool
-}
-
-
 type internal CmdParamData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
@@ -150,7 +144,6 @@ and internal BindingData<'model, 'msg> =
   | OneWayLazyData of OneWayLazyData<'model, obj, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
-  | CmdData of CmdData<'model, 'msg>
   | CmdParamData of CmdParamData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
@@ -206,10 +199,6 @@ module internal BindingData =
           Get = f >> d.Get
           Set = binaryHelper d.Set
         }
-      | CmdData d -> CmdData {
-          Exec = f >> d.Exec
-          CanExec = f >> d.CanExec
-        }
       | CmdParamData d -> CmdParamData {
           Exec = binaryHelper d.Exec
           CanExec = binaryHelper d.CanExec
@@ -258,10 +247,6 @@ module internal BindingData =
       | TwoWayData d -> TwoWayData {
           Get = d.Get
           Set = fun v m -> d.Set v m |> f m
-        }
-      | CmdData d -> CmdData {
-          Exec = fun m -> m |> d.Exec |> ValueOption.map (f m)
-          CanExec = d.CanExec
         }
       | CmdParamData d -> CmdParamData {
           Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
@@ -475,29 +460,6 @@ module internal BindingData =
         (mSet "set")
 
 
-  module Cmd =
-  
-    let create exec canExec =
-      { Exec = exec
-        CanExec = canExec }
-      |> CmdData
-      |> createBinding
-
-    let mapFunctions
-        mExec
-        mCanExec
-        (d: CmdData<'model, 'msg>) =
-      { d with Exec = mExec d.Exec
-               CanExec = mCanExec d.CanExec }
-
-    let measureFunctions
-        mExec
-        mCanExec =
-      mapFunctions
-        (mExec "exec")
-        (mCanExec "canExec")
-
-
   module CmdParam =
 
     let create exec canExec autoRequery =
@@ -506,6 +468,13 @@ module internal BindingData =
         AutoRequery = autoRequery }
       |> CmdParamData
       |> createBinding
+
+    let createFromCmd exec canExec =
+      create
+        (fun _ -> exec)
+        (fun _ -> canExec)
+        false
+      >> Binding.addLazy (fun m1 m2 -> canExec m1 = canExec m2)
 
     let mapFunctions
         mExec
@@ -1297,7 +1266,7 @@ type Binding private () =
   static member cmd
       (exec: 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    BindingData.CmdParam.createFromCmd
       (exec >> ValueSome)
       (fun _ -> true)
 
@@ -1314,7 +1283,7 @@ type Binding private () =
       (exec: 'model -> 'msg,
        canExec: 'model -> bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    BindingData.CmdParam.createFromCmd
       (exec >> ValueSome)
       canExec
 
@@ -1329,7 +1298,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    BindingData.CmdParam.createFromCmd
       exec
       (exec >> ValueOption.isSome)
 
@@ -1344,7 +1313,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg option)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    BindingData.CmdParam.createFromCmd
       (exec >> ValueOption.ofOption)
       (exec >> Option.isSome)
 
@@ -1362,7 +1331,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    BindingData.CmdParam.createFromCmd
       (exec >> ValueOption.ofOk)
       (exec >> Result.isOk)
 
@@ -2649,7 +2618,7 @@ module Extensions =
     static member cmd
         (exec: 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.create
+      BindingData.CmdParam.createFromCmd
         (fun _ -> exec |> ValueSome)
         (fun _ -> true)
 
@@ -2664,7 +2633,7 @@ module Extensions =
         (exec: 'msg,
          canExec: 'model -> bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.create
+      BindingData.CmdParam.createFromCmd
         (fun _ -> exec |> ValueSome)
         canExec
 

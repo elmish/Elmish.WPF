@@ -34,7 +34,7 @@ module Helpers =
 
   let internal getCmdData f =
     match f "" with
-    | { Data = CmdData d } -> d
+    | { Data = CmdParamData d } -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getCmdParamData f =
@@ -2062,27 +2062,6 @@ module cmd =
       }
 
 
-    [<Fact>]
-    let ``final exec returns value from original exec wrapped in ValueSome`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec = string<int>
-        let d = Binding.cmd(exec) |> getCmdData
-
-        test <@ d.Exec x = (exec x |> ValueSome) @>
-      }
-
-
-    [<Fact>]
-    let ``canExec always returns true`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-        let d = Binding.cmd(fail) |> getCmdData
-        test <@ d.CanExec x = true @>
-      }
-
-
 
   module noModel =
 
@@ -2093,27 +2072,6 @@ module cmd =
         let! bindingName = GenX.auto<string>
         let binding = bindingName |> Binding.cmd(obj())
         test <@ binding.Name = bindingName @>
-      }
-
-
-    [<Fact>]
-    let ``final exec returns original value wrapped in ValueSome`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-        let! y = GenX.auto<byte>
-
-        let d = Binding.cmd(y) |> getCmdData
-
-        test <@ d.Exec x = ValueSome y @>
-      }
-
-
-    [<Fact>]
-    let ``canExec always returns true`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-        let d = Binding.cmd(obj()) |> getCmdData
-        test <@ d.CanExec x = true @>
       }
 
 
@@ -2133,30 +2091,6 @@ module cmdIf =
       }
 
 
-    [<Fact>]
-    let ``final exec returns value from original exec wrapped in ValueSome`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec = string<int>
-        let d = Binding.cmdIf(exec, fail) |> getCmdData
-
-        test <@ d.Exec x = (exec x |> ValueSome) @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns value from original canExec`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let canExec x = x > 0
-        let d = Binding.cmdIf(fail, canExec) |> getCmdData
-
-        test <@ d.CanExec x = canExec x @>
-      }
-
-
   module explicitCanExec_noModel =
 
 
@@ -2166,30 +2100,6 @@ module cmdIf =
         let! bindingName = GenX.auto<string>
         let binding = bindingName |> Binding.cmdIf(obj(), fail)
         test <@ binding.Name = bindingName @>
-      }
-
-
-    [<Fact>]
-    let ``final exec returns original value wrapped in ValueSome`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-        let! y = GenX.auto<byte>
-
-        let d = Binding.cmdIf(y, fail) |> getCmdData
-
-        test <@ d.Exec x = ValueSome y @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns value from original canExec`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let canExec x = x > 0
-        let d = Binding.cmdIf(obj(), canExec) |> getCmdData
-
-        test <@ d.CanExec x = canExec x @>
       }
 
 
@@ -2206,42 +2116,6 @@ module cmdIf =
       }
 
 
-    [<Fact>]
-    let ``final exec returns value from original exec`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = if x < 0 then ValueNone else ValueSome (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.Exec x = exec x @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns true if original exec returns ValueSome`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = ValueSome (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = true @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns false if original exec returns ValueNone`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec _ = ValueNone
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = false @>
-      }
-
-
 
   module option =
 
@@ -2255,42 +2129,6 @@ module cmdIf =
       }
 
 
-    [<Fact>]
-    let ``final exec returns value from original exec converted to ValueOption`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = if x < 0 then None else Some (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.Exec x = (exec x |> ValueOption.ofOption) @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns true if original exec returns Some`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = Some (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = true @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns false if original exec returns None`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec _ = None
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = false @>
-      }
-
-
 
   module result =
 
@@ -2301,42 +2139,6 @@ module cmdIf =
         let! bindingName = GenX.auto<string>
         let binding = bindingName |> Binding.cmdIf(fail: _ -> Result<_,_>)
         test <@ binding.Name = bindingName @>
-      }
-
-
-    [<Fact>]
-    let ``final exec returns Ok value from original exec converted to ValueOption`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = if x < 0 then Error (float x) else Ok (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.Exec x = (exec x |> ValueOption.ofOk) @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns true if original exec returns Ok`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = Ok (string x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = true @>
-      }
-
-
-    [<Fact>]
-    let ``final canExec returns false if original exec returns Error`` () =
-      Property.check <| property {
-        let! x = GenX.auto<int>
-
-        let exec x = Error (float x)
-        let d = Binding.cmdIf(exec) |> getCmdData
-
-        test <@ d.CanExec x = false @>
       }
 
 

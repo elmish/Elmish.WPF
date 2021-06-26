@@ -165,10 +165,12 @@ module Helpers =
       name
       (exec: 'model -> 'msg voption)
       (canExec: 'model -> bool) =
-    ({ Exec = exec
-       CanExec = canExec }
-     |> CmdData
-     |> createBinding) name
+    ({ Exec = fun _ -> exec
+       CanExec = fun _ -> canExec
+       AutoRequery = false }
+     |> CmdParamData
+     |> createBinding
+     >> Binding.addLazy (fun m1 m2 -> canExec m1 = canExec m2)) name
 
 
   let internal cmdParam

@@ -200,14 +200,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           { TwoWayData = d |> BindingData.TwoWay.measureFunctions measure measure }
           |> TwoWay
           |> Some
-      | CmdData d ->
-          let d = d |> BindingData.Cmd.measureFunctions measure measure
-          let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
-          let canExecute _ = d.CanExec currentModel
-          Command(execute, canExecute, false)
-          |> Cmd
-          |> addLazy (fun a b -> d.CanExec a = d.CanExec b)
-          |> Some
       | CmdParamData d ->
           let d = d |> BindingData.CmdParam.measureFunctions measure2 measure2
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
