@@ -307,6 +307,7 @@ module internal BindingData =
   let setMsg msg = mapMsg (fun _ -> msg)
 
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
+  let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
 
 
   module Binding =
@@ -321,6 +322,7 @@ module internal BindingData =
     let setMsg msg = msg |> setMsg |> mapData
 
     let addValidation vaidate = vaidate |> addValidation |> mapData
+    let addLazy equals = equals |> addLazy |> mapData
 
 
   module Bindings =
@@ -727,10 +729,7 @@ module Binding =
 
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.mapData (fun d ->
-      { BindingData = d
-        Equals = equals }
-      |> LazyData)
+    |> BindingData.Binding.addLazy equals
 
 
 module Bindings =
