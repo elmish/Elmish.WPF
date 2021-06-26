@@ -44,7 +44,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
         if not (d.ItemEquals newVal oldVal) then
           values.[oldIdx] <- newVal
       let newVals = intermediate |> d.Map |> Seq.toArray
-      elmStyleMerge d.GetId d.GetId create update values newVals
+      Merge.elmStyleMerge d.GetId d.GetId create update values newVals
 
 
 type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
@@ -131,7 +131,7 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
        (newModel: 'model)) =
     let update b bm _ = update b bm
     let newSubModels = newModel |> d.GetModels |> Seq.toArray
-    elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
+    Merge.elmStyleMerge d.GetId (getTargetId d.GetId) create update values newSubModels
     
     
 and internal ValidationData<'model, 'msg> =
