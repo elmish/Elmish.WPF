@@ -476,8 +476,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
       | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
-      | CmdParam cmd ->
-          box cmd
+      | CmdParam cmd -> box cmd
       | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
       | SubModelWin { VmWinState = vm } ->
           !vm
