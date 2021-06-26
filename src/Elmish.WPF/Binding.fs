@@ -185,7 +185,7 @@ module internal BindingData =
     | _, _ -> 0
 
   let mapModel f =
-    let binaryHelper binary x m = (x, f m) ||> binary
+    let binaryHelper binary x m = binary x (f m)
     let rec mapModelRec = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
