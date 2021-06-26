@@ -79,7 +79,7 @@ and internal VmBinding<'model, 'msg> =
   | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
-  | CmdParam of cmd: Command
+  | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
@@ -205,7 +205,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
           let canExecute _ = d.CanExec currentModel
           Command(execute, canExecute, false)
-          |> CmdParam
+          |> Cmd
           |> addLazy (fun a b -> d.CanExec a = d.CanExec b)
           |> Some
       | CmdParamData d ->
@@ -213,7 +213,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
           let canExecute param = d.CanExec param currentModel
           Command(execute, canExecute, d.AutoRequery)
-          |> CmdParam
+          |> Cmd
           |> Some
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
@@ -339,7 +339,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
           []
-      | CmdParam cmd ->
+      | Cmd cmd ->
           cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
         let d = b.SubModelData
@@ -476,7 +476,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
       | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
-      | CmdParam cmd -> box cmd
+      | Cmd cmd -> box cmd
       | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
       | SubModelWin { VmWinState = vm } ->
           !vm
@@ -534,7 +534,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWay _
       | OneWayLazy _
       | OneWaySeq _
-      | CmdParam _
+      | Cmd _
       | SubModel _
       | SubModelWin _
       | SubModelSeq _ ->
