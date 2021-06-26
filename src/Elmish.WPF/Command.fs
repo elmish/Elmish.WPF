@@ -13,7 +13,7 @@ type internal Command(execute, canExecute, autoRequery) as this =
   let canExecuteChanged = Event<EventHandler,EventArgs>()
   let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
 
-  do if autoRequery then CommandManager.RequerySuggested.AddHandler(handler)
+  do if autoRequery then CommandManager.RequerySuggested.AddHandler handler
 
   // CommandManager only keeps a weak reference to the event handler,
   // so a strong reference must be maintained
