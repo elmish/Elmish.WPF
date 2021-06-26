@@ -78,13 +78,13 @@ let errorOnEven m =
 let bindings () : Binding<Model, Msg> list = [
   "UpdateCount"
     |> Binding.oneWay(fun m -> m.UpdateCount)
-    |> Binding.withValidation errorOnEven
+    |> Binding.addValidation errorOnEven
   "Value"
     |> Binding.twoWay((fun m -> m.Value), NewValue)
-    |> Binding.withValidation(fun m ->  m.Value |> validateInt42 |> Result.Error.toList)
+    |> Binding.addValidation(fun m ->  m.Value |> validateInt42 |> Result.Error.toList)
   "Password"
     |> Binding.twoWay((fun m -> m.Password), NewPassword)
-    |> Binding.withValidation(fun m -> m.Password |> validatePassword)
+    |> Binding.addValidation(fun m -> m.Password |> validatePassword)
   "Submit" |> Binding.cmdIf(
     (fun _ -> Submit),
     (fun m -> (match validateInt42 m.Value with Ok _ -> true | Error _ -> false) && (validatePassword m.Password |> List.isEmpty)))

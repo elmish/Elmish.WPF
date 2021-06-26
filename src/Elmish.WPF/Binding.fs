@@ -717,7 +717,7 @@ module Binding =
   /// </summary>
   /// <param name="validate">Returns the errors associated with the given model.</param>
   /// <param name="binding">The binding to which validation is added.</param>
-  let withValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
     |> BindingData.Binding.mapData (fun d ->
       { BindingData = d
@@ -1015,7 +1015,7 @@ type Binding private () =
     |> BindingData.TwoWay.box
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation validate
+    >> Binding.addValidation validate
 
 
   /// <summary>
@@ -1037,7 +1037,7 @@ type Binding private () =
     |> BindingData.TwoWay.box
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.toList)
 
 
   /// <summary>
@@ -1059,7 +1059,7 @@ type Binding private () =
     |> BindingData.TwoWay.box
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> Option.toList)
+    >> Binding.addValidation (validate >> Option.toList)
 
 
   /// <summary>
@@ -1081,7 +1081,7 @@ type Binding private () =
     |> BindingData.TwoWay.box
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
   /// <summary>
@@ -1105,7 +1105,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation validate
+    >> Binding.addValidation validate
 
 
   /// <summary>
@@ -1129,7 +1129,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.toList)
 
 
   /// <summary>
@@ -1153,7 +1153,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> Option.toList)
+    >> Binding.addValidation (validate >> Option.toList)
 
 
   /// <summary>
@@ -1177,7 +1177,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
   /// <summary>
@@ -1201,7 +1201,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation validate
+    >> Binding.addValidation validate
 
 
   /// <summary>
@@ -1225,7 +1225,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.toList)
 
 
   /// <summary>
@@ -1249,7 +1249,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> Option.toList)
+    >> Binding.addValidation (validate >> Option.toList)
 
 
   /// <summary>
@@ -1273,7 +1273,7 @@ type Binding private () =
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
     |> createBinding
-    >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+    >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
   /// <summary>
@@ -2377,7 +2377,7 @@ module Extensions =
       |> BindingData.TwoWay.box
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation validate
+      >> Binding.addValidation validate
 
 
     /// <summary>
@@ -2399,7 +2399,7 @@ module Extensions =
       |> BindingData.TwoWay.box
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.toList)
 
 
     /// <summary>
@@ -2421,7 +2421,7 @@ module Extensions =
       |> BindingData.TwoWay.box
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> Option.toList)
+      >> Binding.addValidation (validate >> Option.toList)
 
 
     /// <summary>
@@ -2443,7 +2443,7 @@ module Extensions =
       |> BindingData.TwoWay.box
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
     /// <summary>
@@ -2467,7 +2467,7 @@ module Extensions =
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation validate
+      >> Binding.addValidation validate
 
 
     /// <summary>
@@ -2491,7 +2491,7 @@ module Extensions =
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.toList)
 
 
     /// <summary>
@@ -2515,7 +2515,7 @@ module Extensions =
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> Option.toList)
+      >> Binding.addValidation (validate >> Option.toList)
 
 
     /// <summary>
@@ -2539,7 +2539,7 @@ module Extensions =
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
     /// <summary>
@@ -2563,7 +2563,7 @@ module Extensions =
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation validate
+      >> Binding.addValidation validate
 
 
     /// <summary>
@@ -2587,7 +2587,7 @@ module Extensions =
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.toList)
 
 
     /// <summary>
@@ -2611,7 +2611,7 @@ module Extensions =
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> Option.toList)
+      >> Binding.addValidation (validate >> Option.toList)
 
 
     /// <summary>
@@ -2635,7 +2635,7 @@ module Extensions =
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
       |> createBinding
-      >> Binding.withValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+      >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
     /// <summary>

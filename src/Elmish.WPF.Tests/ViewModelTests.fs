@@ -158,7 +158,7 @@ module Helpers =
      |> BindingData.TwoWay.box
      |> TwoWayData
      |> createBinding
-     >> Binding.withValidation (validate >> ValueOption.toList)) name
+     >> Binding.addValidation (validate >> ValueOption.toList)) name
 
 
   let internal cmd
