@@ -61,7 +61,7 @@ type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
     d.Set value model
 
 
-type internal CmdParamData<'model, 'msg> = {
+type internal CmdData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
@@ -144,7 +144,7 @@ and internal BindingData<'model, 'msg> =
   | OneWayLazyData of OneWayLazyData<'model, obj, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
-  | CmdParamData of CmdParamData<'model, 'msg>
+  | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
@@ -199,7 +199,7 @@ module internal BindingData =
           Get = f >> d.Get
           Set = binaryHelper d.Set
         }
-      | CmdParamData d -> CmdParamData {
+      | CmdData d -> CmdData {
           Exec = binaryHelper d.Exec
           CanExec = binaryHelper d.CanExec
           AutoRequery = d.AutoRequery
@@ -248,7 +248,7 @@ module internal BindingData =
           Get = d.Get
           Set = fun v m -> d.Set v m |> f m
         }
-      | CmdParamData d -> CmdParamData {
+      | CmdData d -> CmdData {
           Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
           CanExec = fun p m -> d.CanExec p m
           AutoRequery = d.AutoRequery
@@ -466,7 +466,7 @@ module internal BindingData =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
-      |> CmdParamData
+      |> CmdData
       |> createBinding
 
     let createFromCmd exec canExec =
@@ -479,7 +479,7 @@ module internal BindingData =
     let mapFunctions
         mExec
         mCanExec
-        (d: CmdParamData<'model, 'msg>) =
+        (d: CmdData<'model, 'msg>) =
       { d with Exec = mExec d.Exec
                CanExec = mCanExec d.CanExec }
 

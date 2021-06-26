@@ -168,7 +168,7 @@ module Helpers =
     ({ Exec = fun _ -> exec
        CanExec = fun _ -> canExec
        AutoRequery = false }
-     |> CmdParamData
+     |> CmdData
      |> createBinding
      >> Binding.addLazy (fun m1 m2 -> canExec m1 = canExec m2)) name
 
@@ -181,7 +181,7 @@ module Helpers =
     ({ Exec = unbox >> exec
        CanExec = unbox >> canExec
        AutoRequery = autoRequery }
-     |> CmdParamData
+     |> CmdData
      |> createBinding) name
 
 

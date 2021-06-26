@@ -200,7 +200,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           { TwoWayData = d |> BindingData.TwoWay.measureFunctions measure measure }
           |> TwoWay
           |> Some
-      | CmdParamData d ->
+      | CmdData d ->
           let d = d |> BindingData.CmdParam.measureFunctions measure2 measure2
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
           let canExecute param = d.CanExec param currentModel
