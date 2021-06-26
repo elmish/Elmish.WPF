@@ -209,14 +209,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Cmd.measureFunctions measure measure
           let execute _ = d.Exec currentModel |> ValueOption.iter dispatch
           let canExecute _ = d.CanExec currentModel
-          Some <| Cmd {
+          Cmd {
             Cmd = Command(execute, canExecute, false)
-            CanExec = d.CanExec }
+            CanExec = d.CanExec
+          }
+          |> Some
       | CmdParamData d ->
           let d = d |> BindingData.CmdParam.measureFunctions measure2 measure2
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
           let canExecute param = d.CanExec param currentModel
-          Some <| CmdParam (Command(execute, canExecute, d.AutoRequery))
+          CmdParam (Command(execute, canExecute, d.AutoRequery))
+          |> Some
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg currentModel msg
