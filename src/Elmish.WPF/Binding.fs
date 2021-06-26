@@ -475,6 +475,7 @@ module internal BindingData =
     mapMsgWithModelRec
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
+  let setMsg msg = mapMsg (fun _ -> msg)
 
 
   module Binding =
@@ -486,6 +487,8 @@ module internal BindingData =
     let mapModel f = f |> mapModel |> mapData
     let mapMsgWithModel f = f |> mapMsgWithModel |> mapData
     let mapMsg f = f |> mapMsg |> mapData
+    let setMsg msg = msg |> setMsg |> mapData
+
 
   module Bindings =
 
@@ -852,6 +855,9 @@ module Binding =
   
   /// Map the message type parameter of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
+  
+  /// Set the message type parameter of a binding
+  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
 
   let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data

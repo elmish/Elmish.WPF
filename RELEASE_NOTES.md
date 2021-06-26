@@ -1,3 +1,6 @@
+#### 4.0.0-beta-43
+* Added `setMsg` in the `Binding` module
+
 #### 4.0.0-beta-42
 * Improved API of WindowState<_>
 
