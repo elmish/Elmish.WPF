@@ -13,43 +13,43 @@ module Helpers =
   let fail2 _ _ = failwith "Placeholder function was invoked"
 
   let internal getOneWayData f =
-    match f "" with
-    | { Data = OneWayData d } -> d
+    match getBaseBindingData (f "").Data with
+    | OneWayData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getOneWayLazyData f =
-    match f "" with
-    | { Data = OneWayLazyData d } -> d
+    match getBaseBindingData (f "").Data with
+    | OneWayLazyData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getOneWaySeqLazyData f =
-    match f "" with
-    | { Data = OneWaySeqLazyData d } -> d
+    match getBaseBindingData (f "").Data with
+    | OneWaySeqLazyData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getTwoWayData f =
-    match f "" with
-    | { Data = TwoWayData d } -> d
+    match getBaseBindingData (f "").Data with
+    | TwoWayData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getCmdData f =
-    match f "" with
-    | { Data = CmdData d } -> d
+    match getBaseBindingData (f "").Data with
+    | CmdData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getSubModelData f =
-    match f "" with
-    | { Data = SubModelData d } -> d
+    match getBaseBindingData (f "").Data with
+    | SubModelData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getSubModelSeqData f =
-    match f "" with
-    | { Data = SubModelSeqData d } -> d
+    match getBaseBindingData (f "").Data with
+    | SubModelSeqData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getSubModelSelectedItemData f =
-    match f "" with
-    | { Data = SubModelSelectedItemData d } -> d
+    match getBaseBindingData (f "").Data with
+    | SubModelSelectedItemData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getValidationData f =
@@ -3594,9 +3594,9 @@ module sorting =
           [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
             SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
-          ]
+          ] |> List.map BaseBindingData
         let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast
         match sorted with
-        | [_; SubModelSelectedItemData _; SubModelSelectedItemData _] -> ()
+        | [_; BaseBindingData (SubModelSelectedItemData _); BaseBindingData (SubModelSelectedItemData _)] -> ()
         | _ -> failwith "SubModelSelectedItemData was not sorted last"
       }

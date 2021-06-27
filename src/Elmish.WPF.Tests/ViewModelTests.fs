@@ -104,6 +104,7 @@ module Helpers =
       (get: 'model -> 'a) =
     ({ Get = get >> box }
      |> OneWayData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -117,6 +118,7 @@ module Helpers =
        Equals = equals }
      |> BindingData.OneWayLazy.box
      |> OneWayLazyData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -134,6 +136,7 @@ module Helpers =
        ItemEquals = itemEquals }
      |> BindingData.OneWaySeqLazy.box
      |> OneWaySeqLazyData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -145,6 +148,7 @@ module Helpers =
        Set = set }
      |> BindingData.TwoWay.box
      |> TwoWayData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -157,6 +161,7 @@ module Helpers =
        Set = set }
      |> BindingData.TwoWay.box
      |> TwoWayData
+     |> BaseBindingData
      |> createBinding
      >> Binding.addValidation (validate >> ValueOption.toList)) name
 
@@ -165,12 +170,7 @@ module Helpers =
       name
       (exec: 'model -> 'msg voption)
       (canExec: 'model -> bool) =
-    ({ Exec = fun _ -> exec
-       CanExec = fun _ -> canExec
-       AutoRequery = false }
-     |> CmdData
-     |> createBinding
-     >> Binding.addLazy (fun m1 m2 -> canExec m1 = canExec m2)) name
+    BindingData.CmdParam.createFromCmd exec canExec name
 
 
   let internal cmdParam
@@ -182,6 +182,7 @@ module Helpers =
        CanExec = unbox >> canExec
        AutoRequery = autoRequery }
      |> CmdData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -197,6 +198,7 @@ module Helpers =
        Sticky = sticky }
      |> BindingData.SubModel.box
      |> SubModelData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -212,6 +214,7 @@ module Helpers =
        ToMsg = fun _ -> toMsg }
      |> BindingData.SubModelSeq.box
      |> SubModelSeqData
+     |> BaseBindingData
      |> createBinding) name
 
 
@@ -225,6 +228,7 @@ module Helpers =
        SubModelSeqBindingName = subModelSeqBindingName }
      |> BindingData.SubModelSelectedItem.box
      |> SubModelSelectedItemData
+     |> BaseBindingData
      |> createBinding) name
 
 

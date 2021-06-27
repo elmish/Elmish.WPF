@@ -139,7 +139,7 @@ and internal LazyData<'model, 'msg> =
 
 
 /// Represents all necessary data used to create the different binding types.
-and internal BindingData<'model, 'msg> =
+and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model, obj>
   | OneWayLazyData of OneWayLazyData<'model, obj, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
@@ -149,6 +149,11 @@ and internal BindingData<'model, 'msg> =
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
+
+
+/// Represents all necessary data used to create the different binding types.
+and internal BindingData<'model, 'msg> =
+  | BaseBindingData of BaseBindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
   | LazyData of LazyData<'model, 'msg>
 
@@ -167,11 +172,16 @@ module internal Helpers =
     { Name = name
       Data = data }
 
+  let rec getBaseBindingData = function
+    | BaseBindingData d -> d
+    | ValidationData d -> d.BindingData |> getBaseBindingData
+    | LazyData d -> d.BindingData |> getBaseBindingData
+
 
 module internal BindingData =
 
   let subModelSelectedItemLast a b =
-    match a, b with
+    match getBaseBindingData a, getBaseBindingData b with
     | SubModelSelectedItemData _, SubModelSelectedItemData _ -> 0
     | SubModelSelectedItemData _, _ -> 1
     | _, SubModelSelectedItemData _ -> -1
@@ -179,7 +189,7 @@ module internal BindingData =
 
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
-    let rec mapModelRec = function
+    let mapModelBase = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
         }
@@ -229,6 +239,8 @@ module internal BindingData =
           Set = binaryHelper d.Set
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
+    let rec mapModelRec = function
+      | BaseBindingData d -> d |> mapModelBase |> BaseBindingData
       | ValidationData d -> ValidationData {
           BindingData = mapModelRec d.BindingData
           Validate = f >> d.Validate
@@ -240,7 +252,7 @@ module internal BindingData =
     mapModelRec
 
   let mapMsgWithModel f =
-    let rec mapMsgWithModelRec = function
+    let mapMsgWithModelBase = function
       | OneWayData d -> d |> OneWayData
       | OneWayLazyData d -> d |> OneWayLazyData
       | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
@@ -278,6 +290,8 @@ module internal BindingData =
           Set = fun v m -> d.Set v m |> f m
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
+    let rec mapMsgWithModelRec = function
+      | BaseBindingData d -> d |> mapMsgWithModelBase |> BaseBindingData
       | ValidationData d -> ValidationData {
           BindingData = mapMsgWithModelRec d.BindingData
           Validate = d.Validate
@@ -467,6 +481,7 @@ module internal BindingData =
         CanExec = canExec
         AutoRequery = autoRequery }
       |> CmdData
+      |> BaseBindingData
       |> createBinding
 
     let createFromCmd exec canExec =
@@ -684,6 +699,7 @@ module Binding =
     { Get = id }
     |> BindingData.OneWay.box
     |> OneWayData
+    |> BaseBindingData
     |> createBinding
 
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
@@ -738,6 +754,7 @@ type Binding private () =
     { Get = get }
     |> BindingData.OneWay.box
     |> OneWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -754,6 +771,7 @@ type Binding private () =
     { Get = get }
     |> BindingData.OneWay.boxOpt
     |> OneWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -770,6 +788,7 @@ type Binding private () =
     { Get = get }
     |> BindingData.OneWay.boxVOpt
     |> OneWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -797,6 +816,7 @@ type Binding private () =
       Equals = equals }
     |> BindingData.OneWayLazy.box
     |> OneWayLazyData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -828,6 +848,7 @@ type Binding private () =
       Equals = equals }
     |> BindingData.OneWayLazy.boxOpt
     |> OneWayLazyData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -859,6 +880,7 @@ type Binding private () =
       Equals = equals }
     |> BindingData.OneWayLazy.boxVOpt
     |> OneWayLazyData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -898,6 +920,7 @@ type Binding private () =
       ItemEquals = itemEquals }
     |> BindingData.OneWaySeqLazy.box
     |> OneWaySeqLazyData
+    |> BaseBindingData
     |> createBinding
 
     
@@ -939,6 +962,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.box
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -957,6 +981,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -975,6 +1000,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -996,6 +1022,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.box
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation validate
 
@@ -1018,6 +1045,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.box
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -1040,6 +1068,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.box
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> Option.toList)
 
@@ -1062,6 +1091,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.box
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -1086,6 +1116,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation validate
 
@@ -1110,6 +1141,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -1134,6 +1166,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> Option.toList)
 
@@ -1158,6 +1191,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxVOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -1182,6 +1216,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation validate
 
@@ -1206,6 +1241,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -1230,6 +1266,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> Option.toList)
 
@@ -1254,6 +1291,7 @@ type Binding private () =
       Set = set }
     |> BindingData.TwoWay.boxOpt
     |> TwoWayData
+    |> BaseBindingData
     |> createBinding
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -1478,6 +1516,7 @@ type Binding private () =
       Sticky = false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1503,6 +1542,7 @@ type Binding private () =
       Sticky = false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1523,6 +1563,7 @@ type Binding private () =
       Sticky = false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1568,6 +1609,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1614,6 +1656,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1654,6 +1697,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1696,6 +1740,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1732,6 +1777,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1769,6 +1815,7 @@ type Binding private () =
       Sticky = defaultArg sticky false }
     |> BindingData.SubModel.box
     |> SubModelData
+    |> BaseBindingData
     |> createBinding
 
   /// <summary>
@@ -1832,6 +1879,7 @@ type Binding private () =
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
     |> BindingData.SubModelWin.box
     |> SubModelWinData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -1950,6 +1998,7 @@ type Binding private () =
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
     |> BindingData.SubModelWin.box
     |> SubModelWinData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2054,6 +2103,7 @@ type Binding private () =
       OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
     |> BindingData.SubModelWin.box
     |> SubModelWinData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2137,6 +2187,7 @@ type Binding private () =
       ToMsg = fun _ -> toMsg }
     |> BindingData.SubModelSeq.box
     |> SubModelSeqData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2169,6 +2220,7 @@ type Binding private () =
       ToMsg = fun _ -> toMsg }
     |> BindingData.SubModelSeq.box
     |> SubModelSeqData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2195,6 +2247,7 @@ type Binding private () =
       ToMsg = fun _ (_, msg) -> msg }
     |> BindingData.SubModelSeq.box
     |> SubModelSeqData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2234,6 +2287,7 @@ type Binding private () =
       SubModelSeqBindingName = subModelSeqBindingName }
     |> BindingData.SubModelSelectedItem.box
     |> SubModelSelectedItemData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2273,6 +2327,7 @@ type Binding private () =
       SubModelSeqBindingName = subModelSeqBindingName }
     |> BindingData.SubModelSelectedItem.box
     |> SubModelSelectedItemData
+    |> BaseBindingData
     |> createBinding
 
 
@@ -2290,10 +2345,11 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg)
         : string -> Binding<'model, 'msg> =
-      TwoWayData {
-        Get = get >> box
-        Set = fun p _ -> p |> unbox<'a> |> set
-      } |> createBinding
+      { Get = get >> box
+        Set = fun p _ -> p |> unbox<'a> |> set }
+      |> TwoWayData
+      |> BaseBindingData
+      |> createBinding
 
 
     /// <summary>
@@ -2307,10 +2363,11 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      TwoWayData {
-        Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set
-      } |> createBinding
+      { Get = get >> Option.map box >> Option.toObj
+        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set }
+      |> TwoWayData
+      |> BaseBindingData
+      |> createBinding
 
 
     /// <summary>
@@ -2324,10 +2381,11 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg)
         : string -> Binding<'model, 'msg> =
-      TwoWayData {
-        Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set
-      } |> createBinding
+      { Get = get >> ValueOption.map box >> ValueOption.toObj
+        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set }
+      |> TwoWayData
+      |> BaseBindingData
+      |> createBinding
 
 
     /// <summary>
@@ -2348,6 +2406,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.box
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation validate
 
@@ -2370,6 +2429,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.box
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -2392,6 +2452,7 @@ module Extensions =
         Set = fun p  _ -> set p }
       |> BindingData.TwoWay.box
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> Option.toList)
 
@@ -2414,6 +2475,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.box
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -2438,6 +2500,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation validate
 
@@ -2462,6 +2525,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -2486,6 +2550,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> Option.toList)
 
@@ -2510,6 +2575,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxVOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -2534,6 +2600,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation validate
 
@@ -2558,6 +2625,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.toList)
 
@@ -2582,6 +2650,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> Option.toList)
 
@@ -2606,6 +2675,7 @@ module Extensions =
         Set = fun p _ -> set p }
       |> BindingData.TwoWay.boxOpt
       |> TwoWayData
+      |> BaseBindingData
       |> createBinding
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
@@ -2786,11 +2856,12 @@ module Extensions =
          get: 'model -> 'id voption,
          set: 'id voption -> 'msg)
         : string -> Binding<'model, 'msg> =
-      SubModelSelectedItemData {
-        Get = get >> ValueOption.map box
+      { Get = get >> ValueOption.map box
         Set = fun id _ -> id |> ValueOption.map unbox<'id> |> set
-        SubModelSeqBindingName = subModelSeqBindingName
-      } |> createBinding
+        SubModelSeqBindingName = subModelSeqBindingName }
+      |> SubModelSelectedItemData
+      |> BaseBindingData
+      |> createBinding
 
 
     /// <summary>
@@ -2825,8 +2896,9 @@ module Extensions =
          get: 'model -> 'id option,
          set: 'id option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      SubModelSelectedItemData {
-        Get = get >> ValueOption.ofOption >> ValueOption.map box
+      { Get = get >> ValueOption.ofOption >> ValueOption.map box
         Set = fun id _ -> id |> ValueOption.map unbox<'id> |> ValueOption.toOption |> set
-        SubModelSeqBindingName = subModelSeqBindingName
-      } |> createBinding
+        SubModelSeqBindingName = subModelSeqBindingName }
+      |> SubModelSelectedItemData
+      |> BaseBindingData
+      |> createBinding

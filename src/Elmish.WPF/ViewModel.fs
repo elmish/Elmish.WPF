@@ -181,7 +181,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name getInitializedBindingByName addValdiationBinding =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let rec initializeBindingRec = function
+    let initializeBindingBase = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -277,6 +277,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
+    let rec initializeBindingRec = function
+      | BaseBindingData d -> d |> initializeBindingBase
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
