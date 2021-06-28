@@ -102,10 +102,7 @@ module Helpers =
   let internal oneWay
       name
       (get: 'model -> 'a) =
-    ({ Get = get >> box }
-     |> OneWayData
-     |> BaseBindingData
-     |> createBinding) name
+    Binding.oneWay get name
 
 
   let internal oneWayLazy
@@ -113,13 +110,7 @@ module Helpers =
       (get: 'model -> 'a)
       (equals: 'a -> 'a -> bool)
       (map: 'a -> 'b) =
-    ({ Get = get
-       Map = map
-       Equals = equals }
-     |> BindingData.OneWayLazy.box
-     |> OneWayLazyData
-     |> BaseBindingData
-     |> createBinding) name
+    Binding.oneWayLazy (get, equals, map) name
 
 
   let internal oneWaySeqLazy
@@ -129,27 +120,14 @@ module Helpers =
       (map: 'a -> #seq<'b>)
       (itemEquals: 'b -> 'b -> bool)
       (getId: 'b -> 'id) =
-    ({ Get = get
-       Map = fun a -> upcast map a
-       Equals = equals
-       GetId = getId
-       ItemEquals = itemEquals }
-     |> BindingData.OneWaySeqLazy.box
-     |> OneWaySeqLazyData
-     |> BaseBindingData
-     |> createBinding) name
+    Binding.oneWaySeqLazy (get, equals, map, itemEquals, getId) name
 
 
   let internal twoWay
       name
       (get: 'model -> 'a)
       (set: 'a -> 'model -> 'msg) =
-    ({ Get = get
-       Set = set }
-     |> BindingData.TwoWay.box
-     |> TwoWayData
-     |> BaseBindingData
-     |> createBinding) name
+    Binding.twoWay (get, set) name
 
 
   let internal twoWayValidate
@@ -157,13 +135,7 @@ module Helpers =
       (get: 'model -> 'a)
       (set: 'a -> 'model -> 'msg)
       (validate: 'model -> string voption) =
-    ({ Get = get
-       Set = set }
-     |> BindingData.TwoWay.box
-     |> TwoWayData
-     |> BaseBindingData
-     |> createBinding
-     >> Binding.addValidation (validate >> ValueOption.toList)) name
+    Binding.twoWayValidate (get, set, validate) name
 
 
   let internal cmd
@@ -192,14 +164,12 @@ module Helpers =
       (toMsg: 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list)
       (sticky: bool) =
-    ({ GetModel = getModel
-       GetBindings = fun () -> bindings
-       ToMsg = fun _ -> toMsg
-       Sticky = sticky }
-     |> BindingData.SubModel.box
-     |> SubModelData
-     |> BaseBindingData
-     |> createBinding) name
+     BindingData.SubModel.create
+       getModel
+       (fun () -> bindings)
+       (fun _ -> toMsg)
+       sticky
+       name
 
 
   let internal subModelSeq
@@ -208,14 +178,12 @@ module Helpers =
       (getId: 'subModel -> 'id)
       (toMsg: 'id * 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list) =
-    ({ GetModels = fun m -> upcast getModels m
-       GetId = getId
-       GetBindings = fun () -> bindings
-       ToMsg = fun _ -> toMsg }
-     |> BindingData.SubModelSeq.box
-     |> SubModelSeqData
-     |> BaseBindingData
-     |> createBinding) name
+     BindingData.SubModelSeq.create
+       (fun m -> upcast getModels m)
+       getId
+       (fun () -> bindings)
+       (fun _ -> toMsg)
+       name
 
 
   let internal subModelSelectedItem
@@ -223,13 +191,7 @@ module Helpers =
       subModelSeqBindingName
       (get: 'model -> 'id voption)
       (set: 'id voption -> 'model -> 'msg) =
-    ({ Get = get
-       Set = set
-       SubModelSeqBindingName = subModelSeqBindingName }
-     |> BindingData.SubModelSelectedItem.box
-     |> SubModelSelectedItemData
-     |> BaseBindingData
-     |> createBinding) name
+    Binding.subModelSelectedItem (subModelSeqBindingName, get, set) name
 
 
 

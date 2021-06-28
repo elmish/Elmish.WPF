@@ -343,7 +343,7 @@ module internal BindingData =
 
 
   module OneWay =
-  
+
     let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (d: OneWayData<'model, 'a>) = {
@@ -353,6 +353,27 @@ module internal BindingData =
     let boxVOpt d = mapMinorTypes ValueOption.box d
     let boxOpt d = mapMinorTypes Option.box d
     let box d = mapMinorTypes box d
+
+    let private createRest x =
+      x
+      |> OneWayData
+      |> BaseBindingData
+      |> createBinding
+
+    let create get =
+      { Get = get }
+      |> box
+      |> createRest
+
+    let createOpt get =
+      { Get = get }
+      |> boxOpt
+      |> createRest
+
+    let createVOpt get =
+      { Get = get }
+      |> boxVOpt
+      |> createRest
 
     let mapFunctions
         mGet
@@ -380,6 +401,33 @@ module internal BindingData =
     let boxVOpt d = mapMinorTypes box ValueOption.box unbox d
     let boxOpt d = mapMinorTypes box Option.box unbox d
     let box d = mapMinorTypes box box unbox d
+
+    let private createRest x =
+      x
+      |> OneWayLazyData
+      |> BaseBindingData
+      |> createBinding
+
+    let create get equals map =
+      { Get = get
+        Equals = equals
+        Map = map }
+      |> box
+      |> createRest
+
+    let createOpt get equals map =
+      { Get = get
+        Equals = equals
+        Map = map }
+      |> boxOpt
+      |> createRest
+
+    let createVOpt get equals map =
+      { Get = get
+        Equals = equals
+        Map = map }
+      |> boxVOpt
+      |> createRest
 
     let mapFunctions
         mGet
@@ -417,6 +465,17 @@ module internal BindingData =
     }
 
     let box d = mapMinorTypes box box box unbox unbox d
+
+    let create get equals map itemEquals getId =
+      { Get = get
+        Equals = equals
+        Map = fun a -> upcast map a
+        ItemEquals = itemEquals
+        GetId = getId }
+      |> box
+      |> OneWaySeqLazyData
+      |> BaseBindingData
+      |> createBinding
 
     let mapFunctions
         mGet
@@ -458,6 +517,30 @@ module internal BindingData =
     let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
     let boxOpt d = mapMinorTypes Option.box Option.unbox d
     let box d = mapMinorTypes box unbox d
+
+    let private createRest x =
+      x
+      |> TwoWayData
+      |> BaseBindingData
+      |> createBinding
+
+    let create get set =
+      { Get = get
+        Set = set }
+      |> box
+      |> createRest
+
+    let createOpt get set =
+      { Get = get
+        Set = set }
+      |> boxOpt
+      |> createRest
+
+    let createVOpt get set =
+      { Get = get
+        Set = set }
+      |> boxVOpt
+      |> createRest
 
     let mapFunctions
         mGet
@@ -519,6 +602,15 @@ module internal BindingData =
 
     let box d = mapMinorTypes box unbox d
 
+    let create get set subModelSeqBindingName =
+      { Get = get
+        Set = set
+        SubModelSeqBindingName = subModelSeqBindingName }
+      |> box
+      |> SubModelSelectedItemData
+      |> BaseBindingData
+      |> createBinding
+
     let mapFunctions
         mGet
         mSet
@@ -549,6 +641,16 @@ module internal BindingData =
     }
 
     let box d = mapMinorTypes box box unbox unbox d
+
+    let create getModel bindings toMsg sticky =
+      { GetModel = getModel
+        GetBindings = bindings
+        ToMsg = toMsg
+        Sticky = sticky }
+      |> box
+      |> SubModelData
+      |> BaseBindingData
+      |> createBinding
 
     let mapFunctions
         mGetModel
@@ -586,6 +688,18 @@ module internal BindingData =
     }
 
     let box d = mapMinorTypes box box unbox unbox d
+
+    let create getState bindings toMsg getWindow isModal onCloseRequested =
+      { GetState = getState
+        GetBindings = bindings
+        ToMsg = toMsg
+        GetWindow = getWindow
+        IsModal = isModal
+        OnCloseRequested = onCloseRequested }
+      |> box
+      |> SubModelWinData
+      |> BaseBindingData
+      |> createBinding
 
     let mapFunctions
         mGetState
@@ -629,6 +743,16 @@ module internal BindingData =
     }
 
     let box d = mapMinorTypes box box box unbox unbox unbox d
+
+    let create getModels getId bindings toMsg =
+      { GetModels = getModels
+        GetId = getId
+        GetBindings = bindings
+        ToMsg = toMsg }
+      |> box
+      |> SubModelSeqData
+      |> BaseBindingData
+      |> createBinding
 
     let mapFunctions
         mGetModels
@@ -751,11 +875,7 @@ type Binding private () =
   static member oneWay
       (get: 'model -> 'a)
       : string -> Binding<'model, 'msg> =
-    { Get = get }
-    |> BindingData.OneWay.box
-    |> OneWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWay.create get
 
 
   /// <summary>
@@ -768,11 +888,7 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a option)
       : string -> Binding<'model, 'msg> =
-    { Get = get }
-    |> BindingData.OneWay.boxOpt
-    |> OneWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWay.createOpt get
 
 
   /// <summary>
@@ -785,11 +901,7 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a voption)
       : string -> Binding<'model, 'msg> =
-    { Get = get }
-    |> BindingData.OneWay.boxVOpt
-    |> OneWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWay.createVOpt get
 
 
   /// <summary>
@@ -811,13 +923,7 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Map = map
-      Equals = equals }
-    |> BindingData.OneWayLazy.box
-    |> OneWayLazyData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWayLazy.create get equals map
 
 
   /// <summary>
@@ -843,13 +949,7 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b option)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Map = map
-      Equals = equals }
-    |> BindingData.OneWayLazy.boxOpt
-    |> OneWayLazyData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWayLazy.createOpt get equals map
 
 
   /// <summary>
@@ -875,13 +975,7 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b voption)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Map = map
-      Equals = equals }
-    |> BindingData.OneWayLazy.boxVOpt
-    |> OneWayLazyData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWayLazy.createVOpt get equals map
 
 
   /// <summary>
@@ -913,15 +1007,7 @@ type Binding private () =
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Map = fun a -> upcast map a
-      Equals = equals
-      GetId = getId
-      ItemEquals = itemEquals }
-    |> BindingData.OneWaySeqLazy.box
-    |> OneWaySeqLazyData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.OneWaySeqLazy.create get equals map itemEquals getId
 
     
   /// <summary>
@@ -958,12 +1044,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.box
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.create get set
 
 
   /// <summary>
@@ -977,12 +1058,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createOpt get set
 
 
   /// <summary>
@@ -996,12 +1072,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxVOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createVOpt get set
 
 
   /// <summary>
@@ -1018,12 +1089,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.box
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.create get set
     >> Binding.addValidation validate
 
 
@@ -1041,12 +1107,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.box
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.create get set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1064,12 +1125,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.box
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.create get set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1087,12 +1143,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.box
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.create get set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1112,12 +1163,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxVOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createVOpt get set
     >> Binding.addValidation validate
 
 
@@ -1137,12 +1183,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxVOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createVOpt get set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1162,12 +1203,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxVOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createVOpt get set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1187,12 +1223,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxVOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createVOpt get set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1212,12 +1243,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createOpt get set
     >> Binding.addValidation validate
 
 
@@ -1237,12 +1263,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createOpt get set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1262,12 +1283,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createOpt get set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1287,12 +1303,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set }
-    |> BindingData.TwoWay.boxOpt
-    |> TwoWayData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.TwoWay.createOpt get set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1510,15 +1521,11 @@ type Binding private () =
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m -> toBindingModel (m, getSubModel m) |> ValueSome
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
-
+    BindingData.SubModel.create
+      (fun m -> toBindingModel (m, getSubModel m) |> ValueSome)
+      bindings
+      (fun _ -> toMsg)
+      false
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1536,14 +1543,11 @@ type Binding private () =
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m -> (m, getSubModel m) |> ValueSome
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> (m, getSubModel m) |> ValueSome)
+      bindings
+      (fun _ -> toMsg)
+      false
 
 
   /// <summary>
@@ -1557,14 +1561,11 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m -> (m, getSubModel m) |> ValueSome
-      GetBindings = bindings
-      ToMsg = fun _ -> id
-      Sticky = false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> (m, getSubModel m) |> ValueSome)
+      bindings
+      (fun _ -> id)
+      false
 
 
   /// <summary>
@@ -1601,16 +1602,11 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m
-        |> ValueOption.map (fun sub -> toBindingModel (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (defaultArg sticky false)
 
 
   /// <summary>
@@ -1647,18 +1643,11 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m
-        |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> toBindingModel (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
-
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (defaultArg sticky false)
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1690,15 +1679,11 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m |> ValueOption.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (defaultArg sticky false)
 
 
   /// <summary>
@@ -1731,17 +1716,11 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m
-        |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (defaultArg sticky false)
 
 
   /// <summary>
@@ -1769,16 +1748,11 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m
-        |> ValueOption.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> id
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> id)
+      (defaultArg sticky false)
 
 
   /// <summary>
@@ -1806,17 +1780,11 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    { GetModel = fun m ->
-        getSubModel m
-        |> ValueOption.ofOption
-        |> ValueOption.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> id
-      Sticky = defaultArg sticky false }
-    |> BindingData.SubModel.box
-    |> SubModelData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModel.create
+      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> id)
+      (defaultArg sticky false)
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
@@ -1869,18 +1837,13 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    { GetState = fun m ->
-        getState m
-        |> WindowState.map (fun sub -> toBindingModel (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      GetWindow = fun m d -> upcast getWindow m d
-      IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
-    |> BindingData.SubModelWin.box
-    |> SubModelWinData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelWin.create
+      (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (fun m d -> upcast getWindow m d)
+      (defaultArg isModal false)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
 
 
   /// <summary>
@@ -1988,18 +1951,13 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    { GetState = fun m ->
-        getState m
-        |> WindowState.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg
-      GetWindow = fun m d -> upcast getWindow m d
-      IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
-    |> BindingData.SubModelWin.box
-    |> SubModelWinData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelWin.create
+      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> toMsg)
+      (fun m d -> upcast getWindow m d)
+      (defaultArg isModal false)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
 
 
   /// <summary>
@@ -2093,18 +2051,13 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    { GetState = fun m ->
-        getState m
-        |> WindowState.map (fun sub -> (m, sub))
-      GetBindings = bindings
-      ToMsg = fun _ -> id
-      GetWindow = fun m d -> upcast getWindow m d
-      IsModal = defaultArg isModal false
-      OnCloseRequested = fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone }
-    |> BindingData.SubModelWin.box
-    |> SubModelWinData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelWin.create
+      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+      bindings
+      (fun _ -> id)
+      (fun m d -> upcast getWindow m d)
+      (defaultArg isModal false)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
 
 
   /// <summary>
@@ -2179,16 +2132,11 @@ type Binding private () =
        toMsg: 'id * 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModels = fun m ->
-        getSubModels m
-        |> Seq.map (fun sub -> toBindingModel (m, sub))
-      GetId = getId
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg }
-    |> BindingData.SubModelSeq.box
-    |> SubModelSeqData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelSeq.create
+      (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
+      getId
+      bindings
+      (fun _ -> toMsg)
 
 
   /// <summary>
@@ -2212,16 +2160,11 @@ type Binding private () =
        toMsg: 'id * 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModels = fun m ->
-        getSubModels m
-        |> Seq.map (fun sub -> (m, sub))
-      GetId = snd >> getId
-      GetBindings = bindings
-      ToMsg = fun _ -> toMsg }
-    |> BindingData.SubModelSeq.box
-    |> SubModelSeqData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelSeq.create
+      (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
+      (snd >> getId)
+      bindings
+      (fun _ -> toMsg)
 
 
   /// <summary>
@@ -2239,16 +2182,11 @@ type Binding private () =
        getId: 'subModel -> 'id,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    { GetModels = fun m ->
-        getSubModels m
-        |> Seq.map (fun sub -> (m, sub))
-      GetId = snd >> getId
-      GetBindings = bindings
-      ToMsg = fun _ (_, msg) -> msg }
-    |> BindingData.SubModelSeq.box
-    |> SubModelSeqData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelSeq.create
+      (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
+      (snd >> getId)
+      bindings
+      (fun _ (_, msg) -> msg)
 
 
   /// <summary>
@@ -2282,13 +2220,7 @@ type Binding private () =
        get: 'model -> 'id voption,
        set: 'id voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    { Get = get
-      Set = set
-      SubModelSeqBindingName = subModelSeqBindingName }
-    |> BindingData.SubModelSelectedItem.box
-    |> SubModelSelectedItemData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelSelectedItem.create get set subModelSeqBindingName
 
 
   /// <summary>
@@ -2322,13 +2254,10 @@ type Binding private () =
        get: 'model -> 'id option,
        set: 'id option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    { Get = get >> ValueOption.ofOption
-      Set = ValueOption.toOption >> set
-      SubModelSeqBindingName = subModelSeqBindingName }
-    |> BindingData.SubModelSelectedItem.box
-    |> SubModelSelectedItemData
-    |> BaseBindingData
-    |> createBinding
+    BindingData.SubModelSelectedItem.create
+      (get >> ValueOption.ofOption)
+      (ValueOption.toOption >> set)
+      subModelSeqBindingName
 
 
 
@@ -2345,11 +2274,9 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg)
         : string -> Binding<'model, 'msg> =
-      { Get = get >> box
-        Set = fun p _ -> p |> unbox<'a> |> set }
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.create
+        get
+        (fun p _ -> p |> set)
 
 
     /// <summary>
@@ -2363,12 +2290,9 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      { Get = get >> Option.map box >> Option.toObj
-        Set = fun p _ -> p |> Option.ofObj |> Option.map unbox<'a> |> set }
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
-
+      BindingData.TwoWay.createOpt
+        get
+        (fun p _ -> p |> set)
 
     /// <summary>
     ///   Creates a two-way binding to an optional value. The binding
@@ -2402,12 +2326,9 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.box
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.create
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation validate
 
 
@@ -2425,12 +2346,9 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.box
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.create
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2448,12 +2366,9 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p  _ -> set p }
-      |> BindingData.TwoWay.box
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.create
+        get
+        (fun p  _ -> set p)
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2471,12 +2386,9 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.box
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.create
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2496,12 +2408,9 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxVOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createVOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation validate
 
 
@@ -2521,12 +2430,9 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxVOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createVOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2546,12 +2452,9 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxVOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createVOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2571,12 +2474,9 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxVOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createVOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2596,12 +2496,9 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation validate
 
 
@@ -2621,12 +2518,9 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2646,12 +2540,9 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2671,12 +2562,9 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      { Get = get
-        Set = fun p _ -> set p }
-      |> BindingData.TwoWay.boxOpt
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.TwoWay.createOpt
+        get
+        (fun p _ -> set p)
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2856,12 +2744,10 @@ module Extensions =
          get: 'model -> 'id voption,
          set: 'id voption -> 'msg)
         : string -> Binding<'model, 'msg> =
-      { Get = get >> ValueOption.map box
-        Set = fun id _ -> id |> ValueOption.map unbox<'id> |> set
-        SubModelSeqBindingName = subModelSeqBindingName }
-      |> SubModelSelectedItemData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.SubModelSelectedItem.create
+        get
+        (fun id _ -> id |> set)
+        subModelSeqBindingName
 
 
     /// <summary>
@@ -2896,9 +2782,7 @@ module Extensions =
          get: 'model -> 'id option,
          set: 'id option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      { Get = get >> ValueOption.ofOption >> ValueOption.map box
-        Set = fun id _ -> id |> ValueOption.map unbox<'id> |> ValueOption.toOption |> set
-        SubModelSeqBindingName = subModelSeqBindingName }
-      |> SubModelSelectedItemData
-      |> BaseBindingData
-      |> createBinding
+      BindingData.SubModelSelectedItem.create
+        (get >> ValueOption.ofOption)
+        (fun id _ -> id |> ValueOption.toOption |> set)
+        subModelSeqBindingName
