@@ -484,7 +484,7 @@ module internal BindingData =
       |> BaseBindingData
       |> createBinding
 
-    let createFromCmd exec canExec =
+    let create exec canExec =
       createWithParam
         (fun _ -> exec)
         (fun _ -> canExec)
@@ -1304,7 +1304,7 @@ type Binding private () =
   static member cmd
       (exec: 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createFromCmd
+    BindingData.Cmd.create
       (exec >> ValueSome)
       (fun _ -> true)
 
@@ -1321,7 +1321,7 @@ type Binding private () =
       (exec: 'model -> 'msg,
        canExec: 'model -> bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createFromCmd
+    BindingData.Cmd.create
       (exec >> ValueSome)
       canExec
 
@@ -1336,7 +1336,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createFromCmd
+    BindingData.Cmd.create
       exec
       (exec >> ValueOption.isSome)
 
@@ -1351,7 +1351,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg option)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createFromCmd
+    BindingData.Cmd.create
       (exec >> ValueOption.ofOption)
       (exec >> Option.isSome)
 
@@ -1369,7 +1369,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createFromCmd
+    BindingData.Cmd.create
       (exec >> ValueOption.ofOk)
       (exec >> Result.isOk)
 
@@ -2688,7 +2688,7 @@ module Extensions =
     static member cmd
         (exec: 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createFromCmd
+      BindingData.Cmd.create
         (fun _ -> exec |> ValueSome)
         (fun _ -> true)
 
@@ -2703,7 +2703,7 @@ module Extensions =
         (exec: 'msg,
          canExec: 'model -> bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createFromCmd
+      BindingData.Cmd.create
         (fun _ -> exec |> ValueSome)
         canExec
 
