@@ -170,7 +170,7 @@ module Helpers =
       name
       (exec: 'model -> 'msg voption)
       (canExec: 'model -> bool) =
-    BindingData.CmdParam.createFromCmd exec canExec name
+    BindingData.Cmd.createFromCmd exec canExec name
 
 
   let internal cmdParam
