@@ -303,6 +303,8 @@ module internal BindingData =
     mapMsgWithModelRec
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
+
+  let setMsgWithModel f = mapMsgWithModel (fun m _ -> f m)
   let setMsg msg = mapMsg (fun _ -> msg)
 
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
@@ -318,6 +320,8 @@ module internal BindingData =
     let mapModel f = f |> mapModel |> mapData
     let mapMsgWithModel f = f |> mapMsgWithModel |> mapData
     let mapMsg f = f |> mapMsg |> mapData
+
+    let setMsgWithModel f = f |> setMsgWithModel |> mapData
     let setMsg msg = msg |> setMsg |> mapData
 
     let addValidation vaidate = vaidate |> addValidation |> mapData
@@ -811,6 +815,9 @@ module Binding =
   
   /// Map the message of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
+
+  /// Set the message of a binding with access to the model.
+  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsgWithModel f binding
   
   /// Set the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
