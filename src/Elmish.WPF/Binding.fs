@@ -476,7 +476,7 @@ module internal BindingData =
 
   module CmdParam =
 
-    let create exec canExec autoRequery =
+    let createWithParam exec canExec autoRequery =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
@@ -485,7 +485,7 @@ module internal BindingData =
       |> createBinding
 
     let createFromCmd exec canExec =
-      create
+      createWithParam
         (fun _ -> exec)
         (fun _ -> canExec)
         false
@@ -1383,7 +1383,7 @@ type Binding private () =
   static member cmdParam
       (exec: obj -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.CmdParam.create
+    BindingData.CmdParam.createWithParam
       (fun p model -> exec p model |> ValueSome)
       (fun _ _ -> true)
       false
@@ -1409,7 +1409,7 @@ type Binding private () =
        canExec: obj -> 'model -> bool,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.CmdParam.create
+    BindingData.CmdParam.createWithParam
       (fun p m -> exec p m |> ValueSome)
       canExec
       (defaultArg uiBoundCmdParam false)
@@ -1433,7 +1433,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg voption,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.CmdParam.create
+    BindingData.CmdParam.createWithParam
       exec
       (fun p m -> exec p m |> ValueOption.isSome)
       (defaultArg uiBoundCmdParam false)
@@ -1457,7 +1457,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg option,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.CmdParam.create
+    BindingData.CmdParam.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOption)
       (fun p m -> exec p m |> Option.isSome)
       (defaultArg uiBoundCmdParam false)
@@ -1484,7 +1484,7 @@ type Binding private () =
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.CmdParam.create
+    BindingData.CmdParam.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOk)
       (fun p m -> exec p m |> Result.isOk)
       (defaultArg uiBoundCmdParam false)
@@ -2717,7 +2717,7 @@ module Extensions =
     static member cmdParam
         (exec: obj -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.CmdParam.create
+      BindingData.CmdParam.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun _ _ -> true)
         false
@@ -2741,7 +2741,7 @@ module Extensions =
         (exec: obj -> 'msg voption,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.CmdParam.create
+      BindingData.CmdParam.createWithParam
         (fun p _ -> exec p)
         (fun p _ -> exec p |> ValueOption.isSome)
         (defaultArg uiBoundCmdParam false)
@@ -2765,7 +2765,7 @@ module Extensions =
         (exec: obj -> 'msg option,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.CmdParam.create
+      BindingData.CmdParam.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOption)
         (fun p _ -> exec p |> Option.isSome)
         (defaultArg uiBoundCmdParam false)
@@ -2792,7 +2792,7 @@ module Extensions =
         (exec: obj -> Result<'msg, 'ignored>,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.CmdParam.create
+      BindingData.CmdParam.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOk)
         (fun p _ -> exec p |> Result.isOk)
         (defaultArg uiBoundCmdParam false)
@@ -2818,7 +2818,7 @@ module Extensions =
          canExec: obj -> bool,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.CmdParam.create
+      BindingData.CmdParam.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun p _ -> canExec p)
         (defaultArg uiBoundCmdParam false)
