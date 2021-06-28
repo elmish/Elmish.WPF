@@ -1,4 +1,5 @@
 #### 4.0.0-beta-43
+* Dropped support for .NET Core 3.0.  Still have support for .NET Core 3.1.
 * Added `setMsg` in the `Binding` module
 * Added `setMsgWithModel` in the `Binding` module
 * Removed `id` in the `Binding` module (that was added in 4.0.0-beta-3)

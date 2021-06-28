@@ -5,7 +5,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFrameworks>net5.0-windows;netcoreapp3.0;net461</TargetFrameworks>
+    <TargetFrameworks>net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
