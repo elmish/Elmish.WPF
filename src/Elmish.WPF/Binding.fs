@@ -803,16 +803,16 @@ module internal BindingData =
 
 module Binding =
 
-  /// Map the model type parameter of a binding via a contravariant mapping.
+  /// Map the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
   
-  /// Map the message type parameter of a binding with access to the model via a covariant mapping.
+  /// Map the message of a binding with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'model -> 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
   
-  /// Map the message type parameter of a binding via a covariant mapping.
+  /// Map the message of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
   
-  /// Set the message type parameter of a binding
+  /// Set the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
 
   let internal subModelSelectedItemLast a b =
@@ -856,13 +856,13 @@ module Binding =
 
 module Bindings =
 
-  /// Map the model type parameter of a list of bindings via a contravariant mapping.
+  /// Map the model of a list of bindings via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
   
-  /// Map the message type parameter of a list of bindings with access to the model via a covariant mapping.
+  /// Map the message of a list of bindings with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
   
-  /// Map the message type parameter of a list of bindings via a covariant mapping.
+  /// Map the message of a list of bindings via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
 
 
