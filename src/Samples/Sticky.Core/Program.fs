@@ -29,7 +29,7 @@ let update msg m =
 
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue"
-    |> Binding.id
+    |> Binding.oneWay id
     |> Binding.addSticky (fun v -> v % 2 = 0)
     |> Binding.mapModel (fun m -> m.Count)
   "Increment" |> Binding.cmd Increment

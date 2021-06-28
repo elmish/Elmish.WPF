@@ -1,6 +1,7 @@
 #### 4.0.0-beta-43
 * Added `setMsg` in the `Binding` module
 * Added `setMsgWithModel` in the `Binding` module
+* Removed `id` in the `Binding` module (that was added in 4.0.0-beta-3)
 * Lazy effect now exposed via the name `addLazy`
 * Validation effect now exposd via the name `addValidation`
 * Sticky effect now exposed via the name `addSticky`

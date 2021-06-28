@@ -825,14 +825,6 @@ module Binding =
   let internal subModelSelectedItemLast a b =
     BindingData.subModelSelectedItemLast a.Data b.Data
 
-  ///Creates a one-way binding with the model as the value.
-  let id<'model, 'msg when 'model : equality> : string -> Binding<'model, 'msg> =
-    { Get = id }
-    |> BindingData.OneWay.box
-    |> OneWayData
-    |> BaseBindingData
-    |> createBinding
-
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
   let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
     let mutable stickyModel = None
