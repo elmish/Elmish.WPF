@@ -849,6 +849,12 @@ module Binding =
     binding
     |> BindingData.Binding.addValidation validate
 
+  /// <summary>
+  ///   Adds laziness to the updating of the given binding. If the models are considered equal,
+  ///   then updating of the given binding is skipped.
+  /// </summary>
+  /// <param name="equals">Updating skipped when this function returns <c>true</c>.</param>
+  /// <param name="binding">The binding to which the laziness is added.</param>
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
     |> BindingData.Binding.addLazy equals
