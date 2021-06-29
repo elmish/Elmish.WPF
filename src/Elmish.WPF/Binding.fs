@@ -7,11 +7,8 @@ open Elmish
 
 
 
-type internal OneWayData<'model, 'a when 'a : equality> =
+type internal OneWayData<'model, 'a> =
   { Get: 'model -> 'a }
-
-  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
-    d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
     d.Get model
@@ -365,19 +362,25 @@ module internal BindingData =
       |> createBinding
 
     let create get =
-      { Get = get }
+      { Get = id }
       |> box
       |> createRest
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
 
     let createOpt get =
-      { Get = get }
+      { Get = id }
       |> boxOpt
       |> createRest
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
 
     let createVOpt get =
-      { Get = get }
+      { Get = id }
       |> boxVOpt
       |> createRest
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
 
     let mapFunctions
         mGet

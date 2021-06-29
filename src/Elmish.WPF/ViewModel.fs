@@ -185,7 +185,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
-          |> Some 
+          |> Some
       | OneWayLazyData d ->
           { OneWayLazyData = d |> BindingData.OneWayLazy.measureFunctions measure measure measure2 }
           |> OneWayLazy
@@ -318,10 +318,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// for this binding
   let updateBinding name newModel =
     let rec updateBindingRec = function
-      | OneWay { OneWayData = d } ->
-          d.DidPropertyChange(currentModel, newModel)
-          |> Option.fromBool PropertyChanged
-          |> Option.toList
+      | OneWay _ -> [ PropertyChanged ]
       | TwoWay { TwoWayData = d } ->
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
