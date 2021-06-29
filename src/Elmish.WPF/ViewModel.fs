@@ -588,8 +588,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
         false
     | true, binding ->
-        result <- tryGetMember currentModel binding
-        true
+        try
+          result <- tryGetMember currentModel binding
+          true
+        with e ->
+          log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
+          reraise ()
 
   override _.TrySetMember (binder, value) =
     log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", nameChain, binder.Name)
@@ -598,10 +602,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
         false
     | true, binding ->
-        let success = trySetMember currentModel value binding
-        if not success then
-          log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
-        success
+        try
+          let success = trySetMember currentModel value binding
+          if not success then
+            log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
+          success
+        with e ->
+          log.LogError(e, "[{BindingNameChain}] TrySetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
+          reraise ()
 
 
   interface INotifyPropertyChanged with
