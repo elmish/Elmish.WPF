@@ -187,7 +187,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         win.Visibility <- initialVisibility
     ) |> ignore
 
-  let initializeBinding name getInitializedBindingByName addValdiationBinding =
+  let initializeBinding name getInitializedBindingByName =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
     let initializeBindingBase = function
@@ -306,7 +306,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               { Binding = b
                 Validate = d.Validate
                 Errors = currentModel |> d.Validate |> ref }
-            addValdiationBinding name binding
             Validatation binding)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
@@ -315,20 +314,29 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Option.map (addLazy d.Equals)
     initializeBindingRec
 
+  let rec getValidationBinding = function
+    | BaseVmBinding _ -> None
+    | Cached b -> b.Binding |> getValidationBinding
+    | Lazy b -> b.Binding |> getValidationBinding
+    | Validatation b -> b |> Some // TODO: what if there is more than once validation effect?
+
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
     let bindingDictAsFunc = flip Dictionary.tryFind bindingDict >> Option.map getBaseVmBinding
-    let validationDictAsFunc k v = validationDict.[k] <- v
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding b.Name bindingDictAsFunc validationDictAsFunc b.Data
+        initializeBinding b.Name bindingDictAsFunc b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
+    let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
+    bindingDict
+    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some getValidationBinding >> PairOption.sequence)
+    |> SeqOption.somes
+    |> Seq.iter validationDict.Add
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 

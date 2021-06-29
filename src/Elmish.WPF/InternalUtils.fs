@@ -76,3 +76,27 @@ module Option =
 
   let fromBool a b =
     if b then Some a else None
+
+
+[<RequireQualifiedAccess>]
+module SeqOption =
+
+  let somes mma = mma |> Seq.choose id
+
+
+[<RequireQualifiedAccess>]
+module Pair =
+
+  open System.Collections.Generic
+
+  let ofKvp (kvp: KeyValuePair<_,_>) = (kvp.Key, kvp.Value)
+
+  let mapAll f g (a, c) = (f a, g c)
+
+
+[<RequireQualifiedAccess>]
+module PairOption =
+
+  let sequence = function
+    | Some a, Some b -> Some (a, b)
+    | _ -> None
