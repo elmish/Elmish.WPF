@@ -73,8 +73,7 @@ and internal LazyBinding<'model, 'msg> = {
 }
 
 
-/// Represents all necessary data used in an active binding.
-and internal VmBinding<'model, 'msg> =
+and internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
   | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
@@ -84,6 +83,10 @@ and internal VmBinding<'model, 'msg> =
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
+
+/// Represents all necessary data used in an active binding.
+and internal VmBinding<'model, 'msg> =
+  | BaseVmBinding of BaseVmBinding<'model, 'msg>
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
   | Lazy of LazyBinding<'model, 'msg>
@@ -99,6 +102,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         logPerformance: ILogger)
       as this =
   inherit DynamicObject()
+
+  let rec getBaseVmBinding = function
+    | BaseVmBinding b -> b
+    | Cached b -> b.Binding |> getBaseVmBinding
+    | Validatation b -> b.Binding |> getBaseVmBinding
+    | Lazy b -> b.Binding |> getBaseVmBinding
 
   let mutable currentModel = initialModel
 
@@ -185,20 +194,24 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
+          |> BaseVmBinding
           |> Some
       | OneWayLazyData d ->
           { OneWayLazyData = d |> BindingData.OneWayLazy.measureFunctions measure measure measure2 }
           |> OneWayLazy
+          |> BaseVmBinding
           |> withCaching
           |> Some
       | OneWaySeqLazyData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
             Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
           |> OneWaySeq
+          |> BaseVmBinding
           |> Some
       | TwoWayData d ->
           { TwoWayData = d |> BindingData.TwoWay.measureFunctions measure measure }
           |> TwoWay
+          |> BaseVmBinding
           |> Some
       | CmdData d ->
           let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
@@ -206,6 +219,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let canExecute param = d.CanExec param currentModel
           Command(execute, canExecute, d.AutoRequery)
           |> Cmd
+          |> BaseVmBinding
           |> Some
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
@@ -214,6 +228,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
+          |> BaseVmBinding
           |> Some
       | SubModelWinData d ->
           let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
@@ -247,6 +262,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 PreventClose = preventClose
                 VmWinState = ref <| WindowState.Visible vm }
           |> SubModelWin
+          |> BaseVmBinding
           |> Some
       | SubModelSeqData d ->
           let d = d |> BindingData.SubModelSeq.measureFunctions measure measure measure measure2
@@ -261,6 +277,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           { SubModelSeqData = d
             Vms = vms }
           |> SubModelSeq
+          |> BaseVmBinding
           |> Some
       | SubModelSelectedItemData d ->
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
@@ -269,6 +286,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               { SubModelSelectedItemData = d
                 SubModelSeqBinding = b }
               |> SubModelSelectedItem
+              |> BaseVmBinding
               |> withCaching
               |> Some
           | Some _ ->
@@ -301,7 +319,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
-    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict
+    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict >> Option.map getBaseVmBinding
     let validationDictAsFunc k v = validationDict.[k] <- v
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
@@ -317,7 +335,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
   let updateBinding name newModel =
-    let rec updateBindingRec = function
+    let updateBindingBase = function
       | OneWay _ -> [ PropertyChanged ]
       | TwoWay { TwoWayData = d } ->
           d.DidPropertyChange(currentModel, newModel)
@@ -440,6 +458,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
           |> Option.toList
+    let rec updateBindingRec = function
+      | BaseVmBinding b -> b |> updateBindingBase
       | Cached b ->
           let updates = updateBindingRec b.Binding
           updates
@@ -462,7 +482,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     updateBindingRec
 
   let tryGetMember model =
-    let rec tryGetMemberRec = function
+    let tryGetMemberBase = function
       | OneWay { OneWayData = d } -> d.TryGetMember model
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
       | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
@@ -488,6 +508,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
           )
           selected |> Option.toObj |> box
+    let rec tryGetMemberRec = function
+      | BaseVmBinding b -> b |> tryGetMemberBase
       | Cached b ->
           match !b.Cache with
           | Some v -> v
@@ -502,7 +524,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     tryGetMemberRec
 
   let trySetMember model (value: obj) =
-    let rec trySetMemberRec = function // TOOD: return 'msg option
+    let trySetMemberBase = function // TOOD: return 'msg option
       | TwoWay { TwoWayData = d } ->
           d.TrySetMember(value, model) |> dispatch
           true
@@ -513,6 +535,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             |> ValueOption.map (fun vm -> vm.CurrentModel)
           b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
           true
+      | OneWay _
+      | OneWayLazy _
+      | OneWaySeq _
+      | Cmd _
+      | SubModel _
+      | SubModelWin _
+      | SubModelSeq _ ->
+          false
+    let rec trySetMemberRec = function
+      | BaseVmBinding b -> b |> trySetMemberBase
       | Cached b ->
           let successful = trySetMemberRec b.Binding
           if successful then
@@ -522,14 +554,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           trySetMemberRec b.Binding
       | Lazy b ->
           trySetMemberRec b.Binding
-      | OneWay _
-      | OneWayLazy _
-      | OneWaySeq _
-      | Cmd _
-      | SubModel _
-      | SubModelWin _
-      | SubModelSeq _ ->
-          false
     trySetMemberRec
 
   member internal _.CurrentModel : 'model = currentModel
