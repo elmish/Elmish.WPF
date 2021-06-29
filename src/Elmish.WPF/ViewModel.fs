@@ -315,7 +315,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Option.map (addLazy d.Equals)
     initializeBindingRec
 
-  let (bindings, validationBindingsByName) =
+  let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
@@ -605,13 +605,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member _.ErrorsChanged = errorsChanged.Publish
     member _.HasErrors =
       // WPF calls this too often, so don't log https://github.com/elmish/Elmish.WPF/issues/354
-      validationBindingsByName
+      validationBindings
       |> Seq.map (fun (Kvp(_, b)) -> !b.Errors)
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member _.GetErrors name =
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
-      validationBindingsByName
+      validationBindings
       |> IReadOnlyDictionary.tryFind name
       |> Option.map (fun b -> !b.Errors)
       |> Option.defaultValue []
