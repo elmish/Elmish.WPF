@@ -117,7 +117,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
 
-  let withCaching b = Cached { Binding = b; Cache = ref None }
+  let addCaching b = Cached { Binding = b; Cache = ref None }
   let addLazy equals b = { Binding = b; Equals = equals } |> Lazy
 
 
@@ -202,7 +202,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           { OneWayLazyData = d |> BindingData.OneWayLazy.measureFunctions measure measure measure2 }
           |> OneWayLazy
           |> BaseVmBinding
-          |> withCaching
+          |> addCaching
           |> Some
       | OneWaySeqLazyData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
@@ -289,7 +289,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 SubModelSeqBinding = b }
               |> SubModelSelectedItem
               |> BaseVmBinding
-              |> withCaching
+              |> addCaching
               |> Some
           | Some _ ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", d.SubModelSeqBindingName)
