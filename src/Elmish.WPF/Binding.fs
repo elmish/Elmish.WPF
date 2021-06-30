@@ -14,18 +14,6 @@ type internal OneWayData<'model, 'a> =
     d.Get model
 
 
-type internal OneWayLazyData<'model, 'a, 'b> =
-  { Get: 'model -> 'a
-    Map: 'a -> 'b
-    Equals: 'a -> 'a -> bool }
-    
-  member d.DidProeprtyChange((currentModel: 'model), (newModel: 'model)) =
-    not <| d.Equals (d.Get newModel) (d.Get currentModel)
-
-  member d.TryGetMember(model: 'model) =
-    model |> d.Get |> d.Map
-
-
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
   { Get: 'model -> 'a
     Map: 'a -> 'b seq
@@ -138,7 +126,6 @@ and internal LazyData<'model, 'msg> =
 /// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model, obj>
-  | OneWayLazyData of OneWayLazyData<'model, obj, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
@@ -175,6 +162,12 @@ module internal Helpers =
     | CachingData d -> d |> getBaseBindingData
     | ValidationData d -> d.BindingData |> getBaseBindingData
     | LazyData d -> d.BindingData |> getBaseBindingData
+    
+  let rec getFirstLazyData = function
+    | BaseBindingData _ -> None
+    | CachingData d -> d |> getFirstLazyData
+    | ValidationData d -> d.BindingData |> getFirstLazyData
+    | LazyData d -> Some d
 
 
 module internal BindingData =
@@ -191,11 +184,6 @@ module internal BindingData =
     let mapModelBase = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
-        }
-      | OneWayLazyData d -> OneWayLazyData  {
-          Get = f >> d.Get
-          Map = d.Map;
-          Equals = d.Equals
         }
       | OneWaySeqLazyData d -> OneWaySeqLazyData {
           Get = f >> d.Get
@@ -254,7 +242,6 @@ module internal BindingData =
   let mapMsgWithModel f =
     let mapMsgWithModelBase = function
       | OneWayData d -> d |> OneWayData
-      | OneWayLazyData d -> d |> OneWayLazyData
       | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
       | TwoWayData d -> TwoWayData {
           Get = d.Get
@@ -361,7 +348,7 @@ module internal BindingData =
     let boxOpt d = mapMinorTypes Option.box d
     let box d = mapMinorTypes box d
 
-    let private createRest x =
+    let createRest x =
       x
       |> OneWayData
       |> BaseBindingData
@@ -400,65 +387,33 @@ module internal BindingData =
 
 
   module OneWayLazy =
-  
-    let mapMinorTypes
-        (outMapA: 'a -> 'a0)
-        (outMapB: 'b -> 'b0)
-        (inMapA: 'a0 -> 'a)
-        (d: OneWayLazyData<'model, 'a, 'b>) = {
-      Get = d.Get >> outMapA
-      Map = inMapA >> d.Map >> outMapB
-      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
-    }
-
-    let boxVOpt d = mapMinorTypes box ValueOption.box unbox d
-    let boxOpt d = mapMinorTypes box Option.box unbox d
-    let box d = mapMinorTypes box box unbox d
-
-    let private createRest x =
-      x
-      |> OneWayLazyData
-      |> BaseBindingData
-      |> createBinding
 
     let create get equals map =
-      { Get = get
-        Equals = equals
-        Map = map }
-      |> box
-      |> createRest
+      { Get = id }
+      |> OneWay.box
+      |> OneWay.createRest
+      >> Binding.mapModel map
+      >> Binding.addLazy equals
+      >> Binding.mapModel get
+      >> Binding.addCaching
 
     let createOpt get equals map =
-      { Get = get
-        Equals = equals
-        Map = map }
-      |> boxOpt
-      |> createRest
+      { Get = id }
+      |> OneWay.boxOpt
+      |> OneWay.createRest
+      >> Binding.mapModel map
+      >> Binding.addLazy equals
+      >> Binding.mapModel get
+      >> Binding.addCaching
 
     let createVOpt get equals map =
-      { Get = get
-        Equals = equals
-        Map = map }
-      |> boxVOpt
-      |> createRest
-
-    let mapFunctions
-        mGet
-        mMap
-        mEquals
-        (d: OneWayLazyData<'model, 'a, 'b>) =
-      { d with Get = mGet d.Get
-               Map = mMap d.Map
-               Equals = mEquals d.Equals }
-
-    let measureFunctions
-        mGet
-        mMap
-        mEquals =
-      mapFunctions
-        (mGet "get")
-        (mMap "map")
-        (mEquals "equals")
+      { Get = id }
+      |> OneWay.boxVOpt
+      |> OneWay.createRest
+      >> Binding.mapModel map
+      >> Binding.addLazy equals
+      >> Binding.mapModel get
+      >> Binding.addCaching
 
 
   module OneWaySeqLazy =

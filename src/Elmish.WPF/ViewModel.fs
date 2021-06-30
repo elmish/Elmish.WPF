@@ -21,10 +21,6 @@ type internal OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
 }
 
-type internal OneWayLazyBinding<'model, 'a, 'b> = {
-  OneWayLazyData: OneWayLazyData<'model, 'a, 'b>
-}
-
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
   Values: ObservableCollection<'b>
@@ -75,7 +71,6 @@ and internal LazyBinding<'model, 'msg> = {
 
 and internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
-  | OneWayLazy of OneWayLazyBinding<'model, obj, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
   | Cmd of cmd: Command
@@ -197,12 +192,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
           |> BaseVmBinding
-          |> Some
-      | OneWayLazyData d ->
-          { OneWayLazyData = d |> BindingData.OneWayLazy.measureFunctions measure measure measure2 }
-          |> OneWayLazy
-          |> BaseVmBinding
-          |> addCaching
           |> Some
       | OneWaySeqLazyData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
@@ -355,10 +344,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
           |> Option.toList
-      | OneWayLazy { OneWayLazyData = d } ->
-          d.DidProeprtyChange(currentModel, newModel)
-          |> Option.fromBool PropertyChanged
-          |> Option.toList
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
           []
@@ -499,7 +484,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let tryGetMemberBase = function
       | OneWay { OneWayData = d } -> d.TryGetMember model
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
-      | OneWayLazy { OneWayLazyData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
       | Cmd cmd -> box cmd
       | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
@@ -550,7 +534,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
           true
       | OneWay _
-      | OneWayLazy _
       | OneWaySeq _
       | Cmd _
       | SubModel _
