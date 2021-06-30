@@ -346,8 +346,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
           []
-      | Cmd cmd ->
-          cmd |> CanExecuteChanged |> List.singleton
+      | Cmd cmd -> cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
         let d = b.SubModelData
         match !b.Vm, d.GetModel newModel with
@@ -514,10 +513,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let v = tryGetMemberRec b.Binding
               b.Cache := Some v
               v
-      | Validatation b ->
-          tryGetMemberRec b.Binding
-      | Lazy b ->
-          tryGetMemberRec b.Binding
+      | Validatation b -> tryGetMemberRec b.Binding
+      | Lazy b -> tryGetMemberRec b.Binding
     tryGetMemberRec
 
   let trySetMember model (value: obj) =
@@ -546,10 +543,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if successful then
             b.Cache := None  // TODO #185: write test
           successful
-      | Validatation b ->
-          trySetMemberRec b.Binding
-      | Lazy b ->
-          trySetMemberRec b.Binding
+      | Validatation b -> trySetMemberRec b.Binding
+      | Lazy b -> trySetMemberRec b.Binding
     trySetMemberRec
 
   member internal _.CurrentModel : 'model = currentModel
