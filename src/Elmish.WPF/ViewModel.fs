@@ -91,6 +91,14 @@ and internal VmBinding<'model, 'msg> =
   | Validatation of ValidationBinding<'model, 'msg>
   | Lazy of LazyBinding<'model, 'msg>
 
+  with
+    member this.BaseCase =
+      match this with
+      | BaseVmBinding b -> b
+      | Cached b -> b.Binding.BaseCase
+      | Validatation b -> b.Binding.BaseCase
+      | Lazy b -> b.Binding.BaseCase
+
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
@@ -102,12 +110,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         logPerformance: ILogger)
       as this =
   inherit DynamicObject()
-
-  let rec getBaseVmBinding = function
-    | BaseVmBinding b -> b
-    | Cached b -> b.Binding |> getBaseVmBinding
-    | Validatation b -> b.Binding |> getBaseVmBinding
-    | Lazy b -> b.Binding |> getBaseVmBinding
 
   let mutable currentModel = initialModel
 
@@ -323,7 +325,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict >> Option.map getBaseVmBinding
+    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict >> Option.map (fun x -> x.BaseCase)
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
