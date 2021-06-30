@@ -94,6 +94,13 @@ and internal VmBinding<'model, 'msg> =
       | Validatation b -> b.Binding.BaseCase
       | Lazy b -> b.Binding.BaseCase
 
+    member this.FirstValidation =
+      match this with
+      | BaseVmBinding _ -> None
+      | Cached b -> b.Binding.FirstValidation
+      | Lazy b -> b.Binding.FirstValidation
+      | Validatation b -> b |> Some // TODO: what if there is more than once validation effect?
+
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
@@ -309,12 +316,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Option.map (addLazy d.Equals)
     initializeBindingRec
 
-  let rec getValidationBinding = function
-    | BaseVmBinding _ -> None
-    | Cached b -> b.Binding |> getValidationBinding
-    | Lazy b -> b.Binding |> getValidationBinding
-    | Validatation b -> b |> Some // TODO: what if there is more than once validation effect?
-
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
@@ -329,7 +330,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
     bindingDict
-    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some getValidationBinding >> PairOption.sequence)
+    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (fun x -> x.FirstValidation) >> PairOption.sequence)
     |> SeqOption.somes
     |> Seq.iter validationDict.Add
     (bindingDict    :> IReadOnlyDictionary<_,_>,
