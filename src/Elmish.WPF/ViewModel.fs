@@ -87,6 +87,9 @@ and internal VmBinding<'model, 'msg> =
   | Lazy of LazyBinding<'model, 'msg>
 
   with
+    member this.AddCaching = Cached { Binding = this; Cache = ref None }
+    member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
+
     member this.BaseCase =
       match this with
       | BaseVmBinding b -> b
@@ -117,11 +120,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
-
-
-  let addCaching b = Cached { Binding = b; Cache = ref None }
-  let addLazy equals b = { Binding = b; Equals = equals } |> Lazy
-
 
   let getNameChainFor name =
     sprintf "%s.%s" nameChain name
@@ -285,7 +283,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 SubModelSeqBinding = b }
               |> SubModelSelectedItem
               |> BaseVmBinding
-              |> addCaching
+              |> (fun b -> b.AddCaching)
               |> Some
           | Some _ ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", d.SubModelSeqBindingName)
@@ -298,7 +296,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | CachingData d ->
           d
           |> initializeBindingRec
-          |> Option.map addCaching
+          |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
@@ -313,7 +311,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
           |> initializeBindingRec
-          |> Option.map (addLazy d.Equals)
+          |> Option.map (fun b -> b.AddLazy d.Equals)
     initializeBindingRec
 
   let (bindings, validationBindings) =
