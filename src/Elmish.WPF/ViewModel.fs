@@ -299,6 +299,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               None
     let rec initializeBindingRec = function
       | BaseBindingData d -> d |> initializeBindingBase
+      | CachingData d ->
+          d
+          |> initializeBindingRec
+          |> Option.map addCaching
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData

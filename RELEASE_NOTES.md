@@ -6,6 +6,7 @@
 * Lazy effect now exposed via the name `addLazy`
 * Validation effect now exposd via the name `addValidation`
 * Sticky effect now exposed via the name `addSticky`
+* Added caching effect via the name `addCaching`
 * Now logging when WPF tries to get or set a binding and an exception is thrown
 
 #### 4.0.0-beta-42

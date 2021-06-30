@@ -151,6 +151,7 @@ and internal BaseBindingData<'model, 'msg> =
 /// Represents all necessary data used to create the different binding types.
 and internal BindingData<'model, 'msg> =
   | BaseBindingData of BaseBindingData<'model, 'msg>
+  | CachingData of BindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
   | LazyData of LazyData<'model, 'msg>
 
@@ -171,6 +172,7 @@ module internal Helpers =
 
   let rec getBaseBindingData = function
     | BaseBindingData d -> d
+    | CachingData d -> d |> getBaseBindingData
     | ValidationData d -> d.BindingData |> getBaseBindingData
     | LazyData d -> d.BindingData |> getBaseBindingData
 
@@ -238,6 +240,7 @@ module internal BindingData =
         }
     let rec mapModelRec = function
       | BaseBindingData d -> d |> mapModelBase |> BaseBindingData
+      | CachingData d -> d |> mapModelRec |> CachingData
       | ValidationData d -> ValidationData {
           BindingData = mapModelRec d.BindingData
           Validate = f >> d.Validate
@@ -289,6 +292,7 @@ module internal BindingData =
         }
     let rec mapMsgWithModelRec = function
       | BaseBindingData d -> d |> mapMsgWithModelBase |> BaseBindingData
+      | CachingData d -> d |> mapMsgWithModelRec |> CachingData
       | ValidationData d -> ValidationData {
           BindingData = mapMsgWithModelRec d.BindingData
           Validate = d.Validate
@@ -304,6 +308,7 @@ module internal BindingData =
   let setMsgWithModel f = mapMsgWithModel (fun m _ -> f m)
   let setMsg msg = mapMsg (fun _ -> msg)
 
+  let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
 
@@ -321,6 +326,7 @@ module internal BindingData =
     let setMsgWithModel f = f |> setMsgWithModel |> mapData
     let setMsg msg = msg |> setMsg |> mapData
 
+    let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
     let addValidation vaidate = vaidate |> addValidation |> mapData
     let addLazy equals = equals |> addLazy |> mapData
 
@@ -841,6 +847,16 @@ module Binding =
           stickyModel <- Some newModel
           newModel
     binding |> mapModel f
+    
+  /// <summary>
+  ///   Adds caching to the given binding.  The cache holds a single value and
+  ///   is invalidated after the given binding raises the
+  ///   <c>PropertyChanged</c> event.
+  /// </summary>
+  /// <param name="binding">The binding to which caching is added.</param>
+  let addCaching (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+    binding
+    |> BindingData.Binding.addCaching
 
   /// <summary>
   ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
