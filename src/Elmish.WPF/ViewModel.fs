@@ -89,6 +89,11 @@ and internal VmBinding<'model, 'msg> =
   with
     member this.AddCaching = Cached { Binding = this; Cache = ref None }
     member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
+    member this.AddValidation currentModel validate =
+      { Binding = this
+        Validate = validate
+        Errors = currentModel |> validate |> ref }
+      |> Validatation
 
     member this.BaseCase =
       match this with
@@ -301,12 +306,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
           |> initializeBindingRec
-          |> Option.map (fun b ->
-            let binding =
-              { Binding = b
-                Validate = d.Validate
-                Errors = currentModel |> d.Validate |> ref }
-            Validatation binding)
+          |> Option.map (fun b -> b.AddValidation currentModel d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
