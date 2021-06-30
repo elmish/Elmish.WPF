@@ -17,7 +17,7 @@ type internal UpdateData =
   | CanExecuteChanged of Command
 
 
-type internal OneWayBinding<'model, 'a when 'a : equality> = {
+type internal OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
 }
 
