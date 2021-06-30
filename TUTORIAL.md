@@ -238,7 +238,7 @@ Some MVU tips for beginners
 
 ### Normalize your model; use IDs instead of duplicating entities
 
-It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This opens up opportunities for state synchronization bugs.
+It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This increases the chance of introducing state synchronization bugs.
 
 For example, say you have an app that can display a list of books, and you can click on a book in the list to open a detail view of that book. You might think to represent it with the following model:
 
