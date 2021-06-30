@@ -107,7 +107,7 @@ and internal VmBinding<'model, 'msg> =
       | BaseVmBinding _ -> None
       | Cached b -> b.Binding.FirstValidation
       | Lazy b -> b.Binding.FirstValidation
-      | Validatation b -> b |> Some // TODO: what if there is more than once validation effect?
+      | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
