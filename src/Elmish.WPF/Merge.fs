@@ -5,12 +5,12 @@ open System.Collections.ObjectModel
 
 
 let keyed
-      getSourceId
-      getTargetId
-      create
-      update
-      (target: ObservableCollection<_>)
-      (source: _ array) =
+      (getSourceId: 's -> 'id)
+      (getTargetId: 't -> 'id)
+      (create: 's -> 'id -> 't)
+      (update: 't -> 's -> int -> unit)
+      (target: ObservableCollection<'t>)
+      (source: 's array) =
   (*
    * Based on Elm's HTML.keyed
    * https://guide.elm-lang.org/optimization/keyed.html
