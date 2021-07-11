@@ -128,7 +128,7 @@ let keyed
 
   let moves =
     additions
-    |> Seq.toList
+    |> Seq.toList // make copy of additions so that calling Remove doesn't happen on the same data structure while enumerating
     |> List.collect (fun (Kvp (id, (sIdx, s))) ->
       removals
       |> Dictionary.tryFind id
