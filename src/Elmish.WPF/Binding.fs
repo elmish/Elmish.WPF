@@ -610,10 +610,10 @@ module internal BindingData =
 
     let box d = mapMinorTypes box box unbox unbox d
 
-    let create getModel bindings toMsg sticky =
+    let create getModel bindings sticky =
       { GetModel = getModel
         GetBindings = bindings
-        ToMsg = toMsg
+        ToMsg = fun _ -> id
         Sticky = sticky }
       |> box
       |> SubModelData
@@ -1503,8 +1503,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> toBindingModel (m, getSubModel m) |> ValueSome)
       bindings
-      (fun _ -> toMsg)
       false
+    >> Binding.mapMsg toMsg
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1525,8 +1525,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> (m, getSubModel m) |> ValueSome)
       bindings
-      (fun _ -> toMsg)
       false
+    >> Binding.mapMsg toMsg
 
 
   /// <summary>
@@ -1543,7 +1543,6 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> (m, getSubModel m) |> ValueSome)
       bindings
-      (fun _ -> id)
       false
 
 
@@ -1584,8 +1583,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
       bindings
-      (fun _ -> toMsg)
       (defaultArg sticky false)
+    >> Binding.mapMsg toMsg
 
 
   /// <summary>
@@ -1625,8 +1624,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
       bindings
-      (fun _ -> toMsg)
       (defaultArg sticky false)
+    >> Binding.mapMsg toMsg
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1661,8 +1660,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
       bindings
-      (fun _ -> toMsg)
       (defaultArg sticky false)
+    >> Binding.mapMsg toMsg
 
 
   /// <summary>
@@ -1698,8 +1697,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
       bindings
-      (fun _ -> toMsg)
       (defaultArg sticky false)
+    >> Binding.mapMsg toMsg
 
 
   /// <summary>
@@ -1730,7 +1729,6 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
       bindings
-      (fun _ -> id)
       (defaultArg sticky false)
 
 
@@ -1762,8 +1760,8 @@ type Binding private () =
     BindingData.SubModel.create
       (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
       bindings
-      (fun _ -> id)
       (defaultArg sticky false)
+
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
