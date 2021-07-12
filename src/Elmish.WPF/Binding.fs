@@ -105,7 +105,7 @@ and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 
   member d.Merge
       ((getTargetId: ('bindingModel -> 'id) -> 'b -> 'id),
        (create: 'bindingModel -> 'id -> 'b),
-       (update: 'b -> 'bindingModel -> Unit),
+       (update: 'b -> 'bindingModel -> unit),
        (values: ObservableCollection<'b>),
        (newModel: 'model)) =
     let update b bm _ = update b bm
