@@ -96,6 +96,12 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
 }
 
 
+and internal SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg> =
+  { GetModels: 'model -> 'bindingModel seq
+    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    ToMsg: 'model -> int * 'bindingMsg -> 'msg }
+
+
 and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
   { GetModels: 'model -> 'bindingModel seq
     GetId: 'bindingModel -> 'id
@@ -131,6 +137,7 @@ and internal BaseBindingData<'model, 'msg> =
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
+  | SubModelSeqData2 of SubModelSeqData2<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
@@ -215,6 +222,11 @@ module internal BindingData =
           IsModal = d.IsModal
           OnCloseRequested = f >> d.OnCloseRequested
         }
+      | SubModelSeqData2 d -> SubModelSeqData2 {
+          GetModels = f >> d.GetModels
+          GetBindings = d.GetBindings
+          ToMsg = f >> d.ToMsg
+        }
       | SubModelSeqData d -> SubModelSeqData {
           GetModels = f >> d.GetModels
           GetId = d.GetId
@@ -265,6 +277,11 @@ module internal BindingData =
           GetWindow = fun m dispatch -> d.GetWindow m (m |> f >> dispatch)
           IsModal = d.IsModal
           OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
+        }
+      | SubModelSeqData2 d -> SubModelSeqData2 {
+          GetModels = d.GetModels
+          GetBindings = d.GetBindings
+          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
         }
       | SubModelSeqData d -> SubModelSeqData {
           GetModels = d.GetModels
@@ -692,6 +709,49 @@ module internal BindingData =
         (mToMsg "toMsg")
         id // sic: could measure GetWindow
         id // sic: could measure OnCloseRequested
+
+
+  module SubModelSeq2 =
+  
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetModels = d.GetModels >> Seq.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
+    }
+
+    let box d = mapMinorTypes box box unbox unbox d
+
+    let create getBindings =
+      { GetModels = id
+        GetBindings = getBindings
+        ToMsg = fun _ -> id }
+      |> box
+      |> SubModelSeqData2
+      |> BaseBindingData
+      |> createBinding
+
+    let mapFunctions
+        mGetModels
+        mGetBindings
+        mToMsg
+        (d: SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with GetModels = mGetModels d.GetModels
+               GetBindings = mGetBindings d.GetBindings
+               ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModels
+        mGetBindings
+        mToMsg =
+      mapFunctions
+        (mGetModels "getSubModels") // sic: "getModels" would follow the pattern
+        (mGetBindings "bindings") // sic: "getBindings" would follow the pattern
+        (mToMsg "toMsg")
 
 
   module SubModelSeq =
@@ -2082,6 +2142,11 @@ type Binding private () =
       ?onCloseRequested = onCloseRequested,
       ?isModal = isModal
     )
+
+  static member subModelSeq // TODO: make into function
+      (getBindings: unit -> Binding<'model, 'msg> list)
+      : string -> Binding<'model seq, int * 'msg> =
+    BindingData.SubModelSeq2.create getBindings
 
 
   /// <summary>
