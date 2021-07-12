@@ -1,7 +1,25 @@
-module internal Elmish.WPF.Merge
+﻿module internal Elmish.WPF.Merge
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
+
+
+let unkeyed
+    (create: 's -> int -> 't)
+    (update: 't -> 's -> unit)
+    (target: ObservableCollection<'t>)
+    (source: 's seq) =
+  let mutable lastIdx = -1
+  for (idx, s) in source |> Seq.indexed do
+    lastIdx <- idx
+    if idx < target.Count then
+      update target.[idx] s
+    else // source is longer than target
+      create s idx |> target.Add
+  let mutable idx = target.Count - 1
+  while idx > lastIdx do // target is longer than source
+    target.RemoveAt idx
+    idx <- idx - 1
 
 
 let keyed
