@@ -1,16 +1,16 @@
-﻿module internal Elmish.WPF.Merge
+module internal Elmish.WPF.Merge
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
 
 
 let keyed
-      (getSourceId: 's -> 'id)
-      (getTargetId: 't -> 'id)
-      (create: 's -> 'id -> 't)
-      (update: 't -> 's -> int -> unit)
-      (target: ObservableCollection<'t>)
-      (source: 's array) =
+    (getSourceId: 's -> 'id)
+    (getTargetId: 't -> 'id)
+    (create: 's -> 'id -> 't)
+    (update: 't -> 's -> int -> unit)
+    (target: ObservableCollection<'t>)
+    (source: 's array) =
   (*
    * Based on Elm's HTML.keyed
    * https://guide.elm-lang.org/optimization/keyed.html
