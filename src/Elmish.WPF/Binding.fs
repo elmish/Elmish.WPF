@@ -166,14 +166,14 @@ module internal Helpers =
 
   let rec getBaseBindingData = function
     | BaseBindingData d -> d
-    | CachingData d -> d |> getBaseBindingData
-    | ValidationData d -> d.BindingData |> getBaseBindingData
-    | LazyData d -> d.BindingData |> getBaseBindingData
+    | CachingData d -> getBaseBindingData d
+    | ValidationData d -> getBaseBindingData d.BindingData
+    | LazyData d -> getBaseBindingData d.BindingData
     
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
-    | CachingData d -> d |> getFirstLazyData
-    | ValidationData d -> d.BindingData |> getFirstLazyData
+    | CachingData d -> getFirstLazyData d
+    | ValidationData d -> getFirstLazyData d.BindingData
     | LazyData d -> Some d
 
 
