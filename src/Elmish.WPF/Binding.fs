@@ -96,7 +96,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
 }
 
 
-and internal SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg> =
+and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg> =
   { GetModels: 'model -> 'bindingModel seq
     GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
@@ -137,7 +137,7 @@ and internal BaseBindingData<'model, 'msg> =
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
-  | SubModelSeqData2 of SubModelSeqData2<'model, 'msg, obj, obj>
+  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
@@ -222,7 +222,7 @@ module internal BindingData =
           IsModal = d.IsModal
           OnCloseRequested = f >> d.OnCloseRequested
         }
-      | SubModelSeqData2 d -> SubModelSeqData2 {
+      | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = f >> d.GetModels
           GetBindings = d.GetBindings
           ToMsg = f >> d.ToMsg
@@ -278,7 +278,7 @@ module internal BindingData =
           IsModal = d.IsModal
           OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
         }
-      | SubModelSeqData2 d -> SubModelSeqData2 {
+      | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = d.GetModels
           GetBindings = d.GetBindings
           ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
@@ -711,14 +711,14 @@ module internal BindingData =
         id // sic: could measure OnCloseRequested
 
 
-  module SubModelSeq2 =
+  module SubModelSeqUnkeyed =
   
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (d: SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
       GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
@@ -731,7 +731,7 @@ module internal BindingData =
         GetBindings = getBindings
         ToMsg = fun _ -> id }
       |> box
-      |> SubModelSeqData2
+      |> SubModelSeqUnkeyedData
       |> BaseBindingData
       |> createBinding
 
@@ -739,7 +739,7 @@ module internal BindingData =
         mGetModels
         mGetBindings
         mToMsg
-        (d: SubModelSeqData2<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
       { d with GetModels = mGetModels d.GetModels
                GetBindings = mGetBindings d.GetBindings
                ToMsg = mToMsg d.ToMsg }
@@ -2146,7 +2146,7 @@ type Binding private () =
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg> list)
       : string -> Binding<'model seq, int * 'msg> =
-    BindingData.SubModelSeq2.create getBindings
+    BindingData.SubModelSeqUnkeyed.create getBindings
 
 
   /// <summary>
