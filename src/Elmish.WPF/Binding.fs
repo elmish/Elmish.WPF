@@ -172,9 +172,9 @@ module internal Helpers =
     
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
+    | LazyData d -> Some d
     | CachingData d -> getFirstLazyData d
     | ValidationData d -> getFirstLazyData d.BindingData
-    | LazyData d -> Some d
 
 
 module internal BindingData =
