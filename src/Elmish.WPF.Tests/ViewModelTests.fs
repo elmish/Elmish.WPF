@@ -178,12 +178,9 @@ module Helpers =
       (getId: 'subModel -> 'id)
       (toMsg: 'id * 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list) =
-    BindingData.SubModelSeq.create
-      (fun m -> upcast getModels m)
-      getId
-      (fun () -> bindings)
-      (fun _ -> toMsg)
-      name
+    BindingData.SubModelSeqKeyed.create (fun () -> bindings) getId name
+    |> Binding.mapModel (fun m -> upcast getModels m)
+    |> Binding.mapMsg toMsg
      
 
 

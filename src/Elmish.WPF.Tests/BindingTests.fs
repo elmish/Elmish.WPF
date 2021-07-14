@@ -37,9 +37,9 @@ module Helpers =
     | SubModelData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getSubModelSeqData f =
+  let internal getSubModelSeqKeyedData f =
     match getBaseBindingData (f "").Data with
-    | SubModelSeqData d -> d
+    | SubModelSeqKeyedData d -> d
     | _ -> failwith "Incorrect binding"
 
   let internal getSubModelSelectedItemData f =
@@ -3087,7 +3087,7 @@ module subModelOpt =
 
 
 
-module subModelSeq =
+module subModelSeqKeyed =
 
 
   module noToMsg_noToBindingModel =
@@ -3106,8 +3106,8 @@ module subModelSeq =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeq(getSubModels, fail, fail) |> getSubModelSeqData
-        test <@ d.GetModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
+        let d = Binding.subModelSeq(getSubModels, fail, fail) |> getSubModelSeqKeyedData
+        test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
 
@@ -3117,19 +3117,8 @@ module subModelSeq =
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
         let getId : char -> string = string
-        let d = Binding.subModelSeq(getSubModels, getId, fail) |> getSubModelSeqData
-        test <@ d.GetModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
-      }
-
-
-    [<Fact>]
-    let ``final toMsg extracts and unboxes the second tuple element`` () =
-      Property.check <| property {
-        let! m = GenX.auto<int>
-        let! x = GenX.auto<int>
-        let! y = GenX.auto<string>
-        let d = Binding.subModelSeq(fail, fail, fail) |> getSubModelSeqData
-        test <@ d.ToMsg m (box x, box y) |> unbox = y @>
+        let d = Binding.subModelSeq(getSubModels, getId, fail) |> getSubModelSeqKeyedData
+        test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
       }
 
 
@@ -3150,8 +3139,8 @@ module subModelSeq =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeq(getSubModels, fail, fail, fail) |> getSubModelSeqData
-        test <@ d.GetModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
+        let d = Binding.subModelSeq(getSubModels, fail, fail, fail) |> getSubModelSeqKeyedData
+        test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
 
@@ -3161,20 +3150,8 @@ module subModelSeq =
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
         let getId : char -> string = string
-        let d = Binding.subModelSeq(getSubModels, getId, fail, fail) |> getSubModelSeqData
-        test <@ d.GetModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
-      }
-
-
-    [<Fact>]
-    let ``final toMsg returns the value of original toMsg`` () =
-      Property.check <| property {
-        let! m = GenX.auto<int>
-        let! id = GenX.auto<int>
-        let! msg = GenX.auto<string>
-        let toMsg (id: int, msg: string) = msg.Length + id
-        let d = Binding.subModelSeq(fail, fail, toMsg, fail) |> getSubModelSeqData
-        test <@ d.ToMsg m (box id, box msg) |> unbox = toMsg (id, msg) @>
+        let d = Binding.subModelSeq(getSubModels, getId, fail, fail) |> getSubModelSeqKeyedData
+        test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
       }
 
 
@@ -3196,8 +3173,8 @@ module subModelSeq =
           let! m = GenX.auto<string>
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
-          let d = Binding.subModelSeq(getSubModels, toBindingModel, fail, fail, fail) |> getSubModelSeqData
-          test <@ d.GetModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s))) @>
+          let d = Binding.subModelSeq(getSubModels, toBindingModel, fail, fail, fail) |> getSubModelSeqKeyedData
+          test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s))) @>
         }
 
 
@@ -3208,20 +3185,8 @@ module subModelSeq =
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
           let getId i = i * 2
-          let d = Binding.subModelSeq(getSubModels, toBindingModel, getId, fail, fail) |> getSubModelSeqData
-          test <@ d.GetModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
-        }
-
-
-      [<Fact>]
-      let ``final toMsg returns the value of original toMsg`` () =
-        Property.check <| property {
-          let! m = GenX.auto<int>
-          let! id = GenX.auto<int>
-          let! msg = GenX.auto<string>
-          let toMsg (id: int, msg: string) = msg.Length + id
-          let d = Binding.subModelSeq(fail, fail, fail, toMsg, fail) |> getSubModelSeqData
-          test <@ d.ToMsg m (box id, box msg) |> unbox = toMsg (id, msg) @>
+          let d = Binding.subModelSeq(getSubModels, toBindingModel, getId, fail, fail) |> getSubModelSeqKeyedData
+          test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
         }
 
 
@@ -3410,7 +3375,7 @@ module sorting =
         let! s = GenX.auto<string>
         let data =
           [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
-            SubModelSeqData { GetModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
+            SubModelSeqKeyedData { GetSubModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ] |> List.map BaseBindingData
         let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast

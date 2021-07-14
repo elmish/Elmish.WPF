@@ -52,14 +52,9 @@ and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, '
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
-and internal SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
-  SubModelSeqData: SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
-  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
-}
-
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
   SubModelSelectedItemData: SubModelSelectedItemData<'model, 'msg, 'id>
-  SubModelSeqBinding: SubModelSeqBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
+  SubModelSeqKeyedBinding: SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
 }
 
 and internal CachedBinding<'model, 'msg, 'value> = {
@@ -88,7 +83,6 @@ and internal BaseVmBinding<'model, 'msg> =
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj>
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeq of SubModelSeqBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
 /// Represents all necessary data used in an active binding.
@@ -309,27 +303,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> SubModelSeqKeyed
           |> BaseVmBinding
           |> Some
-      | SubModelSeqData d ->
-          let d = d |> BindingData.SubModelSeq.measureFunctions measure measure measure measure2
-          let toMsg = fun msg -> d.ToMsg currentModel msg
-          let vms =
-            d.GetModels initialModel
-            |> Seq.map (fun m ->
-                 let chain = getNameChainForItem name (d.GetId m |> string)
-                 ViewModel(m, (fun msg -> toMsg (d.GetId m, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            )
-            |> ObservableCollection
-          { SubModelSeqData = d
-            Vms = vms }
-          |> SubModelSeq
-          |> BaseVmBinding
-          |> Some
       | SubModelSelectedItemData d ->
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
           match getInitializedBindingByName d.SubModelSeqBindingName with
-          | Some (SubModelSeq b) ->
+          | Some (SubModelSeqKeyed b) ->
               { SubModelSelectedItemData = d
-                SubModelSeqBinding = b }
+                SubModelSeqKeyedBinding = b }
               |> SubModelSelectedItem
               |> BaseVmBinding
               |> (fun b -> b.AddCaching)
@@ -504,16 +483,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           d.Merge(getTargetId, create, update, b.Vms, newModel)
           []
-      | SubModelSeq b ->
-          let d = b.SubModelSeqData
-          let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
-          let create m id = 
-            let toMsg = fun msg -> d.ToMsg currentModel msg
-            let chain = getNameChainForItem name (id |> string)
-            ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-          let update (vm: ViewModel<_, _>) = vm.UpdateModel
-          d.Merge(getTargetId, create, update, b.Vms, newModel)
-          []
       | SubModelSelectedItem { SubModelSelectedItemData = d } ->
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
@@ -555,18 +524,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> ValueOption.toObj
       | SubModelSeqUnkeyed { Vms = vms }
       | SubModelSeqKeyed { Vms = vms } -> box vms
-      | SubModelSeq { Vms = vms } -> box vms
       | SubModelSelectedItem b ->
           let selected =
             b.SubModelSelectedItemData.TryGetMember
               ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
-               b.SubModelSeqBinding.SubModelSeqData,
-               b.SubModelSeqBinding.Vms,
+               b.SubModelSeqKeyedBinding.SubModelSeqKeyedData,
+               b.SubModelSeqKeyedBinding.Vms,
                model)
           log.LogTrace(
             "[{BindingNameChain}] Setting selected VM to {SubModelId}",
             nameChain,
-            (selected |> Option.map (fun vm -> b.SubModelSeqBinding.SubModelSeqData.GetId vm.CurrentModel))
+            (selected |> Option.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
           )
           selected |> Option.toObj |> box
     let rec tryGetMemberRec = function
@@ -592,7 +560,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             (value :?> ViewModel<obj, obj>)
             |> ValueOption.ofObj
             |> ValueOption.map (fun vm -> vm.CurrentModel)
-          b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqBinding.SubModelSeqData, model, bindingModel) |> dispatch
+          b.SubModelSelectedItemData.TrySetMember(b.SubModelSeqKeyedBinding.SubModelSeqKeyedData, model, bindingModel) |> dispatch
           true
       | OneWay _
       | OneWaySeq _
@@ -600,8 +568,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModel _
       | SubModelWin _
       | SubModelSeqUnkeyed _
-      | SubModelSeqKeyed _
-      | SubModelSeq _ ->
+      | SubModelSeqKeyed _ ->
           false
     let rec trySetMemberRec = function
       | BaseVmBinding b -> b |> trySetMemberBase
