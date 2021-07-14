@@ -4,6 +4,18 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 
 
+type SourceOrTarget =
+  | Source
+  | Target
+
+type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: int, id: string) =
+  inherit System.Exception(sprintf "In the %A sequence, the elements at indices %d and %d have the same ID %s" sourceOrTarget index1 index2 id)
+  member this.SourceOrTarget = sourceOrTarget
+  member this.Index1 = index1
+  member this.Index2 = index2
+  member this.Id = id
+
+
 let unkeyed
     (create: 's -> int -> 't)
     (update: 't -> 's -> unit)
@@ -38,9 +50,17 @@ let keyed
   let additions = Dictionary<_, _> ()
 
   let recordRemoval curTargetIdx curTarget curTargetId =
-    removals.Add(curTargetId, (curTargetIdx, curTarget))
+    if removals.ContainsKey curTargetId then
+      let (firstIdx, _) = removals.[curTargetId]
+      raise (DuplicateIdException (Target, firstIdx, curTargetIdx, curTargetId.ToString()))
+    else
+      removals.Add(curTargetId, (curTargetIdx, curTarget))
   let recordAddition curSourceIdx curSource curSourceId =
-    additions.Add(curSourceId, (curSourceIdx, curSource))
+    if additions.ContainsKey curSourceId then
+      let (firstIdx, _) = additions.[curSourceId]
+      raise (DuplicateIdException (Source, firstIdx, curSourceIdx, curSourceId.ToString()))
+    else 
+      additions.Add(curSourceId, (curSourceIdx, curSource))
 
   let mutable curSourceIdx = 0
   let mutable curTargetIdx = 0

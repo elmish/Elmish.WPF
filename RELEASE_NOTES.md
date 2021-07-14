@@ -8,7 +8,8 @@
 * Sticky effect now exposed via the name `addSticky`
 * Added caching effect via the name `addCaching`
 * Now logging when WPF tries to get or set a binding and an exception is thrown
-* Add support for a `SubModelSeq` variant that does involve IDs
+* Added support for a `SubModelSeq` variant that does involve IDs
+* `SubModelSeq` variant that involves IDs will now merge elements without considering IDs if duplicate IDs are detected
 
 #### 4.0.0-beta-42
 * Improved API of WindowState<_>

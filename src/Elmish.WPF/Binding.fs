@@ -108,14 +108,13 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id 
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
     GetId: 'bindingModel -> 'id }
     
-  member d.Merge
+  member d.MergeKeyed
       (getTargetId: ('bindingModel -> 'id) -> 't -> 'id,
        create: 'bindingModel -> 'id -> 't,
        update: 't -> 'bindingModel -> unit,
        values: ObservableCollection<'t>,
-       newModel: 'model) =
+       newSubModels: 'bindingModel []) =
     let update t bm _ = update t bm
-    let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
     Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
     
     
