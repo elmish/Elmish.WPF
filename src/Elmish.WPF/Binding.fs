@@ -102,6 +102,23 @@ and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg> =
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
 
 
+and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+  { GetSubModels: 'model -> 'bindingModel seq
+    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
+    GetId: 'bindingModel -> 'id }
+    
+  member d.Merge
+      (getTargetId: ('bindingModel -> 'id) -> 't -> 'id,
+       create: 'bindingModel -> 'id -> 't,
+       update: 't -> 'bindingModel -> unit,
+       values: ObservableCollection<'t>,
+       newModel: 'model) =
+    let update t bm _ = update t bm
+    let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
+    Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
+
+
 and internal SubModelSeqData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
   { GetModels: 'model -> 'bindingModel seq
     GetId: 'bindingModel -> 'id
@@ -138,6 +155,7 @@ and internal BaseBindingData<'model, 'msg> =
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
   | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj>
+  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj>
   | SubModelSeqData of SubModelSeqData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
@@ -227,6 +245,12 @@ module internal BindingData =
           GetBindings = d.GetBindings
           ToMsg = f >> d.ToMsg
         }
+      | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
+          GetSubModels = f >> d.GetSubModels
+          GetBindings = d.GetBindings
+          ToMsg = f >> d.ToMsg
+          GetId = d.GetId
+        }
       | SubModelSeqData d -> SubModelSeqData {
           GetModels = f >> d.GetModels
           GetId = d.GetId
@@ -282,6 +306,12 @@ module internal BindingData =
           GetModels = d.GetModels
           GetBindings = d.GetBindings
           ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+        }
+      | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
+          GetSubModels = d.GetSubModels
+          GetBindings = d.GetBindings
+          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          GetId = d.GetId
         }
       | SubModelSeqData d -> SubModelSeqData {
           GetModels = d.GetModels
@@ -754,6 +784,57 @@ module internal BindingData =
         (mToMsg "toMsg")
 
 
+  module SubModelSeqKeyed =
+    
+      let mapMinorTypes
+          (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+          (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+          (outMapId: 'id -> 'id0)
+          (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+          (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+          (inMapId: 'id0 -> 'id)
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) = {
+        GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
+        GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+        ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
+        GetId = inMapBindingModel >> d.GetId >> outMapId
+      }
+  
+      let box d = mapMinorTypes box box box unbox unbox unbox d
+  
+      let create getBindings getId =
+        { GetSubModels = id
+          GetBindings = getBindings
+          ToMsg = fun _ -> id
+          GetId = getId }
+        |> box
+        |> SubModelSeqKeyedData
+        |> BaseBindingData
+        |> createBinding
+  
+      let mapFunctions
+          mGetSubModels
+          mGetBindings
+          mToMsg
+          mGetId
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) =
+        { d with GetSubModels = mGetSubModels d.GetSubModels
+                 GetBindings = mGetBindings d.GetBindings
+                 ToMsg = mToMsg d.ToMsg
+                 GetId = mGetId d.GetId }
+  
+      let measureFunctions
+          mGetSubModels
+          mGetBindings
+          mToMsg
+          mGetId =
+        mapFunctions
+          (mGetSubModels "getSubModels")
+          (mGetBindings "getBindings")
+          (mToMsg "toMsg")
+          (mGetId "getId")
+
+
   module SubModelSeq =
   
     let mapMinorTypes
@@ -827,6 +908,7 @@ module internal BindingData =
         mEquals =
       mapFunctions
         (mEquals "equals")
+
 
 
 module Binding =
@@ -2147,6 +2229,12 @@ type Binding private () =
       (getBindings: unit -> Binding<'model, 'msg> list)
       : string -> Binding<'model seq, int * 'msg> =
     BindingData.SubModelSeqUnkeyed.create getBindings
+
+  static member subModelSeq // TODO: make into function
+      (getBindings: unit -> Binding<'model, 'msg> list,
+       getId: 'model -> 'id)
+      : string -> Binding<'model seq, 'id * 'msg> =
+    BindingData.SubModelSeqKeyed.create getBindings getId
 
 
   /// <summary>
