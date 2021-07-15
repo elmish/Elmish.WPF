@@ -10,6 +10,7 @@
 * Now logging when WPF tries to get or set a binding and an exception is thrown
 * Added support for a `SubModelSeq` variant that does involve IDs
 * `SubModelSeq` variant that involves IDs will now merge elements without considering IDs if duplicate IDs are detected
+* Fixed bug (present in 3.5.8) where `ArgumentNullException` is thrown from `INotifyDataErrorInfo.GetErrors` when given `null`
 
 #### 4.0.0-beta-42
 * Improved API of WindowState<_>
