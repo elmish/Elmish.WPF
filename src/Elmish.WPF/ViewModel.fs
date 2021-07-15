@@ -486,8 +486,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
           with
             | :? Elmish.WPF.Merge.DuplicateIdException as e ->
-              let messageTemplate = "In the %A sequence, the elements at indices %d and %d have the same ID %s. To avoid this problem, the elements will be merged without using IDs."
-              log.LogError(messageTemplate, e.SourceOrTarget, e.Index1, e.Index2, e.Id)
+              let messageTemplate = "[{BindingNameChain}] In the %A sequence of the binding {BindingName}, the elements at indices %d and %d have the same ID %s. To avoid this problem, the elements will be merged without using IDs."
+              log.LogError(messageTemplate, nameChain, name, e.SourceOrTarget, e.Index1, e.Index2, e.Id)
               let create m _ = create m (d.GetId m)
               Merge.unkeyed create update b.Vms newSubModels
           []
