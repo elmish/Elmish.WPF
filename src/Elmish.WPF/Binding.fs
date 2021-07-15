@@ -2182,8 +2182,8 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelSeqKeyed.create bindings getId
-      >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
-      >> Binding.mapMsg toMsg
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
+    >> Binding.mapMsg toMsg
 
 
   /// <summary>
