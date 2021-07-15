@@ -651,7 +651,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member _.GetErrors name =
-      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, (name |> Option.ofObj |> Option.defaultValue "<null>"))
+      let name = name |> Option.ofObj |> Option.defaultValue "<null>"
+      log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, name)
       validationBindings
       |> IReadOnlyDictionary.tryFind name
       |> Option.map (fun b -> !b.Errors)
