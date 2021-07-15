@@ -651,7 +651,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member _.GetErrors name =
-      let name = name |> Option.ofObj |> Option.defaultValue "<null>"
+      let name = name |> Option.ofObj |> Option.defaultValue "<null>" // entity-level errors are being requested when given null or ""  https://docs.microsoft.com/en-us/dotnet/api/system.componentmodel.inotifydataerrorinfo.geterrors#:~:text=null%20or%20Empty%2C%20to%20retrieve%20entity-level%20errors
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, name)
       validationBindings
       |> IReadOnlyDictionary.tryFind name
