@@ -269,7 +269,7 @@ This principle also extends to data in messages: If you have a choice between pa
 
 Keep the XAML (and any code-behind) focused on the view, keep `bindings` focused on bindings, and keep your model and `update`  pure. If you need to do anything impure, that's what `Command` is for, whether it's writing to disk, connecting to a DB, calling a web API, talking to actors, or anything else. All impure operations can be implemented using commands.
 
-Note that there's nothing stopping you from having mutable state outside your model. For example, if you have persistent connections (e.g. SignalR) that you need to start and stop during the lifetime of your app, you can define them elsewhere and use  them in commands from your `update`. If you need an unknown number of them, such as one connection per item in a list in your model, you can store them in a dictionary or similar, keyed by the item's ID. This allows you to create, dispose, and remove items according to the data in your model.
+Note that there's nothing stopping you from having mutable state outside your model. For example, if you have persistent connections (e.g. SignalR) that you need to start and stop during the lifetime of your app, you can define them elsewhere and use them in commands from your `update`. If you need an unknown number of them, such as one connection per item in a list in your model, you can store them in a dictionary or similar, keyed by the item's ID. This allows you to create, dispose, and remove items according to the data in your model.
 
 
 ### Child components and scaling
