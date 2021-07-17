@@ -1,4 +1,5 @@
-#### 4.0.0-beta-43
+#### 4.0.0-beta-42
+* Improved API of WindowState<_>
 * Dropped support for .NET Core 3.0.  Still have support for .NET Core 3.1.
 * Added `setMsg` in the `Binding` module
 * Added `setMsgWithModel` in the `Binding` module
@@ -11,9 +12,6 @@
 * Added support for a `SubModelSeq` variant that does involve IDs
 * `SubModelSeq` variant that involves IDs will now merge elements without considering IDs if duplicate IDs are detected
 * Fixed bug (present in 3.5.8) where `ArgumentNullException` is thrown from `INotifyDataErrorInfo.GetErrors` when given `null`
-
-#### 4.0.0-beta-42
-* Improved API of WindowState<_>
 
 #### 4.0.0-beta-41
 * Fixed "backwards typing" (#373) and other bugs (like #371) introduced in 4.0.0-beta-40 with more careful use of the Dispatcher (#374)
