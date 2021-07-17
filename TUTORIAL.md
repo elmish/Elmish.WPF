@@ -178,9 +178,9 @@ let bindings () : Binding<Model, Msg> list = [
 
 The actual bindings will be explained in detail later, but explained simply, the code above will create a view-model with:
 
-* an `int` get-only property `CounterValue` returning `model.Count`
-* two get-only properties `Increment` and `Decrement` that are `ICommand`s that can always execute and, when executed, dispatches the `Increment` and `Decrement` messages, respectively
-* a `float` get-set property `StepSize ` returning `model.StepSize` and which, when set, dispatches the `SetStepSize` message with the number
+- an `int` get-only property `CounterValue` returning `model.Count`
+- two get-only properties `Increment` and `Decrement` that are `ICommand`s that can always execute and, when executed, dispatches the `Increment` and `Decrement` messages, respectively
+- a `float` get-set property `StepSize ` returning `model.StepSize` and which, when set, dispatches the `SetStepSize` message with the number
 
 Another important difference between normal MVU `view` functions and Elmish.WPF’s `update`  function is that `view` is called every time the model has been updated, whereas `bindings` is only called once, when the “view model” is initialized. After that, it is the functions used in the bindings themselves that are called when the model is updated. Therefore, `bindings` do not accept a `model` or `dispatch` parameter. The `model` is instead passed separately in each binding, and the `dispatch` isn’t visible at all; you simply specify the message to be dispatched, and Elmish.WPF will take care of dispatching the message.
 
@@ -225,11 +225,11 @@ In other words, you don’t call the impure functions yourself; the MVU library 
 
 For example:
 
-* The user clicks a button to log in, which dispatches a `SignInRequested` message
-* The `update` function returns a new model with an `IsBusy = true` value (which can be to show an animation such as a spinner) as well as a command that actually calls the API
-* The MVU loop calls the command
-* The app continues to work normally - the spinner spins because `IsBusy = true`, and any other messages are processed as they would normally be. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`; for example, you may choose to ignore additional `SignInRequested` messages.
-* When the API call returns, the function that called the API dispatches a suitable message based on the result (e.g. `SignInSuccessful` or `SignInFailed`)
+- The user clicks a button to log in, which dispatches a `SignInRequested` message
+- The `update` function returns a new model with an `IsBusy = true` value (which can be to show an animation such as a spinner) as well as a command that actually calls the API
+- The MVU loop calls the command
+- The app continues to work normally - the spinner spins because `IsBusy = true`, and any other messages are processed as they would normally be. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`; for example, you may choose to ignore additional `SignInRequested` messages.
+- When the API call returns, the function that called the API dispatches a suitable message based on the result (e.g. `SignInSuccessful` or `SignInFailed`)
 
 Elmish has several helpers in the `Cmd` module to easily create commands from normal functions, but if they don’t suit your use-case, you can always write a command directly as a list of `Dispatch<'msg> -> unit` functions.
 
@@ -269,7 +269,7 @@ This principle also extends to data in messages: If you have a choice between pa
 
 Keep the XAML (and any code-behind) focused on the view, keep `bindings` focused on bindings, and keep your model and `update`  pure. If you need to do anything impure, that's what `Command` is for, whether it's writing to disk, connecting to a DB, calling a web API, talking to actors, or anything else. All impure operations can be implemented using commands.
 
-Note that there's nothing stopping you from having mutable state outside your model. For example, if you have persistent connections (e.g. SignalR) that you need to start and stop during the lifetime of your app, you can define them elsewhere and use  them in commands from your `update`. If you need an unknown number of them, such as one connection per item in a list in your model, you can store them in a dictionary or similar, keyed by the item's ID. This allows you to create, dispose, and remove items according to the data in your model.
+Note that there's nothing stopping you from having mutable state outside your model. For example, if you have persistent connections (e.g. SignalR) that you need to start and stop during the lifetime of your app, you can define them elsewhere and use them in commands from your `update`. If you need an unknown number of them, such as one connection per item in a list in your model, you can store them in a dictionary or similar, keyed by the item's ID. This allows you to create, dispose, and remove items according to the data in your model.
 
 
 ### Child components and scaling
@@ -312,8 +312,8 @@ Another important problem, again following from the fact that the components are
 
 What should you do instead, then? The answer is, simply put, to scale the model/message/update/view **separately**, and **only when needed**. It is highly recommended that you read the following reddit thread replies by user `rtfeldman`:
 
-* [Elm Architecture with a Redux-like store pattern](https://www.reddit.com/r/elm/comments/5xdl9z/elm_architecture_with_a_reduxlike_store_pattern/dehrcx8/)
-* [How to structure Elm with multiple models?](https://www.reddit.com/r/elm/comments/5jd2xn/how_to_structure_elm_with_multiple_models/dbuu0m4/)
+- [Elm Architecture with a Redux-like store pattern](https://www.reddit.com/r/elm/comments/5xdl9z/elm_architecture_with_a_reduxlike_store_pattern/dehrcx8/)
+- [How to structure Elm with multiple models?](https://www.reddit.com/r/elm/comments/5jd2xn/how_to_structure_elm_with_multiple_models/dbuu0m4/)
 
 ### Optimize easily with memoization
 
@@ -365,14 +365,14 @@ The Elmish.WPF bindings
 
 The Elmish.WPF bindings can be categorized into the following types:
 
-* **One-way bindings**, for when you want to bind to a simple value.
-* **Two-way bindings**, for when you want to bind to a simple value as well as update this value by dispatching a message. Used for inputs, checkboxes, sliders, etc. Can optionally support validation (e.g. provide an error message using `INotifyDataErrorInfo` that can be displayed when an input is not valid).
-* **Command bindings**, for when you want a message to be dispatched when something happens (e.g. a button is clicked).
-* **Sub-model bindings**, for when you want to bind to a complex object that has its own bindings. 
-* **Sub-model window bindings**, for when you want to control the opening/closing/hiding of new windows.
-* **Sub-model sequence bindings**, for when you want to bind to a collection of complex objects, each of which has its own bindings.
-* **Other bindings** not fitting into the categories above
-* **Lazy bindings**, optimizations of various other bindings that allow skipping potentially expensive computations if the input is unchanged
+- **One-way bindings**, for when you want to bind to a simple value.
+- **Two-way bindings**, for when you want to bind to a simple value as well as update this value by dispatching a message. Used for inputs, checkboxes, sliders, etc. Can optionally support validation (e.g. provide an error message using `INotifyDataErrorInfo` that can be displayed when an input is not valid).
+- **Command bindings**, for when you want a message to be dispatched when something happens (e.g. a button is clicked).
+- **Sub-model bindings**, for when you want to bind to a complex object that has its own bindings. 
+- **Sub-model window bindings**, for when you want to control the opening/closing/hiding of new windows.
+- **Sub-model sequence bindings**, for when you want to bind to a collection of complex objects, each of which has its own bindings.
+- **Other bindings** not fitting into the categories above
+- **Lazy bindings**, optimizations of various other bindings that allow skipping potentially expensive computations if the input is unchanged
 
 Additionally, there is a section explaining how most dispatching bindings allow you to wrap the dispatcher to support debouncing/throttling etc.
 
@@ -496,9 +496,9 @@ In the counter example, we might want to prohibit negative numbers, disabling th
 
 There are several ways to indicate that a command can‘t execute. The `cmdIf` binding has overloads for the following:
 
-* `exec: 'model -> 'msg option`, where the command is disabled if `exec` returns `None` 
-* `exec: 'model -> Result<'msg, _>`, where the command is disabled if `exec` returns `Error`
-* `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to dispatch)
+- `exec: 'model -> 'msg option`, where the command is disabled if `exec` returns `None` 
+- `exec: 'model -> Result<'msg, _>`, where the command is disabled if `exec` returns `Error`
+- `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to dispatch)
 
 #### Using the `CommandParameter`
 
@@ -522,8 +522,8 @@ The `subModel` binding has three overloads, increasing in complexity depending o
 
 This is sufficient for many purposes. The overload accepts two parameters:
 
-* `getSubModel: 'model -> 'subModel` to obtain the sub-model 
-* `bindings: unit -> Binding<'model * 'subModel, 'msg> list`, the bindings for the sub-model
+- `getSubModel: 'model -> 'subModel` to obtain the sub-model 
+- `bindings: unit -> Binding<'model * 'subModel, 'msg> list`, the bindings for the sub-model
 
 In other words, inside the sub-bindings, the model parameter (in each binding) is a tuple with the parent model and the sub-model.
 
@@ -572,8 +572,8 @@ If you had passed `id` as the `toMsg` parameter, you would have the same behavio
 
 This is the most complex one, and is required for the following cases:
 
-* recursive models
-* proper “child components” with their own model/update/bindings unrelated to their parent
+- recursive models
+- proper “child components” with their own model/update/bindings unrelated to their parent
 
 The reasons it’s required for these cases are described further below.
 
@@ -688,14 +688,14 @@ This binding works together with a `subModelSeq` binding in the same binding lis
 
 The `subModelSelectedItem` binding has the following parameters:
 
-* `subModelSeqBindingName: string`, where you identify the binding name for the corresponding `subModelSeq` binding
-* `get: 'model -> 'id option`, where you return the ID of the sub-model in the `subModelSeq` binding that should be selected
-* `set: 'id option -> 'msg`, where you return the message to dispatch when the selected item changes (typically this will be a message case wrapping the ID).
+- `subModelSeqBindingName: string`, where you identify the binding name for the corresponding `subModelSeq` binding
+- `get: 'model -> 'id option`, where you return the ID of the sub-model in the `subModelSeq` binding that should be selected
+- `set: 'id option -> 'msg`, where you return the message to dispatch when the selected item changes (typically this will be a message case wrapping the ID).
 
 You bind the `SelectedItem` of a control to the `subModelSelectedItem` binding. Then, Elmish.WPF will take care of the following:
 
-* When the UI retrieves the selected item, Elmish.WPF gets the ID using `get`, looks up the correct view-model in the `subModelSeq` binding identified by `subModelSeqBindingName`, and returns that view-model to the UI.
-* When the UI sets the selected item (which it sets to an Elmish.WPF view-model), Elmish.WPF calls `set` with the ID of the sub-model corresponding to that view-model.
+- When the UI retrieves the selected item, Elmish.WPF gets the ID using `get`, looks up the correct view-model in the `subModelSeq` binding identified by `subModelSeqBindingName`, and returns that view-model to the UI.
+- When the UI sets the selected item (which it sets to an Elmish.WPF view-model), Elmish.WPF calls `set` with the ID of the sub-model corresponding to that view-model.
 
 #### `oneWaySeq`
 
@@ -707,9 +707,9 @@ In the special case that you want to bind to a collection of **simple** (can be 
 
 The `oneWaySeq` binding has the following parameters:
 
-* `get: 'model -> #seq<'a>`, to retrieve the collection
-* `itemEquals: 'a -> 'a -> bool`, to determine whether an item has changed
-* `getId: 'a -> 'id`, to track which items are added, removed, re-ordered, and changed
+- `get: 'model -> #seq<'a>`, to retrieve the collection
+- `itemEquals: 'a -> 'a -> bool`, to determine whether an item has changed
+- `getId: 'a -> 'id`, to track which items are added, removed, re-ordered, and changed
 
 If the values are not simple (e.g. not strings or numbers), then you can instead use `subModelSeq` to set up separate bindings for each item. And if the values are not distinct (i.e., can not be uniquely identified in the collection), then Elmish.WPF won’t be able to track which items are moved, and you can’t use this optimization.
 
@@ -790,6 +790,6 @@ A binding in Elmish.WPF is represented by an instance of type `Binding<'model, '
 Additional resources
 --------------------
 
-* The [Elmish.WPF readme](https://github.com/elmish/Elmish.WPF/blob/master/README.md) contains
-  * a “getting started” section that will get you quickly up and running
-  * a FAQ with miscellaneous useful information
+The [Elmish.WPF readme](https://github.com/elmish/Elmish.WPF/blob/master/README.md) contains
+  - a “getting started” section that will get you quickly up and running
+  - a FAQ with miscellaneous useful information
