@@ -39,7 +39,9 @@ module elmEq =
 
     [<Fact>]
     let ``returns false if any non-string reference type member is not referentially equal`` () =
-      Property.check' 1000<tests> <| property {
+      PropertyConfig.defaultConfig
+      |> PropertyConfig.withTests 1000<tests>
+      |> Property.checkWith <| property {
         let! x1 = GenX.auto<int>
         let! y1 = GenX.auto<int>
         let! x2 = GenX.auto<string>
@@ -52,7 +54,9 @@ module elmEq =
 
     [<Fact>]
     let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal`` () =
-      Property.check' 1000<tests> <| property {
+      PropertyConfig.defaultConfig
+      |> PropertyConfig.withTests 1000<tests>
+      |> Property.checkWith <| property {
         let! x1 = GenX.auto<int>
         let! y1 = GenX.auto<int>
         let! x2 = GenX.auto<string>
@@ -71,7 +75,9 @@ module elmEq =
 
     [<Fact>]
     let ``returns false if any non-string reference type member is not referentially equal`` () =
-      Property.check' 1000<tests> <| property {
+      PropertyConfig.defaultConfig
+      |> PropertyConfig.withTests 1000<tests>
+      |> Property.checkWith <| property {
         let! t1 = GenX.auto<TestValues>
         let! t2 = GenX.auto<TestValues>
         test <@ elmEq t1 t2 = false @>
@@ -80,7 +86,9 @@ module elmEq =
 
     [<Fact>]
     let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal`` () =
-      Property.check' 1000<tests> <| property {
+      PropertyConfig.defaultConfig
+      |> PropertyConfig.withTests 1000<tests>
+      |> Property.checkWith <| property {
         let! t1 = GenX.auto<TestValues>
         let! t2 = GenX.auto<TestValues>
         let t2 = { t2 with t = t1.t }

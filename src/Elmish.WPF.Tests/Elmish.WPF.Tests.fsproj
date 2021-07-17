@@ -21,8 +21,8 @@
   
   <ItemGroup>
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.0.250" />
-    <PackageReference Include="Hedgehog" Version="0.8.3" />
-    <PackageReference Include="Hedgehog.Experimental" Version="0.1.5" />
+    <PackageReference Include="Hedgehog" Version="0.10.0" />
+    <PackageReference Include="Hedgehog.Experimental" Version="0.4.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
     <PackageReference Include="Unquote" Version="5.0.0" />
     <PackageReference Include="xunit.core" Version="2.4.1" />
