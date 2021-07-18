@@ -21,7 +21,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
     GetId: 'b -> 'id
     ItemEquals: 'b -> 'b -> bool }
     
-  member d.Merge((values: ObservableCollection<'b>), (currentModel: 'model), (newModel: 'model)) =
+  member d.Merge(values: ObservableCollection<'b>, currentModel: 'model, newModel: 'model) =
     let intermediate = d.Get newModel
     if not <| d.Equals intermediate (d.Get currentModel) then
       let create v _ = v
@@ -36,13 +36,13 @@ type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
   { Get: 'model -> 'a
     Set: 'a -> 'model -> 'msg }
     
-  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
     d.Get model
 
-  member d.TrySetMember((value: 'a), (model: 'model)) =
+  member d.TrySetMember(value: 'a, model: 'model) =
     d.Set value model
 
 
@@ -58,22 +58,22 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
     
-  member d.DidPropertyChange((currentModel: 'model), (newModel: 'model)) =
+  member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember
-      ((getBindingModel: 'b -> 'bindingModel),
-       (subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
-       (viewModels: ObservableCollection<'b>),
-       (model: 'model)) =
+      (getBindingModel: 'b -> 'bindingModel,
+       subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
+       viewModels: ObservableCollection<'b>,
+       model: 'model) =
     let selectedId = d.Get model
     viewModels
     |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> ValueSome >> (=) selectedId)
 
   member d.TrySetMember
-      ((subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>),
-       (model: 'model),
-       (bindingModel: 'bindingModel voption)) =
+      (subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
+       model: 'model,
+       bindingModel: 'bindingModel voption) =
     let id = bindingModel |> ValueOption.map subModelSeqData.GetId
     d.Set id model
 
