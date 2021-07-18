@@ -16,7 +16,8 @@ type internal Command(execute, canExecute, autoRequery) as this =
   do if autoRequery then CommandManager.RequerySuggested.AddHandler handler
 
   // CommandManager only keeps a weak reference to the event handler,
-  // so a strong reference must be maintained
+  // so a strong reference must be maintained.
+  // Can test this via the UiBoundCmdParam sample.
   member private _._Handler = handler
 
   member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x, EventArgs.Empty)
