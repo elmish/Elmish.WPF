@@ -62,9 +62,9 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
     d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember
-      (getBindingModel: 'b -> 'bindingModel,
+      (getBindingModel: 'vm -> 'bindingModel,
        subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
-       viewModels: ObservableCollection<'b>,
+       viewModels: ObservableCollection<'vm>,
        model: 'model) =
     let selectedId = d.Get model
     viewModels
