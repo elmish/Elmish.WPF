@@ -224,7 +224,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
           let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
           let canExecute param = d.CanExec param currentModel
-          Command(execute, canExecute, d.AutoRequery)
+          let cmd = Command(execute, canExecute)
+          if d.AutoRequery then
+            cmd.AddRequeryHandler ()
+          cmd
           |> Cmd
           |> BaseVmBinding
           |> Some

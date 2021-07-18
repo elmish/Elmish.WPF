@@ -8,7 +8,7 @@ open System.Windows.Input
 /// conditions that might change the output of canExecute. It's necessary to use
 /// this feature for command bindings where the CommandParameter is bound to
 /// another UI control (e.g. a ListView.SelectedItem).
-type internal Command(execute, canExecute, autoRequery) as this =
+type internal Command(execute, canExecute) =
 
   let canExecuteChanged = Event<EventHandler,EventArgs>()
 
@@ -16,10 +16,13 @@ type internal Command(execute, canExecute, autoRequery) as this =
   // so a strong reference must be maintained,
   // which is achieved by this mutable let-binding.
   // Can test this via the UiBoundCmdParam sample.
-  let mutable handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
-  do if autoRequery then CommandManager.RequerySuggested.AddHandler handler
+  let mutable _handler = Unchecked.defaultof<EventHandler>
+  member this.AddRequeryHandler () =
+    let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
+    CommandManager.RequerySuggested.AddHandler handler
+    _handler <- handler
 
-  member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x, EventArgs.Empty)
+  member this.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(this, EventArgs.Empty)
 
   interface ICommand with
     [<CLIEvent>]
