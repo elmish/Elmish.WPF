@@ -67,10 +67,10 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
        viewModels: ObservableCollection<'vm>,
        model: 'model) =
     d.Get model
-    |> ValueOption.bind (fun selectedId ->
+    |> ValueOption.map (fun selectedId ->
+      selectedId,
       viewModels
-      |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> (=) selectedId)
-      |> ValueOption.ofOption)
+      |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> (=) selectedId))
 
   member d.TrySetMember
       (subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,

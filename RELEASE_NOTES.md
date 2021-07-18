@@ -12,6 +12,7 @@
 * Added support for a `SubModelSeq` variant that does involve IDs
 * `SubModelSeq` variant that involves IDs will now merge elements without considering IDs if duplicate IDs are detected
 * Fixed bug (present in 3.5.8) where `ArgumentNullException` is thrown from `INotifyDataErrorInfo.GetErrors` when given `null`
+* Now logging and returning false to WPF if selection in a SubModelSelectedItem binding fails
 
 #### 4.0.0-beta-41
 * Fixed "backwards typing" (#373) and other bugs (like #371) introduced in 4.0.0-beta-40 with more careful use of the Dispatcher (#374)

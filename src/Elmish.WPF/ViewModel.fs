@@ -534,18 +534,31 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModelSeqUnkeyed { Vms = vms }
       | SubModelSeqKeyed { Vms = vms } -> vms |> box |> ValueSome
       | SubModelSelectedItem b ->
-          let selected =
+          let mv =
             b.SubModelSelectedItemData.TryGetMember
               ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
                b.SubModelSeqKeyedBinding.SubModelSeqKeyedData,
                b.SubModelSeqKeyedBinding.Vms,
                model)
-          log.LogTrace(
-            "[{BindingNameChain}] Setting selected VM to {SubModelId}",
-            nameChain,
-            (selected |> ValueOption.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
-          )
-          selected |> ValueOption.toObj |> box |> ValueSome
+            |> function
+              | ValueNone -> ValueNone |> ValueSome // deselecting successful
+              | ValueSome (id, mVm) ->
+                  match mVm with
+                  | Some vm -> (id, vm) |> ValueSome |> ValueSome // selecting successful
+                  | None -> // selecting failed
+                      log.LogError(
+                        "[{BindingNameChain}] Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID}",
+                        nameChain,
+                        b.SubModelSelectedItemData.SubModelSeqBindingName,
+                        id
+                      )
+                      ValueNone
+          mv |> ValueOption.iter (fun v ->
+            log.LogTrace(
+              "[{BindingNameChain}] Setting selected VM to {SubModelId}",
+              nameChain,
+              v |> ValueOption.map fst))
+          mv |> ValueOption.map (ValueOption.map snd >> ValueOption.toObj >> box)
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
       | Cached b ->
