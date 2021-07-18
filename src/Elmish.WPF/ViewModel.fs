@@ -542,9 +542,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log.LogTrace(
             "[{BindingNameChain}] Setting selected VM to {SubModelId}",
             nameChain,
-            (selected |> Option.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
+            (selected |> ValueOption.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
           )
-          selected |> Option.toObj |> box
+          selected |> ValueOption.toObj |> box
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
       | Cached b ->

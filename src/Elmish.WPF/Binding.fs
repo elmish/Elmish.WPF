@@ -66,9 +66,11 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
        subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
        viewModels: ObservableCollection<'vm>,
        model: 'model) =
-    let selectedId = d.Get model
-    viewModels
-    |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> ValueSome >> (=) selectedId)
+    d.Get model
+    |> ValueOption.bind (fun selectedId ->
+      viewModels
+      |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> (=) selectedId)
+      |> ValueOption.ofOption)
 
   member d.TrySetMember
       (subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
