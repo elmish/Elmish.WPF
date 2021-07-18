@@ -203,7 +203,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name getInitializedBindingByName =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let initializeBindingBase = function
+    let baseCase = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -319,23 +319,23 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
-    let rec initializeBindingRec = function
-      | BaseBindingData d -> d |> initializeBindingBase
+    let rec recursiveCase = function
+      | BaseBindingData d -> d |> baseCase
       | CachingData d ->
           d
-          |> initializeBindingRec
+          |> recursiveCase
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> initializeBindingRec
+          |> recursiveCase
           |> Option.map (fun b -> b.AddValidation currentModel d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> initializeBindingRec
+          |> recursiveCase
           |> Option.map (fun b -> b.AddLazy d.Equals)
-    initializeBindingRec
+    recursiveCase
 
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
@@ -360,7 +360,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
   let updateBinding name newModel =
-    let updateBindingBase = function
+    let baseCase = function
       | OneWay _ -> [ PropertyChanged ]
       | TwoWay { TwoWayData = d } ->
           d.DidPropertyChange(currentModel, newModel)
@@ -495,16 +495,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
           |> Option.toList
-    let rec updateBindingRec = function
-      | BaseVmBinding b -> b |> updateBindingBase
+    let rec recursiveCase = function
+      | BaseVmBinding b -> b |> baseCase
       | Cached b ->
-          let updates = updateBindingRec b.Binding
+          let updates = recursiveCase b.Binding
           updates
           |> List.filter ((=) PropertyChanged)
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
-          let updates = updateBindingRec b.Binding
+          let updates = recursiveCase b.Binding
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
@@ -515,11 +515,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if b.Equals currentModel newModel then
             []
           else
-            updateBindingRec b.Binding
-    updateBindingRec
+            recursiveCase b.Binding
+    recursiveCase
 
   let tryGetMember model =
-    let tryGetMemberBase = function
+    let baseCase = function
       | OneWay { OneWayData = d } -> d.TryGetMember model
       | TwoWay { TwoWayData = d } -> d.TryGetMember model
       | OneWaySeq { Values = vals } -> box vals
@@ -545,21 +545,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             (selected |> Option.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
           )
           selected |> Option.toObj |> box
-    let rec tryGetMemberRec = function
-      | BaseVmBinding b -> b |> tryGetMemberBase
+    let rec recursiveCase = function
+      | BaseVmBinding b -> b |> baseCase
       | Cached b ->
           match !b.Cache with
           | Some v -> v
           | None ->
-              let v = tryGetMemberRec b.Binding
+              let v = recursiveCase b.Binding
               b.Cache := Some v
               v
-      | Validatation b -> tryGetMemberRec b.Binding
-      | Lazy b -> tryGetMemberRec b.Binding
-    tryGetMemberRec
+      | Validatation b -> recursiveCase b.Binding
+      | Lazy b -> recursiveCase b.Binding
+    recursiveCase
 
   let trySetMember model (value: obj) =
-    let trySetMemberBase = function // TOOD: return 'msg option
+    let baseCase = function // TOOD: return 'msg option
       | TwoWay { TwoWayData = d } ->
           d.TrySetMember(value, model) |> dispatch
           true
@@ -578,16 +578,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModelSeqUnkeyed _
       | SubModelSeqKeyed _ ->
           false
-    let rec trySetMemberRec = function
-      | BaseVmBinding b -> b |> trySetMemberBase
+    let rec resursiveCase = function
+      | BaseVmBinding b -> b |> baseCase
       | Cached b ->
-          let successful = trySetMemberRec b.Binding
+          let successful = resursiveCase b.Binding
           if successful then
             b.Cache := None  // TODO #185: write test
           successful
-      | Validatation b -> trySetMemberRec b.Binding
-      | Lazy b -> trySetMemberRec b.Binding
-    trySetMemberRec
+      | Validatation b -> resursiveCase b.Binding
+      | Lazy b -> resursiveCase b.Binding
+    resursiveCase
 
   member internal _.CurrentModel : 'model = currentModel
 
