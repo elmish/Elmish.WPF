@@ -11,14 +11,13 @@ open System.Windows.Input
 type internal Command(execute, canExecute, autoRequery) as this =
 
   let canExecuteChanged = Event<EventHandler,EventArgs>()
-  let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
-
-  do if autoRequery then CommandManager.RequerySuggested.AddHandler handler
 
   // CommandManager only keeps a weak reference to the event handler,
-  // so a strong reference must be maintained.
+  // so a strong reference must be maintained,
+  // which is achieved by this mutable let-binding.
   // Can test this via the UiBoundCmdParam sample.
-  member private _._Handler = handler
+  let mutable handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
+  do if autoRequery then CommandManager.RequerySuggested.AddHandler handler
 
   member x.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(x, EventArgs.Empty)
 
