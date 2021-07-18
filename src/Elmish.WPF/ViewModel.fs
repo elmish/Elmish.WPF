@@ -520,18 +520,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let tryGetMember model =
     let baseCase = function
-      | OneWay { OneWayData = d } -> d.TryGetMember model
-      | TwoWay { TwoWayData = d } -> d.TryGetMember model
-      | OneWaySeq { Values = vals } -> box vals
-      | Cmd cmd -> box cmd
-      | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box
+      | OneWay { OneWayData = d } -> d.TryGetMember model |> ValueSome
+      | TwoWay { TwoWayData = d } -> d.TryGetMember model |> ValueSome
+      | OneWaySeq { Values = vals } -> vals |> box |> ValueSome
+      | Cmd cmd -> cmd |> box |> ValueSome
+      | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> ValueSome
       | SubModelWin { VmWinState = vm } ->
           !vm
           |> WindowState.toVOption
           |> ValueOption.map box
           |> ValueOption.toObj
+          |> ValueSome
       | SubModelSeqUnkeyed { Vms = vms }
-      | SubModelSeqKeyed { Vms = vms } -> box vms
+      | SubModelSeqKeyed { Vms = vms } -> vms |> box |> ValueSome
       | SubModelSelectedItem b ->
           let selected =
             b.SubModelSelectedItemData.TryGetMember
@@ -544,16 +545,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             nameChain,
             (selected |> ValueOption.map (fun vm -> b.SubModelSeqKeyedBinding.SubModelSeqKeyedData.GetId vm.CurrentModel))
           )
-          selected |> ValueOption.toObj |> box
+          selected |> ValueOption.toObj |> box |> ValueSome
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
       | Cached b ->
           match !b.Cache with
-          | Some v -> v
+          | Some v -> v |> ValueSome
           | None ->
-              let v = recursiveCase b.Binding
-              b.Cache := Some v
-              v
+              let mv = recursiveCase b.Binding
+              mv |> ValueOption.iter (fun v -> b.Cache := Some v)
+              mv
       | Validatation b -> recursiveCase b.Binding
       | Lazy b -> recursiveCase b.Binding
     recursiveCase
@@ -614,8 +615,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          result <- tryGetMember currentModel binding
-          true
+          let mv = tryGetMember currentModel binding
+          if mv.IsSome then
+            result <- mv.Value
+            true
+          else
+            false
         with e ->
           log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
           reraise ()
