@@ -263,15 +263,13 @@ module Bindings =
       [ "CounterIdText" |> Binding.oneWay(fun (_, { Self = s }) -> s.Data.Id)
         "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
         "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
-        "ChildCounters" |> Binding.subModelSeq(
-          (fun (_, { Self = p }) -> p.Children |> Seq.map (fun c -> { Self = c; Parent = p })),
-          (fun ((m, _), selfAndParent) -> (m, selfAndParent)),
-          (fun (_, { Self = c }) -> c.Data.Id),
-          (fun (cId, inOutMsg) ->
+        "ChildCounters"
+          |> Binding.subModelSeq (subtreeBindings, (fun (_, { Self = c }) -> c.Data.Id))
+          |> Binding.mapModel (fun (m, { Self = p }) -> p.Children |> Seq.map (fun c -> m, { Self = c; Parent = p }))
+          |> Binding.mapMsg (fun (cId, inOutMsg) ->
             match inOutMsg with
             | InMsg msg -> (cId, msg) |> BranchMsg
-            | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg),
-          subtreeBindings)
+            | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg)
       ] @ counterBindings
       |> Bindings.mapMsg InMsg
 
@@ -285,15 +283,14 @@ module Bindings =
 
 
   let rootBindings () : Binding<Model, Msg> list = [
-    "Counters" |> Binding.subModelSeq(
-      (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> { Self = c; Parent = m.DummyRoot })),
-      (fun { Self = c } -> c.Data.Id),
-      (fun (cId, inOutMsg) ->
+    "Counters"
+      |> Binding.subModelSeq (subtreeBindings, (fun (_, { Self = c }) -> c.Data.Id))
+      |> Binding.mapModel (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> m, { Self = c; Parent = m.DummyRoot }))
+      |> Binding.mapMsg (fun (cId, inOutMsg) ->
         match inOutMsg with
         | InMsg msg -> (cId, msg) |> BranchMsg
         | OutMsg msg -> cId |> mapOutMsg msg |> LeafMsg
-        |> SubtreeMsg),
-      subtreeBindings)
+        |> SubtreeMsg)
 
     "ToggleGlobalState" |> Binding.cmd ToggleGlobalState
 
