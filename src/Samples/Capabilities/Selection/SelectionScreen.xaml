@@ -20,11 +20,12 @@
         </StackPanel>
       </StackPanel>
       <TextBlock>
-        The simplest way to handle selection is via an optional TwoWay binding on
+        The simplest way to handle selection is via a TwoWay binding on
         <Hyperlink NavigateUri="https://docs.microsoft.com/en-us/dotnet/api/system.windows.controls.primitives.selector.selectedindex#System_Windows_Controls_Primitives_Selector_SelectedIndex"
                    RequestNavigate="Hyperlink_RequestNavigate">
           Selector.SelectedIndex
-        </Hyperlink>.
+        </Hyperlink>
+        . The selection is empty when the value is -1.
       </TextBlock>
     </StackPanel>
     <Separator Margin="12"/>
