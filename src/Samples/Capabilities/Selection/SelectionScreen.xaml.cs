@@ -3,8 +3,8 @@ using System.Windows.Controls;
 using System.Windows.Navigation;
 
 namespace Elmish.WPF.Samples.Capabilities {
-  public partial class Selection : UserControl {
-    public Selection() {
+  public partial class SelectionScreen : UserControl {
+    public SelectionScreen() {
       InitializeComponent();
     }
 

@@ -16,7 +16,7 @@
     </StackPanel>
     <Grid Grid.Column="1" Margin="12">
       <Grid Visibility="{Binding SelectionVisibility}">
-        <local:Selection DataContext="{Binding Selection}"/>
+        <local:SelectionScreen DataContext="{Binding Selection}"/>
       </Grid>
     </Grid>
   </Grid>
