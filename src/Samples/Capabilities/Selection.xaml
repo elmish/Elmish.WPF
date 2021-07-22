@@ -16,6 +16,12 @@
         <ListBox ItemsSource="{Binding SelectedIndexData}" SelectedIndex="{Binding SelectedIndex}" Margin="6"/>
       </StackPanel>
     </StackPanel>
-    <TextBlock Text="The simplest way to handle selection is via an optional TwoWay binding on SelectedIndex." TextWrapping="Wrap"/>
+    <TextBlock>
+      The simplest way to handle selection is via an optional TwoWay binding on <Hyperlink 
+        NavigateUri="https://docs.microsoft.com/en-us/dotnet/api/system.windows.controls.primitives.selector.selectedindex#System_Windows_Controls_Primitives_Selector_SelectedIndex"
+        RequestNavigate="Hyperlink_RequestNavigate">
+        Selector.SelectedIndex
+    </Hyperlink>.
+    </TextBlock>
   </StackPanel>
 </UserControl>
