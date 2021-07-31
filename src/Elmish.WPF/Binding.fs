@@ -857,13 +857,13 @@ module Binding =
     let mutable stickyModel = None
     let f newModel =
       match predicate newModel, stickyModel with
+      | _, None ->
+          newModel
+          | true, _ ->
+              stickyModel <- Some newModel
+              newModel
       | false, Some sm ->
           sm
-      | false, None ->
-          newModel
-      | true, _ ->
-          stickyModel <- Some newModel
-          newModel
     binding |> mapModel f
     
   /// <summary>
