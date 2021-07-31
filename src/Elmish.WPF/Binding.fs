@@ -901,12 +901,19 @@ module Binding =
     binding
     |> BindingData.Binding.addLazy equals
 
+  module TwoWay =
+    /// <summary>
+    ///   Elemental instance of a two-way binding.
+    /// </summary>
+    let id<'a when 'a : equality> = BindingData.TwoWay.id<'a>
+    
+
   module SelectedIndex =
     /// <summary>
     ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     /// </summary>
     let vopt =
-      BindingData.TwoWay.id
+      TwoWay.id
       >> mapModel (ValueOption.defaultValue -1)
       >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
       
