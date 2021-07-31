@@ -510,6 +510,12 @@ module internal BindingData =
       |> BaseBindingData
       |> createBinding
 
+    let id<'a when 'a : equality> =
+      { Get = id<'a>
+        Set = Func2.id1<'a, 'a> }
+      |> box
+      |> createRest
+
     let create get set =
       { Get = get
         Set = set }
@@ -859,9 +865,9 @@ module Binding =
       match predicate newModel, stickyModel with
       | _, None ->
           newModel
-          | true, _ ->
-              stickyModel <- Some newModel
-              newModel
+      | true, _ ->
+          stickyModel <- Some newModel
+          newModel
       | false, Some sm ->
           sm
     binding |> mapModel f
@@ -895,6 +901,23 @@ module Binding =
     binding
     |> BindingData.Binding.addLazy equals
 
+  module SelectedIndex =
+    /// <summary>
+    ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+    /// </summary>
+    let vopt =
+      BindingData.TwoWay.id
+      >> mapModel (ValueOption.defaultValue -1)
+      >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
+      
+    /// <summary>
+    ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+    /// </summary>
+    let opt =
+      vopt
+      >> mapModel ValueOption.ofOption
+      >> mapMsg ValueOption.toOption
+
 
 module Bindings =
 
@@ -911,6 +934,31 @@ module Bindings =
 
 [<AbstractClass; Sealed>]
 type Binding private () =
+
+  /// <summary>
+  ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+  /// </summary>
+  /// <param name="get">Gets the selected index from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  static member selectedIndex
+      (get: 'model -> int voption,
+       set: int voption -> 'msg) =
+    Binding.SelectedIndex.vopt
+    >> Binding.mapModel get
+    >> Binding.mapMsg set
+
+  /// <summary>
+  ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+  /// </summary>
+  /// <param name="get">Gets the selected index from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  static member selectedIndex
+      (get: 'model -> int option,
+       set: int option -> 'msg) =
+    Binding.SelectedIndex.opt
+    >> Binding.mapModel get
+    >> Binding.mapMsg set
+
 
   /// <summary>Creates a one-way binding.</summary>
   /// <param name="get">Gets the value from the model.</param>

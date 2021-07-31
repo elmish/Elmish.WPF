@@ -60,7 +60,7 @@ module Selection =
   ]
 
   let bindings () = [
-    "SelectedIndex" |> Binding.twoWay (SelectedIndex.get >> Option.defaultValue -1, Some >> Option.filter ((<=) 0) >> SetSelectedIndex)
+    "SelectedIndex" |> Binding.selectedIndex (SelectedIndex.get, SetSelectedIndex)
     "DeselectIndex" |> Binding.cmdIf (SelectedIndex.get >> Option.map (fun _ -> SetSelectedIndex None))
     "SelectedIndexData" |> Binding.oneWay SelectedIndexData.get
 

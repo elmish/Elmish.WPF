@@ -100,3 +100,10 @@ module PairOption =
   let sequence = function
     | Some a, Some b -> Some (a, b)
     | _ -> None
+
+
+[<RequireQualifiedAccess>]
+module Func2 =
+
+  let id1<'a, 'b> (a: 'a) (_: 'b) = a
+  let id2<'a, 'b> (_: 'a) (b: 'b) = b
