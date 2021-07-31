@@ -640,7 +640,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               match e with
               | GetError.SubModelSelectedItem d ->
                   log.LogError(
-                    "[{BindingNameChain}] Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID}",
+                    "[{BindingNameChain}] TryGetMember FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {SubModelSelectedItemName}",
                     d.NameChain,
                     d.SubModelSeqBindingName,
                     d.Id)
