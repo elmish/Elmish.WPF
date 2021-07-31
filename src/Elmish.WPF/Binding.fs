@@ -14,6 +14,13 @@ type internal OneWayData<'model, 'a> =
     d.Get model
 
 
+type internal OneWayToSourceData<'model, 'msg, 'a> =
+  { Set: 'a -> 'model -> 'msg }
+    
+  member d.TrySetMember(value: 'a, model: 'model) =
+    d.Set value model
+
+
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
   { Get: 'model -> 'a
     Map: 'a -> 'b seq
@@ -133,6 +140,7 @@ and internal LazyData<'model, 'msg> =
 /// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model, obj>
+  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
@@ -192,6 +200,9 @@ module internal BindingData =
     let mapModelBase = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
+        }
+      | OneWayToSourceData d -> OneWayToSourceData {
+          Set = binaryHelper d.Set
         }
       | OneWaySeqLazyData d -> OneWaySeqLazyData {
           Get = f >> d.Get
@@ -255,6 +266,9 @@ module internal BindingData =
   let mapMsgWithModel f =
     let mapMsgWithModelBase = function
       | OneWayData d -> d |> OneWayData
+      | OneWayToSourceData d -> OneWayToSourceData {
+          Set = fun v m -> d.Set v m |> f m
+        }
       | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
       | TwoWayData d -> TwoWayData {
           Get = d.Get
@@ -402,6 +416,19 @@ module internal BindingData =
         mGet =
       mapFunctions
         (mGet "get")
+
+
+  module OneWayToSource =
+
+    let mapFunctions
+        mSet
+        (d: OneWayToSourceData<'model, 'msg, 'a>) =
+      { d with Set = mSet d.Set }
+
+    let measureFunctions
+        mSet =
+      mapFunctions
+        (mSet "set")
 
 
   module OneWayLazy =
@@ -901,6 +928,40 @@ module Binding =
     binding
     |> BindingData.Binding.addLazy equals
 
+
+  module OneWayToSource =
+    /// <summary>
+    ///   Elemental instance of a one-way-to-source binding.
+    /// </summary>
+    let id<'model, 'a>
+        : string -> Binding<'model, 'a> =
+      { Set = Func2.id1<obj, 'model> }
+      |> OneWayToSourceData
+      |> BaseBindingData
+      |> createBinding
+      >> mapMsg unbox
+    
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let vopt<'model, 'a>
+        : string -> Binding<'model, 'a voption> =
+      id<'model, obj>
+      >> mapMsg BindingData.ValueOption.unbox
+      
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let opt<'model, 'a>
+        : string -> Binding<'model, 'a option> =
+      id<'model, obj>
+      >> mapMsg BindingData.Option.unbox
+
+
   module TwoWay =
     /// <summary>
     ///   Elemental instance of a two-way binding.
@@ -1073,6 +1134,39 @@ type Binding private () =
        map: 'a -> 'b voption)
       : string -> Binding<'model, 'msg> =
     BindingData.OneWayLazy.createVOpt get equals map
+
+
+  /// <summary>Creates a one-way-to-source binding.</summary>
+  /// <param name="set">Returns the message to dispatch.</param>
+  static member oneWayToSource
+      (set: 'a -> 'model -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.OneWayToSource.id<'model, 'a>
+    >> Binding.mapMsgWithModel (fun m v -> set v m)
+
+  /// <summary>
+  ///   Creates a one-way-to-source binding to an optional value. The binding
+  ///   automatically converts between a missing value in the model and
+  ///   a <c>null</c> value in the view.
+  /// </summary>
+  /// <param name="set">Returns the message to dispatch.</param>
+  static member oneWayToSourceOpt
+      (set: 'a option -> 'model -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.OneWayToSource.opt
+    >> Binding.mapMsgWithModel (fun m v -> set v m)
+
+  /// <summary>
+  ///   Creates a one-way-to-source binding to an optional value. The binding
+  ///   automatically converts between a missing value in the model and
+  ///   a <c>null</c> value in the view.
+  /// </summary>
+  /// <param name="set">Returns the message to dispatch.</param>
+  static member oneWayToSourceOpt
+      (set: 'a voption -> 'model -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.OneWayToSource.vopt
+    >> Binding.mapMsgWithModel (fun m v -> set v m)
 
 
   /// <summary>
@@ -2366,6 +2460,39 @@ type Binding private () =
 module Extensions =
 
   type Binding with
+  
+    /// <summary>Creates a one-way-to-source binding.</summary>
+    /// <param name="set">Returns the message to dispatch.</param>
+    static member oneWayToSource
+        (set: 'a -> 'msg)
+        : string -> Binding<'model, 'msg> =
+      Binding.OneWayToSource.id<'model, 'a>
+      >> Binding.mapMsg set
+  
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    /// <param name="set">Returns the message to dispatch.</param>
+    static member oneWayToSourceOpt
+        (set: 'a option -> 'msg)
+        : string -> Binding<'model, 'msg> =
+      Binding.OneWayToSource.opt
+      >> Binding.mapMsg set
+  
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    /// <param name="set">Returns the message to dispatch.</param>
+    static member oneWayToSourceOpt
+        (set: 'a voption -> 'msg)
+        : string -> Binding<'model, 'msg> =
+      Binding.OneWayToSource.vopt
+      >> Binding.mapMsg set
+
 
     /// <summary>Creates a two-way binding.</summary>
     /// <param name="get">Gets the value from the model.</param>

@@ -23,11 +23,16 @@ type GetErrorSubModelSelectedItem =
 
 [<RequireQualifiedAccess>]
 type internal GetError =
+  | OneWayToSource
   | SubModelSelectedItem of GetErrorSubModelSelectedItem
 
 
 type internal OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
+}
+
+type internal OneWayToSourceBinding<'model, 'msg, 'a> = {
+  OneWayToSourceData: OneWayToSourceData<'model, 'msg, 'a>
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
@@ -85,6 +90,7 @@ and internal LazyBinding<'model, 'msg> = {
 
 and internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
+  | OneWayToSource of OneWayToSourceBinding<'model, 'msg, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
   | Cmd of cmd: Command
@@ -216,6 +222,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
+          |> BaseVmBinding
+          |> Some
+      | OneWayToSourceData d ->
+          { OneWayToSourceData = d |> BindingData.OneWayToSource.measureFunctions measure }
+          |> OneWayToSource
           |> BaseVmBinding
           |> Some
       | OneWaySeqLazyData d ->
@@ -374,6 +385,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let updateBinding name newModel =
     let baseCase = function
       | OneWay _ -> [ PropertyChanged ]
+      | OneWayToSource _ -> []
       | TwoWay { TwoWayData = d } ->
           d.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool PropertyChanged
@@ -534,6 +546,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let baseCase = function
       | OneWay { OneWayData = d } -> d.TryGetMember model |> Ok
       | TwoWay { TwoWayData = d } -> d.TryGetMember model |> Ok
+      | OneWayToSource _ -> GetError.OneWayToSource |> Error
       | OneWaySeq { Values = vals } -> vals |> box |> Ok
       | Cmd cmd -> cmd |> box |> Ok
       | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> Ok
@@ -579,6 +592,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let trySetMember model (value: obj) =
     let baseCase = function // TOOD: return 'msg option
       | TwoWay { TwoWayData = d } ->
+          d.TrySetMember(value, model) |> dispatch
+          true
+      | OneWayToSource { OneWayToSourceData = d } ->
           d.TrySetMember(value, model) |> dispatch
           true
       | SubModelSelectedItem b ->
@@ -638,6 +654,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               true
           | Error e ->
               match e with
+              | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
               | GetError.SubModelSelectedItem d ->
                   log.LogError(
                     "[{BindingNameChain}] TryGetMember FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {SubModelSelectedItemName}",
