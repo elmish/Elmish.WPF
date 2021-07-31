@@ -556,11 +556,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                         id
                       )
                       ValueNone
-          mv |> ValueOption.iter (fun v ->
-            log.LogTrace(
-              "[{BindingNameChain}] Setting selected VM to {SubModelId}",
-              nameChain,
-              v |> ValueOption.map fst))
           mv |> ValueOption.map (ValueOption.map snd >> ValueOption.toObj >> box)
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
