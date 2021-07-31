@@ -16,6 +16,15 @@ type internal UpdateData =
   | PropertyChanged
   | CanExecuteChanged of Command
 
+type GetErrorSubModelSelectedItem =
+  { NameChain: string
+    SubModelSeqBindingName: string
+    Id: string }
+
+[<RequireQualifiedAccess>]
+type internal GetError =
+  | SubModelSelectedItem of GetErrorSubModelSelectedItem
+
 
 type internal OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
@@ -523,49 +532,46 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let tryGetMember model =
     let baseCase = function
-      | OneWay { OneWayData = d } -> d.TryGetMember model |> ValueSome
-      | TwoWay { TwoWayData = d } -> d.TryGetMember model |> ValueSome
-      | OneWaySeq { Values = vals } -> vals |> box |> ValueSome
-      | Cmd cmd -> cmd |> box |> ValueSome
-      | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> ValueSome
+      | OneWay { OneWayData = d } -> d.TryGetMember model |> Ok
+      | TwoWay { TwoWayData = d } -> d.TryGetMember model |> Ok
+      | OneWaySeq { Values = vals } -> vals |> box |> Ok
+      | Cmd cmd -> cmd |> box |> Ok
+      | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> Ok
       | SubModelWin { VmWinState = vm } ->
           !vm
           |> WindowState.toVOption
           |> ValueOption.map box
           |> ValueOption.toObj
-          |> ValueSome
+          |> Ok
       | SubModelSeqUnkeyed { Vms = vms }
-      | SubModelSeqKeyed { Vms = vms } -> vms |> box |> ValueSome
+      | SubModelSeqKeyed { Vms = vms } -> vms |> box |> Ok
       | SubModelSelectedItem b ->
-          let mv =
-            b.SubModelSelectedItemData.TryGetMember
-              ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
-               b.SubModelSeqKeyedBinding.SubModelSeqKeyedData,
-               b.SubModelSeqKeyedBinding.Vms,
-               model)
-            |> function
-              | ValueNone -> ValueNone |> ValueSome // deselecting successful
-              | ValueSome (id, mVm) ->
-                  match mVm with
-                  | Some vm -> (id, vm) |> ValueSome |> ValueSome // selecting successful
-                  | None -> // selecting failed
-                      log.LogError(
-                        "[{BindingNameChain}] Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID}",
-                        nameChain,
-                        b.SubModelSelectedItemData.SubModelSeqBindingName,
-                        id
-                      )
-                      ValueNone
-          mv |> ValueOption.map (ValueOption.map snd >> ValueOption.toObj >> box)
+          b.SubModelSelectedItemData.TryGetMember
+            ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
+             b.SubModelSeqKeyedBinding.SubModelSeqKeyedData,
+             b.SubModelSeqKeyedBinding.Vms,
+             model)
+          |> function
+            | ValueNone -> ValueNone |> Ok // deselecting successful
+            | ValueSome (id, mVm) ->
+                match mVm with
+                | Some vm -> (id, vm) |> ValueSome |> Ok // selecting successful
+                | None -> // selecting failed
+                    { NameChain = nameChain
+                      SubModelSeqBindingName = b.SubModelSelectedItemData.SubModelSeqBindingName
+                      Id = id.ToString() }
+                    |> GetError.SubModelSelectedItem
+                    |> Error
+          |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
       | Cached b ->
           match !b.Cache with
-          | Some v -> v |> ValueSome
+          | Some v -> v |> Ok
           | None ->
-              let mv = recursiveCase b.Binding
-              mv |> ValueOption.iter (fun v -> b.Cache := Some v)
-              mv
+              let x = recursiveCase b.Binding
+              x |> Result.iter (fun v -> b.Cache := Some v)
+              x
       | Validatation b -> recursiveCase b.Binding
       | Lazy b -> recursiveCase b.Binding
     recursiveCase
@@ -626,12 +632,19 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          let mv = tryGetMember currentModel binding
-          if mv.IsSome then
-            result <- mv.Value
-            true
-          else
-            false
+          match tryGetMember currentModel binding with
+          | Ok v ->
+              result <- v
+              true
+          | Error e ->
+              match e with
+              | GetError.SubModelSelectedItem d ->
+                  log.LogError(
+                    "[{BindingNameChain}] Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID}",
+                    d.NameChain,
+                    d.SubModelSeqBindingName,
+                    d.Id)
+              false
         with e ->
           log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
           reraise ()
