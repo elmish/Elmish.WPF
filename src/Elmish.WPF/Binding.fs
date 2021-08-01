@@ -370,22 +370,6 @@ module internal BindingData =
 
   module OneWay =
 
-    let mapMinorTypes
-        (outMapA: 'a -> 'a0)
-        (d: OneWayData<'model, 'a>) = {
-      Get = d.Get >> outMapA
-    }
-
-    let boxVOpt d = mapMinorTypes ValueOption.box d
-    let boxOpt d = mapMinorTypes Option.box d
-    let box d = mapMinorTypes box d
-
-    let createRest x =
-      x
-      |> OneWayData
-      |> BaseBindingData
-      |> createBinding
-
     let mapFunctions
         mGet
         (d: OneWayData<'model, 'a>) =
@@ -411,11 +395,27 @@ module internal BindingData =
 
 
   module OneWayLazy =
+  
+    let mapMinorTypes
+        (outMapA: 'a -> 'a0)
+        (d: OneWayData<'model, 'a>) = {
+      Get = d.Get >> outMapA
+    }
+  
+    let boxVOpt d = mapMinorTypes ValueOption.box d
+    let boxOpt d = mapMinorTypes Option.box d
+    let box d = mapMinorTypes box d
+  
+    let createRest x =
+      x
+      |> OneWayData
+      |> BaseBindingData
+      |> createBinding
 
     let create get equals map =
       { Get = id }
-      |> OneWay.box
-      |> OneWay.createRest
+      |> box
+      |> createRest
       >> Binding.mapModel map
       >> Binding.addLazy equals
       >> Binding.mapModel get
@@ -423,8 +423,8 @@ module internal BindingData =
 
     let createOpt get equals map =
       { Get = id }
-      |> OneWay.boxOpt
-      |> OneWay.createRest
+      |> boxOpt
+      |> createRest
       >> Binding.mapModel map
       >> Binding.addLazy equals
       >> Binding.mapModel get
@@ -432,8 +432,8 @@ module internal BindingData =
 
     let createVOpt get equals map =
       { Get = id }
-      |> OneWay.boxVOpt
-      |> OneWay.createRest
+      |> boxVOpt
+      |> createRest
       >> Binding.mapModel map
       >> Binding.addLazy equals
       >> Binding.mapModel get
