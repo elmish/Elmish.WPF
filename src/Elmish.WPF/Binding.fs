@@ -935,11 +935,10 @@ module Binding =
     /// </summary>
     let id<'model, 'a>
         : string -> Binding<'model, 'a> =
-      { Set = Func2.id1<obj, 'model> }
+      { Set = fun obj _ -> obj |> unbox }
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
-      >> mapMsg unbox
     
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
