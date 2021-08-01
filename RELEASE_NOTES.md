@@ -17,6 +17,7 @@
 * Added Binding.TwoWay.id to API
 * Removed trace logging during a successful set in a `SubModelSelectedItem` binding
 * Added one-way-to-source binding
+* Added function-based API for for one-way bindings
 
 #### 4.0.0-beta-41
 * Fixed "backwards typing" (#373) and other bugs (like #371) introduced in 4.0.0-beta-40 with more careful use of the Dispatcher (#374)

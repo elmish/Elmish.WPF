@@ -386,27 +386,6 @@ module internal BindingData =
       |> BaseBindingData
       |> createBinding
 
-    let create get =
-      { Get = id }
-      |> box
-      |> createRest
-      >> Binding.addLazy (=)
-      >> Binding.mapModel get
-
-    let createOpt get =
-      { Get = id }
-      |> boxOpt
-      |> createRest
-      >> Binding.addLazy (=)
-      >> Binding.mapModel get
-
-    let createVOpt get =
-      { Get = id }
-      |> boxVOpt
-      |> createRest
-      >> Binding.addLazy (=)
-      >> Binding.mapModel get
-
     let mapFunctions
         mGet
         (d: OneWayData<'model, 'a>) =
@@ -929,6 +908,38 @@ module Binding =
     |> BindingData.Binding.addLazy equals
 
 
+  module OneWay =
+    /// <summary>
+    ///   Elemental instance of a one-way binding.
+    /// </summary>
+    let id<'a, 'msg>
+        : string -> Binding<'a, 'msg> =
+      { Get = box }
+      |> OneWayData
+      |> BaseBindingData
+      |> createBinding
+    
+    /// <summary>
+    ///   Creates a one-way binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let opt<'a, 'msg>
+        : string -> Binding<'a option, 'msg> =
+      id<obj, 'msg>
+      >> mapModel BindingData.Option.box
+      
+    /// <summary>
+    ///   Creates a one-way binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let vopt<'a, 'msg>
+        : string -> Binding<'a voption, 'msg> =
+      id<obj, 'msg>
+      >> mapModel BindingData.ValueOption.box
+
+
   module OneWayToSource =
     /// <summary>
     ///   Elemental instance of a one-way-to-source binding.
@@ -1032,7 +1043,9 @@ type Binding private () =
   static member oneWay
       (get: 'model -> 'a)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWay.create get
+    Binding.OneWay.id<'a, 'msg>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
 
 
   /// <summary>
@@ -1045,7 +1058,9 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a option)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWay.createOpt get
+    Binding.OneWay.opt<'a, 'msg>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
 
 
   /// <summary>
@@ -1058,7 +1073,9 @@ type Binding private () =
   static member oneWayOpt
       (get: 'model -> 'a voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWay.createVOpt get
+    Binding.OneWay.vopt<'a, 'msg>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
 
 
   /// <summary>
