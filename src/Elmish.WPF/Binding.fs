@@ -394,52 +394,6 @@ module internal BindingData =
         (mSet "set")
 
 
-  module OneWayLazy =
-  
-    let mapMinorTypes
-        (outMapA: 'a -> 'a0)
-        (d: OneWayData<'model, 'a>) = {
-      Get = d.Get >> outMapA
-    }
-  
-    let boxVOpt d = mapMinorTypes ValueOption.box d
-    let boxOpt d = mapMinorTypes Option.box d
-    let box d = mapMinorTypes box d
-  
-    let createRest x =
-      x
-      |> OneWayData
-      |> BaseBindingData
-      |> createBinding
-
-    let create get equals map =
-      { Get = id }
-      |> box
-      |> createRest
-      >> Binding.mapModel map
-      >> Binding.addLazy equals
-      >> Binding.mapModel get
-      >> Binding.addCaching
-
-    let createOpt get equals map =
-      { Get = id }
-      |> boxOpt
-      |> createRest
-      >> Binding.mapModel map
-      >> Binding.addLazy equals
-      >> Binding.mapModel get
-      >> Binding.addCaching
-
-    let createVOpt get equals map =
-      { Get = id }
-      |> boxVOpt
-      |> createRest
-      >> Binding.mapModel map
-      >> Binding.addLazy equals
-      >> Binding.mapModel get
-      >> Binding.addCaching
-
-
   module OneWaySeqLazy =
   
     let mapMinorTypes
@@ -1097,7 +1051,11 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWayLazy.create get equals map
+    Binding.OneWay.id<'b, 'msg>
+    >> Binding.mapModel map
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+    >> Binding.addCaching
 
 
   /// <summary>
@@ -1123,7 +1081,11 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b option)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWayLazy.createOpt get equals map
+    Binding.OneWay.opt<'b, 'msg>
+    >> Binding.mapModel map
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+    >> Binding.addCaching
 
 
   /// <summary>
@@ -1149,7 +1111,11 @@ type Binding private () =
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWayLazy.createVOpt get equals map
+    Binding.OneWay.vopt<'b, 'msg>
+    >> Binding.mapModel map
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+    >> Binding.addCaching
 
 
   /// <summary>Creates a one-way-to-source binding.</summary>
