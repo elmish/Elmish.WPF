@@ -107,3 +107,14 @@ module Func2 =
 
   let id1<'a, 'b> (a: 'a) (_: 'b) = a
   let id2<'a, 'b> (_: 'a) (b: 'b) = b
+  let curry f a b = f (a, b)
+
+
+[<RequireQualifiedAccess>]
+module Func3 =
+  let curry f a b c = f (a, b, c)
+
+
+[<RequireQualifiedAccess>]
+module Func5 =
+  let curry f a b c d e = f (a, b, c, d, e)

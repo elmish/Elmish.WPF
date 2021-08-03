@@ -99,37 +99,10 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 module Helpers =
 
 
-  let internal oneWay
-      name
-      (get: 'model -> 'a) =
-    Binding.oneWay get name
-
-
-  let internal oneWayLazy
-      name
-      (get: 'model -> 'a)
-      (equals: 'a -> 'a -> bool)
-      (map: 'a -> 'b) =
-    Binding.oneWayLazy (get, equals, map) name
-
-
-  let internal oneWaySeqLazy
-      name
-      (get: 'model -> 'a)
-      (equals: 'a -> 'a -> bool)
-      (map: 'a -> #seq<'b>)
-      (itemEquals: 'b -> 'b -> bool)
-      (getId: 'b -> 'id) =
-    Binding.oneWaySeqLazy (get, equals, map, itemEquals, getId) name
-
-
-  let internal twoWay
-      name
-      (get: 'model -> 'a)
-      (set: 'a -> 'model -> 'msg) =
-    Binding.twoWay (get, set) name
-
-
+  let internal oneWay x = x |> Binding.oneWay
+  let internal oneWayLazy x = x |> Func3.curry Binding.oneWayLazy
+  let internal oneWaySeqLazy x = x |> Func5.curry Binding.oneWaySeqLazy
+  let internal twoWay x = x |> Func2.curry Binding.twoWay
   let internal twoWayValidate
       name
       (get: 'model -> 'a)
@@ -138,11 +111,8 @@ module Helpers =
     Binding.twoWayValidate (get, set, validate) name
 
 
-  let internal cmd
-      name
-      (exec: 'model -> 'msg voption)
-      (canExec: 'model -> bool) =
-    BindingData.Cmd.create exec canExec name
+  let internal cmd x = x |> BindingData.Cmd.create
+
 
 
   let internal cmdParam
@@ -205,7 +175,7 @@ module OneWay =
 
       let get = string<int>
 
-      let binding = oneWay name get
+      let binding = oneWay get name
       let vm = TestVm(m1, binding)
 
       test <@ vm.Get name = get m1 @>
@@ -225,7 +195,7 @@ module OneWay =
 
       let get = string<int>
 
-      let binding = oneWay name get
+      let binding = oneWay get name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -247,7 +217,7 @@ module OneWayLazy =
       let equals = (=)
       let map = String.length
 
-      let binding = oneWayLazy name get equals map
+      let binding = oneWayLazy get equals map name
       let vm = TestVm(m, binding)
 
       test <@ vm.Get name = (m |> get |> map) @>
@@ -265,7 +235,7 @@ module OneWayLazy =
       let equals _ _ = false
       let map = String.length
 
-      let binding = oneWayLazy name get equals map
+      let binding = oneWayLazy get equals map name
       let vm = TestVm(m1, binding)
       vm.UpdateModel m2
 
@@ -284,7 +254,7 @@ module OneWayLazy =
       let equals _ _ = true
       let map = String.length
 
-      let binding = oneWayLazy name get equals map
+      let binding = oneWayLazy get equals map name
       let vm = TestVm(m1, binding)
       vm.Get name |> ignore  // populate cache
       vm.UpdateModel m2
@@ -305,7 +275,7 @@ module OneWayLazy =
       let equals _ _ = eq
       let map = InvokeTester String.length
 
-      let binding = oneWayLazy name get equals map.Fn
+      let binding = oneWayLazy get equals map.Fn name
       let vm = TestVm(m1, binding)
 
       vm.Get name |> ignore
@@ -328,7 +298,7 @@ module OneWayLazy =
       let equals = (=)
       let map = InvokeTester String.length
 
-      let binding = oneWayLazy name get equals map.Fn
+      let binding = oneWayLazy get equals map.Fn name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -348,7 +318,7 @@ module OneWayLazy =
       let equals = (=)
       let map = InvokeTester String.length
 
-      let binding = oneWayLazy name get equals map.Fn
+      let binding = oneWayLazy get equals map.Fn name
       let vm = TestVm(m1, binding)
 
       vm.Get name |> ignore
@@ -375,7 +345,7 @@ module OneWayLazy =
       let equals _ _ = eq
       let map = String.length
 
-      let binding = oneWayLazy name get equals map
+      let binding = oneWayLazy get equals map name
       let vm = TestVm(m1, binding)
       vm.UpdateModel m2
 
@@ -403,7 +373,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let binding = oneWaySeqLazy get equals map itemEquals getId name
       let vm = TestVm(m, binding)
 
       testObservableCollectionContainsExpectedItems vm name (m |> get |> map)
@@ -423,7 +393,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let binding = oneWaySeqLazy get equals map itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -445,7 +415,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let binding = oneWaySeqLazy get equals map itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -467,7 +437,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get.Fn equals map itemEquals getId
+      let binding = oneWaySeqLazy get.Fn equals map itemEquals getId name
       TestVm(m1, binding) |> ignore
 
       test <@ get.Count <= 1 @>
@@ -487,7 +457,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       TestVm(m1, binding) |> ignore
 
       test <@ map.Count <= 1 @>
@@ -507,7 +477,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       let vm = TestVm(m1, binding)
 
       map.Reset ()
@@ -530,7 +500,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       let vm = TestVm(m1, binding)
 
       map.Reset ()
@@ -554,7 +524,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get.Fn equals map itemEquals getId
+      let binding = oneWaySeqLazy get.Fn equals map itemEquals getId name
       let vm = TestVm(m1, binding)
 
       get.Reset ()
@@ -576,7 +546,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.Get name |> ignore
@@ -599,7 +569,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       let vm = TestVm(m1, binding)
 
       map.Reset ()
@@ -627,7 +597,7 @@ module OneWaySeqLazy =
       let itemEquals _ _ = itemEq
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map.Fn itemEquals getId
+      let binding = oneWaySeqLazy get equals map.Fn itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -649,7 +619,7 @@ module OneWaySeqLazy =
       let itemEquals = (=)
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let binding = oneWaySeqLazy get equals map itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.TrackCcTriggersFor name
@@ -672,7 +642,7 @@ module OneWaySeqLazy =
       let itemEquals _ _ = false
       let getId = id
 
-      let binding = oneWaySeqLazy name get equals map itemEquals getId
+      let binding = oneWaySeqLazy get equals map itemEquals getId name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -695,7 +665,7 @@ module TwoWay =
       let get = string<int>
       let set _ _ = ()
 
-      let binding = twoWay name get set
+      let binding = twoWay get set name
       let vm = TestVm(m1, binding)
 
       test <@ vm.Get name = get m1 @>
@@ -716,7 +686,7 @@ module TwoWay =
       let get = string<int>
       let set _ _ = ()
 
-      let binding = twoWay name get set
+      let binding = twoWay get set name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -734,7 +704,7 @@ module TwoWay =
       let get = string
       let set (p: string) (m: int) = string m + p
 
-      let binding = twoWay name get set
+      let binding = twoWay get set name
       let vm = TestVm(m, binding)
 
       vm.Set name p
@@ -921,7 +891,7 @@ module Cmd =
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
 
-      let binding = cmd name exec canExec
+      let binding = cmd exec canExec name
       let vm = TestVm(m, binding)
 
       (vm.Get name : ICommand).Execute(p)
@@ -942,7 +912,7 @@ module Cmd =
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
 
-      let binding = cmd name exec canExec
+      let binding = cmd exec canExec name
       let vm = TestVm(m, binding)
 
       test <@ (vm.Get name : ICommand).CanExecute(p) = canExec m @>
@@ -959,7 +929,7 @@ module Cmd =
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
 
-      let binding = cmd name exec canExec
+      let binding = cmd exec canExec name
       let vm = TestVm(m1, binding)
 
       vm.TrackCecTriggersFor name
@@ -979,7 +949,7 @@ module Cmd =
       let exec m = if m < 0 then ValueNone else ValueSome (string m)
       let canExec m = m < 0
 
-      let binding = cmd name exec canExec
+      let binding = cmd exec canExec name
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
@@ -1189,7 +1159,7 @@ module SubModel =
       let toMsg _ = ()
       let subGet = string<int>
 
-      let subBinding = oneWay subName subGet
+      let subBinding = oneWay subGet subName
       let binding = subModel name getModel toMsg [subBinding] sticky
       let vm = TestVm(m, binding)
 
@@ -1211,7 +1181,7 @@ module SubModel =
       let subGet : int -> string = string
       let subSet (p: string) (m: int) = p + string m
 
-      let subBinding = twoWay subName subGet subSet
+      let subBinding = twoWay subGet subSet subName
       let binding = subModel name getModel toMsg [subBinding] sticky
       let vm = TestVm(m, binding)
 
@@ -1302,7 +1272,7 @@ module SubModelSeq =
       let toMsg = id
       let subGet = string
 
-      let subBinding = oneWay subName subGet
+      let subBinding = oneWay subGet subName
       let binding = subModelSeq name getModels getId toMsg [subBinding]
       let vm = TestVm(m, binding)
 
@@ -1331,7 +1301,7 @@ module SubModelSeq =
       let subGet = string
       let subSet (p: string) (m: Guid) = p + string m
 
-      let subBinding = twoWay subName subGet subSet
+      let subBinding = twoWay subGet subSet subName
       let binding = subModelSeq name getModels getId toMsg [subBinding]
       let vm = TestVm(m, binding)
 
