@@ -866,8 +866,7 @@ module Binding =
     /// <summary>
     ///   Elemental instance of a one-way binding.
     /// </summary>
-    let id<'a, 'msg>
-        : string -> Binding<'a, 'msg> =
+    let id<'a, 'msg> : string -> Binding<'a, 'msg> =
       { Get = box }
       |> OneWayData
       |> BaseBindingData
@@ -878,8 +877,7 @@ module Binding =
     ///   automatically converts between a missing value in the model and
     ///   a <c>null</c> value in the view.
     /// </summary>
-    let opt<'a, 'msg>
-        : string -> Binding<'a option, 'msg> =
+    let opt<'a, 'msg> : string -> Binding<'a option, 'msg> =
       id<obj, 'msg>
       >> mapModel BindingData.Option.box
       
@@ -888,8 +886,7 @@ module Binding =
     ///   automatically converts between a missing value in the model and
     ///   a <c>null</c> value in the view.
     /// </summary>
-    let vopt<'a, 'msg>
-        : string -> Binding<'a voption, 'msg> =
+    let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg> =
       id<obj, 'msg>
       >> mapModel BindingData.ValueOption.box
 
@@ -898,8 +895,7 @@ module Binding =
     /// <summary>
     ///   Elemental instance of a one-way-to-source binding.
     /// </summary>
-    let id<'model, 'a>
-        : string -> Binding<'model, 'a> =
+    let id<'model, 'a> : string -> Binding<'model, 'a> =
       { Set = fun obj _ -> obj |> unbox }
       |> OneWayToSourceData
       |> BaseBindingData
@@ -910,8 +906,7 @@ module Binding =
     ///   automatically converts between a missing value in the model and
     ///   a <c>null</c> value in the view.
     /// </summary>
-    let vopt<'model, 'a>
-        : string -> Binding<'model, 'a voption> =
+    let vopt<'model, 'a> : string -> Binding<'model, 'a voption> =
       id<'model, obj>
       >> mapMsg BindingData.ValueOption.unbox
       
@@ -920,8 +915,7 @@ module Binding =
     ///   automatically converts between a missing value in the model and
     ///   a <c>null</c> value in the view.
     /// </summary>
-    let opt<'model, 'a>
-        : string -> Binding<'model, 'a option> =
+    let opt<'model, 'a> : string -> Binding<'model, 'a option> =
       id<'model, obj>
       >> mapMsg BindingData.Option.unbox
 
