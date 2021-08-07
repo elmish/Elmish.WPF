@@ -27,8 +27,8 @@ type internal GetError =
   | SubModelSelectedItem of GetErrorSubModelSelectedItem
 
 
-type internal OneWayBinding<'model, 'a> = {
-  OneWayData: OneWayData<'model, 'a>
+type internal OneWayBinding<'model> = {
+  OneWayData: OneWayData<'model>
 }
 
 type internal OneWayToSourceBinding<'model, 'msg, 'a> = {
@@ -89,7 +89,7 @@ and internal LazyBinding<'model, 'msg> = {
 
 
 and internal BaseVmBinding<'model, 'msg> =
-  | OneWay of OneWayBinding<'model, obj>
+  | OneWay of OneWayBinding<'model>
   | OneWayToSource of OneWayToSourceBinding<'model, 'msg, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
@@ -541,7 +541,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let tryGetMember model =
     let baseCase = function
-      | OneWay { OneWayData = d } -> d.TryGetMember model |> Ok
+      | OneWay { OneWayData = d } -> d.Get model |> Ok
       | TwoWay { TwoWayData = d } -> d.TryGetMember model |> Ok
       | OneWayToSource _ -> GetError.OneWayToSource |> Error
       | OneWaySeq { Values = vals } -> vals |> box |> Ok

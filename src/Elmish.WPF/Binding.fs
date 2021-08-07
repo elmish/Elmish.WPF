@@ -7,11 +7,8 @@ open Elmish
 
 
 
-type internal OneWayData<'model, 'a> =
-  { Get: 'model -> 'a }
-
-  member d.TryGetMember(model: 'model) =
-    d.Get model
+type internal OneWayData<'model> =
+  { Get: 'model -> obj }
 
 
 type internal OneWayToSourceData<'model, 'msg, 'a> =
@@ -136,7 +133,7 @@ and internal LazyData<'model, 'msg> =
 
 /// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
-  | OneWayData of OneWayData<'model, obj>
+  | OneWayData of OneWayData<'model>
   | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
@@ -369,7 +366,7 @@ module internal BindingData =
 
     let mapFunctions
         mGet
-        (d: OneWayData<'model, 'a>) =
+        (d: OneWayData<'model>) =
       { d with Get = mGet d.Get }
 
     let measureFunctions
