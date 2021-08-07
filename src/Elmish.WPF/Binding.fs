@@ -33,15 +33,9 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
       Merge.keyed d.GetId d.GetId create update values newVals
 
 
-type internal TwoWayData<'model, 'msg, 'a> =
-  { Get: 'model -> 'a
-    Set: 'a -> 'model -> 'msg }
-
-  member d.TryGetMember(model: 'model) =
-    d.Get model
-
-  member d.TrySetMember(value: 'a, model: 'model) =
-    d.Set value model
+type internal TwoWayData<'model, 'msg> =
+  { Get: 'model -> obj
+    Set: obj -> 'model -> 'msg }
 
 
 type internal CmdData<'model, 'msg> = {
@@ -133,7 +127,7 @@ and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model>
   | OneWayToSourceData of OneWayToSourceData<'model, 'msg>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
-  | TwoWayData of TwoWayData<'model, 'msg, obj>
+  | TwoWayData of TwoWayData<'model, 'msg>
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
@@ -446,7 +440,7 @@ module internal BindingData =
     let mapFunctions
         mGet
         mSet
-        (d: TwoWayData<'model, 'msg, 'a>) =
+        (d: TwoWayData<'model, 'msg>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set }
 
