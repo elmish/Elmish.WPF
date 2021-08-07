@@ -39,12 +39,9 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
       Merge.keyed d.GetId d.GetId create update values newVals
 
 
-type internal TwoWayData<'model, 'msg, 'a when 'a : equality> =
+type internal TwoWayData<'model, 'msg, 'a> =
   { Get: 'model -> 'a
     Set: 'a -> 'model -> 'msg }
-    
-  member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
-    d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember(model: 'model) =
     d.Get model
@@ -451,48 +448,6 @@ module internal BindingData =
 
 
   module TwoWay =
-  
-    let mapMinorTypes
-        (outMapA: 'a -> 'a0)
-        (inMapA: 'a0 -> 'a)
-        (d: TwoWayData<'model, 'msg, 'a>) = {
-      Get = d.Get >> outMapA
-      Set = fun a m -> d.Set (inMapA a) m
-    }
-
-    let boxVOpt d = mapMinorTypes ValueOption.box ValueOption.unbox d
-    let boxOpt d = mapMinorTypes Option.box Option.unbox d
-    let box d = mapMinorTypes box unbox d
-
-    let private createRest x =
-      x
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
-
-    let id<'a when 'a : equality> =
-      { Get = id<'a>
-        Set = Func2.id1<'a, 'a> }
-      |> box
-      |> createRest
-
-    let create get set =
-      { Get = get
-        Set = set }
-      |> box
-      |> createRest
-
-    let createOpt get set =
-      { Get = get
-        Set = set }
-      |> boxOpt
-      |> createRest
-
-    let createVOpt get set =
-      { Get = get
-        Set = set }
-      |> boxVOpt
-      |> createRest
 
     let mapFunctions
         mGet
@@ -924,7 +879,32 @@ module Binding =
     /// <summary>
     ///   Elemental instance of a two-way binding.
     /// </summary>
-    let id<'a when 'a : equality> = BindingData.TwoWay.id<'a>
+    let id<'a> : string -> Binding<'a, 'a> =
+      { Get = box
+        Set = fun obj _ -> unbox obj }
+      |> TwoWayData
+      |> BaseBindingData
+      |> createBinding
+    
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let vopt<'a> : string -> Binding<'a voption, 'a voption> =
+      id<obj>
+      >> mapModel BindingData.ValueOption.box
+      >> mapMsg BindingData.ValueOption.unbox
+      
+    /// <summary>
+    ///   Creates a one-way-to-source binding to an optional value. The binding
+    ///   automatically converts between a missing value in the model and
+    ///   a <c>null</c> value in the view.
+    /// </summary>
+    let opt<'a> : string -> Binding<'a option, 'a option> =
+      id<obj>
+      >> mapModel BindingData.Option.box
+      >> mapMsg BindingData.Option.unbox
     
 
   module SelectedIndex =
@@ -1211,7 +1191,10 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.create get set
+    Binding.TwoWay.id<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
 
 
   /// <summary>
@@ -1225,7 +1208,10 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createOpt get set
+    Binding.TwoWay.opt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
 
 
   /// <summary>
@@ -1239,7 +1225,10 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createVOpt get set
+    Binding.TwoWay.vopt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
 
 
   /// <summary>
@@ -1256,7 +1245,10 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.create get set
+    Binding.TwoWay.id<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation validate
 
 
@@ -1274,7 +1266,10 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.create get set
+    Binding.TwoWay.id<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1292,7 +1287,10 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.create get set
+    Binding.TwoWay.id<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1310,7 +1308,10 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.create get set
+    Binding.TwoWay.id<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1330,7 +1331,10 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createVOpt get set
+    Binding.TwoWay.vopt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation validate
 
 
@@ -1350,7 +1354,10 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createVOpt get set
+    Binding.TwoWay.vopt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1370,7 +1377,10 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createVOpt get set
+    Binding.TwoWay.vopt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1390,7 +1400,10 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createVOpt get set
+    Binding.TwoWay.vopt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1410,7 +1423,10 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string list)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createOpt get set
+    Binding.TwoWay.opt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation validate
 
 
@@ -1430,7 +1446,10 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createOpt get set
+    Binding.TwoWay.opt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1450,7 +1469,10 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string option)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createOpt get set
+    Binding.TwoWay.opt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1470,7 +1492,10 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
       : string -> Binding<'model, 'msg> =
-    BindingData.TwoWay.createOpt get set
+    Binding.TwoWay.opt<'a>
+    >> Binding.addLazy (=)
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel (fun m a -> set a m)
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2477,9 +2502,10 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.create
-        get
-        (fun p _ -> p |> set)
+      Binding.TwoWay.id<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
 
 
     /// <summary>
@@ -2493,9 +2519,10 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createOpt
-        get
-        (fun p _ -> p |> set)
+      Binding.TwoWay.opt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
 
     /// <summary>
     ///   Creates a two-way binding to an optional value. The binding
@@ -2508,11 +2535,10 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg)
         : string -> Binding<'model, 'msg> =
-      { Get = get >> ValueOption.map box >> ValueOption.toObj
-        Set = fun p _ -> p |> ValueOption.ofObj |> ValueOption.map unbox<'a> |> set }
-      |> TwoWayData
-      |> BaseBindingData
-      |> createBinding
+      Binding.TwoWay.vopt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
 
 
     /// <summary>
@@ -2529,9 +2555,10 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.create
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.id<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation validate
 
 
@@ -2549,9 +2576,10 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.create
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.id<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2569,9 +2597,10 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.create
-        get
-        (fun p  _ -> set p)
+      Binding.TwoWay.id<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2589,9 +2618,10 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.create
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.id<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2611,9 +2641,10 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createVOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.vopt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation validate
 
 
@@ -2633,9 +2664,10 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createVOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.vopt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2655,9 +2687,10 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createVOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.vopt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2677,9 +2710,10 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createVOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.vopt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -2699,9 +2733,10 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string list)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.opt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation validate
 
 
@@ -2721,9 +2756,10 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string voption)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.opt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -2743,9 +2779,10 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string option)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.opt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -2765,9 +2802,10 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> Result<'ignored, string>)
         : string -> Binding<'model, 'msg> =
-      BindingData.TwoWay.createOpt
-        get
-        (fun p _ -> set p)
+      Binding.TwoWay.opt<'a>
+      >> Binding.addLazy (=)
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 

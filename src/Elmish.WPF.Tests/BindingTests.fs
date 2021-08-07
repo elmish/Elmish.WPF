@@ -352,7 +352,7 @@ module twoWay =
         let! p = GenX.auto<string>
 
         let set (p: string) (m: int) = p + string m
-        let d = Binding.twoWay(fail, set) |> getTwoWayData
+        let d = Binding.twoWay((fun _ -> ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set p m @>
       }
@@ -390,7 +390,7 @@ module twoWay =
         let! p = GenX.auto<string>
 
         let set (p: string) = p + p
-        let d = Binding.twoWay(fail, set) |> getTwoWayData
+        let d = Binding.twoWay((fun _ -> ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set p @>
       }
@@ -443,7 +443,7 @@ module twoWayOpt =
         let! p = GenX.auto<string>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) m @>
       }
@@ -455,7 +455,7 @@ module twoWayOpt =
         let! m = GenX.auto<int>
 
         let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
 
         test <@ d.Set null m |> unbox = set None m @>
       }
@@ -505,7 +505,7 @@ module twoWayOpt =
         let! p = GenX.auto<string>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) m @>
       }
@@ -517,7 +517,7 @@ module twoWayOpt =
         let! m = GenX.auto<int>
 
         let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
         test <@ d.Set null m |> unbox = set ValueNone m @>
       }
@@ -567,7 +567,7 @@ module twoWayOpt =
         let! p = GenX.auto<string>
 
         let set (p: string option) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set (Some p) @>
       }
@@ -579,7 +579,7 @@ module twoWayOpt =
         let! m = GenX.auto<int>
 
         let set (p: string option) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
 
         test <@ d.Set null m |> unbox = set None @>
       }
@@ -629,7 +629,7 @@ module twoWayOpt =
         let! p = GenX.auto<string>
 
         let set (p: string voption) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
         test <@ d.Set (box p) m |> unbox = set (ValueSome p) @>
       }
@@ -641,7 +641,7 @@ module twoWayOpt =
         let! m = GenX.auto<int>
 
         let set (p: string voption) = p |> ValueOption.map ((+) (string m))
-        let d = Binding.twoWayOpt(fail, set) |> getTwoWayData
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
         test <@ d.Set null m |> unbox = set ValueNone @>
       }

@@ -40,7 +40,7 @@ type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   Values: ObservableCollection<'b>
 }
 
-type internal TwoWayBinding<'model, 'msg, 'a when 'a : equality> = {
+type internal TwoWayBinding<'model, 'msg, 'a> = {
   TwoWayData: TwoWayData<'model, 'msg, 'a>
 }
 
@@ -384,12 +384,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// for this binding
   let updateBinding name newModel =
     let baseCase = function
-      | OneWay _ -> [ PropertyChanged ]
+      | OneWay _
+      | TwoWay _ -> [ PropertyChanged ]
       | OneWayToSource _ -> []
-      | TwoWay { TwoWayData = d } ->
-          d.DidPropertyChange(currentModel, newModel)
-          |> Option.fromBool PropertyChanged
-          |> Option.toList
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
           []
