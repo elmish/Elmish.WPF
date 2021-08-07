@@ -31,8 +31,8 @@ type internal OneWayBinding<'model> = {
   OneWayData: OneWayData<'model>
 }
 
-type internal OneWayToSourceBinding<'model, 'msg, 'a> = {
-  OneWayToSourceData: OneWayToSourceData<'model, 'msg, 'a>
+type internal OneWayToSourceBinding<'model, 'msg> = {
+  OneWayToSourceData: OneWayToSourceData<'model, 'msg>
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
@@ -90,7 +90,7 @@ and internal LazyBinding<'model, 'msg> = {
 
 and internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model>
-  | OneWayToSource of OneWayToSourceBinding<'model, 'msg, obj>
+  | OneWayToSource of OneWayToSourceBinding<'model, 'msg>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, 'msg, obj>
   | Cmd of cmd: Command
@@ -592,7 +592,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           d.TrySetMember(value, model) |> dispatch
           true
       | OneWayToSource { OneWayToSourceData = d } ->
-          d.TrySetMember(value, model) |> dispatch
+          d.Set value model |> dispatch
           true
       | SubModelSelectedItem b ->
           let bindingModel =

@@ -11,11 +11,8 @@ type internal OneWayData<'model> =
   { Get: 'model -> obj }
 
 
-type internal OneWayToSourceData<'model, 'msg, 'a> =
-  { Set: 'a -> 'model -> 'msg }
-    
-  member d.TrySetMember(value: 'a, model: 'model) =
-    d.Set value model
+type internal OneWayToSourceData<'model, 'msg> =
+  { Set: obj -> 'model -> 'msg }
 
 
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
@@ -134,7 +131,7 @@ and internal LazyData<'model, 'msg> =
 /// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model>
-  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
+  | OneWayToSourceData of OneWayToSourceData<'model, 'msg>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
@@ -379,7 +376,7 @@ module internal BindingData =
 
     let mapFunctions
         mSet
-        (d: OneWayToSourceData<'model, 'msg, 'a>) =
+        (d: OneWayToSourceData<'model, 'msg>) =
       { d with Set = mSet d.Set }
 
     let measureFunctions
