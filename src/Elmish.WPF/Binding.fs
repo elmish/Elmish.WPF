@@ -76,7 +76,6 @@ and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
-  Sticky: bool
 }
 
 
@@ -209,7 +208,6 @@ module internal BindingData =
           GetModel = f >> d.GetModel
           GetBindings = d.GetBindings
           ToMsg = f >> d.ToMsg
-          Sticky = d.Sticky
         }
       | SubModelWinData d -> SubModelWinData {
           GetState = f >> d.GetState
@@ -268,7 +266,6 @@ module internal BindingData =
           GetModel = d.GetModel
           GetBindings = d.GetBindings
           ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
-          Sticky = d.Sticky
         }
       | SubModelWinData d -> SubModelWinData {
           GetState = d.GetState
@@ -545,20 +542,27 @@ module internal BindingData =
       GetModel = d.GetModel >> ValueOption.map outMapBindingModel
       GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
-      Sticky = d.Sticky
     }
 
     let box d = mapMinorTypes box box unbox unbox d
 
-    let create getModel bindings sticky =
-      { GetModel = getModel
+    let vopt (bindings: unit -> Binding<'model, 'msg> list)
+        : string -> Binding<'model voption, 'msg> =
+      { GetModel = id
         GetBindings = bindings
-        ToMsg = fun _ -> id
-        Sticky = sticky }
+        ToMsg = fun _ -> id }
       |> box
       |> SubModelData
       |> BaseBindingData
       |> createBinding
+
+    let create getModel bindings sticky =
+      vopt bindings
+      >> if sticky then
+           Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+         else
+           id
+      >> Binding.mapModel getModel
 
     let mapFunctions
         mGetModel

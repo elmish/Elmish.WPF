@@ -396,10 +396,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         match !b.Vm, d.GetModel newModel with
         | ValueNone, ValueNone -> []
         | ValueSome _, ValueNone ->
-            if d.Sticky then []
-            else
-              b.Vm := ValueNone
-              PropertyChanged |> List.singleton
+            b.Vm := ValueNone
+            PropertyChanged |> List.singleton
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
             b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)

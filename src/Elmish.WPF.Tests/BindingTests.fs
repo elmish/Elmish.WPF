@@ -2610,16 +2610,8 @@ module subModel =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
-        let d = Binding.subModel(fail, fail) |> getSubModelData
+        let d = Binding.subModel((fun _ -> 0), fail) |> getSubModelData
         test <@ d.ToMsg m (box x) = x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky is false`` () =
-      Property.check <| property {
-        let d = Binding.subModel(fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
       }
 
 
@@ -2653,17 +2645,9 @@ module subModel =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModel(fail, toMsg, fail) |> getSubModelData
+        let d = Binding.subModel((fun _ -> 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky is false`` () =
-      Property.check <| property {
-        let d = Binding.subModel(fail, fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
       }
 
 
@@ -2697,17 +2681,9 @@ module subModel =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModel(fail, fail, toMsg, fail) |> getSubModelData
+        let d = Binding.subModel((fun _ -> 0), (fun _ -> 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky is false`` () =
-      Property.check <| property {
-        let d = Binding.subModel(fail, fail, fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
       }
 
 
@@ -2752,25 +2728,8 @@ module subModelOpt =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> ValueSome 0), fail) |> getSubModelData
         test <@ d.ToMsg m (box x) = x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
@@ -2812,25 +2771,8 @@ module subModelOpt =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! x = GenX.auto<int>
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> Some 0), fail) |> getSubModelData
         test <@ d.ToMsg m (box x) = x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
@@ -2873,26 +2815,9 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOpt((fail: _ -> _ voption), toMsg, fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> ValueSome 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
@@ -2936,26 +2861,9 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOpt((fail: _ -> _ option), toMsg, fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> Some 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
@@ -2999,26 +2907,9 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, toMsg, fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> ValueSome 0), (fun _ -> ValueSome 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ voption), fail, fail, fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
@@ -3063,26 +2954,9 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, toMsg, fail) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> Some 0), (fun _ -> Some 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
-      }
-
-
-    [<Fact>]
-    let ``sticky defaults to false`` () =
-      Property.check <| property {
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, fail, fail) |> getSubModelData
-        test <@ d.Sticky = false @>
-      }
-
-
-    [<Fact>]
-    let ``sticky follows input param`` () =
-      Property.check <| property {
-        let! sticky = Gen.bool
-        let d = Binding.subModelOpt((fail: _ -> _ option), fail, fail, fail, sticky = sticky) |> getSubModelData
-        test <@ d.Sticky = sticky @>
       }
 
 
