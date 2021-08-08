@@ -532,37 +532,6 @@ module internal BindingData =
 
 
   module SubModel =
-  
-    let mapMinorTypes
-        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
-        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
-        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
-        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
-      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
-      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
-      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
-    }
-
-    let box d = mapMinorTypes box box unbox unbox d
-
-    let vopt (bindings: unit -> Binding<'model, 'msg> list)
-        : string -> Binding<'model voption, 'msg> =
-      { GetModel = id
-        GetBindings = bindings
-        ToMsg = fun _ -> id }
-      |> box
-      |> SubModelData
-      |> BaseBindingData
-      |> createBinding
-
-    let create getModel bindings sticky =
-      vopt bindings
-      >> if sticky then
-           Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
-         else
-           id
-      >> Binding.mapModel getModel
 
     let mapFunctions
         mGetModel
@@ -914,7 +883,41 @@ module Binding =
       id<obj>
       >> mapModel BindingData.Option.box
       >> mapMsg BindingData.Option.unbox
-    
+
+
+  module SubModel =
+  
+    let private mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
+      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+    }
+
+    let vopt (bindings: unit -> Binding<'model, 'msg> list)
+        : string -> Binding<'model voption, 'msg> =
+      { GetModel = id
+        GetBindings = bindings
+        ToMsg = fun _ -> id }
+      |> mapMinorTypes box box unbox unbox
+      |> SubModelData
+      |> BaseBindingData
+      |> createBinding
+
+    let opt (bindings: unit -> Binding<'model, 'msg> list)
+        : string -> Binding<'model option, 'msg> =
+      vopt bindings
+      >> mapModel ValueOption.ofOption
+
+    let required (bindings: unit -> Binding<'model, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      vopt bindings
+      >> mapModel ValueSome
+
 
   module SelectedIndex =
     /// <summary>
@@ -1710,10 +1713,8 @@ type Binding private () =
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> toBindingModel (m, getSubModel m) |> ValueSome)
-      bindings
-      false
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
     >> Binding.mapMsg toMsg
 
   /// <summary>
@@ -1732,10 +1733,8 @@ type Binding private () =
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> (m, getSubModel m) |> ValueSome)
-      bindings
-      false
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> (m, getSubModel m))
     >> Binding.mapMsg toMsg
 
 
@@ -1750,10 +1749,8 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> (m, getSubModel m) |> ValueSome)
-      bindings
-      false
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> (m, getSubModel m))
 
 
   /// <summary>
@@ -1790,10 +1787,9 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.vopt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
 
@@ -1831,10 +1827,9 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.opt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
   /// <summary>
@@ -1867,10 +1862,9 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.vopt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
 
@@ -1904,10 +1898,9 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.opt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
 
@@ -1936,10 +1929,9 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.vopt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
 
 
   /// <summary>
@@ -1967,10 +1959,9 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModel.create
-      (fun m -> getSubModel m |> ValueOption.ofOption |> ValueOption.map (fun sub -> (m, sub)))
-      bindings
-      (defaultArg sticky false)
+    Binding.SubModel.opt bindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
 
 
   /// <summary>
