@@ -758,6 +758,19 @@ module internal BindingData =
 
 
 
+module Bindings =
+
+  /// Map the model of a list of bindings via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
+  
+  /// Map the message of a list of bindings with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
+  
+  /// Map the message of a list of bindings via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
+
+
+
 module Binding =
 
   let internal subModelSelectedItemLast a b =
@@ -919,18 +932,6 @@ module Binding =
       vopt
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
-
-
-module Bindings =
-
-  /// Map the model of a list of bindings via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
-  
-  /// Map the message of a list of bindings with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
-  
-  /// Map the message of a list of bindings via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
 
 
 
