@@ -743,6 +743,10 @@ module internal BindingData =
 
 module Binding =
 
+  let internal subModelSelectedItemLast a b =
+    BindingData.subModelSelectedItemLast a.Data b.Data
+
+
   /// Map the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
   
@@ -758,8 +762,6 @@ module Binding =
   /// Set the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
 
-  let internal subModelSelectedItemLast a b =
-    BindingData.subModelSelectedItemLast a.Data b.Data
 
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
   let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
