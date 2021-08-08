@@ -315,6 +315,18 @@ module internal BindingData =
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
+  let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
+    let mutable stickyModel = None
+    let f newModel =
+      match predicate newModel, stickyModel with
+      | _, None ->
+          newModel
+      | true, _ ->
+          stickyModel <- Some newModel
+          newModel
+      | false, Some sm ->
+          sm
+    binding |> mapModel f
 
 
   module Binding =
@@ -333,6 +345,7 @@ module internal BindingData =
     let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
     let addValidation vaidate = vaidate |> addValidation |> mapData
     let addLazy equals = equals |> addLazy |> mapData
+    let addSticky predicate =  predicate |> addSticky |> mapData
 
 
   module Bindings =
@@ -764,18 +777,7 @@ module Binding =
 
 
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
-  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) =
-    let mutable stickyModel = None
-    let f newModel =
-      match predicate newModel, stickyModel with
-      | _, None ->
-          newModel
-      | true, _ ->
-          stickyModel <- Some newModel
-          newModel
-      | false, Some sm ->
-          sm
-    binding |> mapModel f
+  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = BindingData.Binding.addSticky predicate binding
     
   /// <summary>
   ///   Adds caching to the given binding.  The cache holds a single value and
