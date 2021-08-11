@@ -47,13 +47,13 @@
     <TextBox Text="{Binding Input, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,5" />
     <TextBlock Text="Checkbox:" />
     <CheckBox IsChecked="{Binding IsChecked}" />
-    <TextBlock Visibility="{Binding SubmitMsgVisiblity}" Foreground="Red">
+    <TextBlock Visibility="{Binding SubmitMsgVisibility}" Foreground="Red">
       Submit clicked, repeat to submit
     </TextBlock>
-    <TextBlock Visibility="{Binding CancelMsgVisiblity}" Foreground="Red">
+    <TextBlock Visibility="{Binding CancelMsgVisibility}" Foreground="Red">
       Cancel clicked, repeat to cancel
     </TextBlock>
-    <TextBlock Visibility="{Binding CloseMsgVisiblity}" Foreground="Red">
+    <TextBlock Visibility="{Binding CloseMsgVisibility}" Foreground="Red">
       External close requested, repeat to close
     </TextBlock>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 0 0">
