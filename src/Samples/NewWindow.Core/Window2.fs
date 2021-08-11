@@ -62,9 +62,9 @@ module Window2 =
     let inBindings =
       [ "Input" |> Binding.twoWay (Input.get, SetInput)
         "IsChecked" |> Binding.twoWay (IsChecked.get, SetChecked)
-        "SubmitMsgVisiblity" |> confirmStateVisibilityBinding ConfirmState.Submit
-        "CancelMsgVisiblity" |> confirmStateVisibilityBinding ConfirmState.Cancel
-        "CloseMsgVisiblity"  |> confirmStateVisibilityBinding ConfirmState.Close ]
+        "SubmitMsgVisibility" |> confirmStateVisibilityBinding ConfirmState.Submit
+        "CancelMsgVisibility" |> confirmStateVisibilityBinding ConfirmState.Cancel
+        "CloseMsgVisibility"  |> confirmStateVisibilityBinding ConfirmState.Close ]
       |> Bindings.mapMsg InOut.In
     let inOutBindings =
       [ "Submit" |> Binding.cmd (confirmStateToMsg ConfirmState.Submit Submit)
