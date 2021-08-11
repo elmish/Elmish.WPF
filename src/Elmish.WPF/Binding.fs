@@ -897,7 +897,12 @@ module Binding =
       GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
-
+    
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let vopt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model voption, 'msg> =
       { GetModel = id
@@ -907,12 +912,22 @@ module Binding =
       |> SubModelData
       |> BaseBindingData
       |> createBinding
-
+    
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let opt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model option, 'msg> =
       vopt bindings
       >> mapModel ValueOption.ofOption
-
+    
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let required (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model, 'msg> =
       vopt bindings
