@@ -84,7 +84,7 @@ module WpfProgram =
       dispatch <- innerDispatch
       (*
        * Have commands asychrononously dispatch messages.
-       * This avoids race conditions like can occur when shutting down.
+       * This avoids race conditions like those that can occur when shutting down.
        * https://github.com/elmish/Elmish.WPF/issues/353
        *)
       fun msg -> element.Dispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
