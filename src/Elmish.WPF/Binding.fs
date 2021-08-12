@@ -173,11 +173,17 @@ module internal Helpers =
 module internal BindingData =
 
   let subModelSelectedItemLast a b =
-    match getBaseBindingData a, getBaseBindingData b with
-    | SubModelSelectedItemData _, SubModelSelectedItemData _ -> 0
-    | SubModelSelectedItemData _, _ -> 1
-    | _, SubModelSelectedItemData _ -> -1
-    | _, _ -> 0
+    let getComparisonNumber =
+      let baseCase = function
+        | SubModelSelectedItemData _ -> 1
+        | _ -> 0
+      let rec recrusiveCase = function
+        | BaseBindingData d -> baseCase d
+        | CachingData d -> recrusiveCase d
+        | ValidationData d -> recrusiveCase d.BindingData
+        | LazyData d -> recrusiveCase d.BindingData
+      recrusiveCase
+    (getComparisonNumber a) - (getComparisonNumber b)
 
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
