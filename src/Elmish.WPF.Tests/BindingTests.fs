@@ -61,7 +61,7 @@ module oneWay =
   let ``sets the correct binding name`` () =
     Property.check <| property {
       let! bindingName = GenX.auto<string>
-      let binding = bindingName |> Binding.oneWay(fail)
+      let binding = bindingName |> Binding.OneWay.id
       test <@ binding.Name = bindingName @>
     }
 
@@ -82,15 +82,6 @@ module oneWayOpt =
 
 
   module option =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.oneWayOpt((fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     [<Fact>]
@@ -328,7 +319,7 @@ module twoWay =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWay(fail, fail2)
+        let binding = bindingName |> Binding.TwoWay.id
         test <@ binding.Name = bindingName @>
       }
 
@@ -404,15 +395,6 @@ module twoWayOpt =
 
 
     [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOpt((fail: _ -> _ option), fail2)
-        test <@ binding.Name = bindingName @>
-      }
-
-
-    [<Fact>]
     let ``when original get returns Some, final get returns the inner value`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
@@ -463,15 +445,6 @@ module twoWayOpt =
 
 
   module voption_setModel =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOpt((fail: _ -> _ voption), fail2)
-        test <@ binding.Name = bindingName @>
-      }
 
 
     [<Fact>]
@@ -528,15 +501,6 @@ module twoWayOpt =
 
 
     [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOpt((fail: _ -> _ option), (fail: _ option -> int))
-        test <@ binding.Name = bindingName @>
-      }
-
-
-    [<Fact>]
     let ``when original get returns Some, final get returns the inner value`` () =
       Property.check <| property {
         let! x = GenX.auto<int>
@@ -587,15 +551,6 @@ module twoWayOpt =
 
 
   module voption_noSetModel =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOpt((fail: _ -> _ voption), (fail: _ voption -> int))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     [<Fact>]
@@ -654,15 +609,6 @@ module twoWayValidate =
   module setModel_validateVoption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``final get returns value from original get`` () =
     //  Property.check <| property {
@@ -703,15 +649,6 @@ module twoWayValidate =
 
 
   module setModel_validateOption =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -756,15 +693,6 @@ module twoWayValidate =
   module setModel_validateResult =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, fail2, (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``final get returns value from original get`` () =
     //  Property.check <| property {
@@ -805,15 +733,6 @@ module twoWayValidate =
 
 
   module noSetModel_validateVoption =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -858,15 +777,6 @@ module twoWayValidate =
   module noSetModel_validateOption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``final get returns value from original get`` () =
     //  Property.check <| property {
@@ -907,15 +817,6 @@ module twoWayValidate =
 
 
   module noSetModel_validateResult =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayValidate(fail, (fail: string -> int), (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -961,15 +862,6 @@ module twoWayOptValidate =
 
 
   module voption_setModel_validateVoption =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -1038,15 +930,6 @@ module twoWayOptValidate =
   module voption_setModel_validateOption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns ValueSome, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1111,15 +994,6 @@ module twoWayOptValidate =
 
 
   module voption_setModel_validateResult =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), fail2, (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -1188,15 +1062,6 @@ module twoWayOptValidate =
   module option_setModel_validateVoption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns Some, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1261,15 +1126,6 @@ module twoWayOptValidate =
 
 
   module option_setModel_validateOption =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -1338,15 +1194,6 @@ module twoWayOptValidate =
   module option_setModel_validateResult =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), fail2, (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns Some, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1411,15 +1258,6 @@ module twoWayOptValidate =
 
 
   module voption_noSetModel_validateVoption =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -1488,15 +1326,6 @@ module twoWayOptValidate =
   module voption_noSetModel_validateOption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns ValueSome, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1561,15 +1390,6 @@ module twoWayOptValidate =
 
 
   module voption_noSetModel_validateResult =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ voption), (fail: _ -> int), (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
@@ -1638,15 +1458,6 @@ module twoWayOptValidate =
   module option_noSetModel_validateVoption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ voption))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns Some, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1713,15 +1524,6 @@ module twoWayOptValidate =
   module option_noSetModel_validateOption =
 
 
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> _ option))
-        test <@ binding.Name = bindingName @>
-      }
-
-
     //[<Fact>]
     //let ``when original get returns Some, final get returns the inner value`` () =
     //  Property.check <| property {
@@ -1786,15 +1588,6 @@ module twoWayOptValidate =
 
 
   module option_noSetModel_validateResult =
-
-
-    [<Fact>]
-    let ``sets the correct binding name`` () =
-      Property.check <| property {
-        let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.twoWayOptValidate((fail: _ -> _ option), (fail: _ -> int), (fail: _ -> Result<_,_>))
-        test <@ binding.Name = bindingName @>
-      }
 
 
     //[<Fact>]
