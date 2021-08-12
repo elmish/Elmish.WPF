@@ -102,17 +102,15 @@ module App =
     "Form2Visible" |> Binding.oneWay
       (fun m -> match m.Dialog with Some (Form2 _) -> true | _ -> false)
 
-    "Form1" |> Binding.subModelOpt(
-      (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None),
-      snd,
-      Form1Msg,
-      Form1.bindings)
+    "Form1"
+      |> Binding.SubModel.opt Form1.bindings
+      |> Binding.mapModel (fun m -> match m.Dialog with Some (Form1 m') -> Some m' | _ -> None)
+      |> Binding.mapMsg Form1Msg
 
-    "Form2" |> Binding.subModelOpt(
-      (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None),
-      snd,
-      Form2Msg,
-      Form2.bindings)
+    "Form2"
+      |> Binding.SubModel.opt Form2.bindings
+      |> Binding.mapModel (fun m -> match m.Dialog with Some (Form2 m') -> Some m' | _ -> None)
+      |> Binding.mapMsg Form2Msg
   ]
 
 
