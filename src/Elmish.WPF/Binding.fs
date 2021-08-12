@@ -187,7 +187,7 @@ module internal BindingData =
 
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
-    let mapModelBase = function
+    let baseCase = function
       | OneWayData d -> OneWayData {
           Get = f >> d.Get
         }
@@ -239,21 +239,21 @@ module internal BindingData =
           Set = binaryHelper d.Set
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
-    let rec mapModelRec = function
-      | BaseBindingData d -> d |> mapModelBase |> BaseBindingData
-      | CachingData d -> d |> mapModelRec |> CachingData
+    let rec recursiveCase = function
+      | BaseBindingData d -> d |> baseCase |> BaseBindingData
+      | CachingData d -> d |> recursiveCase |> CachingData
       | ValidationData d -> ValidationData {
-          BindingData = mapModelRec d.BindingData
+          BindingData = recursiveCase d.BindingData
           Validate = f >> d.Validate
         }
       | LazyData d -> LazyData {
-          BindingData = mapModelRec d.BindingData
+          BindingData = recursiveCase d.BindingData
           Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
         }
-    mapModelRec
+    recursiveCase
 
   let mapMsgWithModel f =
-    let mapMsgWithModelBase = function
+    let baseCase = function
       | OneWayData d -> d |> OneWayData
       | OneWayToSourceData d -> OneWayToSourceData {
           Set = fun v m -> d.Set v m |> f m
@@ -297,18 +297,18 @@ module internal BindingData =
           Set = fun v m -> d.Set v m |> f m
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
-    let rec mapMsgWithModelRec = function
-      | BaseBindingData d -> d |> mapMsgWithModelBase |> BaseBindingData
-      | CachingData d -> d |> mapMsgWithModelRec |> CachingData
+    let rec recursiveCase = function
+      | BaseBindingData d -> d |> baseCase |> BaseBindingData
+      | CachingData d -> d |> recursiveCase |> CachingData
       | ValidationData d -> ValidationData {
-          BindingData = mapMsgWithModelRec d.BindingData
+          BindingData = recursiveCase d.BindingData
           Validate = d.Validate
         }
       | LazyData d -> LazyData {
-          BindingData = mapMsgWithModelRec d.BindingData
+          BindingData = recursiveCase d.BindingData
           Equals = d.Equals
         }
-    mapMsgWithModelRec
+    recursiveCase
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
 
