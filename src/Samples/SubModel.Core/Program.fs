@@ -99,8 +99,14 @@ module CounterWithClock =
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
   let bindings () : Binding<Model, Msg> list = [
-    "Counter" |> Binding.subModel((fun m -> m.Counter), snd, CounterMsg, Counter.bindings)
-    "Clock" |> Binding.subModel((fun m -> m.Clock), snd, ClockMsg, Clock.bindings)
+    "Counter"
+      |> Binding.SubModel.required Counter.bindings
+      |> Binding.mapModel (fun m -> m.Counter)
+      |> Binding.mapMsg CounterMsg
+    "Clock"
+      |> Binding.SubModel.required Clock.bindings
+      |> Binding.mapModel (fun m -> m.Clock)
+      |> Binding.mapMsg ClockMsg
   ]
 
 
@@ -126,17 +132,15 @@ module App =
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
   let bindings () : Binding<Model, Msg> list = [
-    "ClockCounter1" |> Binding.subModel(
-      (fun m -> m.ClockCounter1),
-      snd,
-      ClockCounter1Msg,
-      CounterWithClock.bindings)
+    "ClockCounter1"
+      |> Binding.SubModel.required CounterWithClock.bindings
+      |> Binding.mapModel (fun m -> m.ClockCounter1)
+      |> Binding.mapMsg ClockCounter1Msg
 
-    "ClockCounter2" |> Binding.subModel(
-      (fun m -> m.ClockCounter2),
-      snd,
-      ClockCounter2Msg,
-      CounterWithClock.bindings)
+    "ClockCounter2"
+      |> Binding.SubModel.required CounterWithClock.bindings
+      |> Binding.mapModel (fun m -> m.ClockCounter2)
+      |> Binding.mapMsg ClockCounter2Msg
   ]
 
 

@@ -46,7 +46,10 @@ module Program =
     | false -> Visibility.Collapsed
 
   let bindings () = [
-    "Selection" |> Binding.subModel (Selection.get, snd, SelectionMsg, Selection.bindings)
+    "Selection"
+      |> Binding.SubModel.required Selection.bindings
+      |> Binding.mapModel Selection.get
+      |> Binding.mapMsg SelectionMsg
     "ShowSelection" |> Binding.cmd (SelectionScreen |> Some |> SetVisibleScreen)
     "SelectionVisibility" |> Binding.oneWay (VisibleScreen.get >> (=) (Some SelectionScreen) >> boolToVis)
   ]
