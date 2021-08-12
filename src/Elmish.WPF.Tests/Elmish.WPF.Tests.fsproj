@@ -9,6 +9,8 @@
     <UseWpf>true</UseWpf>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
+    <!--Ignore obsolete warnings -->
+    <OtherFlags>$(OtherFlags) --nowarn:0044</OtherFlags>
   </PropertyGroup>
   
   <ItemGroup>
