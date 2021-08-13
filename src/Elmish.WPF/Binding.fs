@@ -100,6 +100,11 @@ and internal LazyData<'model, 'msg> =
     Equals: 'model -> 'model -> bool }
 
 
+and internal WrapDispatchData<'model, 'msg> =
+ { BindingData: BindingData<'model, 'msg>
+   WrapDispatch: (obj -> unit) -> obj -> unit }
+
+
 /// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model>
@@ -120,6 +125,7 @@ and internal BindingData<'model, 'msg> =
   | CachingData of BindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
   | LazyData of LazyData<'model, 'msg>
+  | WrapDispatchData of WrapDispatchData<'model, 'msg>
 
 
 /// Represents all necessary data used to create a binding.
@@ -141,12 +147,14 @@ module internal Helpers =
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
+    | WrapDispatchData d -> getBaseBindingData d.BindingData
     
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
     | LazyData d -> Some d
     | CachingData d -> getFirstLazyData d
     | ValidationData d -> getFirstLazyData d.BindingData
+    | WrapDispatchData d -> getFirstLazyData d.BindingData
 
 
 module internal BindingData =
@@ -161,6 +169,7 @@ module internal BindingData =
         | CachingData d -> recrusiveCase d
         | ValidationData d -> recrusiveCase d.BindingData
         | LazyData d -> recrusiveCase d.BindingData
+        | WrapDispatchData d -> recrusiveCase d.BindingData
       recrusiveCase
     (getComparisonNumber a) - (getComparisonNumber b)
 
@@ -229,6 +238,10 @@ module internal BindingData =
           BindingData = recursiveCase d.BindingData
           Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
         }
+      | WrapDispatchData d -> WrapDispatchData {
+          BindingData = recursiveCase d.BindingData
+          WrapDispatch = d.WrapDispatch
+        }
     recursiveCase
 
   let mapMsgWithModel f =
@@ -287,6 +300,10 @@ module internal BindingData =
           BindingData = recursiveCase d.BindingData
           Equals = d.Equals
         }
+      | WrapDispatchData d -> WrapDispatchData {
+          BindingData = recursiveCase d.BindingData
+          WrapDispatch = d.WrapDispatch
+        }
     recursiveCase
 
   let mapMsg f = mapMsgWithModel (fun _ -> f)
@@ -297,6 +314,7 @@ module internal BindingData =
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
+  let addWrapDispatch wrapDispatch b = { BindingData = b; WrapDispatch = wrapDispatch } |> WrapDispatchData
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
@@ -327,6 +345,7 @@ module internal BindingData =
     let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
     let addValidation vaidate = vaidate |> addValidation |> mapData
     let addLazy equals = equals |> addLazy |> mapData
+    let addWrapDispatch wrapDispatch = wrapDispatch |> addWrapDispatch |> mapData
     let addSticky predicate =  predicate |> addSticky |> mapData
 
 
@@ -778,6 +797,20 @@ module Binding =
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
     |> BindingData.Binding.addLazy equals
+
+  /// <summary>
+  ///   Accepts a dispatch wrapping function.
+  ///   This can be used to debouce, throttle, or limit this binding.
+  ///   If more than one dispatching wrapping is added to a single binding,
+  ///   then the dispatch wrapping functions are called in order
+  ///   starting with the outter most or last such function and
+  ///   finishing with the inner most or first such function.
+  /// </summary>
+  /// <param name="wrapDispatch">The function that will wrap the dispatch function.</param>
+  /// <param name="binding">The binding to which the dispatch wrapping is added.</param>
+  let addWrapDispatch (wrapDispatch: (obj -> unit) -> obj -> unit) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+    binding
+    |> BindingData.Binding.addWrapDispatch wrapDispatch
 
 
   module OneWay =

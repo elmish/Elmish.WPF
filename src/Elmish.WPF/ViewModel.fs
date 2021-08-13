@@ -242,7 +242,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name getInitializedBindingByName =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let baseCase = function
+    let baseCase dispatch = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -371,22 +371,25 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
-    let rec recursiveCase = function
-      | BaseBindingData d -> d |> baseCase
+    let rec recursiveCase dispatch = function
+      | BaseBindingData d -> d |> baseCase (box >> dispatch)
       | CachingData d ->
           d
-          |> recursiveCase
+          |> recursiveCase dispatch
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> recursiveCase
+          |> recursiveCase dispatch
           |> Option.map (fun b -> b.AddValidation currentModel d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> recursiveCase
+          |> recursiveCase dispatch
           |> Option.map (fun b -> b.AddLazy d.Equals)
+      | WrapDispatchData d ->
+          d.BindingData
+          |> recursiveCase (d.WrapDispatch dispatch)
     recursiveCase
 
   let (bindings, validationBindings) =
@@ -398,7 +401,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding b.Name bindingDictAsFunc b.Data
+        initializeBinding b.Name bindingDictAsFunc (unbox >> dispatch) b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
