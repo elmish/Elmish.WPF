@@ -40,8 +40,9 @@ type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   Values: ObservableCollection<'b>
 }
 
-type internal TwoWayBinding<'model, 'msg> = {
-  TwoWayData: TwoWayData<'model, 'msg>
+type internal TwoWayBinding<'model> = {
+  Get: 'model -> obj
+  Set: obj -> 'model -> unit
 }
 
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
@@ -92,7 +93,7 @@ and internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model>
   | OneWayToSource of OneWayToSourceBinding<'model, 'msg>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
-  | TwoWay of TwoWayBinding<'model, 'msg>
+  | TwoWay of TwoWayBinding<'model>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
@@ -236,7 +237,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> BaseVmBinding
           |> Some
       | TwoWayData d ->
-          { TwoWayData = d |> BindingData.TwoWay.measureFunctions measure measure }
+          let d = d |> BindingData.TwoWay.measureFunctions measure measure
+          { Get = d.Get
+            Set = fun obj m -> d.Set obj m |> dispatch }
           |> TwoWay
           |> BaseVmBinding
           |> Some
@@ -540,7 +543,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let tryGetMember model =
     let baseCase = function
       | OneWay { OneWayData = d } -> d.Get model |> Ok
-      | TwoWay { TwoWayData = d } -> d.Get model |> Ok
+      | TwoWay b -> b.Get model |> Ok
       | OneWayToSource _ -> GetError.OneWayToSource |> Error
       | OneWaySeq { Values = vals } -> vals |> box |> Ok
       | Cmd cmd -> cmd |> box |> Ok
@@ -586,8 +589,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   let trySetMember model (value: obj) =
     let baseCase = function // TOOD: return 'msg option
-      | TwoWay { TwoWayData = d } ->
-          d.Set value model |> dispatch
+      | TwoWay b ->
+          b.Set value model
           true
       | OneWayToSource { OneWayToSourceData = d } ->
           d.Set value model |> dispatch
