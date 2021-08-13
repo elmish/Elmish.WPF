@@ -49,27 +49,6 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
-    
-  member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
-    d.Get currentModel <> d.Get newModel
-
-  member d.TryGetMember
-      (getBindingModel: 'vm -> 'bindingModel,
-       subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
-       viewModels: ObservableCollection<'vm>,
-       model: 'model) =
-    d.Get model
-    |> ValueOption.map (fun selectedId ->
-      selectedId,
-      viewModels
-      |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> (=) selectedId))
-
-  member d.TrySetMember
-      (subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
-       model: 'model,
-       bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map subModelSeqData.GetId
-    d.Set id model
 
 
 and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
