@@ -800,10 +800,10 @@ module Binding =
 
   /// <summary>
   ///   Accepts a dispatch wrapping function.
-  ///   This can be used to debouce, throttle, or limit this binding.
+  ///   This can be used to debounce, throttle, or limit this binding.
   ///   If more than one dispatching wrapping is added to a single binding,
   ///   then the dispatch wrapping functions are called in order
-  ///   starting with the outter most or last such function and
+  ///   starting with the outer most or last such function and
   ///   finishing with the inner most or first such function.
   /// </summary>
   /// <param name="wrapDispatch">The function that will wrap the dispatch function.</param>

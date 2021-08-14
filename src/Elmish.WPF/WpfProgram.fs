@@ -59,7 +59,7 @@ module WpfProgram =
 
     (*
      * Capture the dispatch function before wrapping it with Dispatcher.InvokeAsync
-     * so that the UI can sychrononously dispatch messages.
+     * so that the UI can synchronously dispatch messages.
      * In additional to being slightly more efficient,
      * it also helps keep WPF in the correct state.
      * https://github.com/elmish/Elmish.WPF/issues/371
@@ -83,7 +83,7 @@ module WpfProgram =
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
       (*
-       * Have commands asychrononously dispatch messages.
+       * Have commands asynchronously dispatch messages.
        * This avoids race conditions like those that can occur when shutting down.
        * https://github.com/elmish/Elmish.WPF/issues/353
        *)
