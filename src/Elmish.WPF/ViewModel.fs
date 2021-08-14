@@ -450,7 +450,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                 b.WinRef.SetTarget null
                 (*
                  * The Window might be in the process of closing,
-                 * so instead of immediately exeucting Window.Close via Dispatcher.Invoke,
+                 * so instead of immediately executing Window.Close via Dispatcher.Invoke,
                  * queue a call to Window.Close via Dispatcher.InvokeAsync.
                  * https://github.com/elmish/Elmish.WPF/issues/330
                  *)
