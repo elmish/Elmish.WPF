@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Elmish.WPF.Samples.Multiselect.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Elmish.WPF.Samples.Multiselect;assembly=Multiselect.Core"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -12,8 +12,7 @@
         mc:Ignorable="d"
         d:DataContext="{x:Static vm:Program.designVm}">
   <Window.Resources>
-    <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues"
-                            ObjectType="{x:Type sys:Enum}">
+    <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
       <ObjectDataProvider.MethodParameters>
         <x:Type TypeName="SelectionMode"/>
       </ObjectDataProvider.MethodParameters>
@@ -21,11 +20,11 @@
   </Window.Resources>
   <StackPanel Margin="0,15,0,0">
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-      <Button Command="{Binding SelectRandom}" Margin="5 5" Width="100">Select random</Button>
-      <Button Command="{Binding Deselect}" Margin="5 5" Width="100">Deselect</Button>
+      <Button Command="{Binding SelectRandom}" Content="Select random" Margin="5 5" Width="100"/>
+      <Button Command="{Binding Deselect}" Content="Deselect" Margin="5 5" Width="100"/>
       <ComboBox x:Name="SelectionModeComboBox" ItemsSource="{Binding Source={StaticResource dataFromEnum}}" SelectedIndex="2" />
     </StackPanel>
-    <ListBox ItemsSource="{Binding Entities}" HorizontalContentAlignment="Center" SelectionMode="{Binding ElementName=SelectionModeComboBox, Path=SelectedItem}">
+    <ListBox ItemsSource="{Binding Entities}" SelectionMode="{Binding ElementName=SelectionModeComboBox, Path=SelectedItem}" HorizontalContentAlignment="Center">
       <ListBox.Resources>
         <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
           <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
