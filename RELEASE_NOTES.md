@@ -1,5 +1,5 @@
 #### 4.0.0-beta-42
-* Improved API of WindowState<_>
+* Improved API of `WindowState<_>`
 * Dropped support for .NET Core 3.0.  Still have support for .NET Core 3.1.
 * Added `setMsg` in the `Binding` module
 * Added `setMsgWithModel` in the `Binding` module
@@ -13,9 +13,9 @@
 * Added support for a `SubModelSeq` variant that does involve IDs
 * `SubModelSeq` variant that involves IDs will now merge elements without considering IDs if duplicate IDs are detected
 * Fixed bug (present in 3.5.8) where `ArgumentNullException` is thrown from `INotifyDataErrorInfo.GetErrors` when given `null`
-* Now logging and returning false to WPF if selection in a SubModelSelectedItem binding fails
+* Now logging and returning false to WPF if selection in a `SubModelSelectedItem` binding fails
 * Added prebuilt bindings for `Selector.SelectedIndex`
-* Added Binding.TwoWay.id to API
+* Added `Binding.TwoWay.id` to API
 * Removed trace logging during a successful set in a `SubModelSelectedItem` binding
 * Added one-way-to-source binding
 * Added function-based API for for one-way bindings
