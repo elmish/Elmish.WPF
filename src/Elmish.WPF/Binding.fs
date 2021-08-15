@@ -21,7 +21,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
     Equals: 'a -> 'a -> bool
     GetId: 'b -> 'id
     ItemEquals: 'b -> 'b -> bool }
-    
+
   member d.Merge(values: ObservableCollection<'b>, currentModel: 'model, newModel: 'model) =
     let intermediate = d.Get newModel
     if not <| d.Equals intermediate (d.Get currentModel) then
@@ -79,7 +79,7 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id 
     GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
     GetId: 'bindingModel -> 'id }
-    
+
   member d.MergeKeyed
       (getTargetId: ('bindingModel -> 'id) -> 't -> 'id,
        create: 'bindingModel -> 'id -> 't,
@@ -88,13 +88,13 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id 
        newSubModels: 'bindingModel []) =
     let update t bm _ = update t bm
     Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
-    
-    
+
+
 and internal ValidationData<'model, 'msg> =
   { BindingData: BindingData<'model, 'msg>
     Validate: 'model -> string list }
-    
-    
+
+
 and internal LazyData<'model, 'msg> =
   { BindingData: BindingData<'model, 'msg>
     Equals: 'model -> 'model -> bool }
@@ -148,7 +148,7 @@ module internal Helpers =
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
     | WrapDispatchData d -> getBaseBindingData d.BindingData
-    
+
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
     | LazyData d -> Some d
@@ -330,11 +330,11 @@ module internal BindingData =
 
 
   module Binding =
-  
+
     let mapData f binding =
       { Name = binding.Name
         Data = binding.Data |> f }
-  
+
     let mapModel f = f |> mapModel |> mapData
     let mapMsgWithModel f = f |> mapMsgWithModel |> mapData
     let mapMsg f = f |> mapMsg |> mapData
@@ -354,7 +354,7 @@ module internal BindingData =
     let mapModel f = f |> Binding.mapModel |> List.map
     let mapMsgWithModel f = f |> Binding.mapMsgWithModel |> List.map
     let mapMsg f = f |> Binding.mapMsg |> List.map
-  
+
 
   module Option =
 
@@ -394,7 +394,7 @@ module internal BindingData =
 
 
   module OneWaySeqLazy =
-  
+
     let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (outMapB: 'b -> 'b0)
@@ -499,7 +499,7 @@ module internal BindingData =
 
 
   module SubModelSelectedItem =
-  
+
     let mapMinorTypes
         (outMapId: 'id -> 'id0)
         (inMapId: 'id0 -> 'id)
@@ -557,7 +557,7 @@ module internal BindingData =
 
 
   module SubModelWin =
-  
+
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
@@ -612,7 +612,7 @@ module internal BindingData =
 
 
   module SubModelSeqUnkeyed =
-  
+
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
@@ -655,7 +655,7 @@ module internal BindingData =
 
 
   module SubModelSeqKeyed =
-    
+
       let mapMinorTypes
           (outMapBindingModel: 'bindingModel -> 'bindingModel0)
           (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
@@ -669,9 +669,9 @@ module internal BindingData =
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
-  
+
       let box d = mapMinorTypes box box box unbox unbox unbox d
-  
+
       let create getBindings getId =
         { GetSubModels = id
           GetBindings = getBindings
@@ -681,7 +681,7 @@ module internal BindingData =
         |> SubModelSeqKeyedData
         |> BaseBindingData
         |> createBinding
-  
+
       let mapFunctions
           mGetSubModels
           mGetBindings
@@ -692,7 +692,7 @@ module internal BindingData =
                  GetBindings = mGetBindings d.GetBindings
                  ToMsg = mToMsg d.ToMsg
                  GetId = mGetId d.GetId }
-  
+
       let measureFunctions
           mGetSubModels
           mGetBindings
@@ -735,10 +735,10 @@ module Bindings =
 
   /// Map the model of a list of bindings via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
-  
+
   /// Map the message of a list of bindings with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
-  
+
   /// Map the message of a list of bindings via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
 
@@ -752,23 +752,23 @@ module Binding =
 
   /// Map the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
-  
+
   /// Map the message of a binding with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'model -> 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
-  
+
   /// Map the message of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
 
   /// Set the message of a binding with access to the model.
   let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsgWithModel f binding
-  
+
   /// Set the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
 
 
   /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
   let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = BindingData.Binding.addSticky predicate binding
-    
+
   /// <summary>
   ///   Adds caching to the given binding.  The cache holds a single value and
   ///   is invalidated after the given binding raises the
@@ -822,7 +822,7 @@ module Binding =
       |> OneWayData
       |> BaseBindingData
       |> createBinding
-    
+
     /// <summary>
     ///   Creates a one-way binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -831,7 +831,7 @@ module Binding =
     let opt<'a, 'msg> : string -> Binding<'a option, 'msg> =
       id<obj, 'msg>
       >> mapModel BindingData.Option.box
-      
+
     /// <summary>
     ///   Creates a one-way binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -851,7 +851,7 @@ module Binding =
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
-    
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -860,7 +860,7 @@ module Binding =
     let vopt<'model, 'a> : string -> Binding<'model, 'a voption> =
       id<'model, obj>
       >> mapMsg BindingData.ValueOption.unbox
-      
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -881,7 +881,7 @@ module Binding =
       |> TwoWayData
       |> BaseBindingData
       |> createBinding
-    
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -891,7 +891,7 @@ module Binding =
       id<obj>
       >> mapModel BindingData.ValueOption.box
       >> mapMsg BindingData.ValueOption.unbox
-      
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -904,7 +904,7 @@ module Binding =
 
 
   module SubModel =
-  
+
     let private mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
@@ -915,7 +915,7 @@ module Binding =
       GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
-    
+
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
@@ -930,7 +930,7 @@ module Binding =
       |> SubModelData
       |> BaseBindingData
       |> createBinding
-    
+
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
@@ -940,7 +940,7 @@ module Binding =
         : string -> Binding<'model option, 'msg> =
       vopt bindings
       >> mapModel ValueOption.ofOption
-    
+
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
@@ -960,7 +960,7 @@ module Binding =
       TwoWay.id
       >> mapModel (ValueOption.defaultValue -1)
       >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
-      
+
     /// <summary>
     ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     /// </summary>
@@ -1189,7 +1189,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.OneWaySeqLazy.create get equals map itemEquals getId
 
-    
+
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely
   ///   identified by the value returned by <paramref name="getId"/>. The
@@ -1761,7 +1761,7 @@ type Binding private () =
   ///   Converts the messages used in the bindings to parent model messages
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
-  /// <param name="bindings">Returns the bindings for the sub-model.</param>  
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
   [<System.Obsolete("In version 5, this method will be removed.  Use \"Binding.SubModel.required\" followed by model and message mapping functions as needed.  For an example, see how this method is implemented.")>]
   static member subModel
       (getSubModel: 'model -> 'subModel,
@@ -2491,7 +2491,7 @@ type Binding private () =
 module Extensions =
 
   type Binding with
-  
+
     /// <summary>Creates a one-way-to-source binding.</summary>
     /// <param name="set">Returns the message to dispatch.</param>
     static member oneWayToSource
@@ -2499,7 +2499,7 @@ module Extensions =
         : string -> Binding<'model, 'msg> =
       Binding.OneWayToSource.id<'model, 'a>
       >> Binding.mapMsg set
-  
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and
@@ -2511,7 +2511,7 @@ module Extensions =
         : string -> Binding<'model, 'msg> =
       Binding.OneWayToSource.opt
       >> Binding.mapMsg set
-  
+
     /// <summary>
     ///   Creates a one-way-to-source binding to an optional value. The binding
     ///   automatically converts between a missing value in the model and

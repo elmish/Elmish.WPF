@@ -13,7 +13,7 @@ module Result =
 
     let toList = function
       | Ok _ -> []
-      | Error e -> [ e ] 
+      | Error e -> [ e ]
 
 
 let requireNotEmpty s =

@@ -72,7 +72,7 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
     SubModelSeqKeyedBinding: SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> }
-    
+
   member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
     d.Get currentModel <> d.Get newModel
 
@@ -517,7 +517,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               PropertyChanged |> List.singleton
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
-          let create m idx = 
+          let create m idx =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (idx |> string)
             ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
@@ -527,7 +527,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
-          let create m id = 
+          let create m id =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (id |> string)
             ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)

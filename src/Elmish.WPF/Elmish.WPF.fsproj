@@ -27,7 +27,7 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
     <DisableImplicitSystemValueTupleReference>true</DisableImplicitSystemValueTupleReference>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <None Include="elmish-wpf-logo-128x128.png">
       <Pack>True</Pack>
@@ -47,14 +47,14 @@
     <Compile Include="ViewModelModule.fs" />
     <Compile Include="WpfProgram.fs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.1.0, 3.99]" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.6.2" />
   </ItemGroup>
-  
+
 </Project>

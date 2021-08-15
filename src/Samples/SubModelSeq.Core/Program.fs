@@ -24,7 +24,7 @@ module Func =
 module FuncOption =
 
   let inputIfNone f a = a |> f |> Option.defaultValue a
-  
+
   let map (f: 'b -> 'c) (mb: 'a -> 'b option) =
     mb >> Option.map f
 
@@ -69,14 +69,14 @@ module List =
             mapFirstRec (a :: reverseFront) ma
     mapFirstRec [] input
 
-        
+
 [<AutoOpen>]
 module Identifiable =
 
   type Identifiable<'a> =
     { Id: Guid
       Value: 'a }
-  
+
   module Identifiable =
 
     let getId m = m.Id
@@ -103,9 +103,9 @@ module Counter =
     let init =
       { Count = 0
         StepSize = 1 }
-    
+
     let canReset = (<>) init
-    
+
     let update msg m =
       match msg with
       | Increment -> { m with Count = m.Count + m.StepSize }

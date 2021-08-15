@@ -146,7 +146,7 @@ module Helpers =
     BindingData.SubModelSeqKeyed.create (fun () -> bindings) getId name
     |> Binding.mapModel (fun m -> upcast getModels m)
     |> Binding.mapMsg toMsg
-     
+
 
 
   let internal subModelSelectedItem
@@ -392,7 +392,7 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
-      
+
       testObservableCollectionContainsExpectedItems vm name (m2 |> get |> map)
     }
 
@@ -414,7 +414,7 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
-      
+
       testObservableCollectionContainsExpectedItems vm name (m1 |> get |> map)
     }
 
@@ -641,7 +641,7 @@ module OneWaySeqLazy =
       let vm = TestVm(m1, binding)
 
       vm.UpdateModel m2
-      
+
       testObservableCollectionContainsExpectedItems vm name m2
     }
 
