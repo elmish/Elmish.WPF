@@ -3,7 +3,7 @@
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <TargetFrameworks>net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
@@ -12,7 +12,7 @@
     <!--Ignore obsolete warnings -->
     <OtherFlags>$(OtherFlags) --nowarn:0044</OtherFlags>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Include="InternalUtils.fs" />
     <Compile Include="MergeTests.fs" />
@@ -20,7 +20,7 @@
     <Compile Include="BindingTests.fs" />
     <Compile Include="UtilsTests.fs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.0.250" />
     <PackageReference Include="Hedgehog" Version="0.10.0" />
@@ -33,9 +33,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Elmish.WPF\Elmish.WPF.fsproj" />
   </ItemGroup>
-  
+
 </Project>

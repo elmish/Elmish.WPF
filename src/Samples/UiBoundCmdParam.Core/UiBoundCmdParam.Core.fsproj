@@ -7,7 +7,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -17,9 +17,9 @@
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\Elmish.WPF\Elmish.WPF.fsproj" />
   </ItemGroup>
-  
+
 </Project>

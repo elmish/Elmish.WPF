@@ -61,7 +61,7 @@ module internal Merge =
       if additions.ContainsKey curSourceId then
         let (firstIdx, _) = additions.[curSourceId]
         raise (DuplicateIdException (Source, firstIdx, curSourceIdx, curSourceId.ToString()))
-      else 
+      else
         additions.Add(curSourceId, (curSourceIdx, curSource))
 
     let mutable curSourceIdx = 0
@@ -105,13 +105,13 @@ module internal Merge =
 
             update curTarget nextSource (curTargetIdx + 1)
             update nextTarget curSource curTargetIdx
-          
+
             curSourceIdx <- curSourceIdx + 2
             curTargetIdx <- curTargetIdx + 2
         |               None, Some (nextTarget, _, true)
         | Some (_, _, false), Some (nextTarget, _, true) -> // remove
             recordRemoval curTargetIdx curTarget curTargetId
-          
+
             update nextTarget curSource curTargetIdx
 
             curSourceIdx <- curSourceIdx + 1
@@ -119,20 +119,20 @@ module internal Merge =
         | Some (nextSource, _, true), None
         | Some (nextSource, _, true), Some (_, _, false) -> // add
             recordAddition curSourceIdx curSource curSourceId
-          
+
             update curTarget nextSource (curTargetIdx + 1)
-          
+
             curSourceIdx <- curSourceIdx + 2
             curTargetIdx <- curTargetIdx + 1
         | Some (_, _, false),               None
         |               None, Some (_, _, false)
         |               None,               None -> // source and target have different lengths and we have reached the end of one
-            shouldContinue <- false 
+            shouldContinue <- false
         | Some (nextSource, nextSourceId, false), Some (nextTarget, nextTargetId, false) ->
             if nextSourceId = nextTargetId then // replace
               recordRemoval curTargetIdx curTarget curTargetId
               recordAddition curSourceIdx curSource curSourceId
-            
+
               update nextTarget nextSource (curTargetIdx + 1)
 
               curSourceIdx <- curSourceIdx + 2
@@ -150,7 +150,7 @@ module internal Merge =
 
       recordRemoval curTargetIdx curTarget curTargetId
       recordAddition curSourceIdx curSource curSourceId
-    
+
       curSourceIdx <- curSourceIdx + 1
       curTargetIdx <- curTargetIdx + 1
 

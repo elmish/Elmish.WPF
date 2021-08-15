@@ -12,8 +12,8 @@ type Model =
   { CurrentTime: DateTimeOffset
     Text: string
     StatusMsg: string }
-    
-        
+
+
 let init () =
   { CurrentTime = DateTimeOffset.Now
     Text = ""
