@@ -244,49 +244,49 @@ module internal BindingData =
         }
     recursiveCase
 
-  let mapMsgWithModel f =
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) =
     let baseCase = function
       | OneWayData d -> d |> OneWayData
       | OneWayToSourceData d -> OneWayToSourceData {
-          Set = fun v m -> d.Set v m |> f m
+          Set = fun v m -> f (d.Set v m) m
         }
       | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
       | TwoWayData d -> TwoWayData {
           Get = d.Get
-          Set = fun v m -> d.Set v m |> f m
+          Set = fun v m -> f (d.Set v m) m
         }
       | CmdData d -> CmdData {
-          Exec = fun p m -> d.Exec p m |> ValueOption.map (f m)
+          Exec = fun p m -> d.Exec p m |> ValueOption.map (fun msg -> f msg m)
           CanExec = fun p m -> d.CanExec p m
           AutoRequery = d.AutoRequery
         }
       | SubModelData d -> SubModelData {
           GetModel = d.GetModel
           GetBindings = d.GetBindings
-          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelWinData d -> SubModelWinData {
           GetState = d.GetState
           GetBindings = d.GetBindings
-          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
-          GetWindow = fun m dispatch -> d.GetWindow m (m |> f >> dispatch)
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
+          GetWindow = fun m dispatch -> d.GetWindow m (fun msg -> f msg m |> dispatch)
           IsModal = d.IsModal
-          OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (f m)
+          OnCloseRequested = fun m -> m |> d.OnCloseRequested |> ValueOption.map (fun msg -> f msg m)
         }
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = d.GetModels
           GetBindings = d.GetBindings
-          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = d.GetSubModels
           GetBindings = d.GetBindings
-          ToMsg = fun m x -> (m, x) ||> d.ToMsg |> f m
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
           GetId = d.GetId
         }
       | SubModelSelectedItemData d -> SubModelSelectedItemData {
           Get = d.Get
-          Set = fun v m -> d.Set v m |> f m
+          Set = fun v m -> f (d.Set v m) m
           SubModelSeqBindingName = d.SubModelSeqBindingName
         }
     let rec recursiveCase = function
@@ -306,9 +306,9 @@ module internal BindingData =
         }
     recursiveCase
 
-  let mapMsg f = mapMsgWithModel (fun _ -> f)
+  let mapMsg f = mapMsgWithModel (fun a _ -> f a)
 
-  let setMsgWithModel f = mapMsgWithModel (fun m _ -> f m)
+  let setMsgWithModel f = mapMsgWithModel (fun _ m -> f m)
   let setMsg msg = mapMsg (fun _ -> msg)
 
   let addCaching b = b |> CachingData
@@ -737,7 +737,7 @@ module Bindings =
   let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
 
   /// Map the message of a list of bindings with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'model -> 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
 
   /// Map the message of a list of bindings via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
@@ -754,7 +754,7 @@ module Binding =
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
 
   /// Map the message of a binding with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'model -> 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
 
   /// Map the message of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
@@ -1131,7 +1131,7 @@ type Binding private () =
       (set: 'a -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.OneWayToSource.id<'model, 'a>
-    >> Binding.mapMsgWithModel (fun m v -> set v m)
+    >> Binding.mapMsgWithModel set
 
   /// <summary>
   ///   Creates a one-way-to-source binding to an optional value. The binding
@@ -1143,7 +1143,7 @@ type Binding private () =
       (set: 'a option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.OneWayToSource.opt
-    >> Binding.mapMsgWithModel (fun m v -> set v m)
+    >> Binding.mapMsgWithModel set
 
   /// <summary>
   ///   Creates a one-way-to-source binding to an optional value. The binding
@@ -1155,7 +1155,7 @@ type Binding private () =
       (set: 'a voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.OneWayToSource.vopt
-    >> Binding.mapMsgWithModel (fun m v -> set v m)
+    >> Binding.mapMsgWithModel set
 
 
   /// <summary>
@@ -1227,7 +1227,7 @@ type Binding private () =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
 
 
   /// <summary>
@@ -1244,7 +1244,7 @@ type Binding private () =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
 
 
   /// <summary>
@@ -1261,7 +1261,7 @@ type Binding private () =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
 
 
   /// <summary>
@@ -1281,7 +1281,7 @@ type Binding private () =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation validate
 
 
@@ -1302,7 +1302,7 @@ type Binding private () =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1323,7 +1323,7 @@ type Binding private () =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1344,7 +1344,7 @@ type Binding private () =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1367,7 +1367,7 @@ type Binding private () =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation validate
 
 
@@ -1390,7 +1390,7 @@ type Binding private () =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1413,7 +1413,7 @@ type Binding private () =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1436,7 +1436,7 @@ type Binding private () =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 
@@ -1459,7 +1459,7 @@ type Binding private () =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation validate
 
 
@@ -1482,7 +1482,7 @@ type Binding private () =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.toList)
 
 
@@ -1505,7 +1505,7 @@ type Binding private () =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> Option.toList)
 
 
@@ -1528,7 +1528,7 @@ type Binding private () =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel (fun m a -> set a m)
+    >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
 

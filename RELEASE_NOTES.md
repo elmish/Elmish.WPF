@@ -20,6 +20,7 @@
 * Added one-way-to-source binding
 * Added function-based API for for one-way bindings
 * Added composable monomorphic dispatch wrapping
+* Switched the order of inputs in the function given to `Binding.mapMsgWithModel`.  This is breaking for public API introduced in 4.0.0-beta-1.
 
 #### 4.0.0-beta-41
 * Fixed "backwards typing" (#373) and other bugs (like #371) introduced in 4.0.0-beta-40 with more careful use of the Dispatcher (#374)
