@@ -240,10 +240,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         win.Visibility <- initialVisibility
     ) |> ignore
 
-  let initializeBinding name getInitializedBindingByName =
+  let initializeBinding name =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let baseCase getCurrentModel dispatch = function
+    let baseCase getInitializedBindingByName getCurrentModel dispatch = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -372,25 +372,25 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
-    let rec recursiveCase getCurrentModel dispatch = function
-      | BaseBindingData d -> d |> baseCase getCurrentModel (box >> dispatch)
+    let rec recursiveCase getInitializedBindingByName getCurrentModel dispatch = function
+      | BaseBindingData d -> d |> baseCase getInitializedBindingByName getCurrentModel (box >> dispatch)
       | CachingData d ->
           d
-          |> recursiveCase getCurrentModel dispatch
+          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> recursiveCase getCurrentModel dispatch
+          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
           |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> recursiveCase getCurrentModel dispatch
+          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
           |> Option.map (fun b -> b.AddLazy d.Equals)
       | WrapDispatchData d ->
           d.BindingData
-          |> recursiveCase getCurrentModel (d.WrapDispatch dispatch)
+          |> recursiveCase getInitializedBindingByName getCurrentModel (d.WrapDispatch dispatch)
     recursiveCase
 
   let (bindings, validationBindings) =
