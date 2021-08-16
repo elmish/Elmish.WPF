@@ -207,8 +207,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       onCloseRequested
       (preventClose: bool ref)
       dataContext
-      initialVisibility =
-    let win = getWindow currentModel dispatch
+      initialVisibility
+      getCurrentModel =
+    let win = getWindow (getCurrentModel ()) dispatch
     winRef.SetTarget win
     (*
      * A different thread might own this Window, so must use its Dispatcher.
@@ -242,7 +243,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let initializeBinding name getInitializedBindingByName =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let baseCase dispatch = function
+    let baseCase getCurrentModel dispatch = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -269,8 +270,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | CmdData d ->
           let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
-          let execute param = d.Exec param currentModel |> ValueOption.iter dispatch
-          let canExecute param = d.CanExec param currentModel
+          let execute param = d.Exec param (getCurrentModel ()) |> ValueOption.iter dispatch
+          let canExecute param = d.CanExec param (getCurrentModel ())
           let cmd = Command(execute, canExecute)
           if d.AutoRequery then
             cmd.AddRequeryHandler ()
@@ -280,7 +281,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           d.GetModel initialModel
           |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
@@ -289,7 +290,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | SubModelWinData d ->
           let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           match d.GetState initialModel with
           | WindowState.Closed ->
               { SubModelWinData = d
@@ -302,7 +303,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -313,7 +314,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -323,7 +324,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | SubModelSeqUnkeyedData d ->
           let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetModels initialModel
             |> Seq.indexed
@@ -339,7 +340,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | SubModelSeqKeyedData d ->
           let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
-          let toMsg = fun msg -> d.ToMsg currentModel msg
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetSubModels initialModel
             |> Seq.map (fun m ->
@@ -371,25 +372,25 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | None ->
               log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
               None
-    let rec recursiveCase dispatch = function
-      | BaseBindingData d -> d |> baseCase (box >> dispatch)
+    let rec recursiveCase getCurrentModel dispatch = function
+      | BaseBindingData d -> d |> baseCase getCurrentModel (box >> dispatch)
       | CachingData d ->
           d
-          |> recursiveCase dispatch
+          |> recursiveCase getCurrentModel dispatch
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> recursiveCase dispatch
-          |> Option.map (fun b -> b.AddValidation currentModel d.Validate)
+          |> recursiveCase getCurrentModel dispatch
+          |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> recursiveCase dispatch
+          |> recursiveCase getCurrentModel dispatch
           |> Option.map (fun b -> b.AddLazy d.Equals)
       | WrapDispatchData d ->
           d.BindingData
-          |> recursiveCase (d.WrapDispatch dispatch)
+          |> recursiveCase getCurrentModel (d.WrapDispatch dispatch)
     recursiveCase
 
   let (bindings, validationBindings) =
@@ -401,7 +402,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding b.Name bindingDictAsFunc (unbox >> dispatch) b.Data
+        initializeBinding b.Name bindingDictAsFunc (fun () -> currentModel) (unbox >> dispatch) b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
@@ -506,13 +507,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
-              showNew vm Visibility.Hidden
+              showNew vm Visibility.Hidden (fun () -> currentModel)
               b.VmWinState := WindowState.Hidden vm
               PropertyChanged |> List.singleton
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
-              showNew vm Visibility.Visible
+              showNew vm Visibility.Visible (fun () -> currentModel)
               b.VmWinState := WindowState.Visible vm
               PropertyChanged |> List.singleton
       | SubModelSeqUnkeyed b ->
