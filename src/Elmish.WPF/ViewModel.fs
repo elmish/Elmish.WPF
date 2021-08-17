@@ -12,9 +12,12 @@ open Elmish
 
 
 type internal UpdateData =
-  | ErrorsChanged
-  | PropertyChanged
+  | ErrorsChanged of string
+  | PropertyChanged of string
   | CanExecuteChanged of Command
+
+module internal UpdateData =
+  let isPropertyChanged = function PropertyChanged _ -> true | _ -> false
 
 type GetErrorSubModelSelectedItem =
   { NameChain: string
@@ -501,7 +504,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let updateBinding name currentModel newModel =
     let baseCase = function
       | OneWay _
-      | TwoWay _ -> [ PropertyChanged ]
+      | TwoWay _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
@@ -513,11 +516,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         | ValueNone, ValueNone -> []
         | ValueSome _, ValueNone ->
             b.Vm := ValueNone
-            PropertyChanged |> List.singleton
+            [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
             b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
-            PropertyChanged |> List.singleton
+            [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
             []
@@ -576,7 +579,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | WindowState.Visible _, WindowState.Closed ->
               close ()
               b.VmWinState := WindowState.Closed
-              PropertyChanged |> List.singleton
+              [ PropertyChanged name ]
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               vm.UpdateModel m
@@ -592,13 +595,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden (fun () -> currentModel)
               b.VmWinState := WindowState.Hidden vm
-              PropertyChanged |> List.singleton
+              [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm Visibility.Visible (fun () -> currentModel)
               b.VmWinState := WindowState.Visible vm
-              PropertyChanged |> List.singleton
+              [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
@@ -628,14 +631,14 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           []
       | SubModelSelectedItem b ->
           b.DidPropertyChange(currentModel, newModel)
-          |> Option.fromBool PropertyChanged
+          |> Option.fromBool (PropertyChanged name)
           |> Option.toList
     let rec recursiveCase = function
       | BaseVmBinding b -> b |> baseCase
       | Cached b ->
           let updates = recursiveCase b.Binding
           updates
-          |> List.filter ((=) PropertyChanged)
+          |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
@@ -643,7 +646,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
-            ErrorsChanged :: updates
+            ErrorsChanged name :: updates
           else
             updates
       | Lazy b ->
@@ -659,16 +662,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) ->
-        updateBinding name currentModel newModel binding
-        |> Seq.map (fun ud -> name, ud))
+      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name currentModel newModel binding)
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
-    |> List.iter (fun (name, updateData) ->
-      match updateData with
-      | ErrorsChanged -> raiseErrorsChanged name
-      | PropertyChanged -> raisePropertyChanged name
+    |> List.iter (function
+      | ErrorsChanged name -> raiseErrorsChanged name
+      | PropertyChanged name -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
 
   override _.TryGetMember (binder, result) =
