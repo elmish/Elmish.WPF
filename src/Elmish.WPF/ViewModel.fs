@@ -208,6 +208,19 @@ and internal VmBinding<'model, 'msg> =
       | Lazy b -> b.Binding.FirstValidation
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
 
+    member this.TryGetMember(model: 'model, nameChain: string) =
+      match this with
+      | BaseVmBinding b -> b.TryGetMember(model, nameChain)
+      | Cached b ->
+          match !b.Cache with
+          | Some v -> v |> Ok
+          | None ->
+              let x = b.Binding.TryGetMember(model, nameChain)
+              x |> Result.iter (fun v -> b.Cache := Some v)
+              x
+      | Validatation b -> b.Binding.TryGetMember(model, nameChain)
+      | Lazy b -> b.Binding.TryGetMember(model, nameChain)
+
     member this.TrySetMember(model: 'model, value: obj) =
       match this with
       | BaseVmBinding b -> b.TrySetMember(model, value)
@@ -640,20 +653,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             recursiveCase b.Binding
     recursiveCase
 
-  let tryGetMember =
-    let rec recursiveCase model = function
-      | BaseVmBinding b -> b.TryGetMember(model, nameChain)
-      | Cached b ->
-          match !b.Cache with
-          | Some v -> v |> Ok
-          | None ->
-              let x = recursiveCase model b.Binding
-              x |> Result.iter (fun v -> b.Cache := Some v)
-              x
-      | Validatation b -> recursiveCase model b.Binding
-      | Lazy b -> recursiveCase model b.Binding
-    recursiveCase
-
 
   member internal _.CurrentModel : 'model = currentModel
 
@@ -680,7 +679,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          match tryGetMember currentModel binding with
+          match binding.TryGetMember(currentModel, nameChain) with
           | Ok v ->
               result <- v
               true
