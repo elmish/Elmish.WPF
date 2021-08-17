@@ -285,12 +285,12 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let showNewWindow
       (winRef: WeakReference<Window>)
       (getWindow: 'model -> Dispatch<'msg> -> Window)
-      isDialog
-      onCloseRequested
+      (isDialog: bool)
+      (onCloseRequested: 'model -> 'msg voption)
       (preventClose: bool ref)
       dataContext
-      initialVisibility
-      getCurrentModel =
+      (initialVisibility: Visibility)
+      (getCurrentModel: unit -> 'model)
     let win = getWindow (getCurrentModel ()) dispatch
     winRef.SetTarget win
     (*
