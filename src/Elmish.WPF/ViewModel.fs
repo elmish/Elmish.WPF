@@ -502,7 +502,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
   let updateBinding name =
-    let baseCase currentModel newModel = function
+    let baseCase currentModel newModel dispatch = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
@@ -633,16 +633,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool (PropertyChanged name)
           |> Option.toList
-    let rec recursiveCase currentModel newModel = function
-      | BaseVmBinding b -> baseCase currentModel newModel b
+    let rec recursiveCase currentModel newModel dispatch = function
+      | BaseVmBinding b -> baseCase currentModel newModel dispatch b
       | Cached b ->
-          let updates = recursiveCase currentModel newModel b.Binding
+          let updates = recursiveCase currentModel newModel dispatch b.Binding
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
-          let updates = recursiveCase currentModel newModel b.Binding
+          let updates = recursiveCase currentModel newModel dispatch b.Binding
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
@@ -653,7 +653,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if b.Equals currentModel newModel then
             []
           else
-            recursiveCase currentModel newModel b.Binding
+            recursiveCase currentModel newModel dispatch b.Binding
     recursiveCase
 
 
@@ -662,7 +662,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name currentModel newModel binding)
+      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name currentModel newModel dispatch binding)
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
