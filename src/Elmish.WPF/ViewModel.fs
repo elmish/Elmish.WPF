@@ -19,7 +19,7 @@ type internal UpdateData =
 module internal UpdateData =
   let isPropertyChanged = function PropertyChanged _ -> true | _ -> false
 
-type GetErrorSubModelSelectedItem =
+type internal GetErrorSubModelSelectedItem =
   { NameChain: string
     SubModelSeqBindingName: string
     Id: string }
