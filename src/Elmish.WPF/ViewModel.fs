@@ -62,36 +62,31 @@ and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg>
   Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
 }
 
-and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> = {
-  SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
-  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
-}
+and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
+    Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>> }
+
+  member d.FromId(id: 'id) =
+    d.Vms
+    |> Seq.tryFind (fun vm -> vm.CurrentModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
-    SubModelSeqKeyedBinding: SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> }
+    GetId: 'bindingModel -> 'id
+    FromId: 'id -> ViewModel<'bindingModel, 'bindingMsg> option }
 
   member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
     d.Get currentModel <> d.Get newModel
 
-  member d.TryGetMember
-      (getBindingModel: 'vm -> 'bindingModel,
-       subModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
-       viewModels: ObservableCollection<'vm>,
-       model: 'model) =
-    d.Get model
-    |> ValueOption.map (fun selectedId ->
-      selectedId,
-      viewModels
-      |> Seq.tryFind (getBindingModel >> subModelSeqKeyedData.GetId >> (=) selectedId))
+  member d.TryGetMember (model: 'model) =
+    d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.FromId selectedId)
 
   member d.TrySetMember
-      (subModelSeqData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>,
-       model: 'model,
+      (model: 'model,
        bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map subModelSeqData.GetId
+    let id = bindingModel |> ValueOption.map d.GetId
     d.Set id model
 
 
@@ -140,12 +135,16 @@ and internal VmBinding<'model, 'msg> =
         Errors = currentModel |> validate |> ref }
       |> Validatation
 
-    member this.BaseCase =
-      match this with
-      | BaseVmBinding b -> b
-      | Cached b -> b.Binding.BaseCase
-      | Validatation b -> b.Binding.BaseCase
-      | Lazy b -> b.Binding.BaseCase
+    member this.GetFuncsFromSubModelSeqKeyed =
+      let baseCase = function
+      | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
+      | _ -> None
+      let rec recursiveCase = function
+      | BaseVmBinding b -> baseCase b
+      | Cached b -> recursiveCase b.Binding
+      | Validatation b -> recursiveCase b.Binding
+      | Lazy b -> recursiveCase b.Binding
+      recursiveCase this
 
     member this.FirstValidation =
       match this with
@@ -356,22 +355,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           |> Some
       | SubModelSelectedItemData d ->
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
-          match getInitializedBindingByName d.SubModelSeqBindingName with
-          | Some (SubModelSeqKeyed b) ->
+          d.SubModelSeqBindingName
+          |> getInitializedBindingByName
+          |> Option.map (fun (getId, fromId) ->
               { Get = d.Get
                 Set = fun obj m -> d.Set obj m |> dispatch
                 SubModelSeqBindingName = d.SubModelSeqBindingName
-                SubModelSeqKeyedBinding = b }
+                GetId = getId
+                FromId = fromId }
               |> SubModelSelectedItem
               |> BaseVmBinding
-              |> (fun b -> b.AddCaching)
-              |> Some
-          | Some _ ->
-              log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", d.SubModelSeqBindingName)
-              None
-          | None ->
-              log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", d.SubModelSeqBindingName)
-              None
+              |> (fun b -> b.AddCaching))
     let rec recursiveCase getInitializedBindingByName getCurrentModel dispatch = function
       | BaseBindingData d -> d |> baseCase getInitializedBindingByName getCurrentModel (box >> dispatch)
       | CachingData d ->
@@ -396,7 +390,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let bindingDictAsFunc = flip Dictionary.tryFind bindingDict >> Option.map (fun x -> x.BaseCase)
+    let bindingDictAsFunc name =
+      bindingDict
+      |> Dictionary.tryFind name 
+      |> function
+        | Some b ->
+          match b.GetFuncsFromSubModelSeqKeyed with
+          | Some x -> Some x
+          | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
+                    None
+        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
+                  None
     let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
@@ -587,11 +591,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModelSeqUnkeyed { Vms = vms }
       | SubModelSeqKeyed { Vms = vms } -> vms |> box |> Ok
       | SubModelSelectedItem b ->
-          b.TryGetMember
-            ((fun (vm: ViewModel<_, _>) -> vm.CurrentModel),
-             b.SubModelSeqKeyedBinding.SubModelSeqKeyedData,
-             b.SubModelSeqKeyedBinding.Vms,
-             model)
+          b.TryGetMember model
           |> function
             | ValueNone -> ValueNone |> Ok // deselecting successful
             | ValueSome (id, mVm) ->
@@ -630,7 +630,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             (value :?> ViewModel<obj, obj>)
             |> ValueOption.ofObj
             |> ValueOption.map (fun vm -> vm.CurrentModel)
-          b.TrySetMember(b.SubModelSeqKeyedBinding.SubModelSeqKeyedData, model, bindingModel)
+          b.TrySetMember(model, bindingModel)
           true
       | OneWay _
       | OneWaySeq _
