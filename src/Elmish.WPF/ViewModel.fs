@@ -177,6 +177,17 @@ and internal VmBinding<'model, 'msg> =
       | Lazy b -> b.Binding.FirstValidation
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
 
+    member this.TrySetMember(model: 'model, value: obj) =
+      match this with
+      | BaseVmBinding b -> b.TrySetMember(model, value)
+      | Cached b ->
+          let successful = b.Binding.TrySetMember(model, value)
+          if successful then
+            b.Cache := None  // TODO #185: write test
+          successful
+      | Validatation b -> b.Binding.TrySetMember(model, value)
+      | Lazy b -> b.Binding.TrySetMember(model, value)
+
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
@@ -641,17 +652,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | Lazy b -> recursiveCase b.Binding
     recursiveCase
 
-  let trySetMember model (value: obj) =
-    let rec resursiveCase = function
-      | BaseVmBinding b -> b.TrySetMember(model, value)
-      | Cached b ->
-          let successful = resursiveCase b.Binding
-          if successful then
-            b.Cache := None  // TODO #185: write test
-          successful
-      | Validatation b -> resursiveCase b.Binding
-      | Lazy b -> resursiveCase b.Binding
-    resursiveCase
 
   member internal _.CurrentModel : 'model = currentModel
 
@@ -704,7 +704,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          let success = trySetMember currentModel value binding
+          let success = binding.TrySetMember(currentModel, value)
           if not success then
             log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
           success
