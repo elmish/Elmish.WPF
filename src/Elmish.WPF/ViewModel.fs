@@ -239,10 +239,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         win.Visibility <- initialVisibility
     ) |> ignore
 
-  let initializeBinding name =
+  let initializeBinding name getFunctionsForSubModelSelectedItem =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let baseCase getInitializedBindingByName getCurrentModel dispatch = function
+    let baseCase getCurrentModel dispatch = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -356,7 +356,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | SubModelSelectedItemData d ->
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
           d.SubModelSeqBindingName
-          |> getInitializedBindingByName
+          |> getFunctionsForSubModelSelectedItem
           |> Option.map (fun (getId, fromId) ->
               { Get = d.Get
                 Set = fun obj m -> d.Set obj m |> dispatch
@@ -366,31 +366,31 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               |> SubModelSelectedItem
               |> BaseVmBinding
               |> (fun b -> b.AddCaching))
-    let rec recursiveCase getInitializedBindingByName getCurrentModel dispatch = function
-      | BaseBindingData d -> d |> baseCase getInitializedBindingByName getCurrentModel (box >> dispatch)
+    let rec recursiveCase getCurrentModel dispatch = function
+      | BaseBindingData d -> d |> baseCase getCurrentModel (box >> dispatch)
       | CachingData d ->
           d
-          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
+          |> recursiveCase getCurrentModel dispatch
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
+          |> recursiveCase getCurrentModel dispatch
           |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> recursiveCase getInitializedBindingByName getCurrentModel dispatch
+          |> recursiveCase getCurrentModel dispatch
           |> Option.map (fun b -> b.AddLazy d.Equals)
       | WrapDispatchData d ->
           d.BindingData
-          |> recursiveCase getInitializedBindingByName getCurrentModel (d.WrapDispatch dispatch)
+          |> recursiveCase getCurrentModel (d.WrapDispatch dispatch)
     recursiveCase
 
   let (bindings, validationBindings) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let bindingDictAsFunc name =
+    let getFunctionsForSubModelSelectedItem name =
       bindingDict
       |> Dictionary.tryFind name 
       |> function
@@ -406,7 +406,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding b.Name bindingDictAsFunc (fun () -> currentModel) (unbox >> dispatch) b.Data
+        initializeBinding b.Name getFunctionsForSubModelSelectedItem (fun () -> currentModel) (unbox >> dispatch) b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
