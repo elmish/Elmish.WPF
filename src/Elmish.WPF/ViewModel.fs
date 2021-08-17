@@ -119,6 +119,30 @@ and internal BaseVmBinding<'model, 'msg> =
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
+  member this.TrySetMember (model: 'model, value: obj) =
+    match this with
+    | TwoWay b ->
+        b.Set value model
+        true
+    | OneWayToSource b ->
+        b.Set value model
+        true
+    | SubModelSelectedItem b ->
+        let bindingModel =
+          (value :?> ViewModel<obj, obj>)
+          |> ValueOption.ofObj
+          |> ValueOption.map (fun vm -> vm.CurrentModel)
+        b.TrySetMember(model, bindingModel)
+        true
+    | OneWay _
+    | OneWaySeq _
+    | Cmd _
+    | SubModel _
+    | SubModelWin _
+    | SubModelSeqUnkeyed _
+    | SubModelSeqKeyed _ ->
+        false
+
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
   | BaseVmBinding of BaseVmBinding<'model, 'msg>
@@ -618,30 +642,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     recursiveCase
 
   let trySetMember model (value: obj) =
-    let baseCase = function // TOOD: return 'msg option
-      | TwoWay b ->
-          b.Set value model
-          true
-      | OneWayToSource b ->
-          b.Set value model
-          true
-      | SubModelSelectedItem b ->
-          let bindingModel =
-            (value :?> ViewModel<obj, obj>)
-            |> ValueOption.ofObj
-            |> ValueOption.map (fun vm -> vm.CurrentModel)
-          b.TrySetMember(model, bindingModel)
-          true
-      | OneWay _
-      | OneWaySeq _
-      | Cmd _
-      | SubModel _
-      | SubModelWin _
-      | SubModelSeqUnkeyed _
-      | SubModelSeqKeyed _ ->
-          false
     let rec resursiveCase = function
-      | BaseVmBinding b -> b |> baseCase
+      | BaseVmBinding b -> b.TrySetMember(model, value)
       | Cached b ->
           let successful = resursiveCase b.Binding
           if successful then
