@@ -501,8 +501,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
-  let updateBinding name currentModel newModel =
-    let baseCase = function
+  let updateBinding name =
+    let baseCase currentModel newModel = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
@@ -633,16 +633,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool (PropertyChanged name)
           |> Option.toList
-    let rec recursiveCase = function
-      | BaseVmBinding b -> b |> baseCase
+    let rec recursiveCase currentModel newModel = function
+      | BaseVmBinding b -> baseCase currentModel newModel b
       | Cached b ->
-          let updates = recursiveCase b.Binding
+          let updates = recursiveCase currentModel newModel b.Binding
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
-          let updates = recursiveCase b.Binding
+          let updates = recursiveCase currentModel newModel b.Binding
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
@@ -653,7 +653,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if b.Equals currentModel newModel then
             []
           else
-            recursiveCase b.Binding
+            recursiveCase currentModel newModel b.Binding
     recursiveCase
 
 
