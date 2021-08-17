@@ -291,6 +291,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       dataContext
       (initialVisibility: Visibility)
       (getCurrentModel: unit -> 'model)
+      (dispatch: 'msg -> unit) =
     let win = getWindow (getCurrentModel ()) dispatch
     winRef.SetTarget win
     (*
@@ -385,7 +386,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -396,7 +397,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel
+              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -594,13 +595,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
-              showNew vm Visibility.Hidden (fun () -> currentModel)
+              showNew vm Visibility.Hidden (fun () -> currentModel) dispatch
               b.VmWinState := WindowState.Hidden vm
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
-              showNew vm Visibility.Visible (fun () -> currentModel)
+              showNew vm Visibility.Visible (fun () -> currentModel) dispatch
               b.VmWinState := WindowState.Visible vm
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
