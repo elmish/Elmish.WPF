@@ -501,7 +501,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
-  let updateBinding name =
+  let updateBinding name performanceLogThresholdMs log logPerformance =
     let baseCase currentModel newModel dispatch = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged name ]
@@ -662,7 +662,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name currentModel newModel dispatch binding)
+      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name performanceLogThresholdMs log logPerformance currentModel newModel dispatch binding)
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
