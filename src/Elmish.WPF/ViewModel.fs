@@ -31,6 +31,49 @@ type internal GetError =
   | SubModelSelectedItem of GetErrorSubModelSelectedItem
 
 
+module internal Helpers2 =
+  let showNewWindow
+      (winRef: WeakReference<Window>)
+      (getWindow: 'model -> Dispatch<'msg> -> Window)
+      (isDialog: bool)
+      (onCloseRequested: 'model -> 'msg voption)
+      (preventClose: bool ref)
+      dataContext
+      (initialVisibility: Visibility)
+      (getCurrentModel: unit -> 'model)
+      (dispatch: 'msg -> unit) =
+    let win = getWindow (getCurrentModel ()) dispatch
+    winRef.SetTarget win
+    (*
+     * A different thread might own this Window, so must use its Dispatcher.
+     * Invoking asynchronously since ShowDialog is a blocking call. Otherwise,
+     * invoking ShowDialog synchronously blocks the Elmish dispatch loop.
+     *)
+    win.Dispatcher.InvokeAsync(fun () ->
+      win.DataContext <- dataContext
+      win.Closing.Add(fun ev ->
+        ev.Cancel <- !preventClose
+        getCurrentModel () |> onCloseRequested |> ValueOption.iter dispatch
+      )
+      if isDialog then
+        win.ShowDialog () |> ignore
+      else
+        (*
+         * Calling Show achieves the same end result as setting Visibility
+         * property of the Window object to Visible. However, there is a
+         * difference between the two from a timing perspective.
+         *
+         * Calling Show is a synchronous operation that returns only after
+         * the Loaded event on the child window has been raised.
+         *
+         * Setting Visibility, however, is an asynchronous operation that
+         * returns immediately
+         * https://docs.microsoft.com/en-us/dotnet/api/system.windows.window.show
+         *)
+        win.Visibility <- initialVisibility
+    ) |> ignore
+
+
 type internal OneWayBinding<'model> = {
   OneWayData: OneWayData<'model>
 }
@@ -282,47 +325,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else fun x -> measure name callName (f x)
 
-  let showNewWindow
-      (winRef: WeakReference<Window>)
-      (getWindow: 'model -> Dispatch<'msg> -> Window)
-      (isDialog: bool)
-      (onCloseRequested: 'model -> 'msg voption)
-      (preventClose: bool ref)
-      dataContext
-      (initialVisibility: Visibility)
-      (getCurrentModel: unit -> 'model)
-      (dispatch: 'msg -> unit) =
-    let win = getWindow (getCurrentModel ()) dispatch
-    winRef.SetTarget win
-    (*
-     * A different thread might own this Window, so must use its Dispatcher.
-     * Invoking asynchronously since ShowDialog is a blocking call. Otherwise,
-     * invoking ShowDialog synchronously blocks the Elmish dispatch loop.
-     *)
-    win.Dispatcher.InvokeAsync(fun () ->
-      win.DataContext <- dataContext
-      win.Closing.Add(fun ev ->
-        ev.Cancel <- !preventClose
-        getCurrentModel () |> onCloseRequested |> ValueOption.iter dispatch
-      )
-      if isDialog then
-        win.ShowDialog () |> ignore
-      else
-        (*
-         * Calling Show achieves the same end result as setting Visibility
-         * property of the Window object to Visible. However, there is a
-         * difference between the two from a timing perspective.
-         *
-         * Calling Show is a synchronous operation that returns only after
-         * the Loaded event on the child window has been raised.
-         *
-         * Setting Visibility, however, is an asynchronous operation that
-         * returns immediately
-         * https://docs.microsoft.com/en-us/dotnet/api/system.windows.window.show
-         *)
-        win.Visibility <- initialVisibility
-    ) |> ignore
-
   let initializeBinding name getFunctionsForSubModelSelectedItem =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
@@ -386,7 +388,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
+              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -397,7 +399,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
+              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
@@ -564,7 +566,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
           let showNew vm =
             b.PreventClose := true
-            showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
+            Helpers2.showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
