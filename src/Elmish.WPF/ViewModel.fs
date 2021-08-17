@@ -498,7 +498,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
 
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
-  let updateBinding name newModel =
+  let updateBinding name currentModel newModel =
     let baseCase = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged ]
@@ -660,7 +660,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let eventsToRaise =
       bindings
       |> Seq.collect (fun (Kvp (name, binding)) ->
-        updateBinding name newModel binding
+        updateBinding name currentModel newModel binding
         |> Seq.map (fun ud -> name, ud))
       |> Seq.toList
     currentModel <- newModel
