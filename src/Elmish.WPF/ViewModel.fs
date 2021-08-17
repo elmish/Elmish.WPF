@@ -609,8 +609,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
             recursiveCase b.Binding
     recursiveCase
 
-  let tryGetMember model =
-    let baseCase = function
+  let tryGetMember =
+    let baseCase model = function
       | OneWay { OneWayData = d } -> d.Get model |> Ok
       | TwoWay b -> b.Get model |> Ok
       | OneWayToSource _ -> GetError.OneWayToSource |> Error
@@ -639,17 +639,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                     |> GetError.SubModelSelectedItem
                     |> Error
           |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
-    let rec recursiveCase = function
-      | BaseVmBinding b -> b |> baseCase
+    let rec recursiveCase model = function
+      | BaseVmBinding b -> b |> baseCase model
       | Cached b ->
           match !b.Cache with
           | Some v -> v |> Ok
           | None ->
-              let x = recursiveCase b.Binding
+              let x = recursiveCase model b.Binding
               x |> Result.iter (fun v -> b.Cache := Some v)
               x
-      | Validatation b -> recursiveCase b.Binding
-      | Lazy b -> recursiveCase b.Binding
+      | Validatation b -> recursiveCase model b.Binding
+      | Lazy b -> recursiveCase model b.Binding
     recursiveCase
 
 
