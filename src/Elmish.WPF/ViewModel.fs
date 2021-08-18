@@ -73,6 +73,21 @@ module internal Helpers2 =
         win.Visibility <- initialVisibility
     ) |> ignore
 
+  let measure (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (callName: string) f =
+    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
+    else
+      fun a ->
+        let sw = System.Diagnostics.Stopwatch.StartNew ()
+        let b = f a
+        sw.Stop ()
+        if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
+          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
+        b
+
+  let measure2 (logPerformance: ILogger) performanceLogThresholdMs name nameChain callName f =
+    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
+    else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
+
 
 type internal OneWayBinding<'model> = {
   OneWayData: OneWayData<'model>
@@ -487,24 +502,9 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
-  let measure (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (callName: string) f =
-    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
-    else
-      fun a ->
-        let sw = System.Diagnostics.Stopwatch.StartNew ()
-        let b = f a
-        sw.Stop ()
-        if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
-          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
-        b
-
-  let measure2 (logPerformance: ILogger) performanceLogThresholdMs name nameChain callName f =
-    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
-    else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
-
   let initializeBinding (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
-    let measure x = x |> measure logPerformance performanceLogThresholdMs name nameChain
-    let measure2 x = x |> measure2 logPerformance performanceLogThresholdMs name nameChain
+    let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
+    let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
     let baseCase (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
