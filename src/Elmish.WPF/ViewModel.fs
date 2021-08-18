@@ -181,6 +181,146 @@ and internal BaseVmBinding<'model, 'msg> =
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
+  static member Initialize
+      (log: ILogger,
+       logPerformance: ILogger,
+       performanceLogThresholdMs: int,
+       name: string,
+       nameChain: string,
+       getNameChainFor: string -> string,
+       getNameChainForItem: string -> string -> string,
+       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option,
+       initialModel: 'model,
+       getCurrentModel: unit -> 'model,
+       dispatch: 'msg -> unit,
+       binding: BaseBindingData<'model, 'msg>) =
+    let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
+    let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
+    match binding with
+      | OneWayData d ->
+          { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
+          |> OneWay
+          |> BaseVmBinding
+          |> Some
+      | OneWayToSourceData d ->
+          let d = d |> BindingData.OneWayToSource.measureFunctions measure
+          { Set = fun obj m -> d.Set obj m |> dispatch }
+          |> OneWayToSource
+          |> BaseVmBinding
+          |> Some
+      | OneWaySeqLazyData d ->
+          { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
+            Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
+          |> OneWaySeq
+          |> BaseVmBinding
+          |> Some
+      | TwoWayData d ->
+          let d = d |> BindingData.TwoWay.measureFunctions measure measure
+          { Get = d.Get
+            Set = fun obj m -> d.Set obj m |> dispatch }
+          |> TwoWay
+          |> BaseVmBinding
+          |> Some
+      | CmdData d ->
+          let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
+          let execute param = d.Exec param (getCurrentModel ()) |> ValueOption.iter dispatch
+          let canExecute param = d.CanExec param (getCurrentModel ())
+          let cmd = Command(execute, canExecute)
+          if d.AutoRequery then
+            cmd.AddRequeryHandler ()
+          cmd
+          |> Cmd
+          |> BaseVmBinding
+          |> Some
+      | SubModelData d ->
+          let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          d.GetModel initialModel
+          |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
+          |> (fun vm -> { SubModelData = d; Vm = ref vm })
+          |> SubModel
+          |> BaseVmBinding
+          |> Some
+      | SubModelWinData d ->
+          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          match d.GetState initialModel with
+          | WindowState.Closed ->
+              { SubModelWinData = d
+                WinRef = WeakReference<_>(null)
+                PreventClose = ref true
+                VmWinState = ref WindowState.Closed }
+          | WindowState.Hidden m ->
+              let chain = getNameChainFor name
+              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let winRef = WeakReference<_>(null)
+              let preventClose = ref true
+              log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
+              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
+              { SubModelWinData = d
+                WinRef = winRef
+                PreventClose = preventClose
+                VmWinState = ref <| WindowState.Hidden vm }
+          | WindowState.Visible m ->
+              let chain = getNameChainFor name
+              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let winRef = WeakReference<_>(null)
+              let preventClose = ref true
+              log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
+              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
+              { SubModelWinData = d
+                WinRef = winRef
+                PreventClose = preventClose
+                VmWinState = ref <| WindowState.Visible vm }
+          |> SubModelWin
+          |> BaseVmBinding
+          |> Some
+      | SubModelSeqUnkeyedData d ->
+          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          let vms =
+            d.GetModels initialModel
+            |> Seq.indexed
+            |> Seq.map (fun (idx, m) ->
+                 let chain = getNameChainForItem name (idx |> string)
+                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            )
+            |> ObservableCollection
+          { SubModelSeqUnkeyedData = d
+            Vms = vms }
+          |> SubModelSeqUnkeyed
+          |> BaseVmBinding
+          |> Some
+      | SubModelSeqKeyedData d ->
+          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          let vms =
+            d.GetSubModels initialModel
+            |> Seq.map (fun m ->
+                 let mId = d.GetId m
+                 let chain = getNameChainForItem name (mId |> string)
+                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            )
+            |> ObservableCollection
+          { SubModelSeqKeyedData = d
+            Vms = vms }
+          |> SubModelSeqKeyed
+          |> BaseVmBinding
+          |> Some
+      | SubModelSelectedItemData d ->
+          let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
+          d.SubModelSeqBindingName
+          |> getFunctionsForSubModelSelectedItem
+          |> Option.map (fun (getId, fromId) ->
+              { Get = d.Get
+                Set = fun obj m -> d.Set obj m |> dispatch
+                SubModelSeqBindingName = d.SubModelSeqBindingName
+                GetId = getId
+                FromId = fromId }
+              |> SubModelSelectedItem
+              |> BaseVmBinding
+              |> (fun b -> b.AddCaching))
+
   member this.Update
       (name: string,
        nameChain: string,
@@ -503,137 +643,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
   let initializeBinding =
-    let baseCase (log: ILogger) (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) b =
-      let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
-      let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
-      match b with
-      | OneWayData d ->
-          { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
-          |> OneWay
-          |> BaseVmBinding
-          |> Some
-      | OneWayToSourceData d ->
-          let d = d |> BindingData.OneWayToSource.measureFunctions measure
-          { Set = fun obj m -> d.Set obj m |> dispatch }
-          |> OneWayToSource
-          |> BaseVmBinding
-          |> Some
-      | OneWaySeqLazyData d ->
-          { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
-            Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
-          |> OneWaySeq
-          |> BaseVmBinding
-          |> Some
-      | TwoWayData d ->
-          let d = d |> BindingData.TwoWay.measureFunctions measure measure
-          { Get = d.Get
-            Set = fun obj m -> d.Set obj m |> dispatch }
-          |> TwoWay
-          |> BaseVmBinding
-          |> Some
-      | CmdData d ->
-          let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
-          let execute param = d.Exec param (getCurrentModel ()) |> ValueOption.iter dispatch
-          let canExecute param = d.CanExec param (getCurrentModel ())
-          let cmd = Command(execute, canExecute)
-          if d.AutoRequery then
-            cmd.AddRequeryHandler ()
-          cmd
-          |> Cmd
-          |> BaseVmBinding
-          |> Some
-      | SubModelData d ->
-          let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
-          d.GetModel initialModel
-          |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
-          |> (fun vm -> { SubModelData = d; Vm = ref vm })
-          |> SubModel
-          |> BaseVmBinding
-          |> Some
-      | SubModelWinData d ->
-          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
-          match d.GetState initialModel with
-          | WindowState.Closed ->
-              { SubModelWinData = d
-                WinRef = WeakReference<_>(null)
-                PreventClose = ref true
-                VmWinState = ref WindowState.Closed }
-          | WindowState.Hidden m ->
-              let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-              let winRef = WeakReference<_>(null)
-              let preventClose = ref true
-              log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
-              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
-              { SubModelWinData = d
-                WinRef = winRef
-                PreventClose = preventClose
-                VmWinState = ref <| WindowState.Hidden vm }
-          | WindowState.Visible m ->
-              let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-              let winRef = WeakReference<_>(null)
-              let preventClose = ref true
-              log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
-              { SubModelWinData = d
-                WinRef = winRef
-                PreventClose = preventClose
-                VmWinState = ref <| WindowState.Visible vm }
-          |> SubModelWin
-          |> BaseVmBinding
-          |> Some
-      | SubModelSeqUnkeyedData d ->
-          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
-          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
-          let vms =
-            d.GetModels initialModel
-            |> Seq.indexed
-            |> Seq.map (fun (idx, m) ->
-                 let chain = getNameChainForItem name (idx |> string)
-                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            )
-            |> ObservableCollection
-          { SubModelSeqUnkeyedData = d
-            Vms = vms }
-          |> SubModelSeqUnkeyed
-          |> BaseVmBinding
-          |> Some
-      | SubModelSeqKeyedData d ->
-          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
-          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
-          let vms =
-            d.GetSubModels initialModel
-            |> Seq.map (fun m ->
-                 let mId = d.GetId m
-                 let chain = getNameChainForItem name (mId |> string)
-                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            )
-            |> ObservableCollection
-          { SubModelSeqKeyedData = d
-            Vms = vms }
-          |> SubModelSeqKeyed
-          |> BaseVmBinding
-          |> Some
-      | SubModelSelectedItemData d ->
-          let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
-          d.SubModelSeqBindingName
-          |> getFunctionsForSubModelSelectedItem
-          |> Option.map (fun (getId, fromId) ->
-              { Get = d.Get
-                Set = fun obj m -> d.Set obj m |> dispatch
-                SubModelSeqBindingName = d.SubModelSeqBindingName
-                GetId = getId
-                FromId = fromId }
-              |> SubModelSelectedItem
-              |> BaseVmBinding
-              |> (fun b -> b.AddCaching))
     let rec recursiveCase (log: ILogger) (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: obj -> unit) b =
       let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
       match b with
-      | BaseBindingData d -> d |> baseCase log logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel (box >> dispatch)
+      | BaseBindingData d -> BaseVmBinding.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
       | CachingData d ->
           d
           |> recursiveCase logPerformance log performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
