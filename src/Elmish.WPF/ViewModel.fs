@@ -506,7 +506,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
   let updateBinding =
-    let baseCase name performanceLogThresholdMs log logPerformance currentModel newModel dispatch = function
+    let baseCase (name: string) (performanceLogThresholdMs: int) (log: ILogger) (logPerformance: ILogger) (currentModel: 'model) (newModel: 'model) (dispatch: 'msg -> unit) = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
