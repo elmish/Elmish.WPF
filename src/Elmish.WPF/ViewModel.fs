@@ -519,6 +519,38 @@ and internal BaseVmBinding<'model, 'msg> =
     | SubModelSeqKeyed _ ->
         false
 
+and internal VmBinding() =
+
+  static member Initalize
+      (log: ILogger,
+      logPerformance: ILogger,
+      performanceLogThresholdMs: int,
+      name: string,
+      nameChain: string,
+      getNameChainFor: string -> string,
+      getNameChainForItem: string -> string -> string,
+      getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option,
+      initialModel: 'model,
+      getCurrentModel: unit -> 'model,
+      dispatch: obj -> unit,
+      binding: BindingData<'model, 'msg>) =
+    let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
+    match binding with
+    | BaseBindingData d -> BaseVmBinding.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
+    | CachingData d ->
+        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
+        |> Option.map (fun b -> b.AddCaching)
+    | ValidationData d ->
+        let d = d |> BindingData.Validation.measureFunctions measure
+        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
+        |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
+    | LazyData d ->
+        let d = d |> BindingData.Lazy.measureFunctions measure
+        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
+        |> Option.map (fun b -> b.AddLazy d.Equals)
+    | WrapDispatchData d ->
+        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (d.WrapDispatch dispatch), d.BindingData)
+
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
   | BaseVmBinding of BaseVmBinding<'model, 'msg>
@@ -527,35 +559,6 @@ and internal VmBinding<'model, 'msg> =
   | Lazy of LazyBinding<'model, 'msg>
 
   with
-    static member Initalize
-        (log: ILogger,
-        logPerformance: ILogger,
-        performanceLogThresholdMs: int,
-        name: string,
-        nameChain: string,
-        getNameChainFor: string -> string,
-        getNameChainForItem: string -> string -> string,
-        getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option,
-        initialModel: 'model,
-        getCurrentModel: unit -> 'model,
-        dispatch: obj -> unit,
-        binding: BindingData<'model, 'msg>) =
-      let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
-      match binding with
-      | BaseBindingData d -> BaseVmBinding.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
-      | CachingData d ->
-          VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
-          |> Option.map (fun b -> b.AddCaching)
-      | ValidationData d ->
-          let d = d |> BindingData.Validation.measureFunctions measure
-          VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
-          |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
-      | LazyData d ->
-          let d = d |> BindingData.Lazy.measureFunctions measure
-          VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
-          |> Option.map (fun b -> b.AddLazy d.Equals)
-      | WrapDispatchData d ->
-          VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (d.WrapDispatch dispatch), d.BindingData)
 
     member this.AddCaching = Cached { Binding = this; Cache = ref None }
     member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
