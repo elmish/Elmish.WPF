@@ -169,17 +169,7 @@ and internal LazyBinding<'model, 'msg> = {
 }
 
 
-and internal BaseVmBinding<'model, 'msg> =
-  | OneWay of OneWayBinding<'model>
-  | OneWayToSource of OneWayToSourceBinding<'model>
-  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
-  | TwoWay of TwoWayBinding<'model>
-  | Cmd of cmd: Command
-  | SubModel of SubModelBinding<'model, 'msg, obj, obj>
-  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
-  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj>
-  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
+and internal BaseVmBinding2() =
 
   static member Initialize
       (log: ILogger,
@@ -320,6 +310,18 @@ and internal BaseVmBinding<'model, 'msg> =
               |> SubModelSelectedItem
               |> BaseVmBinding
               |> (fun b -> b.AddCaching))
+
+and internal BaseVmBinding<'model, 'msg> =
+  | OneWay of OneWayBinding<'model>
+  | OneWayToSource of OneWayToSourceBinding<'model>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
+  | TwoWay of TwoWayBinding<'model>
+  | Cmd of cmd: Command
+  | SubModel of SubModelBinding<'model, 'msg, obj, obj>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
+  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj>
+  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
   member this.Update
       (name: string,
@@ -536,7 +538,7 @@ and internal VmBinding() =
       binding: BindingData<'model, 'msg>) =
     let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
     match binding with
-    | BaseBindingData d -> BaseVmBinding.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
+    | BaseBindingData d -> BaseVmBinding2.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
     | CachingData d ->
         VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
         |> Option.map (fun b -> b.AddCaching)
