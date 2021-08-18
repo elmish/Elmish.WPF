@@ -490,17 +490,17 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let measure name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else
-      fun x ->
+      fun a ->
         let sw = System.Diagnostics.Stopwatch.StartNew ()
-        let r = f x
+        let b = f a
         sw.Stop ()
         if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
           logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
-        r
+        b
 
   let measure2 name callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
-    else fun x -> measure name callName (f x)
+    else fun a -> measure name callName (f a)
 
   let initializeBinding (name: string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
     let measure x = x |> measure name
