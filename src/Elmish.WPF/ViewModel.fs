@@ -506,7 +506,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   /// Updates the binding and returns a list indicating what events to raise
   /// for this binding
   let updateBinding =
-    let baseCase (name: string) (getNameChainFor: string -> string) (performanceLogThresholdMs: int) (log: ILogger) (logPerformance: ILogger) (currentModel: 'model) (newModel: 'model) (dispatch: 'msg -> unit) = function
+    let baseCase (name: string) (nameChain: string) (getNameChainFor: string -> string) (performanceLogThresholdMs: int) (log: ILogger) (logPerformance: ILogger) (currentModel: 'model) (newModel: 'model) (dispatch: 'msg -> unit) = function
       | OneWay _
       | TwoWay _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
@@ -637,16 +637,16 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           b.DidPropertyChange(currentModel, newModel)
           |> Option.fromBool (PropertyChanged name)
           |> Option.toList
-    let rec recursiveCase name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch = function
-      | BaseVmBinding b -> baseCase name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b
+    let rec recursiveCase name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch = function
+      | BaseVmBinding b -> baseCase name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b
       | Cached b ->
-          let updates = recursiveCase name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
+          let updates = recursiveCase name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
-          let updates = recursiveCase name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
+          let updates = recursiveCase name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
@@ -657,7 +657,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           if b.Equals currentModel newModel then
             []
           else
-            recursiveCase name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
+            recursiveCase name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
     recursiveCase
 
 
@@ -666,7 +666,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch binding)
+      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name nameChain getNameChainFor performanceLogThresholdMs log logPerformance currentModel newModel dispatch binding)
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
