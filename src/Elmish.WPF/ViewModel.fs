@@ -503,7 +503,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
   let initializeBinding =
-    let baseCase (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) b =
+    let baseCase (log: ILogger) (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) b =
       let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
       let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
       match b with
@@ -630,27 +630,27 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               |> SubModelSelectedItem
               |> BaseVmBinding
               |> (fun b -> b.AddCaching))
-    let rec recursiveCase (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: obj -> unit) b =
+    let rec recursiveCase (log: ILogger) (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getNameChainFor: string -> string) (getNameChainForItem: string -> string -> string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) (initialModel: 'model) (getCurrentModel: unit -> 'model) (dispatch: obj -> unit) b =
       let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
       match b with
-      | BaseBindingData d -> d |> baseCase logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel (box >> dispatch)
+      | BaseBindingData d -> d |> baseCase log logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel (box >> dispatch)
       | CachingData d ->
           d
-          |> recursiveCase logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
+          |> recursiveCase logPerformance log performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
           |> Option.map (fun b -> b.AddCaching)
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           d.BindingData
-          |> recursiveCase logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
+          |> recursiveCase logPerformance log performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
           |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
           d.BindingData
-          |> recursiveCase logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
+          |> recursiveCase logPerformance log performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel dispatch
           |> Option.map (fun b -> b.AddLazy d.Equals)
       | WrapDispatchData d ->
           d.BindingData
-          |> recursiveCase logPerformance performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel (d.WrapDispatch dispatch)
+          |> recursiveCase logPerformance log performanceLogThresholdMs name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel getCurrentModel (d.WrapDispatch dispatch)
     recursiveCase
 
   let (bindings, validationBindings) =
@@ -672,7 +672,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding logPerformance performanceLogThresholdMs b.Name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel (fun () -> currentModel) (unbox >> dispatch) b.Data
+        initializeBinding log logPerformance performanceLogThresholdMs b.Name nameChain getNameChainFor getNameChainForItem getFunctionsForSubModelSelectedItem initialModel (fun () -> currentModel) (unbox >> dispatch) b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
