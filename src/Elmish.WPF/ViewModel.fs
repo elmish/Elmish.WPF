@@ -398,6 +398,40 @@ and internal VmBinding<'model, 'msg> =
       | Lazy b -> b.Binding.FirstValidation
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
 
+    /// Updates the binding and returns a list indicating what events to raise for this binding
+    member this.Update
+        (name: string,
+         nameChain: string,
+         getNameChainFor: string -> string,
+         getNameChainForItem: string -> string -> string,
+         performanceLogThresholdMs: int,
+         log: ILogger,
+         logPerformance: ILogger,
+         currentModel: 'model,
+         newModel: 'model,
+         dispatch: 'msg -> unit) =
+      match this with
+        | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+        | Cached b ->
+            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+            updates
+            |> List.filter UpdateData.isPropertyChanged
+            |> List.iter (fun _ -> b.Cache := None)
+            updates
+        | Validatation b ->
+            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+            let newErrors = b.Validate newModel
+            if !b.Errors <> newErrors then
+              b.Errors := newErrors
+              ErrorsChanged name :: updates
+            else
+              updates
+        | Lazy b ->
+            if b.Equals currentModel newModel then
+              []
+            else
+              b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+
     member this.TryGetMember(model: 'model, nameChain: string) =
       match this with
       | BaseVmBinding b -> b.TryGetMember(model, nameChain)
@@ -646,39 +680,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
-  /// Updates the binding and returns a list indicating what events to raise
-  /// for this binding
-  let updateBinding =
-    let rec recursiveCase name nameChain getNameChainFor getNameChainForItem performanceLogThresholdMs log logPerformance currentModel newModel dispatch = function
-      | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-      | Cached b ->
-          let updates = recursiveCase name nameChain getNameChainFor getNameChainForItem performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
-          updates
-          |> List.filter UpdateData.isPropertyChanged
-          |> List.iter (fun _ -> b.Cache := None)
-          updates
-      | Validatation b ->
-          let updates = recursiveCase name nameChain getNameChainFor getNameChainForItem performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
-          let newErrors = b.Validate newModel
-          if !b.Errors <> newErrors then
-            b.Errors := newErrors
-            ErrorsChanged name :: updates
-          else
-            updates
-      | Lazy b ->
-          if b.Equals currentModel newModel then
-            []
-          else
-            recursiveCase name nameChain getNameChainFor getNameChainForItem performanceLogThresholdMs log logPerformance currentModel newModel dispatch b.Binding
-    recursiveCase
-
 
   member internal _.CurrentModel : 'model = currentModel
 
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> updateBinding name nameChain getNameChainFor getNameChainForItem performanceLogThresholdMs log logPerformance currentModel newModel dispatch binding)
+      |> Seq.collect (fun (Kvp (name, binding)) -> binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
