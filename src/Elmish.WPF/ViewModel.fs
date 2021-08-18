@@ -487,7 +487,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
-  let measure (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (callName: string) f =
+  let measure (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (callName: string) f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else
       fun a ->
@@ -498,13 +498,13 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
         b
 
-  let measure2 (logPerformance: ILogger) performanceLogThresholdMs name callName f =
+  let measure2 (logPerformance: ILogger) performanceLogThresholdMs name nameChain callName f =
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
-    else fun a -> measure logPerformance performanceLogThresholdMs name callName (f a)
+    else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
 
-  let initializeBinding (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
-    let measure x = x |> measure logPerformance performanceLogThresholdMs name
-    let measure2 x = x |> measure2 logPerformance performanceLogThresholdMs name
+  let initializeBinding (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
+    let measure x = x |> measure logPerformance performanceLogThresholdMs name nameChain
+    let measure2 x = x |> measure2 logPerformance performanceLogThresholdMs name nameChain
     let baseCase (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
@@ -669,7 +669,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBinding logPerformance performanceLogThresholdMs b.Name getFunctionsForSubModelSelectedItem (fun () -> currentModel) (unbox >> dispatch) b.Data
+        initializeBinding logPerformance performanceLogThresholdMs b.Name nameChain getFunctionsForSubModelSelectedItem (fun () -> currentModel) (unbox >> dispatch) b.Data
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
