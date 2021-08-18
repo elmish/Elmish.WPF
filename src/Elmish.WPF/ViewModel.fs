@@ -502,10 +502,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
     else fun x -> measure name callName (f x)
 
-  let initializeBinding name getFunctionsForSubModelSelectedItem =
+  let initializeBinding (name: string) (getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
     let measure x = x |> measure name
     let measure2 x = x |> measure2 name
-    let baseCase getCurrentModel dispatch = function
+    let baseCase (getCurrentModel: unit -> 'model) (dispatch: 'msg -> unit) = function
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
@@ -629,7 +629,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
               |> SubModelSelectedItem
               |> BaseVmBinding
               |> (fun b -> b.AddCaching))
-    let rec recursiveCase getCurrentModel dispatch = function
+    let rec recursiveCase (getCurrentModel: unit -> 'model) (dispatch: obj -> unit) = function
       | BaseBindingData d -> d |> baseCase getCurrentModel (box >> dispatch)
       | CachingData d ->
           d
