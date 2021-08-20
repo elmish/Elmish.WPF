@@ -13,6 +13,7 @@ type Msg =
   | Decrement
   | SetStepSize of int
   | Reset
+  | CompositeMsg of Msg list
 
 let init =
   { Count = 0
@@ -20,17 +21,29 @@ let init =
 
 let canReset = (<>) init
 
-let update msg m =
+let rec update msg m =
   match msg with
   | Increment -> { m with Count = m.Count + m.StepSize }
   | Decrement -> { m with Count = m.Count - m.StepSize }
   | SetStepSize x -> { m with StepSize = x }
   | Reset -> init
+  | CompositeMsg msgs -> msgs |> List.map update |> List.fold (>>) id <| m
+
+open FSharp.Control.Reactive
+let batch (dispatch: 'a list -> unit) : 'a -> unit =
+  let subject = Subject.broadcast
+  let observable = subject :> System.IObservable<_>
+  observable
+  |> Observable.bufferCount 2
+  |> Observable.map Seq.toList
+  |> Observable.subscribe dispatch
+  |> ignore
+  subject.OnNext
 
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
   "Increment" |> Binding.cmd Increment
-  "Decrement" |> Binding.cmd Decrement
+  "Decrement" |> Binding.cmd Decrement |> Binding.addWrapDispatch batch |> Binding.mapMsg CompositeMsg
   "StepSize" |> Binding.twoWay(
     (fun m -> float m.StepSize),
     int >> SetStepSize)

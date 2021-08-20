@@ -169,9 +169,16 @@ and internal LazyBinding<'model, 'msg> = {
 }
 
 
+and internal WrapDispatchBinding<'model, 'bindingModel, 'bindingMsg> = {
+  Binding: VmBinding<'bindingModel, 'bindingMsg>
+  Get: 'model -> 'bindingModel
+  Dispatch: 'bindingMsg -> unit
+}
+
+
 and internal BaseVmBinding2() =
 
-  static member Initialize
+  static member Initialize<'model, 'msg>
       (log: ILogger,
        logPerformance: ILogger,
        performanceLogThresholdMs: int,
@@ -183,7 +190,8 @@ and internal BaseVmBinding2() =
        initialModel: 'model,
        getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
-       binding: BaseBindingData<'model, 'msg>) =
+       binding: BaseBindingData<'model, 'msg>)
+      : VmBinding<'model, 'msg> option =
     let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
     let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
     match binding with
@@ -521,37 +529,45 @@ and internal BaseVmBinding<'model, 'msg> =
     | SubModelSeqKeyed _ ->
         false
 
-and internal VmBinding() =
-
-  static member Initalize
+and internal VmBinding2<'model, 'msg>
       (log: ILogger,
-      logPerformance: ILogger,
-      performanceLogThresholdMs: int,
-      name: string,
-      nameChain: string,
-      getNameChainFor: string -> string,
-      getNameChainForItem: string -> string -> string,
-      getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option,
-      initialModel: 'model,
-      getCurrentModel: unit -> 'model,
-      dispatch: obj -> unit,
-      binding: BindingData<'model, 'msg>) =
+       logPerformance: ILogger,
+       performanceLogThresholdMs: int,
+       name: string,
+       nameChain: string,
+       getNameChainFor: string -> string,
+       getNameChainForItem: string -> string -> string,
+       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option,
+       initialModel: 'model,
+       getCurrentModel: unit -> 'model,
+       dispatch: 'msg -> unit,
+       binding: BindingData<'model, 'msg>) =
+
+  member _.Initalize() : VmBinding<'model, 'msg> option =
     let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
     match binding with
-    | BaseBindingData d -> BaseVmBinding2.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (box >> dispatch), d)
+    | BaseBindingData d -> BaseVmBinding2.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
     | CachingData d ->
-        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
+        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d).Initalize()
         |> Option.map (fun b -> b.AddCaching)
     | ValidationData d ->
         let d = d |> BindingData.Validation.measureFunctions measure
-        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
+        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
         |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
     | LazyData d ->
         let d = d |> BindingData.Lazy.measureFunctions measure
-        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData)
+        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
         |> Option.map (fun b -> b.AddLazy d.Equals)
     | WrapDispatchData d ->
-        VmBinding.Initalize(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, (d.WrapDispatch dispatch), d.BindingData)
+        let initialModel' : obj = d.Get initialModel
+        let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
+        let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
+        VmBinding2<obj, obj>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel', getCurrentModel', dispatch', d.BindingData).Initalize()
+        |> Option.map (fun b ->
+          { Binding = b
+            Get = d.Get
+            Dispatch = dispatch' }
+          |> WrapDispatch)
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
@@ -559,6 +575,7 @@ and internal VmBinding<'model, 'msg> =
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
   | Lazy of LazyBinding<'model, 'msg>
+  | WrapDispatch of WrapDispatchBinding<'model, obj, obj>
 
   with
 
@@ -579,6 +596,7 @@ and internal VmBinding<'model, 'msg> =
       | Cached b -> recursiveCase b.Binding
       | Validatation b -> recursiveCase b.Binding
       | Lazy b -> recursiveCase b.Binding
+      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
       recursiveCase this
 
     member this.FirstValidation =
@@ -587,6 +605,7 @@ and internal VmBinding<'model, 'msg> =
       | Cached b -> b.Binding.FirstValidation
       | Lazy b -> b.Binding.FirstValidation
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
+      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
 
     /// Updates the binding and returns a list indicating what events to raise for this binding
     member this.Update
@@ -599,7 +618,8 @@ and internal VmBinding<'model, 'msg> =
          logPerformance: ILogger,
          currentModel: 'model,
          newModel: 'model,
-         dispatch: 'msg -> unit) =
+         dispatch: 'msg -> unit)
+        : UpdateData list =
       match this with
         | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
         | Cached b ->
@@ -621,8 +641,10 @@ and internal VmBinding<'model, 'msg> =
               []
             else
               b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+        | WrapDispatch b ->
+            b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch)
 
-    member this.TryGetMember(model: 'model, nameChain: string) =
+    member this.TryGetMember(model: 'model, nameChain: string) : Result<obj, GetError> =
       match this with
       | BaseVmBinding b -> b.TryGetMember(model, nameChain)
       | Cached b ->
@@ -634,8 +656,9 @@ and internal VmBinding<'model, 'msg> =
               x
       | Validatation b -> b.Binding.TryGetMember(model, nameChain)
       | Lazy b -> b.Binding.TryGetMember(model, nameChain)
+      | WrapDispatch b -> b.Binding.TryGetMember(b.Get model, nameChain)
 
-    member this.TrySetMember(model: 'model, value: obj) =
+    member this.TrySetMember(model: 'model, value: obj) : bool =
       match this with
       | BaseVmBinding b -> b.TrySetMember(model, value)
       | Cached b ->
@@ -645,6 +668,7 @@ and internal VmBinding<'model, 'msg> =
           successful
       | Validatation b -> b.Binding.TrySetMember(model, value)
       | Lazy b -> b.Binding.TrySetMember(model, value)
+      | WrapDispatch b -> b.Binding.TrySetMember(b.Get model, value)
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -691,19 +715,21 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                     None
         | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
                   None
-    let sortedBindings = bindings |> List.sortWith Binding.subModelSelectedItemLast
+    let sortedBindings =
+      bindings
+      //|> List.sortWith Binding.subModelSelectedItemLast
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        VmBinding.Initalize(log, logPerformance, performanceLogThresholdMs, b.Name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, b.Name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data).Initalize()
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
-    bindingDict
-    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (fun x -> x.FirstValidation) >> PairOption.sequence)
-    |> SeqOption.somes
-    |> Seq.iter validationDict.Add
+    //bindingDict
+    //|> Seq.map (Pair.ofKvp >> Pair.mapAll Some (fun x -> x.FirstValidation) >> PairOption.sequence)
+    //|> SeqOption.somes
+    //|> Seq.iter validationDict.Add
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 

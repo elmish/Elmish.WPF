@@ -100,9 +100,18 @@ and internal LazyData<'model, 'msg> =
     Equals: 'model -> 'model -> bool }
 
 
-and internal WrapDispatchData<'model, 'msg> =
- { BindingData: BindingData<'model, 'msg>
-   WrapDispatch: (obj -> unit) -> obj -> unit }
+and internal WrapDispatchData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
+ { BindingData: BindingData<'bindingModel, 'bindingMsg>
+   WrapDispatch: ('dispatchMsg -> unit) -> 'bindingMsg -> unit
+   Get: 'model -> 'bindingModel
+   Set: 'dispatchMsg -> 'model -> 'msg }
+
+  member this.CreateFinalDispatch
+      (getCurrentModel: unit -> 'model,
+       dispatch: 'msg -> unit)
+       : 'bindingMsg -> unit =
+    let dispatch' (dMsg: 'dispatchMsg) = getCurrentModel () |> this.Set dMsg |> dispatch
+    this.WrapDispatch dispatch'
 
 
 /// Represents all necessary data used to create the different binding types.
@@ -125,7 +134,7 @@ and internal BindingData<'model, 'msg> =
   | CachingData of BindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
   | LazyData of LazyData<'model, 'msg>
-  | WrapDispatchData of WrapDispatchData<'model, 'msg>
+  | WrapDispatchData of WrapDispatchData<'model, 'msg, obj, obj, obj>
 
 
 /// Represents all necessary data used to create a binding.
@@ -147,14 +156,19 @@ module internal Helpers =
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
-    | WrapDispatchData d -> getBaseBindingData d.BindingData
+    | WrapDispatchData _ ->
+        //getBaseBindingData d.BindingData
+        failwith "Some WrapDispatch support still lacking"
+
 
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
     | LazyData d -> Some d
     | CachingData d -> getFirstLazyData d
     | ValidationData d -> getFirstLazyData d.BindingData
-    | WrapDispatchData d -> getFirstLazyData d.BindingData
+    | WrapDispatchData _ ->
+        //getFirstLazyData d.BindingData
+        failwith "Some WrapDispatch support still lacking"
 
 
 module internal BindingData =
@@ -169,7 +183,7 @@ module internal BindingData =
         | CachingData d -> recrusiveCase d
         | ValidationData d -> recrusiveCase d.BindingData
         | LazyData d -> recrusiveCase d.BindingData
-        | WrapDispatchData d -> recrusiveCase d.BindingData
+        //| WrapDispatchData d -> recrusiveCase d.BindingData
       recrusiveCase
     (getComparisonNumber a) - (getComparisonNumber b)
 
@@ -239,8 +253,10 @@ module internal BindingData =
           Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
         }
       | WrapDispatchData d -> WrapDispatchData {
-          BindingData = recursiveCase d.BindingData
+          BindingData = d.BindingData
           WrapDispatch = d.WrapDispatch
+          Get = f >> d.Get
+          Set = binaryHelper d.Set
         }
     recursiveCase
 
@@ -301,8 +317,10 @@ module internal BindingData =
           Equals = d.Equals
         }
       | WrapDispatchData d -> WrapDispatchData {
-          BindingData = recursiveCase d.BindingData
+          BindingData = d.BindingData
           WrapDispatch = d.WrapDispatch
+          Get = d.Get
+          Set = fun bMsg m -> f (d.Set bMsg m) m
         }
     recursiveCase
 
@@ -314,7 +332,19 @@ module internal BindingData =
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
-  let addWrapDispatch wrapDispatch b = { BindingData = b; WrapDispatch = wrapDispatch } |> WrapDispatchData
+  let addWrapDispatch
+      (wrapDispatch: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
+      (b: BindingData<'bindingModel, 'bindingMsg>)
+      : BindingData<'model, 'msg> =
+    { BindingData = b |> mapModel unbox |> mapMsg box
+      WrapDispatch =
+        fun (f: obj -> unit) ->
+          let f' = box >> f
+          let g = wrapDispatch f'
+          unbox >> g
+      Get = box
+      Set = fun (dMsg: obj) _ -> unbox dMsg }
+    |> WrapDispatchData
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
@@ -808,7 +838,7 @@ module Binding =
   /// </summary>
   /// <param name="wrapDispatch">The function that will wrap the dispatch function.</param>
   /// <param name="binding">The binding to which the dispatch wrapping is added.</param>
-  let addWrapDispatch (wrapDispatch: (obj -> unit) -> obj -> unit) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addWrapDispatch (wrapDispatch: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
     binding
     |> BindingData.Binding.addWrapDispatch wrapDispatch
 

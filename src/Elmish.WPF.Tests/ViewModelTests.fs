@@ -1383,3 +1383,28 @@ module SubModelSelectedItem =
 
       test <@ vm.Dispatches = [ set (selectedSubModel |> ValueOption.map getId) m ] @>
     }
+
+
+
+module WrapDispatch =
+
+  [<Fact>]
+  let ``dispatch wrapper only invoked once when set called twice`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get = string<int>
+      let set _ _ = ()
+      let wrapDispatch = InvokeTester id
+      let binding =
+        twoWay get set name
+        |> Binding.addWrapDispatch wrapDispatch.Fn
+      let vm = TestVm(m1, binding)
+
+      vm.Set name ()
+      vm.Set name ()
+
+      test <@ 1 = wrapDispatch.Count @>
+  }
