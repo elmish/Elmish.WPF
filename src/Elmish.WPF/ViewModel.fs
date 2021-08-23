@@ -548,21 +548,21 @@ and internal VmBinding2<'model, 'msg>
     match binding with
     | BaseBindingData d -> BaseVmBinding2.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
     | CachingData d ->
-        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d).Initalize()
         |> Option.map (fun b -> b.AddCaching)
     | ValidationData d ->
         let d = d |> BindingData.Validation.measureFunctions measure
-        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
         |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
     | LazyData d ->
         let d = d |> BindingData.Lazy.measureFunctions measure
-        VmBinding2<'model, 'msg>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
         |> Option.map (fun b -> b.AddLazy d.Equals)
     | WrapDispatchData d ->
         let initialModel' : obj = d.Get initialModel
         let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
         let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
-        VmBinding2<obj, obj>(logPerformance, log, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel', getCurrentModel', dispatch', d.BindingData).Initalize()
+        VmBinding2<obj, obj>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel', getCurrentModel', dispatch', d.BindingData).Initalize()
         |> Option.map (fun b ->
           { Binding = b
             Get = d.Get
