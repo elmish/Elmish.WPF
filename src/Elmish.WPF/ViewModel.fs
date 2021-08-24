@@ -280,20 +280,6 @@ and internal VmBinding<'model, 'msg> =
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
       //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
 
-    member this.TryGetMember(model: 'model, nameChain: string) : Result<obj, GetError> =
-      match this with
-      | BaseVmBinding b -> b.TryGetMember(model, nameChain)
-      | Cached b ->
-          match !b.Cache with
-          | Some v -> v |> Ok
-          | None ->
-              let x = b.Binding.TryGetMember(model, nameChain)
-              x |> Result.iter (fun v -> b.Cache := Some v)
-              x
-      | Validatation b -> b.Binding.TryGetMember(model, nameChain)
-      | Lazy b -> b.Binding.TryGetMember(model, nameChain)
-      | WrapDispatch b -> b.Binding.TryGetMember(b.Get model, nameChain)
-
     member this.TrySetMember(model: 'model, value: obj) : bool =
       match this with
       | BaseVmBinding b -> b.TrySetMember(model, value)
@@ -659,6 +645,27 @@ and internal Update
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
+and internal Get() =
+
+  static member Recursive<'model, 'msg>
+      (model: 'model,
+       nameChain: string,
+       binding: VmBinding<'model, 'msg>)
+      : Result<obj, GetError> =
+    match binding with
+    | BaseVmBinding b -> b.TryGetMember(model, nameChain)
+    | Cached b ->
+        match !b.Cache with
+        | Some v -> v |> Ok
+        | None ->
+            let x = Get.Recursive(model, nameChain, b.Binding)
+            x |> Result.iter (fun v -> b.Cache := Some v)
+            x
+    | Validatation b -> Get.Recursive(model, nameChain, b.Binding)
+    | Lazy b -> Get.Recursive(model, nameChain, b.Binding)
+    | WrapDispatch b -> Get.Recursive(b.Get model, nameChain, b.Binding)
+
+
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
@@ -745,7 +752,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          match binding.TryGetMember(currentModel, nameChain) with
+          match Get.Recursive(currentModel, nameChain, binding) with
           | Ok v ->
               result <- v
               true
