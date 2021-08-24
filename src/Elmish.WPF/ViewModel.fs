@@ -398,7 +398,7 @@ and internal VmBinding2
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
-  member this.InitializeBase<'model, 'msg>
+  member _.InitializeBase<'model, 'msg>
       (initialModel: 'model,
        getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
