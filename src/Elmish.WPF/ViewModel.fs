@@ -249,18 +249,6 @@ and internal VmBinding<'model, 'msg> =
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
       //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
 
-    member this.TrySetMember(model: 'model, value: obj) : bool =
-      match this with
-      | BaseVmBinding b -> b.TrySetMember(model, value)
-      | Cached b ->
-          let successful = b.Binding.TrySetMember(model, value)
-          if successful then
-            b.Cache := None  // TODO #185: write test
-          successful
-      | Validatation b -> b.Binding.TrySetMember(model, value)
-      | Lazy b -> b.Binding.TrySetMember(model, value)
-      | WrapDispatch b -> b.Binding.TrySetMember(b.Get model, value)
-
 
 and internal Initialize
       (log: ILogger,
@@ -666,6 +654,21 @@ and internal Get(nameChain: string) =
     | WrapDispatch b -> this.Recursive(b.Get model, b.Binding)
 
 
+and internal Set(value: obj) =
+
+  member this.Recursive<'model, 'msg>(model: 'model, binding: VmBinding<'model, 'msg>) : bool =
+    match binding with
+    | BaseVmBinding b -> b.TrySetMember(model, value)
+    | Cached b ->
+        let successful = this.Recursive(model, b.Binding)
+        if successful then
+          b.Cache := None  // TODO #185: write test
+        successful
+    | Validatation b -> this.Recursive(model, b.Binding)
+    | Lazy b -> this.Recursive(model, b.Binding)
+    | WrapDispatch b -> this.Recursive(b.Get model, b.Binding)
+
+
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
@@ -773,7 +776,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          let success = binding.TrySetMember(currentModel, value)
+          let success = Set(value).Recursive(currentModel, binding)
           if not success then
             log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
           success
