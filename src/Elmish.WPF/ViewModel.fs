@@ -543,26 +543,26 @@ and internal VmBinding2<'model, 'msg>
        dispatch: 'msg -> unit,
        binding: BindingData<'model, 'msg>) =
 
-  member _.Initalize() : VmBinding<'model, 'msg> option =
+  member _.Initialize() : VmBinding<'model, 'msg> option =
     let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
     match binding with
     | BaseBindingData d -> BaseVmBinding2.Initialize(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d)
     | CachingData d ->
-        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d).Initialize()
         |> Option.map (fun b -> b.AddCaching)
     | ValidationData d ->
         let d = d |> BindingData.Validation.measureFunctions measure
-        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initialize()
         |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
     | LazyData d ->
         let d = d |> BindingData.Lazy.measureFunctions measure
-        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, getCurrentModel, dispatch, d.BindingData).Initialize()
         |> Option.map (fun b -> b.AddLazy d.Equals)
     | WrapDispatchData d ->
         let initialModel' : obj = d.Get initialModel
         let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
         let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
-        VmBinding2<obj, obj>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel', getCurrentModel', dispatch', d.BindingData).Initalize()
+        VmBinding2<obj, obj>(log, logPerformance, performanceLogThresholdMs, name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel', getCurrentModel', dispatch', d.BindingData).Initialize()
         |> Option.map (fun b ->
           { Binding = b
             Get = d.Get
@@ -722,7 +722,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, b.Name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data).Initalize()
+        VmBinding2<'model, 'msg>(log, logPerformance, performanceLogThresholdMs, b.Name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem, initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data).Initialize()
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
