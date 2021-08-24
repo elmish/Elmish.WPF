@@ -625,17 +625,17 @@ and internal Initialize
 
 
 /// Updates the binding and returns a list indicating what events to raise for this binding
-and internal Update() =
+and internal Update
+    (name: string,
+     nameChain: string,
+     getNameChainFor: string -> string,
+     getNameChainForItem: string -> string -> string,
+     performanceLogThresholdMs: int,
+     log: ILogger,
+     logPerformance: ILogger) =
 
-  static member Recursive<'model, 'msg>
-      (name: string,
-       nameChain: string,
-       getNameChainFor: string -> string,
-       getNameChainForItem: string -> string -> string,
-       performanceLogThresholdMs: int,
-       log: ILogger,
-       logPerformance: ILogger,
-       currentModel: 'model,
+  member this.Recursive<'model, 'msg>
+      (currentModel: 'model,
        newModel: 'model,
        dispatch: 'msg -> unit,
        binding: VmBinding<'model, 'msg>)
@@ -643,13 +643,13 @@ and internal Update() =
     match binding with
       | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
       | Cached b ->
-          let updates = Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+          let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache := None)
           updates
       | Validatation b ->
-          let updates = Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+          let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
           let newErrors = b.Validate newModel
           if !b.Errors <> newErrors then
             b.Errors := newErrors
@@ -660,9 +660,9 @@ and internal Update() =
           if b.Equals currentModel newModel then
             []
           else
-            Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+            this.Recursive(currentModel, newModel, dispatch, b.Binding)
       | WrapDispatch b ->
-          Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
+          this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -734,7 +734,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, binding))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance).Recursive(currentModel, newModel, dispatch, binding))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
