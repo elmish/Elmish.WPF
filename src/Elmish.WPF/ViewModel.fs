@@ -385,7 +385,7 @@ and internal BaseVmBinding<'model, 'msg> =
     | SubModelSeqKeyed _ ->
         false
 
-and internal VmBinding2
+and internal Initialize
       (log: ILogger,
        logPerformance: ILogger,
        performanceLogThresholdMs: int,
@@ -398,7 +398,7 @@ and internal VmBinding2
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
-  member _.InitializeBase<'model, 'msg>
+  member _.Base<'model, 'msg>
       (initialModel: 'model,
        getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
@@ -527,7 +527,7 @@ and internal VmBinding2
               |> BaseVmBinding
               |> (fun b -> b.AddCaching))
 
-  member this.Initialize<'model, 'msg>
+  member this.Recursive<'model, 'msg>
       (initialModel: 'model,
        getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
@@ -535,23 +535,23 @@ and internal VmBinding2
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
-      | BaseBindingData d -> return! this.InitializeBase(initialModel, getCurrentModel, dispatch, d)
+      | BaseBindingData d -> return! this.Base(initialModel, getCurrentModel, dispatch, d)
       | CachingData d ->
-          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d)
+          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d)
           return b.AddCaching
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
-          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
+          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d.BindingData)
           return b.AddValidation (getCurrentModel ()) d.Validate
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
-          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
+          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d.BindingData)
           return b.AddLazy d.Equals
       | WrapDispatchData d ->
           let initialModel' : obj = d.Get initialModel
           let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
           let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
-          let! b = this.Initialize(initialModel', getCurrentModel', dispatch', d.BindingData)
+          let! b = this.Recursive(initialModel', getCurrentModel', dispatch', d.BindingData)
           return { Binding = b
                    Get = d.Get
                    Dispatch = dispatch' }
@@ -711,8 +711,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        VmBinding2(log, logPerformance, performanceLogThresholdMs, nameChain, getNameChainFor, getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
-          .Initialize(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
+        Initialize(log, logPerformance, performanceLogThresholdMs, nameChain, getNameChainFor, getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
