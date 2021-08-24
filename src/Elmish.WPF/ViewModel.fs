@@ -187,29 +187,6 @@ and internal BaseVmBinding<'model, 'msg> =
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
-  member this.TrySetMember (model: 'model, value: obj) =
-    match this with
-    | TwoWay b ->
-        b.Set value model
-        true
-    | OneWayToSource b ->
-        b.Set value model
-        true
-    | SubModelSelectedItem b ->
-        let bindingModel =
-          (value :?> ViewModel<obj, obj>)
-          |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> vm.CurrentModel)
-        b.TrySetMember(model, bindingModel)
-        true
-    | OneWay _
-    | OneWaySeq _
-    | Cmd _
-    | SubModel _
-    | SubModelWin _
-    | SubModelSeqUnkeyed _
-    | SubModelSeqKeyed _ ->
-        false
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
@@ -655,10 +632,34 @@ and internal Get(nameChain: string) =
 
 
 and internal Set(value: obj) =
+  
+  member _.Base(model: 'model, binding: BaseVmBinding<'model, 'msg>) =
+    match binding with
+    | TwoWay b ->
+        b.Set value model
+        true
+    | OneWayToSource b ->
+        b.Set value model
+        true
+    | SubModelSelectedItem b ->
+        let bindingModel =
+          (value :?> ViewModel<obj, obj>)
+          |> ValueOption.ofObj
+          |> ValueOption.map (fun vm -> vm.CurrentModel)
+        b.TrySetMember(model, bindingModel)
+        true
+    | OneWay _
+    | OneWaySeq _
+    | Cmd _
+    | SubModel _
+    | SubModelWin _
+    | SubModelSeqUnkeyed _
+    | SubModelSeqKeyed _ ->
+        false
 
   member this.Recursive<'model, 'msg>(model: 'model, binding: VmBinding<'model, 'msg>) : bool =
     match binding with
-    | BaseVmBinding b -> b.TrySetMember(model, value)
+    | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
         let successful = this.Recursive(model, b.Binding)
         if successful then
