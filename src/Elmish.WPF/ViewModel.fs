@@ -645,11 +645,10 @@ and internal Update
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
-and internal Get() =
+and internal Get(nameChain: string) =
 
-  static member Recursive<'model, 'msg>
+  member this.Recursive<'model, 'msg>
       (model: 'model,
-       nameChain: string,
        binding: VmBinding<'model, 'msg>)
       : Result<obj, GetError> =
     match binding with
@@ -658,12 +657,12 @@ and internal Get() =
         match !b.Cache with
         | Some v -> v |> Ok
         | None ->
-            let x = Get.Recursive(model, nameChain, b.Binding)
+            let x = this.Recursive(model, b.Binding)
             x |> Result.iter (fun v -> b.Cache := Some v)
             x
-    | Validatation b -> Get.Recursive(model, nameChain, b.Binding)
-    | Lazy b -> Get.Recursive(model, nameChain, b.Binding)
-    | WrapDispatch b -> Get.Recursive(b.Get model, nameChain, b.Binding)
+    | Validatation b -> this.Recursive(model, b.Binding)
+    | Lazy b -> this.Recursive(model, b.Binding)
+    | WrapDispatch b -> this.Recursive(b.Get model, b.Binding)
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
@@ -752,7 +751,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          match Get.Recursive(currentModel, nameChain, binding) with
+          match Get(nameChain).Recursive(currentModel, binding) with
           | Ok v ->
               result <- v
               true
