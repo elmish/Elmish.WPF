@@ -423,43 +423,6 @@ and internal VmBinding<'model, 'msg> =
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
       //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
 
-    /// Updates the binding and returns a list indicating what events to raise for this binding
-    member this.Update
-        (name: string,
-         nameChain: string,
-         getNameChainFor: string -> string,
-         getNameChainForItem: string -> string -> string,
-         performanceLogThresholdMs: int,
-         log: ILogger,
-         logPerformance: ILogger,
-         currentModel: 'model,
-         newModel: 'model,
-         dispatch: 'msg -> unit)
-        : UpdateData list =
-      match this with
-        | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-        | Cached b ->
-            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-            updates
-            |> List.filter UpdateData.isPropertyChanged
-            |> List.iter (fun _ -> b.Cache := None)
-            updates
-        | Validatation b ->
-            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-            let newErrors = b.Validate newModel
-            if !b.Errors <> newErrors then
-              b.Errors := newErrors
-              ErrorsChanged name :: updates
-            else
-              updates
-        | Lazy b ->
-            if b.Equals currentModel newModel then
-              []
-            else
-              b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-        | WrapDispatch b ->
-            b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch)
-
     member this.TryGetMember(model: 'model, nameChain: string) : Result<obj, GetError> =
       match this with
       | BaseVmBinding b -> b.TryGetMember(model, nameChain)
@@ -661,6 +624,47 @@ and internal Initialize
     }
 
 
+/// Updates the binding and returns a list indicating what events to raise for this binding
+and internal Update() =
+
+  static member Recursive<'model, 'msg>
+      (name: string,
+       nameChain: string,
+       getNameChainFor: string -> string,
+       getNameChainForItem: string -> string -> string,
+       performanceLogThresholdMs: int,
+       log: ILogger,
+       logPerformance: ILogger,
+       currentModel: 'model,
+       newModel: 'model,
+       dispatch: 'msg -> unit,
+       binding: VmBinding<'model, 'msg>)
+      : UpdateData list =
+    match binding with
+      | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+      | Cached b ->
+          let updates = Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+          updates
+          |> List.filter UpdateData.isPropertyChanged
+          |> List.iter (fun _ -> b.Cache := None)
+          updates
+      | Validatation b ->
+          let updates = Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+          let newErrors = b.Validate newModel
+          if !b.Errors <> newErrors then
+            b.Errors := newErrors
+            ErrorsChanged name :: updates
+          else
+            updates
+      | Lazy b ->
+          if b.Equals currentModel newModel then
+            []
+          else
+            Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, b.Binding)
+      | WrapDispatch b ->
+          Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
+
+
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
@@ -730,7 +734,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update.Recursive(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch, binding))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
