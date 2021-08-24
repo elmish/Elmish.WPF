@@ -389,10 +389,10 @@ and internal VmBinding2
       (log: ILogger,
        logPerformance: ILogger,
        performanceLogThresholdMs: int,
-       name: string,
        nameChain: string,
        getNameChainFor: string -> string,
        getNameChainForItem: string -> string -> string,
+       name: string,
        getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
   
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
@@ -711,7 +711,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        VmBinding2(log, logPerformance, performanceLogThresholdMs, b.Name, nameChain, getNameChainFor, getNameChainForItem, getFunctionsForSubModelSelectedItem)
+        VmBinding2(log, logPerformance, performanceLogThresholdMs, nameChain, getNameChainFor, getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
           .Initialize(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
