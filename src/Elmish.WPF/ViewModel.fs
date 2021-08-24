@@ -187,37 +187,6 @@ and internal BaseVmBinding<'model, 'msg> =
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
 
-  member this.TryGetMember (model: 'model, nameChain: string) =
-    match this with
-    | OneWay { OneWayData = d } -> d.Get model |> Ok
-    | TwoWay b -> b.Get model |> Ok
-    | OneWayToSource _ -> GetError.OneWayToSource |> Error
-    | OneWaySeq { Values = vals } -> vals |> box |> Ok
-    | Cmd cmd -> cmd |> box |> Ok
-    | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> Ok
-    | SubModelWin { VmWinState = vm } ->
-        !vm
-        |> WindowState.toVOption
-        |> ValueOption.map box
-        |> ValueOption.toObj
-        |> Ok
-    | SubModelSeqUnkeyed { Vms = vms }
-    | SubModelSeqKeyed { Vms = vms } -> vms |> box |> Ok
-    | SubModelSelectedItem b ->
-        b.TryGetMember model
-        |> function
-          | ValueNone -> ValueNone |> Ok // deselecting successful
-          | ValueSome (id, mVm) ->
-              match mVm with
-              | Some vm -> (id, vm) |> ValueSome |> Ok // selecting successful
-              | None -> // selecting failed
-                  { NameChain = nameChain
-                    SubModelSeqBindingName = b.SubModelSeqBindingName
-                    Id = id.ToString() }
-                  |> GetError.SubModelSelectedItem
-                  |> Error
-        |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
-
   member this.TrySetMember (model: 'model, value: obj) =
     match this with
     | TwoWay b ->
@@ -647,12 +616,44 @@ and internal Update
 
 and internal Get(nameChain: string) =
 
+  member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg>) =
+    match binding with
+    | OneWay { OneWayData = d } -> d.Get model |> Ok
+    | TwoWay b -> b.Get model |> Ok
+    | OneWayToSource _ -> GetError.OneWayToSource |> Error
+    | OneWaySeq { Values = vals } -> vals |> box |> Ok
+    | Cmd cmd -> cmd |> box |> Ok
+    | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> Ok
+    | SubModelWin { VmWinState = vm } ->
+        !vm
+        |> WindowState.toVOption
+        |> ValueOption.map box
+        |> ValueOption.toObj
+        |> Ok
+    | SubModelSeqUnkeyed { Vms = vms }
+    | SubModelSeqKeyed { Vms = vms } -> vms |> box |> Ok
+    | SubModelSelectedItem b ->
+        b.TryGetMember model
+        |> function
+          | ValueNone -> ValueNone |> Ok // deselecting successful
+          | ValueSome (id, mVm) ->
+              match mVm with
+              | Some vm -> (id, vm) |> ValueSome |> Ok // selecting successful
+              | None -> // selecting failed
+                  { NameChain = nameChain
+                    SubModelSeqBindingName = b.SubModelSeqBindingName
+                    Id = id.ToString() }
+                  |> GetError.SubModelSelectedItem
+                  |> Error
+        |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
+
+
   member this.Recursive<'model, 'msg>
       (model: 'model,
        binding: VmBinding<'model, 'msg>)
       : Result<obj, GetError> =
     match binding with
-    | BaseVmBinding b -> b.TryGetMember(model, nameChain)
+    | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
         match !b.Cache with
         | Some v -> v |> Ok
