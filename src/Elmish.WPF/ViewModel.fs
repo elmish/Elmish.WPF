@@ -385,6 +385,108 @@ and internal BaseVmBinding<'model, 'msg> =
     | SubModelSeqKeyed _ ->
         false
 
+/// Represents all necessary data used in an active binding.
+and internal VmBinding<'model, 'msg> =
+  | BaseVmBinding of BaseVmBinding<'model, 'msg>
+  | Cached of CachedBinding<'model, 'msg, obj>
+  | Validatation of ValidationBinding<'model, 'msg>
+  | Lazy of LazyBinding<'model, 'msg>
+  | WrapDispatch of WrapDispatchBinding<'model, obj, obj>
+
+  with
+
+    member this.AddCaching = Cached { Binding = this; Cache = ref None }
+    member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
+    member this.AddValidation currentModel validate =
+      { Binding = this
+        Validate = validate
+        Errors = currentModel |> validate |> ref }
+      |> Validatation
+
+    member this.GetFuncsFromSubModelSeqKeyed =
+      let baseCase = function
+      | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
+      | _ -> None
+      let rec recursiveCase = function
+      | BaseVmBinding b -> baseCase b
+      | Cached b -> recursiveCase b.Binding
+      | Validatation b -> recursiveCase b.Binding
+      | Lazy b -> recursiveCase b.Binding
+      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
+      recursiveCase this
+
+    member this.FirstValidation =
+      match this with
+      | BaseVmBinding _ -> None
+      | Cached b -> b.Binding.FirstValidation
+      | Lazy b -> b.Binding.FirstValidation
+      | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
+      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
+
+    /// Updates the binding and returns a list indicating what events to raise for this binding
+    member this.Update
+        (name: string,
+         nameChain: string,
+         getNameChainFor: string -> string,
+         getNameChainForItem: string -> string -> string,
+         performanceLogThresholdMs: int,
+         log: ILogger,
+         logPerformance: ILogger,
+         currentModel: 'model,
+         newModel: 'model,
+         dispatch: 'msg -> unit)
+        : UpdateData list =
+      match this with
+        | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+        | Cached b ->
+            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+            updates
+            |> List.filter UpdateData.isPropertyChanged
+            |> List.iter (fun _ -> b.Cache := None)
+            updates
+        | Validatation b ->
+            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+            let newErrors = b.Validate newModel
+            if !b.Errors <> newErrors then
+              b.Errors := newErrors
+              ErrorsChanged name :: updates
+            else
+              updates
+        | Lazy b ->
+            if b.Equals currentModel newModel then
+              []
+            else
+              b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
+        | WrapDispatch b ->
+            b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch)
+
+    member this.TryGetMember(model: 'model, nameChain: string) : Result<obj, GetError> =
+      match this with
+      | BaseVmBinding b -> b.TryGetMember(model, nameChain)
+      | Cached b ->
+          match !b.Cache with
+          | Some v -> v |> Ok
+          | None ->
+              let x = b.Binding.TryGetMember(model, nameChain)
+              x |> Result.iter (fun v -> b.Cache := Some v)
+              x
+      | Validatation b -> b.Binding.TryGetMember(model, nameChain)
+      | Lazy b -> b.Binding.TryGetMember(model, nameChain)
+      | WrapDispatch b -> b.Binding.TryGetMember(b.Get model, nameChain)
+
+    member this.TrySetMember(model: 'model, value: obj) : bool =
+      match this with
+      | BaseVmBinding b -> b.TrySetMember(model, value)
+      | Cached b ->
+          let successful = b.Binding.TrySetMember(model, value)
+          if successful then
+            b.Cache := None  // TODO #185: write test
+          successful
+      | Validatation b -> b.Binding.TrySetMember(model, value)
+      | Lazy b -> b.Binding.TrySetMember(model, value)
+      | WrapDispatch b -> b.Binding.TrySetMember(b.Get model, value)
+
+
 and internal Initialize
       (log: ILogger,
        logPerformance: ILogger,
@@ -557,107 +659,6 @@ and internal Initialize
                    Dispatch = dispatch' }
                  |> WrapDispatch
     }
-
-/// Represents all necessary data used in an active binding.
-and internal VmBinding<'model, 'msg> =
-  | BaseVmBinding of BaseVmBinding<'model, 'msg>
-  | Cached of CachedBinding<'model, 'msg, obj>
-  | Validatation of ValidationBinding<'model, 'msg>
-  | Lazy of LazyBinding<'model, 'msg>
-  | WrapDispatch of WrapDispatchBinding<'model, obj, obj>
-
-  with
-
-    member this.AddCaching = Cached { Binding = this; Cache = ref None }
-    member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
-    member this.AddValidation currentModel validate =
-      { Binding = this
-        Validate = validate
-        Errors = currentModel |> validate |> ref }
-      |> Validatation
-
-    member this.GetFuncsFromSubModelSeqKeyed =
-      let baseCase = function
-      | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
-      | _ -> None
-      let rec recursiveCase = function
-      | BaseVmBinding b -> baseCase b
-      | Cached b -> recursiveCase b.Binding
-      | Validatation b -> recursiveCase b.Binding
-      | Lazy b -> recursiveCase b.Binding
-      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
-      recursiveCase this
-
-    member this.FirstValidation =
-      match this with
-      | BaseVmBinding _ -> None
-      | Cached b -> b.Binding.FirstValidation
-      | Lazy b -> b.Binding.FirstValidation
-      | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
-      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
-
-    /// Updates the binding and returns a list indicating what events to raise for this binding
-    member this.Update
-        (name: string,
-         nameChain: string,
-         getNameChainFor: string -> string,
-         getNameChainForItem: string -> string -> string,
-         performanceLogThresholdMs: int,
-         log: ILogger,
-         logPerformance: ILogger,
-         currentModel: 'model,
-         newModel: 'model,
-         dispatch: 'msg -> unit)
-        : UpdateData list =
-      match this with
-        | BaseVmBinding b -> b.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-        | Cached b ->
-            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-            updates
-            |> List.filter UpdateData.isPropertyChanged
-            |> List.iter (fun _ -> b.Cache := None)
-            updates
-        | Validatation b ->
-            let updates = b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-            let newErrors = b.Validate newModel
-            if !b.Errors <> newErrors then
-              b.Errors := newErrors
-              ErrorsChanged name :: updates
-            else
-              updates
-        | Lazy b ->
-            if b.Equals currentModel newModel then
-              []
-            else
-              b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, currentModel, newModel, dispatch)
-        | WrapDispatch b ->
-            b.Binding.Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance, b.Get currentModel, b.Get newModel, b.Dispatch)
-
-    member this.TryGetMember(model: 'model, nameChain: string) : Result<obj, GetError> =
-      match this with
-      | BaseVmBinding b -> b.TryGetMember(model, nameChain)
-      | Cached b ->
-          match !b.Cache with
-          | Some v -> v |> Ok
-          | None ->
-              let x = b.Binding.TryGetMember(model, nameChain)
-              x |> Result.iter (fun v -> b.Cache := Some v)
-              x
-      | Validatation b -> b.Binding.TryGetMember(model, nameChain)
-      | Lazy b -> b.Binding.TryGetMember(model, nameChain)
-      | WrapDispatch b -> b.Binding.TryGetMember(b.Get model, nameChain)
-
-    member this.TrySetMember(model: 'model, value: obj) : bool =
-      match this with
-      | BaseVmBinding b -> b.TrySetMember(model, value)
-      | Cached b ->
-          let successful = b.Binding.TrySetMember(model, value)
-          if successful then
-            b.Cache := None  // TODO #185: write test
-          successful
-      | Validatation b -> b.Binding.TrySetMember(model, value)
-      | Lazy b -> b.Binding.TrySetMember(model, value)
-      | WrapDispatch b -> b.Binding.TrySetMember(b.Get model, value)
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
