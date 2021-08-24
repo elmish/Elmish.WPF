@@ -394,6 +394,9 @@ and internal VmBinding2
        getNameChainFor: string -> string,
        getNameChainForItem: string -> string -> string,
        getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
+  
+  let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
+  let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
   member this.InitializeBase<'model, 'msg>
       (initialModel: 'model,
@@ -401,8 +404,6 @@ and internal VmBinding2
        dispatch: 'msg -> unit,
        binding: BaseBindingData<'model, 'msg>)
       : VmBinding<'model, 'msg> option =
-    let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
-    let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
     match binding with
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
@@ -532,7 +533,6 @@ and internal VmBinding2
        dispatch: 'msg -> unit,
        binding: BindingData<'model, 'msg>)
       : VmBinding<'model, 'msg> option =
-    let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
     option {
       match binding with
       | BaseBindingData d -> return! this.InitializeBase(initialModel, getCurrentModel, dispatch, d)
