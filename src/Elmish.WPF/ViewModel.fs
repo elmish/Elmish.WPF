@@ -490,8 +490,7 @@ and internal VmBinding2
             |> Seq.indexed
             |> Seq.map (fun (idx, m) ->
                  let chain = getNameChainForItem name (idx |> string)
-                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            )
+                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
             |> ObservableCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
@@ -506,8 +505,7 @@ and internal VmBinding2
             |> Seq.map (fun m ->
                  let mId = d.GetId m
                  let chain = getNameChainForItem name (mId |> string)
-                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-            )
+                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
             |> ObservableCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
