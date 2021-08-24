@@ -535,29 +535,30 @@ and internal VmBinding2
        binding: BindingData<'model, 'msg>)
       : VmBinding<'model, 'msg> option =
     let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
-    match binding with
-    | BaseBindingData d -> this.InitializeBase(initialModel, getCurrentModel, dispatch, d)
-    | CachingData d ->
-        this.Initialize(initialModel, getCurrentModel, dispatch, d)
-        |> Option.map (fun b -> b.AddCaching)
-    | ValidationData d ->
-        let d = d |> BindingData.Validation.measureFunctions measure
-        this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
-        |> Option.map (fun b -> b.AddValidation (getCurrentModel ()) d.Validate)
-    | LazyData d ->
-        let d = d |> BindingData.Lazy.measureFunctions measure
-        this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
-        |> Option.map (fun b -> b.AddLazy d.Equals)
-    | WrapDispatchData d ->
-        let initialModel' : obj = d.Get initialModel
-        let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
-        let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
-        this.Initialize(initialModel', getCurrentModel', dispatch', d.BindingData)
-        |> Option.map (fun b ->
-          { Binding = b
-            Get = d.Get
-            Dispatch = dispatch' }
-          |> WrapDispatch)
+    option {
+      match binding with
+      | BaseBindingData d -> return! this.InitializeBase(initialModel, getCurrentModel, dispatch, d)
+      | CachingData d ->
+          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d)
+          return b.AddCaching
+      | ValidationData d ->
+          let d = d |> BindingData.Validation.measureFunctions measure
+          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
+          return b.AddValidation (getCurrentModel ()) d.Validate
+      | LazyData d ->
+          let d = d |> BindingData.Lazy.measureFunctions measure
+          let! b = this.Initialize(initialModel, getCurrentModel, dispatch, d.BindingData)
+          return b.AddLazy d.Equals
+      | WrapDispatchData d ->
+          let initialModel' : obj = d.Get initialModel
+          let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
+          let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
+          let! b = this.Initialize(initialModel', getCurrentModel', dispatch', d.BindingData)
+          return { Binding = b
+                   Get = d.Get
+                   Dispatch = dispatch' }
+                 |> WrapDispatch
+    }
 
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
