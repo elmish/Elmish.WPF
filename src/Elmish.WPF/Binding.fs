@@ -114,7 +114,6 @@ and internal WrapDispatchData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatc
     this.WrapDispatch dispatch'
 
 
-/// Represents all necessary data used to create the different binding types.
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model>
   | OneWayToSourceData of OneWayToSourceData<'model, 'msg>
@@ -128,7 +127,6 @@ and internal BaseBindingData<'model, 'msg> =
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
 
-/// Represents all necessary data used to create the different binding types.
 and internal BindingData<'model, 'msg> =
   | BaseBindingData of BaseBindingData<'model, 'msg>
   | CachingData of BindingData<'model, 'msg>
@@ -162,7 +160,7 @@ module internal Helpers =
   let rec getFirstLazyData = function
     | BaseBindingData _ -> None
     | LazyData d -> Some d
-    | CachingData d -> getFirstLazyData d
+    | CachingData d -> getFirstLazyData d 
     | ValidationData d -> getFirstLazyData d.BindingData
     //| WrapDispatchData _ -> getFirstLazyData d.BindingData
 
