@@ -1390,20 +1390,17 @@ module WrapDispatch =
 
   [<Fact>]
   let ``dispatch wrapper only invoked once when set called twice`` () =
-    Property.check <| property {
-      let! name = GenX.auto<string>
-      let! m = GenX.auto<int>
+    let name = ""
+    let model = 0
+    let get = ignore
+    let set _ _ = ()
+    let wrapDispatch = InvokeTester id
+    let binding =
+      twoWay get set ""
+      |> Binding.addWrapDispatch wrapDispatch.Fn
+    let vm = TestVm(model, binding)
 
-      let get = string<int>
-      let set _ _ = ()
-      let wrapDispatch = InvokeTester id
-      let binding =
-        twoWay get set name
-        |> Binding.addWrapDispatch wrapDispatch.Fn
-      let vm = TestVm(m, binding)
+    vm.Set name ()
+    vm.Set name ()
 
-      vm.Set name ()
-      vm.Set name ()
-
-      test <@ 1 = wrapDispatch.Count @>
-  }
+    test <@ 1 = wrapDispatch.Count @>
