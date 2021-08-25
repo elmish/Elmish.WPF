@@ -12,6 +12,13 @@ module Helpers =
   let fail _ = failwith "Placeholder function was invoked"
   let fail2 _ _ = failwith "Placeholder function was invoked"
 
+  let rec internal getBaseBindingData = function
+    | BaseBindingData d -> d
+    | CachingData d -> getBaseBindingData d
+    | ValidationData d -> getBaseBindingData d.BindingData
+    | LazyData d -> getBaseBindingData d.BindingData
+    | WrapDispatchData _ -> raise (System.NotSupportedException()) // hack: reasonable because this is test code and the tests don't currently use this case
+
   let internal getOneWayData f =
     match getBaseBindingData (f "").Data with
     | OneWayData d -> d

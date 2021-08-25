@@ -149,13 +149,6 @@ module internal Helpers =
     { Name = name
       Data = data }
 
-  let rec getBaseBindingData = function
-    | BaseBindingData d -> d
-    | CachingData d -> getBaseBindingData d
-    | ValidationData d -> getBaseBindingData d.BindingData
-    | LazyData d -> getBaseBindingData d.BindingData
-    //| WrapDispatchData _ -> getBaseBindingData d.BindingData
-
 
 module internal BindingData =
 
