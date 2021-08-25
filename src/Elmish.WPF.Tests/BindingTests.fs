@@ -17,7 +17,7 @@ module internal Helpers =
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
-    | WrapDispatchData _ -> raise (System.NotSupportedException()) // hack: reasonable because this is test code and the tests don't currently use this case
+    | AlterMsgStreamData _ -> raise (System.NotSupportedException()) // hack: reasonable because this is test code and the tests don't currently use this case
 
   let getOneWayData f =
     match getBaseBindingData (f "").Data with

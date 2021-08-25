@@ -43,7 +43,7 @@ let batch (dispatch: 'a list -> unit) : 'a -> unit =
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
   "Increment" |> Binding.cmd Increment
-  "Decrement" |> Binding.cmd Decrement |> Binding.addWrapDispatch batch |> Binding.mapMsg CompositeMsg
+  "Decrement" |> Binding.cmd Decrement |> Binding.alterMsgStream batch |> Binding.mapMsg CompositeMsg
   "StepSize" |> Binding.twoWay(
     (fun m -> float m.StepSize),
     int >> SetStepSize)

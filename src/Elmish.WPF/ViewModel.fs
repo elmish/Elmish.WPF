@@ -168,7 +168,7 @@ and internal LazyBinding<'model, 'msg> = {
   Equals: 'model -> 'model -> bool
 }
 
-and internal WrapDispatchBinding<'model, 'bindingModel, 'bindingMsg> = {
+and internal AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
   Binding: VmBinding<'bindingModel, 'bindingMsg>
   Get: 'model -> 'bindingModel
   Dispatch: 'bindingMsg -> unit
@@ -194,7 +194,7 @@ and internal VmBinding<'model, 'msg> =
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
   | Lazy of LazyBinding<'model, 'msg>
-  | WrapDispatch of WrapDispatchBinding<'model, obj, obj>
+  | AlterMsgStream of AlterMsgStreamBinding<'model, obj, obj>
 
   with
 
@@ -216,7 +216,7 @@ and internal FirstValidationErrors() =
     | BaseVmBinding _ -> None
     | Cached b -> this.Recursive b.Binding
     | Lazy b -> this.Recursive b.Binding
-    | WrapDispatch b -> this.Recursive b.Binding
+    | AlterMsgStream b -> this.Recursive b.Binding
     | Validatation b -> b.Errors |> Some // TODO: what if there is more than one validation effect?
 
 
@@ -235,7 +235,7 @@ and internal FuncsFromSubModelSeqKeyed() =
     | Cached b -> this.Recursive b.Binding
     | Validatation b -> this.Recursive b.Binding
     | Lazy b -> this.Recursive b.Binding
-    | WrapDispatch b -> this.Recursive b.Binding
+    | AlterMsgStream b -> this.Recursive b.Binding
 
 
 and internal Initialize
@@ -400,7 +400,7 @@ and internal Initialize
           let d = d |> BindingData.Lazy.measureFunctions measure
           let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d.BindingData)
           return b.AddLazy d.Equals
-      | WrapDispatchData d ->
+      | AlterMsgStreamData d ->
           let initialModel' : obj = d.Get initialModel
           let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
           let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
@@ -408,7 +408,7 @@ and internal Initialize
           return { Binding = b
                    Get = d.Get
                    Dispatch = dispatch' }
-                 |> WrapDispatch
+                 |> AlterMsgStream
     }
 
 
@@ -586,7 +586,7 @@ and internal Update
             []
           else
             this.Recursive(currentModel, newModel, dispatch, b.Binding)
-      | WrapDispatch b ->
+      | AlterMsgStream b ->
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
@@ -639,7 +639,7 @@ and internal Get(nameChain: string) =
             x
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(model, b.Binding)
-    | WrapDispatch b -> this.Recursive(b.Get model, b.Binding)
+    | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
 and internal Set(value: obj) =
@@ -678,7 +678,7 @@ and internal Set(value: obj) =
         successful
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(model, b.Binding)
-    | WrapDispatch b -> this.Recursive(b.Get model, b.Binding)
+    | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>

@@ -100,9 +100,9 @@ and internal LazyData<'model, 'msg> =
     Equals: 'model -> 'model -> bool }
 
 
-and internal WrapDispatchData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
+and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
  { BindingData: BindingData<'bindingModel, 'bindingMsg>
-   WrapDispatch: ('dispatchMsg -> unit) -> 'bindingMsg -> unit
+   AlterMsgStream: ('dispatchMsg -> unit) -> 'bindingMsg -> unit
    Get: 'model -> 'bindingModel
    Set: 'dispatchMsg -> 'model -> 'msg }
 
@@ -111,7 +111,7 @@ and internal WrapDispatchData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatc
        dispatch: 'msg -> unit)
        : 'bindingMsg -> unit =
     let dispatch' (dMsg: 'dispatchMsg) = getCurrentModel () |> this.Set dMsg |> dispatch
-    this.WrapDispatch dispatch'
+    this.AlterMsgStream dispatch'
 
 
 and internal BaseBindingData<'model, 'msg> =
@@ -132,7 +132,7 @@ and internal BindingData<'model, 'msg> =
   | CachingData of BindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
   | LazyData of LazyData<'model, 'msg>
-  | WrapDispatchData of WrapDispatchData<'model, 'msg, obj, obj, obj>
+  | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
 
 
 /// Represents all necessary data used to create a binding.
@@ -162,7 +162,7 @@ module internal BindingData =
         | CachingData d -> recrusiveCase d
         | ValidationData d -> recrusiveCase d.BindingData
         | LazyData d -> recrusiveCase d.BindingData
-        //| WrapDispatchData d -> recrusiveCase d.BindingData
+        //| AlterMsgStreamData d -> recrusiveCase d.BindingData
       recrusiveCase
     (getComparisonNumber a) - (getComparisonNumber b)
 
@@ -231,9 +231,9 @@ module internal BindingData =
           BindingData = recursiveCase d.BindingData
           Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
         }
-      | WrapDispatchData d -> WrapDispatchData {
+      | AlterMsgStreamData d -> AlterMsgStreamData {
           BindingData = d.BindingData
-          WrapDispatch = d.WrapDispatch
+          AlterMsgStream = d.AlterMsgStream
           Get = f >> d.Get
           Set = binaryHelper d.Set
         }
@@ -295,9 +295,9 @@ module internal BindingData =
           BindingData = recursiveCase d.BindingData
           Equals = d.Equals
         }
-      | WrapDispatchData d -> WrapDispatchData {
+      | AlterMsgStreamData d -> AlterMsgStreamData {
           BindingData = d.BindingData
-          WrapDispatch = d.WrapDispatch
+          AlterMsgStream = d.AlterMsgStream
           Get = d.Get
           Set = fun bMsg m -> f (d.Set bMsg m) m
         }
@@ -311,19 +311,19 @@ module internal BindingData =
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
-  let addWrapDispatch
-      (wrapDispatch: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
+  let alterMsgStream
+      (alteration: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
       (b: BindingData<'bindingModel, 'bindingMsg>)
       : BindingData<'model, 'msg> =
     { BindingData = b |> mapModel unbox |> mapMsg box
-      WrapDispatch =
+      AlterMsgStream =
         fun (f: obj -> unit) ->
           let f' = box >> f
-          let g = wrapDispatch f'
+          let g = alteration f'
           unbox >> g
       Get = box
       Set = fun (dMsg: obj) _ -> unbox dMsg }
-    |> WrapDispatchData
+    |> AlterMsgStreamData
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
@@ -354,8 +354,8 @@ module internal BindingData =
     let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
     let addValidation vaidate = vaidate |> addValidation |> mapData
     let addLazy equals = equals |> addLazy |> mapData
-    let addWrapDispatch wrapDispatch = wrapDispatch |> addWrapDispatch |> mapData
     let addSticky predicate =  predicate |> addSticky |> mapData
+    let alterMsgStream alteration = alteration |> alterMsgStream |> mapData
 
 
   module Bindings =
@@ -808,18 +808,29 @@ module Binding =
     |> BindingData.Binding.addLazy equals
 
   /// <summary>
-  ///   Accepts a dispatch wrapping function.
-  ///   This can be used to debounce, throttle, or limit this binding.
-  ///   If more than one dispatching wrapping is added to a single binding,
-  ///   then the dispatch wrapping functions are called in order
-  ///   starting with the outer most or last such function and
-  ///   finishing with the inner most or first such function.
+  ///   Accepts a function that can alter the message stream.
+  ///   Ideally suited for use with Reactive Extensions.
+  ///   <code>
+  ///     open FSharp.Control.Reactive
+  ///     let delay dispatch =
+  ///       let subject = Subject.broadcast
+  ///       let observable = subject :&gt; System.IObservable&lt;_&gt;
+  ///       observable
+  ///       |&gt; Observable.delay (System.TimeSpan.FromSeconds 1.0)
+  ///       |&gt; Observable.subscribe dispatch
+  ///       |&gt; ignore
+  ///       subject.OnNext
+  ///
+  ///     // ...
+  ///
+  ///     binding |&gt; Binding.alterMsgStream delay
+  ///   </code>
   /// </summary>
-  /// <param name="wrapDispatch">The function that will wrap the dispatch function.</param>
-  /// <param name="binding">The binding to which the dispatch wrapping is added.</param>
-  let addWrapDispatch (wrapDispatch: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
+  /// <param name="alteration">The function that will alter the message stream.</param>
+  /// <param name="binding">The binding to which the message stream is altered.</param>
+  let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
     binding
-    |> BindingData.Binding.addWrapDispatch wrapDispatch
+    |> BindingData.Binding.alterMsgStream alteration
 
 
   module OneWay =

@@ -1386,21 +1386,21 @@ module SubModelSelectedItem =
 
 
 
-module WrapDispatch =
+module AlterMsgStream =
 
   [<Fact>]
-  let ``dispatch wrapper only invoked once when set called twice`` () =
+  let ``message stream alteration only invoked once when set called twice`` () =
     let name = ""
     let model = 0
     let get = ignore
     let set _ _ = ()
-    let wrapDispatch = InvokeTester id
+    let alteration = InvokeTester id
     let binding =
       twoWay get set ""
-      |> Binding.addWrapDispatch wrapDispatch.Fn
+      |> Binding.alterMsgStream alteration.Fn
     let vm = TestVm(model, binding)
 
     vm.Set name ()
     vm.Set name ()
 
-    test <@ 1 = wrapDispatch.Count @>
+    test <@ 1 = alteration.Count @>
