@@ -206,13 +206,18 @@ and internal VmBinding<'model, 'msg> =
         Errors = currentModel |> validate |> ref }
       |> Validatation
 
-    member this.FirstValidation =
-      match this with
-      | BaseVmBinding _ -> None
-      | Cached b -> b.Binding.FirstValidation
-      | Lazy b -> b.Binding.FirstValidation
-      | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
-      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
+
+and internal FirstValidationErrors() =
+
+  member this.Recursive<'model, 'msg>
+      (binding: VmBinding<'model, 'msg>)
+      : string list ref option =
+    match binding with
+    | BaseVmBinding _ -> None
+    | Cached b -> this.Recursive b.Binding
+    | Lazy b -> this.Recursive b.Binding
+    | WrapDispatch b -> this.Recursive b.Binding
+    | Validatation b -> b.Errors |> Some // TODO: what if there is more than one validation effect?
 
 
 and internal FuncsFromSubModelSeqKeyed() =
@@ -706,7 +711,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
-  let (bindings, validationBindings) =
+  let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let getFunctionsForSubModelSelectedItem name =
@@ -731,11 +736,11 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           .Recursive(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
-    let validationDict = Dictionary<string, ValidationBinding<'model, 'msg>>()
-    //bindingDict
-    //|> Seq.map (Pair.ofKvp >> Pair.mapAll Some (fun x -> x.FirstValidation) >> PairOption.sequence)
-    //|> SeqOption.somes
-    //|> Seq.iter validationDict.Add
+    let validationDict = Dictionary<string, string list ref>()
+    bindingDict
+    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (FirstValidationErrors().Recursive) >> PairOption.sequence)
+    |> SeqOption.somes
+    |> Seq.iter validationDict.Add
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
@@ -801,15 +806,15 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member _.ErrorsChanged = errorsChanged.Publish
     member _.HasErrors =
       // WPF calls this too often, so don't log https://github.com/elmish/Elmish.WPF/issues/354
-      validationBindings
-      |> Seq.map (fun (Kvp(_, b)) -> !b.Errors)
+      validationErrors
+      |> Seq.map (fun (Kvp(_, errors)) -> !errors)
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member _.GetErrors name =
       let name = name |> Option.ofObj |> Option.defaultValue "<null>" // entity-level errors are being requested when given null or ""  https://docs.microsoft.com/en-us/dotnet/api/system.componentmodel.inotifydataerrorinfo.geterrors#:~:text=null%20or%20Empty%2C%20to%20retrieve%20entity-level%20errors
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, name)
-      validationBindings
+      validationErrors
       |> IReadOnlyDictionary.tryFind name
-      |> Option.map (fun b -> !b.Errors)
+      |> Option.map (fun errors -> !errors)
       |> Option.defaultValue []
       |> (fun x -> upcast x)
