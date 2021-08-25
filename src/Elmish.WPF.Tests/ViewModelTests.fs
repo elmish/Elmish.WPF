@@ -1392,8 +1392,7 @@ module WrapDispatch =
   let ``dispatch wrapper only invoked once when set called twice`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
-      let! m1 = GenX.auto<int>
-      let! m2 = GenX.auto<int>
+      let! m = GenX.auto<int>
 
       let get = string<int>
       let set _ _ = ()
@@ -1401,7 +1400,7 @@ module WrapDispatch =
       let binding =
         twoWay get set name
         |> Binding.addWrapDispatch wrapDispatch.Fn
-      let vm = TestVm(m1, binding)
+      let vm = TestVm(m, binding)
 
       vm.Set name ()
       vm.Set name ()
