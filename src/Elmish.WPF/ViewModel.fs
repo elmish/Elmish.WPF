@@ -207,6 +207,29 @@ and internal VmBinding<'model, 'msg> =
       |> Validatation
 
 
+and internal SubModelSelectedItemLast() =
+
+  member _.Base(data: BaseBindingData<'model, 'msg>) : int =
+    match data with
+    | SubModelSelectedItemData _ -> 1
+    | _ -> 0
+
+  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg>) : int =
+    match data with
+    | BaseBindingData d -> this.Base d
+    | CachingData d -> this.Recursive d
+    | ValidationData d -> this.Recursive d.BindingData
+    | LazyData d -> this.Recursive d.BindingData
+    | AlterMsgStreamData d -> this.Recursive d.BindingData
+
+  member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
+    fun a b -> this.Recursive(a) - this.Recursive(b)
+
+  member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
+    fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
+    
+
+
 and internal FirstValidationErrors() =
 
   member this.Recursive<'model, 'msg>
@@ -727,7 +750,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
                   None
     let sortedBindings =
       bindings
-      //|> List.sortWith Binding.subModelSelectedItemLast
+      |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)

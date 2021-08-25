@@ -3052,7 +3052,7 @@ module sorting =
             SubModelSeqKeyedData { GetSubModels = fail; GetId = fail; GetBindings = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ] |> List.map BaseBindingData
-        let sorted = data |> List.sortWith BindingData.subModelSelectedItemLast
+        let sorted = data |> List.sortWith (SubModelSelectedItemLast().CompareBindingDatas())
         match sorted with
         | [_; BaseBindingData (SubModelSelectedItemData _); BaseBindingData (SubModelSelectedItemData _)] -> ()
         | _ -> failwith "SubModelSelectedItemData was not sorted last"

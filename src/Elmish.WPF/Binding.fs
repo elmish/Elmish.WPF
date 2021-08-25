@@ -152,20 +152,6 @@ module internal Helpers =
 
 module internal BindingData =
 
-  let subModelSelectedItemLast a b =
-    let getComparisonNumber =
-      let baseCase = function
-        | SubModelSelectedItemData _ -> 1
-        | _ -> 0
-      let rec recrusiveCase = function
-        | BaseBindingData d -> baseCase d
-        | CachingData d -> recrusiveCase d
-        | ValidationData d -> recrusiveCase d.BindingData
-        | LazyData d -> recrusiveCase d.BindingData
-        //| AlterMsgStreamData d -> recrusiveCase d.BindingData
-      recrusiveCase
-    (getComparisonNumber a) - (getComparisonNumber b)
-
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
     let baseCase = function
@@ -754,10 +740,6 @@ module Bindings =
 
 
 module Binding =
-
-  let internal subModelSelectedItemLast a b =
-    BindingData.subModelSelectedItemLast a.Data b.Data
-
 
   /// Map the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
