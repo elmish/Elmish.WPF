@@ -7,54 +7,54 @@ open Elmish.WPF
 
 
 [<AutoOpen>]
-module Helpers =
+module internal Helpers =
 
   let fail _ = failwith "Placeholder function was invoked"
   let fail2 _ _ = failwith "Placeholder function was invoked"
 
-  let rec internal getBaseBindingData = function
+  let rec getBaseBindingData = function
     | BaseBindingData d -> d
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
     | WrapDispatchData _ -> raise (System.NotSupportedException()) // hack: reasonable because this is test code and the tests don't currently use this case
 
-  let internal getOneWayData f =
+  let getOneWayData f =
     match getBaseBindingData (f "").Data with
     | OneWayData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getOneWaySeqLazyData f =
+  let getOneWaySeqLazyData f =
     match getBaseBindingData (f "").Data with
     | OneWaySeqLazyData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getTwoWayData f =
+  let getTwoWayData f =
     match getBaseBindingData (f "").Data with
     | TwoWayData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getCmdData f =
+  let getCmdData f =
     match getBaseBindingData (f "").Data with
     | CmdData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getSubModelData f =
+  let getSubModelData f =
     match getBaseBindingData (f "").Data with
     | SubModelData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getSubModelSeqKeyedData f =
+  let getSubModelSeqKeyedData f =
     match getBaseBindingData (f "").Data with
     | SubModelSeqKeyedData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getSubModelSelectedItemData f =
+  let getSubModelSelectedItemData f =
     match getBaseBindingData (f "").Data with
     | SubModelSelectedItemData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let internal getValidationData f =
+  let getValidationData f =
     match f "" with
     | { Data = ValidationData d } -> d
     | _ -> failwith "Incorrect binding"
