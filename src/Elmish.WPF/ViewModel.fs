@@ -206,18 +206,6 @@ and internal VmBinding<'model, 'msg> =
         Errors = currentModel |> validate |> ref }
       |> Validatation
 
-    member this.GetFuncsFromSubModelSeqKeyed =
-      let baseCase = function
-      | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
-      | _ -> None
-      let rec recursiveCase = function
-      | BaseVmBinding b -> baseCase b
-      | Cached b -> recursiveCase b.Binding
-      | Validatation b -> recursiveCase b.Binding
-      | Lazy b -> recursiveCase b.Binding
-      //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
-      recursiveCase this
-
     member this.FirstValidation =
       match this with
       | BaseVmBinding _ -> None
@@ -225,6 +213,24 @@ and internal VmBinding<'model, 'msg> =
       | Lazy b -> b.Binding.FirstValidation
       | Validatation b -> b |> Some // TODO: what if there is more than one validation effect?
       //| WrapDispatch _ -> failwith "Some WrapDispatch support still lacking"
+
+
+and internal FuncsFromSubModelSeqKeyed() =
+
+  member _.Base(binding: BaseVmBinding<'model, 'msg>) =
+    match binding with
+    | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
+    | _ -> None
+
+  member this.Recursive<'model, 'msg>
+      (binding: VmBinding<'model, 'msg>)
+      : ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option =
+    match binding with
+    | BaseVmBinding b -> this.Base b
+    | Cached b -> this.Recursive b.Binding
+    | Validatation b -> this.Recursive b.Binding
+    | Lazy b -> this.Recursive b.Binding
+    | WrapDispatch b -> this.Recursive b.Binding
 
 
 and internal Initialize
@@ -708,7 +714,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Dictionary.tryFind name 
       |> function
         | Some b ->
-          match b.GetFuncsFromSubModelSeqKeyed with
+          match FuncsFromSubModelSeqKeyed().Recursive(b) with
           | Some x -> Some x
           | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
                     None
