@@ -29,21 +29,10 @@ let rec update msg m =
   | Reset -> init
   | CompositeMsg msgs -> msgs |> List.map update |> List.fold (>>) id <| m
 
-open FSharp.Control.Reactive
-let batch (dispatch: 'a list -> unit) : 'a -> unit =
-  let subject = Subject.broadcast
-  let observable = subject :> System.IObservable<_>
-  observable
-  |> Observable.bufferCount 2
-  |> Observable.map Seq.toList
-  |> Observable.subscribe dispatch
-  |> ignore
-  subject.OnNext
-
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
   "Increment" |> Binding.cmd Increment
-  "Decrement" |> Binding.cmd Decrement |> Binding.alterMsgStream batch |> Binding.mapMsg CompositeMsg
+  "Decrement" |> Binding.cmd Decrement
   "StepSize" |> Binding.twoWay(
     (fun m -> float m.StepSize),
     int >> SetStepSize)
