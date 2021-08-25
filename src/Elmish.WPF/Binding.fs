@@ -156,9 +156,7 @@ module internal Helpers =
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
     | LazyData d -> getBaseBindingData d.BindingData
-    | WrapDispatchData _ ->
-        //getBaseBindingData d.BindingData
-        failwith "Some WrapDispatch support still lacking"
+    //| WrapDispatchData _ -> getBaseBindingData d.BindingData
 
 
   let rec getFirstLazyData = function
@@ -166,9 +164,7 @@ module internal Helpers =
     | LazyData d -> Some d
     | CachingData d -> getFirstLazyData d
     | ValidationData d -> getFirstLazyData d.BindingData
-    | WrapDispatchData _ ->
-        //getFirstLazyData d.BindingData
-        failwith "Some WrapDispatch support still lacking"
+    //| WrapDispatchData _ -> getFirstLazyData d.BindingData
 
 
 module internal BindingData =
