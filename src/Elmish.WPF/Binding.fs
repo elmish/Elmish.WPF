@@ -51,7 +51,7 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
     SubModelSeqBindingName: string }
 
 
-and internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   GetModel: 'model -> 'bindingModel voption
   GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
   ToMsg: 'model -> 'bindingMsg -> 'msg
