@@ -196,7 +196,7 @@ The answer is that there are actually two variants of the `update` function: For
 update: 'msg -> 'model -> 'model * Cmd<'msg>
 ```
 
-What is a command, you ask? It’s simply the “top level” of three type aliases:
+What is a `Cmd<'msg>`, you ask? It’s simply the “top level” of three type aliases:
 
 ```f#
 type Dispatch<'msg> = 'msg -> unit
@@ -204,9 +204,9 @@ type Sub<'msg> = Dispatch<'msg> -> unit
 type Cmd<'msg> = Sub<'msg> list
 ```
 
-We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it to the MVU update loop so that it ends up in `update`.
+We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it to the MVU framework so that it ends up being passed into `update`.
 
-The next alias, `Sub<'msg>` (short for “subscription”) is simply a function that accepts a dispatcher and returns `unit`. This function can then dispatch whatever messages it wants when it wants, e.g. by setting up event subscriptions.
+The next alias, `Sub<'msg>` (short for “subscription”) is simply a function that accepts a dispatcher and returns `unit`. This function can then dispatch whatever messages it wants whenever it wants, e.g. by setting up event subscriptions.
 
 For example, here is such a function that, when called, will start dispatching a `SetTime` message every second. The whole `timerTick` function (without applying `dispatch`) has the signature `Sub<Msg>`:
 
@@ -219,17 +219,17 @@ let timerTick (dispatch: Dispatch<Msg>) =
 
 This is the kind of function that you pass to `Program.withSubscription`, which allows you to start arbitrary non-UI message dispatchers when the app starts. For example, you can start timers (as shown above), subscribe to other non-UI events, start a `MailboxProcessor`, etc.
 
-The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU update loop will execute. These functions, as you saw above, can dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the call there (likely using `async`), and use the `dispatch` argument to dispatch a message when you receive a response.
+The final alias, `Cmd<'msg>`, is just a list of `Sub<'msg>`, i.e. a list of `Dispatch<'msg> -> unit` functions. In other words, the `update` function can return a list of `Dispatch<'msg> -> unit` functions that the MVU framework will execute by providing a dispatch function. These functions, as you saw above, can then dispatch any message at any time. Therefore, if you need to do impure stuff such as calling a web API, you simply create a function accepting `dispatch`, perform the work within it, and then use the `dispatch` argument (provided by the MVU framework) to dispatch further messages (e.g. representing the result of the action) into the MVU event loop.
 
-In other words, you don’t call the impure functions yourself; the MVU library calls them for you. Furthermore, from the point of view of your model, everything happens asynchronously (in the sense that your app and update loop continues without waiting on a response, and reacts to the “response” message when it arrives).
+In other words, the `Cmd<'msg>` returned by `update` will be invoked by the MVU framework. From the point of view of your model, everything happens asynchronously: the MVU update loop executes the command and continues without waiting for it to complete, and the command may dispatch future messages into the event loop at any time.
 
 For example:
 
 - The user clicks a button to log in, which dispatches a `SignInRequested` message
-- The `update` function returns a new model with an `IsBusy = true` value (which can be to show an animation such as a spinner) as well as a command that actually calls the API
-- The MVU loop calls the command
-- The app continues to work normally - the spinner spins because `IsBusy = true`, and any other messages are processed as they would normally be. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`; for example, you may choose to ignore additional `SignInRequested` messages.
-- When the API call returns, the function that called the API dispatches a suitable message based on the result (e.g. `SignInSuccessful` or `SignInFailed`)
+- The `update` function returns a new model with an `IsBusy = true` value (which can be used to show an animation such as a spinner) as well as a command that asynchronously calls the API and, when the API responds, dispatches a message representing the response (e.g. `SignInSuccessful` or `SignInFailed`).
+- The MVU framework updates the view using the new model and invokes the command by executing each function in the list with a `dispatch` function.
+- The app continues to work as normal - the spinner spins because `IsBusy = true` and any other messages are processed as normal. Note that you are of course free to process messages differently based on the fact that `IsBusy = true`. For example, you may choose to ignore additional `SignInRequested` messages.
+- When the API call finally returns, and the function that called the API uses its `dispatch` argument to dispatch a suitable message (e.g. `SignInSuccessful` or `SignInFailed`).
 
 Elmish has several helpers in the `Cmd` module to easily create commands from normal functions, but if they don’t suit your use-case, you can always write a command directly as a list of `Dispatch<'msg> -> unit` functions.
 
@@ -238,7 +238,7 @@ Some MVU tips for beginners
 
 ### Normalize your model; use IDs instead of duplicating entities
 
-It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This opens up for state synchronization bugs.
+It is generally recommended that you aggressively normalize your model. This is because everything is (normally) immutable, so if a single entity occurs multiple places in your model and that entity should be updated, it must be updated every place it occurs. This increases the chance of introducing state synchronization bugs.
 
 For example, say you have an app that can display a list of books, and you can click on a book in the list to open a detail view of that book. You might think to represent it with the following model:
 
