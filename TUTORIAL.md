@@ -204,7 +204,7 @@ type Sub<'msg> = Dispatch<'msg> -> unit
 type Cmd<'msg> = Sub<'msg> list
 ```
 
-We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it to the MVU update loop so that it ends up in `update`.
+We have encountered `Dispatch<'msg>` previously. It is the type of the `dispatch` argument to the normal MVU `view` function. It is simply an alias for a function that accepts a message and sends it to the MVU update loop so that it ends up being passed into `update`.
 
 The next alias, `Sub<'msg>` (short for “subscription”) is simply a function that accepts a dispatcher and returns `unit`. This function can then dispatch whatever messages it wants whenever it wants, e.g. by setting up event subscriptions.
 
