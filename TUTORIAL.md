@@ -190,7 +190,7 @@ This is yet another part of MVU that is not in the name. Not to be confused with
 
 Think about it: If the update function must be pure, how can we do side effects like making an HTTP call or reading from disk? Or alternatively, if we decided to make `update` impure (which is possible in F#, but not in Elm) and do some long-running IO there, wouldn’t that block the whole app (since the update loop can only process one message at a time for concurrency reasons)?
 
-The answer is that there are actually two variants of the `update` function: For apps that are able to respond immediately to the UI, as shown above, you can create the simple version of the `update` function which returns a new model. For apps with responses that may delay the `update` function they can instead return a new model along with command functions that encapsulate the long running activity, as follows:
+The answer is that there are actually two variants of the `update` function: For very simple apps, as shown above, you can use the simple `update` version that just returns the new model. For more complex apps that need to use commands, the `update` function can return both the new model and a command in a tuple:
 
 ```f#
 update: 'msg -> 'model -> 'model * Cmd<'msg>
