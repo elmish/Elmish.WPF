@@ -276,31 +276,27 @@ and internal Initialize
        getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
        binding: BaseBindingData<'model, 'msg>)
-      : VmBinding<'model, 'msg> option =
+      : BaseVmBinding<'model, 'msg> option =
     match binding with
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
           |> OneWay
-          |> BaseVmBinding
           |> Some
       | OneWayToSourceData d ->
           let d = d |> BindingData.OneWayToSource.measureFunctions measure
           { Set = fun obj m -> d.Set obj m |> dispatch }
           |> OneWayToSource
-          |> BaseVmBinding
           |> Some
       | OneWaySeqLazyData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
             Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
           |> OneWaySeq
-          |> BaseVmBinding
           |> Some
       | TwoWayData d ->
           let d = d |> BindingData.TwoWay.measureFunctions measure measure
           { Get = d.Get
             Set = fun obj m -> d.Set obj m |> dispatch }
           |> TwoWay
-          |> BaseVmBinding
           |> Some
       | CmdData d ->
           let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
@@ -311,7 +307,6 @@ and internal Initialize
             cmd.AddRequeryHandler ()
           cmd
           |> Cmd
-          |> BaseVmBinding
           |> Some
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
@@ -320,7 +315,6 @@ and internal Initialize
           |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
-          |> BaseVmBinding
           |> Some
       | SubModelWinData d ->
           let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
@@ -354,7 +348,6 @@ and internal Initialize
                 PreventClose = preventClose
                 VmWinState = ref <| WindowState.Visible vm }
           |> SubModelWin
-          |> BaseVmBinding
           |> Some
       | SubModelSeqUnkeyedData d ->
           let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
@@ -369,7 +362,6 @@ and internal Initialize
           { SubModelSeqUnkeyedData = d
             Vms = vms }
           |> SubModelSeqUnkeyed
-          |> BaseVmBinding
           |> Some
       | SubModelSeqKeyedData d ->
           let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
@@ -384,7 +376,6 @@ and internal Initialize
           { SubModelSeqKeyedData = d
             Vms = vms }
           |> SubModelSeqKeyed
-          |> BaseVmBinding
           |> Some
       | SubModelSelectedItemData d ->
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
@@ -396,8 +387,7 @@ and internal Initialize
                 SubModelSeqBindingName = d.SubModelSeqBindingName
                 GetId = getId
                 FromId = fromId }
-              |> SubModelSelectedItem
-              |> BaseVmBinding)
+              |> SubModelSelectedItem)
 
   member this.Recursive<'model, 'msg>
       (initialModel: 'model,
@@ -407,7 +397,9 @@ and internal Initialize
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
-      | BaseBindingData d -> return! this.Base(initialModel, getCurrentModel, dispatch, d)
+      | BaseBindingData d ->
+          let! b = this.Base(initialModel, getCurrentModel, dispatch, d)
+          return BaseVmBinding b
       | CachingData d ->
           let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d)
           return b.AddCaching
