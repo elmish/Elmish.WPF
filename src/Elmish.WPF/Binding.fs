@@ -2480,6 +2480,7 @@ type Binding private () =
        set: 'id voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSelectedItem.vopt subModelSeqBindingName
+    >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
 
@@ -2516,6 +2517,7 @@ type Binding private () =
        set: 'id option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSelectedItem.opt subModelSeqBindingName
+    >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
 
@@ -3051,6 +3053,7 @@ module Extensions =
          set: 'id voption -> 'msg)
         : string -> Binding<'model, 'msg> =
       Binding.SubModelSelectedItem.vopt subModelSeqBindingName
+      >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set
         
@@ -3088,5 +3091,6 @@ module Extensions =
          set: 'id option -> 'msg)
         : string -> Binding<'model, 'msg> =
       Binding.SubModelSelectedItem.opt subModelSeqBindingName
+      >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set

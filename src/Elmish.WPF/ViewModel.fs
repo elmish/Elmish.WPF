@@ -132,15 +132,12 @@ and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, '
     d.Vms
     |> Seq.tryFind (fun vm -> vm.CurrentModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
-and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
     GetId: 'bindingModel -> 'id
     FromId: 'id -> ViewModel<'bindingModel, 'bindingMsg> option }
-
-  member d.DidPropertyChange(currentModel: 'model, newModel: 'model) =
-    d.Get currentModel <> d.Get newModel
 
   member d.TryGetMember (model: 'model) =
     d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.FromId selectedId)
@@ -452,7 +449,8 @@ and internal Update
        binding: BaseVmBinding<'model, 'msg>) =
     match binding with
       | OneWay _
-      | TwoWay _ -> [ PropertyChanged name ]
+      | TwoWay _
+      | SubModelSelectedItem _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
       | OneWaySeq b ->
           b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
@@ -577,10 +575,6 @@ and internal Update
               let create m _ = create m (d.GetId m)
               Merge.unkeyed create update b.Vms newSubModels
           []
-      | SubModelSelectedItem b ->
-          b.DidPropertyChange(currentModel, newModel)
-          |> Option.fromBool (PropertyChanged name)
-          |> Option.toList
 
   member this.Recursive<'model, 'msg>
       (currentModel: 'model,
