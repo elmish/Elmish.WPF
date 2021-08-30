@@ -45,7 +45,7 @@ type internal CmdData<'model, 'msg> = {
 }
 
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id when 'id : equality> =
+type internal SubModelSelectedItemData<'model, 'msg, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
