@@ -495,26 +495,6 @@ module internal BindingData =
 
   module SubModelSelectedItem =
 
-    let mapMinorTypes
-        (outMapId: 'id -> 'id0)
-        (inMapId: 'id0 -> 'id)
-        (d: SubModelSelectedItemData<'model, 'msg, 'id>) = {
-      Get = d.Get >> ValueOption.map outMapId
-      Set = ValueOption.map inMapId >> d.Set
-      SubModelSeqBindingName = d.SubModelSeqBindingName
-    }
-
-    let box d = mapMinorTypes box unbox d
-
-    let create get set subModelSeqBindingName =
-      { Get = get
-        Set = set
-        SubModelSeqBindingName = subModelSeqBindingName }
-      |> box
-      |> SubModelSelectedItemData
-      |> BaseBindingData
-      |> createBinding
-
     let mapFunctions
         mGet
         mSet
@@ -903,6 +883,58 @@ module Binding =
       id<obj>
       >> mapModel BindingData.Option.box
       >> mapMsg BindingData.Option.unbox
+
+
+  module SubModelSelectedItem =
+  
+    /// <summary>
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF view
+    ///   models to/from their corresponding IDs, so the Elmish user code only has
+    ///   to work with the IDs.
+    ///
+    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+    ///   or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when initializing
+    ///   the bindings if <paramref name="subModelSeqBindingName" />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+    ///   throw at runtime if the inferred <c>'id</c> type does not match the
+    ///   actual ID type used in that binding.
+    /// </summary>
+    let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption> =
+      { Get = id
+        Set = fun obj _ -> obj
+        SubModelSeqBindingName = subModelSeqBindingName }
+      |> SubModelSelectedItemData
+      |> BaseBindingData
+      |> createBinding
+      >> mapModel (ValueOption.map box)
+      >> mapMsg (ValueOption.map unbox)
+  
+    /// <summary>
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF view
+    ///   models to/from their corresponding IDs, so the Elmish user code only has
+    ///   to work with the IDs.
+    ///
+    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+    ///   or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when initializing
+    ///   the bindings if <paramref name="subModelSeqBindingName" />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+    ///   throw at runtime if the inferred <c>'id</c> type does not match the
+    ///   actual ID type used in that binding.
+    /// </summary>
+    let opt subModelSeqBindingName : string -> Binding<'id option, 'id option> =
+      vopt subModelSeqBindingName
+      >> mapModel ValueOption.ofOption
+      >> mapMsg ValueOption.toOption
 
 
   module SubModel =
@@ -2447,7 +2479,9 @@ type Binding private () =
        get: 'model -> 'id voption,
        set: 'id voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSelectedItem.create get set subModelSeqBindingName
+    Binding.SubModelSelectedItem.vopt subModelSeqBindingName
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel set
 
 
   /// <summary>
@@ -2481,10 +2515,9 @@ type Binding private () =
        get: 'model -> 'id option,
        set: 'id option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSelectedItem.create
-      (get >> ValueOption.ofOption)
-      (ValueOption.toOption >> set)
-      subModelSeqBindingName
+    Binding.SubModelSelectedItem.opt subModelSeqBindingName
+    >> Binding.mapModel get
+    >> Binding.mapMsgWithModel set
 
 
 
@@ -3017,11 +3050,10 @@ module Extensions =
          get: 'model -> 'id voption,
          set: 'id voption -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.SubModelSelectedItem.create
-        get
-        (fun id _ -> id |> set)
-        subModelSeqBindingName
-
+      Binding.SubModelSelectedItem.vopt subModelSeqBindingName
+      >> Binding.mapModel get
+      >> Binding.mapMsg set
+        
 
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
@@ -3055,7 +3087,6 @@ module Extensions =
          get: 'model -> 'id option,
          set: 'id option -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.SubModelSelectedItem.create
-        (get >> ValueOption.ofOption)
-        (fun id _ -> id |> ValueOption.toOption |> set)
-        subModelSeqBindingName
+      Binding.SubModelSelectedItem.opt subModelSeqBindingName
+      >> Binding.mapModel get
+      >> Binding.mapMsg set

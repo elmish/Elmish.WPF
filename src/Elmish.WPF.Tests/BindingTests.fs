@@ -2905,8 +2905,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! p = GenX.auto<string voption>
+        let get _ = ValueNone
         let set (p: string voption) m = p |> ValueOption.map (fun p -> p.Length + m |> string)
-        let d = Binding.subModelSelectedItem("", (fail: _ -> _ voption), set) |> getSubModelSelectedItemData
+        let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> ValueOption.map box) m = set p m @>
       }
 
@@ -2948,8 +2949,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! p = GenX.auto<string option>
+        let get _ = None
         let set (p: string option) m = p |> Option.map (fun p -> p.Length + m |> string)
-        let d = Binding.subModelSelectedItem("", (fail: _ -> _ option), set) |> getSubModelSelectedItemData
+        let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> Option.map box |> ValueOption.ofOption) m = set p m @>
       }
 
@@ -2991,8 +2993,9 @@ module subModelSelectedItem =
         Property.check <| property {
           let! m = GenX.auto<int>
           let! p = GenX.auto<string voption>
+          let get _ = ValueNone
           let set (p: string voption) = p |> ValueOption.map (fun p -> p.Length |> string)
-          let d = Binding.subModelSelectedItem("", (fail: _ -> _ voption), set) |> getSubModelSelectedItemData
+          let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
           test <@ d.Set (p |> ValueOption.map box) m = set p @>
         }
 
@@ -3034,8 +3037,9 @@ module subModelSelectedItem =
       Property.check <| property {
         let! m = GenX.auto<int>
         let! p = GenX.auto<string option>
+        let get _ = None
         let set (p: string option) = p |> Option.map (fun p -> p.Length |> string)
-        let d = Binding.subModelSelectedItem("", (fail: _ -> _ option), set) |> getSubModelSelectedItemData
+        let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> Option.map box |> ValueOption.ofOption) m = set p @>
       }
 
