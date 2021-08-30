@@ -397,8 +397,7 @@ and internal Initialize
                 GetId = getId
                 FromId = fromId }
               |> SubModelSelectedItem
-              |> BaseVmBinding
-              |> (fun b -> b.AddCaching))
+              |> BaseVmBinding)
 
   member this.Recursive<'model, 'msg>
       (initialModel: 'model,

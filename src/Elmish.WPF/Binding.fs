@@ -2483,6 +2483,7 @@ type Binding private () =
     >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
+    >> Binding.addCaching
 
 
   /// <summary>
@@ -2520,6 +2521,7 @@ type Binding private () =
     >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
+    >> Binding.addCaching
 
 
 
@@ -3056,6 +3058,7 @@ module Extensions =
       >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set
+      >> Binding.addCaching
         
 
     /// <summary>
@@ -3094,3 +3097,4 @@ module Extensions =
       >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set
+      >> Binding.addCaching
