@@ -886,7 +886,7 @@ module Binding =
 
 
   module SubModelSelectedItem =
-  
+
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -913,7 +913,7 @@ module Binding =
       |> createBinding
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
-  
+
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -1262,6 +1262,22 @@ type Binding private () =
     >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
+
+  /// <summary>Creates a two-way binding.</summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWay
+      (get: 'model -> 'a,
+       set: 'a -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWay (get, set)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2576,6 +2592,22 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
 
+    /// <summary>Creates a two-way binding.</summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWay
+        (get: 'model -> 'a,
+         set: 'a -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWay (get, set)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to an optional value. The binding
@@ -3059,7 +3091,7 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addCaching
-        
+
 
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
