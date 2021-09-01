@@ -886,7 +886,7 @@ module Binding =
 
 
   module SubModelSelectedItem =
-
+  
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -913,7 +913,7 @@ module Binding =
       |> createBinding
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
-
+  
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -3091,7 +3091,7 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addCaching
-
+        
 
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
