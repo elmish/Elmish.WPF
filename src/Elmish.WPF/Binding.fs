@@ -1960,6 +1960,27 @@ type Binding private () =
       (exec >> ValueSome)
       canExec
 
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="canExec" />
+  ///   returns <c>true</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="canExec">Indicates whether the command can execute.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdIf
+      (exec: 'model -> 'msg,
+       canExec: 'model -> bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdIf (exec, canExec)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a conditional <c>Command</c> binding that depends only on the
@@ -1975,6 +1996,25 @@ type Binding private () =
       exec
       (exec >> ValueOption.isSome)
 
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
+  ///   returns <c>ValueSome</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdIf
+      (exec: 'model -> 'msg voption,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdIf exec
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a conditional <c>Command</c> binding that depends only on the
@@ -1989,6 +2029,25 @@ type Binding private () =
     BindingData.Cmd.create
       (exec >> ValueOption.ofOption)
       (exec >> Option.isSome)
+
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
+  ///   returns <c>Some</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdIf
+      (exec: 'model -> 'msg option,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdIf exec
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2007,6 +2066,28 @@ type Binding private () =
     BindingData.Cmd.create
       (exec >> ValueOption.ofOk)
       (exec >> Result.isOk)
+
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends only on the
+  ///   model (not the <c>CommandParameter</c>) and can execute if <paramref
+  ///   name="exec" />
+  ///   returns <c>Ok</c>.
+  ///
+  ///   This overload allows more easily re-using the same validation functions
+  ///   for inputs and commands.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdIf
+      (exec: 'model -> Result<'msg, 'ignored>,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdIf exec
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -3635,6 +3716,25 @@ module Extensions =
       BindingData.Cmd.create
         (fun _ -> exec |> ValueSome)
         canExec
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that dispatches the specified message
+    ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="canExec">Indicates whether the command can execute.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdIf
+        (exec: 'msg,
+         canExec: 'model -> bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdIf (exec, canExec)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
