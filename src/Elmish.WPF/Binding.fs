@@ -1552,6 +1552,31 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation validate
 
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation messages from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       validate: 'model -> string list,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
@@ -1574,6 +1599,31 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.toList)
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       validate: 'model -> string voption,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -1598,6 +1648,31 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> Option.toList)
 
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       validate: 'model -> string option,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
@@ -1620,6 +1695,31 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       validate: 'model -> Result<'ignored, string>,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -1644,6 +1744,31 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation validate
 
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation messages from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       validate: 'model -> string list,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
@@ -1666,6 +1791,31 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.toList)
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       validate: 'model -> string voption,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -1690,6 +1840,31 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> Option.toList)
 
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       validate: 'model -> string option,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
@@ -1712,6 +1887,31 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value with validation using
+  ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
+  ///   the optional source value and an unwrapped (possibly <c>null</c>) value
+  ///   on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="validate">
+  ///   Returns the validation message from the updated model.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOptValidate
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       validate: 'model -> Result<'ignored, string>,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOptValidate (get, set, validate)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -3013,6 +3213,31 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation validate
 
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation messages from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
+         validate: 'model -> string list,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
@@ -3035,6 +3260,31 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.toList)
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
+         validate: 'model -> string voption,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -3059,6 +3309,31 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> Option.toList)
 
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
+         validate: 'model -> string option,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
@@ -3081,6 +3356,31 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
+         validate: 'model -> Result<'ignored, string>,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -3105,6 +3405,31 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation validate
 
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation messages from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
+         validate: 'model -> string list,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
@@ -3127,6 +3452,31 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.toList)
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
+         validate: 'model -> string voption,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -3151,6 +3501,31 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> Option.toList)
 
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
+         validate: 'model -> string option,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
@@ -3173,6 +3548,31 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value with validation using
+    ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
+    ///   between the optional source value and an unwrapped (possibly
+    ///   <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="validate">
+    ///   Returns the validation message from the updated model.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOptValidate
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
+         validate: 'model -> Result<'ignored, string>,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOptValidate (get, set, validate)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
