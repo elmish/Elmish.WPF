@@ -2171,11 +2171,11 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg,
        canExec: obj -> 'model -> bool,
-       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, canExec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream wrapDispatch
+    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
 
 
   /// <summary>
@@ -2222,11 +2222,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
-       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream wrapDispatch
+    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
 
 
   /// <summary>
@@ -2273,11 +2273,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
-       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream wrapDispatch
+    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
 
 
   /// <summary>
@@ -2330,11 +2330,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
-       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-       ?uiBoundCmdParam: bool)
+       ?uiBoundCmdParam: bool,
+       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream wrapDispatch
+    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
 
 
   /// <summary>
