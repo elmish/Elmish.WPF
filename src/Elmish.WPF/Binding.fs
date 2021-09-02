@@ -2104,6 +2104,24 @@ type Binding private () =
       (fun _ _ -> true)
       false
 
+  /// <summary>
+  ///   Creates a <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
+  ///   and can always execute.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdParam
+      (exec: obj -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdParam exec
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a <c>Command</c> binding that depends on the
@@ -3750,6 +3768,24 @@ module Extensions =
         (fun p _ -> exec p |> ValueSome)
         (fun _ _ -> true)
         false
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
+    ///   and can always execute.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdParam
+        (exec: obj -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdParam exec
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
