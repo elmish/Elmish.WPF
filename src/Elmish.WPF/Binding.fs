@@ -1296,6 +1296,26 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
 
+  /// <summary>
+  ///   Creates a two-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOpt
+      (get: 'model -> 'a option,
+       set: 'a option -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOpt (get, set)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value. The binding
@@ -1312,6 +1332,26 @@ type Binding private () =
     >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
+
+  /// <summary>
+  ///   Creates a two-way binding to an optional value. The binding
+  ///   automatically converts between the optional source value and an
+  ///   unwrapped (possibly <c>null</c>) value on the view side.
+  /// </summary>
+  /// <param name="get">Gets the value from the model.</param>
+  /// <param name="set">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member twoWayOpt
+      (get: 'model -> 'a voption,
+       set: 'a voption -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.twoWayOpt (get, set)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2632,6 +2672,27 @@ module Extensions =
     /// </summary>
     /// <param name="get">Gets the value from the model.</param>
     /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOpt
+        (get: 'model -> 'a option,
+         set: 'a option -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOpt (get, set)
+      >> Binding.alterMsgStream wrapDispatch
+
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value. The binding
+    ///   automatically converts between the optional source value and an
+    ///   unwrapped (possibly <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
     static member twoWayOpt
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg)
@@ -2640,6 +2701,26 @@ module Extensions =
       >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set
+
+    /// <summary>
+    ///   Creates a two-way binding to an optional value. The binding
+    ///   automatically converts between the optional source value and an
+    ///   unwrapped (possibly <c>null</c>) value on the view side.
+    /// </summary>
+    /// <param name="get">Gets the value from the model.</param>
+    /// <param name="set">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member twoWayOpt
+        (get: 'model -> 'a voption,
+         set: 'a voption -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.twoWayOpt (get, set)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
