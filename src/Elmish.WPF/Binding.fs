@@ -3062,6 +3062,46 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
     >> Binding.addCaching
 
+  /// <summary>
+  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+  ///   the
+  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+  ///   binding. Automatically converts the dynamically created Elmish.WPF view
+  ///   models to/from their corresponding IDs, so the Elmish user code only has
+  ///   to work with the IDs.
+  ///
+  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+  ///   or
+  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+  ///   binding. This binding is less type-safe. It will throw when initializing
+  ///   the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+  ///   throw at runtime if the inferred <c>'id</c> type does not match the
+  ///   actual ID type used in that binding.
+  /// </summary>
+  /// <param name="subModelSeqBindingName">
+  ///   The name of the <see cref="subModelSeq" /> binding used as the items
+  ///   source.
+  /// </param>
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+  /// model.</param>
+  /// <param name="set">
+  ///   Returns the message to dispatch on selections/de-selections.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member subModelSelectedItem
+      (subModelSeqBindingName: string,
+       get: 'model -> 'id voption,
+       set: 'id voption -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
+    >> Binding.alterMsgStream wrapDispatch
+
 
   /// <summary>
   ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
@@ -3099,6 +3139,46 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel set
     >> Binding.addCaching
+
+  /// <summary>
+  ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+  ///   the
+  ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+  ///   binding. Automatically converts the dynamically created Elmish.WPF view
+  ///   models to/from their corresponding IDs, so the Elmish user code only has
+  ///   to work with the IDs.
+  ///
+  ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
+  ///   or
+  ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+  ///   binding. This binding is less type-safe. It will throw when initializing
+  ///   the bindings if <paramref name="subModelSeqBindingName" />
+  ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
+  ///   throw at runtime if the inferred <c>'id</c> type does not match the
+  ///   actual ID type used in that binding.
+  /// </summary>
+  /// <param name="subModelSeqBindingName">
+  ///   The name of the <see cref="subModelSeq" /> binding used as the items
+  ///   source.
+  /// </param>
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+  /// model.</param>
+  /// <param name="set">
+  ///   Returns the message to dispatch on selections/de-selections.
+  /// </param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member subModelSelectedItem
+      (subModelSeqBindingName: string,
+       get: 'model -> 'id option,
+       set: 'id option -> 'model -> 'msg,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
+    >> Binding.alterMsgStream wrapDispatch
 
 
 
@@ -4152,7 +4232,48 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addCaching
-        
+
+    /// <summary>
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF
+    ///   view models to/from their corresponding IDs, so the Elmish user code
+    ///   only has to work with the IDs.
+    ///
+    ///   Only use this if you are unable to use some kind of
+    ///   <c>SelectedValue</c> or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when
+    ///   initializing the bindings if <paramref name="subModelSeqBindingName"
+    ///   />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
+    ///   will throw at runtime if the inferred <c>'id</c> type does not
+    ///   match the actual ID type used in that binding.
+    /// </summary>
+    /// <param name="subModelSeqBindingName">
+    ///   The name of the <see cref="subModelSeq" /> binding used as the items
+    ///   source.
+    /// </param>
+    /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+    /// model.</param>
+    /// <param name="set">
+    ///   Returns the message to dispatch on selections/de-selections.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member subModelSelectedItem
+        (subModelSeqBindingName: string,
+         get: 'model -> 'id voption,
+         set: 'id voption -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
+      >> Binding.alterMsgStream wrapDispatch
+
 
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
@@ -4191,3 +4312,44 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addCaching
+
+    /// <summary>
+    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    ///   the
+    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    ///   binding. Automatically converts the dynamically created Elmish.WPF
+    ///   view models to/from their corresponding IDs, so the Elmish user code
+    ///   only has to work with the IDs.
+    ///
+    ///   Only use this if you are unable to use some kind of
+    ///   <c>SelectedValue</c> or
+    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    ///   binding. This binding is less type-safe. It will throw when
+    ///   initializing the bindings if <paramref name="subModelSeqBindingName"
+    ///   />
+    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it
+    ///   will throw at runtime if the inferred <c>'id</c> type does not
+    ///   match the actual ID type used in that binding.
+    /// </summary>
+    /// <param name="subModelSeqBindingName">
+    ///   The name of the <see cref="subModelSeq" /> binding used as the items
+    ///   source.
+    /// </param>
+    /// <param name="get">Gets the selected sub-model/sub-binding ID from the
+    /// model.</param>
+    /// <param name="set">
+    ///   Returns the message to dispatch on selections/de-selections.
+    /// </param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member subModelSelectedItem
+        (subModelSeqBindingName: string,
+         get: 'model -> 'id option,
+         set: 'id option -> 'msg,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
+      >> Binding.alterMsgStream wrapDispatch
