@@ -1699,7 +1699,7 @@ module cmdIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdIf(fail, fail)
+        let binding = bindingName |> Binding.cmdIf(fail, fail, id)
         test <@ binding.Name = bindingName @>
       }
 
