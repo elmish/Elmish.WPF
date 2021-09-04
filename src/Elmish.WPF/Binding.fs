@@ -886,7 +886,7 @@ module Binding =
 
 
   module SubModelSelectedItem =
-  
+
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -913,7 +913,7 @@ module Binding =
       |> createBinding
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
-  
+
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -2175,7 +2175,7 @@ type Binding private () =
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, canExec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
   /// <summary>
@@ -2226,7 +2226,7 @@ type Binding private () =
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
   /// <summary>
@@ -2277,7 +2277,7 @@ type Binding private () =
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
   /// <summary>
@@ -2334,7 +2334,7 @@ type Binding private () =
        ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
   /// <summary>
@@ -4029,7 +4029,7 @@ module Extensions =
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
       Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
     /// <summary>
@@ -4080,7 +4080,7 @@ module Extensions =
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
       Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
     /// <summary>
@@ -4137,7 +4137,7 @@ module Extensions =
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
       Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
     /// <summary>
@@ -4192,7 +4192,7 @@ module Extensions =
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
       Binding.cmdParamIf (exec, canExec, defaultArg uiBoundCmdParam false)
-      >> Binding.alterMsgStream (defaultArg wrapDispatch id)
+      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
 
 
     /// <summary>
