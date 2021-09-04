@@ -1857,7 +1857,7 @@ module cmdParamIf =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.cmdParamIf(fail, fail)
+        let binding = bindingName |> Binding.cmdParamIf(fail, fail, id)
         test <@ binding.Name = bindingName @>
       }
 
@@ -1891,7 +1891,7 @@ module cmdParamIf =
     [<Fact>]
     let ``final autoRequery defaults to false`` () =
       Property.check <| property {
-        let d = Binding.cmdParamIf(fail, fail) |> getCmdData
+        let d = Binding.cmdParamIf(fail, fail, id) |> getCmdData
         test <@ d.AutoRequery = false @>
       }
 
@@ -1900,7 +1900,7 @@ module cmdParamIf =
     let ``final autoRequery equals original uiBoundCmdParam`` () =
       Property.check <| property {
         let! uiBoundCmdParam = GenX.auto<bool>
-        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam = uiBoundCmdParam) |> getCmdData
+        let d = Binding.cmdParamIf(fail, fail, uiBoundCmdParam, id) |> getCmdData
         test <@ d.AutoRequery = uiBoundCmdParam @>
       }
 

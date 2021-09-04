@@ -2155,6 +2155,26 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="canExec">Indicates whether the command can execute.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdParamIf
+      (exec: obj -> 'model -> 'msg,
+       canExec: obj -> 'model -> bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdParamIf (exec, canExec)
+    >> Binding.alterMsgStream wrapDispatch
+
+  /// <summary>
+  ///   Creates a <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
+  ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="canExec">Indicates whether the command can execute.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
   ///   <c>CommandManager</c>
@@ -2171,11 +2191,11 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg,
        canExec: obj -> 'model -> bool,
-       ?uiBoundCmdParam: bool,
-       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+       uiBoundCmdParam: bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
-    Binding.cmdParamIf (exec, canExec, defaultArg uiBoundCmdParam false)
-    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+    Binding.cmdParamIf (exec, canExec, uiBoundCmdParam)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2207,6 +2227,24 @@ type Binding private () =
   ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdParamIf
+      (exec: obj -> 'model -> 'msg voption,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdParamIf exec
+    >> Binding.alterMsgStream wrapDispatch
+
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
+  ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
   ///   <c>CommandManager</c>
@@ -2222,11 +2260,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
-       ?uiBoundCmdParam: bool,
-       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+       uiBoundCmdParam: bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
-    Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+    Binding.cmdParamIf (exec, uiBoundCmdParam)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2258,6 +2296,24 @@ type Binding private () =
   ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdParamIf
+      (exec: obj -> 'model -> 'msg option,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdParamIf exec
+    >> Binding.alterMsgStream wrapDispatch
+
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
+  ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
   ///   <c>CommandManager</c>
@@ -2273,11 +2329,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
-       ?uiBoundCmdParam: bool,
-       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+       uiBoundCmdParam: bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
-    Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+    Binding.cmdParamIf (exec, uiBoundCmdParam)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -2315,6 +2371,27 @@ type Binding private () =
   ///   for inputs and commands.
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
+  /// <param name="wrapDispatch">
+  ///   Wraps the dispatch function with additional behavior, such as
+  ///   throttling, debouncing, or limiting.
+  /// </param>
+  [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+  static member cmdParamIf
+      (exec: obj -> 'model -> Result<'msg, 'ignored>,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+      : string -> Binding<'model, 'msg> =
+    Binding.cmdParamIf exec
+    >> Binding.alterMsgStream wrapDispatch
+
+  /// <summary>
+  ///   Creates a conditional <c>Command</c> binding that depends on the
+  ///   <c>CommandParameter</c>
+  ///   and can execute if <paramref name="exec" /> returns <c>Ok</c>.
+  ///
+  ///   This overload allows more easily re-using the same validation functions
+  ///   for inputs and commands.
+  /// </summary>
+  /// <param name="exec">Returns the message to dispatch.</param>
   /// <param name="uiBoundCmdParam">
   ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
   ///   <c>CommandManager</c>
@@ -2330,11 +2407,11 @@ type Binding private () =
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
-       ?uiBoundCmdParam: bool,
-       ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+       uiBoundCmdParam: bool,
+       wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
-    Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-    >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+    Binding.cmdParamIf (exec, uiBoundCmdParam)
+    >> Binding.alterMsgStream wrapDispatch
 
 
   /// <summary>
@@ -4010,6 +4087,24 @@ module Extensions =
     ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdParamIf
+        (exec: obj -> 'msg voption,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdParamIf exec
+      >> Binding.alterMsgStream wrapDispatch
+
+    /// <summary>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
+    ///   and can execute if <paramref name="exec" /> returns <c>ValueSome</c>.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
     ///   <c>CommandManager</c>
@@ -4025,11 +4120,11 @@ module Extensions =
     [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
     static member cmdParamIf
         (exec: obj -> 'msg voption,
-         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-         ?uiBoundCmdParam: bool)
+         uiBoundCmdParam: bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
-      Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+      Binding.cmdParamIf (exec, uiBoundCmdParam)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -4061,6 +4156,24 @@ module Extensions =
     ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdParamIf
+        (exec: obj -> 'msg option,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdParamIf exec
+      >> Binding.alterMsgStream wrapDispatch
+
+    /// <summary>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
+    ///   and can execute if <paramref name="exec" /> returns <c>Some</c>.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
     ///   <c>CommandManager</c>
@@ -4076,11 +4189,11 @@ module Extensions =
     [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
     static member cmdParamIf
         (exec: obj -> 'msg option,
-         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-         ?uiBoundCmdParam: bool)
+         uiBoundCmdParam: bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
-      Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+      Binding.cmdParamIf (exec, uiBoundCmdParam)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -4118,6 +4231,27 @@ module Extensions =
     ///   functions for inputs and commands.
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdParamIf
+        (exec: obj -> Result<'msg, 'ignored>,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdParamIf exec
+      >> Binding.alterMsgStream wrapDispatch
+
+    /// <summary>
+    ///   Creates a conditional <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
+    ///   and can execute if <paramref name="exec" /> returns <c>Ok</c>.
+    ///
+    ///   This overload allows more easily re-using the same validation
+    ///   functions for inputs and commands.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
     ///   <c>CommandManager</c>
@@ -4133,11 +4267,11 @@ module Extensions =
     [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
     static member cmdParamIf
         (exec: obj -> Result<'msg, 'ignored>,
-         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-         ?uiBoundCmdParam: bool)
+         uiBoundCmdParam: bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
-      Binding.cmdParamIf (exec, defaultArg uiBoundCmdParam false)
-      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+      Binding.cmdParamIf (exec, uiBoundCmdParam)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
@@ -4172,6 +4306,26 @@ module Extensions =
     /// </summary>
     /// <param name="exec">Returns the message to dispatch.</param>
     /// <param name="canExec">Indicates whether the command can execute.</param>
+    /// <param name="wrapDispatch">
+    ///   Wraps the dispatch function with additional behavior, such as
+    ///   throttling, debouncing, or limiting.
+    /// </param>
+    [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
+    static member cmdParamIf
+        (exec: obj -> 'msg,
+         canExec: obj -> bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
+        : string -> Binding<'model, 'msg> =
+      Binding.cmdParamIf (exec, canExec)
+      >> Binding.alterMsgStream wrapDispatch
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that depends on the
+    ///   <c>CommandParameter</c>
+    ///   and can execute if <paramref name="canExec" /> returns <c>true</c>.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="canExec">Indicates whether the command can execute.</param>
     /// <param name="uiBoundCmdParam">
     ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
     ///   <c>CommandManager</c>
@@ -4188,11 +4342,11 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> 'msg,
          canExec: obj -> bool,
-         ?wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>,
-         ?uiBoundCmdParam: bool)
+         uiBoundCmdParam: bool,
+         wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
-      Binding.cmdParamIf (exec, canExec, defaultArg uiBoundCmdParam false)
-      >> (wrapDispatch |> Option.map Binding.alterMsgStream |> Option.defaultValue id)
+      Binding.cmdParamIf (exec, canExec, uiBoundCmdParam)
+      >> Binding.alterMsgStream wrapDispatch
 
 
     /// <summary>
