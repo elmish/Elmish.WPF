@@ -280,26 +280,25 @@ Before delving into the problems, let’s see how it’s done:
 
 ```f#
 module Child =
-
   type Model = { ... }
   type Msg = ...
   let update msg model = ...
   
 module Parent =
 
-	type Model = {
-	  ...
-	  Child: Child.Model
+  type Model = {
+    ...
+    Child: Child.Model
   }
 
-	type Msg =
-		...
-		| ChildMsg of Child.Msg
+  type Msg =
+    ...
+    | ChildMsg of Child.Msg
 
-	let update msg model =
-		match msg with
-		...
-		| ChildMsg of childMsg -> { model with Child = Child.update childMsg model }
+  let update msg model =
+    match msg with
+    ...
+    | ChildMsg of childMsg -> { model with Child = Child.update childMsg model }
 ```
 
 As you can see, there’s some boilerplate involved in the parent component: You must have a model field for the child model, a wrapping message case for the child message, and an `update` branch that passes the child message on to the child model.
