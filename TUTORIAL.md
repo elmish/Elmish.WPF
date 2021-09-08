@@ -180,7 +180,7 @@ The actual bindings will be explained in detail later, but explained simply, the
 
 - an `int` get-only property `CounterValue` returning `model.Count`
 - two get-only properties `Increment` and `Decrement` that are `ICommand`s that can always execute and, when executed, dispatches the `Increment` and `Decrement` messages, respectively
-- a `float` get-set property `StepSize ` returning `model.StepSize` and which, when set, dispatches the `SetStepSize` message with the number
+- a `float` get-set property `StepSize` returning `model.StepSize` and which, when set, dispatches the `SetStepSize` message with the number
 
 Another important difference between normal MVU `view` functions and Elmish.WPF’s `update`  function is that `view` is called every time the model has been updated, whereas `bindings` is only called once, when the “view model” is initialized. After that, it is the functions used in the bindings themselves that are called when the model is updated. Therefore, `bindings` do not accept a `model` or `dispatch` parameter. The `model` is instead passed separately in each binding, and the `dispatch` isn’t visible at all; you simply specify the message to be dispatched, and Elmish.WPF will take care of dispatching the message.
 
