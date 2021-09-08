@@ -13,7 +13,6 @@ type Msg =
   | Decrement
   | SetStepSize of int
   | Reset
-  | CompositeMsg of Msg list
 
 let init =
   { Count = 0
@@ -21,13 +20,12 @@ let init =
 
 let canReset = (<>) init
 
-let rec update msg m =
+let update msg m =
   match msg with
   | Increment -> { m with Count = m.Count + m.StepSize }
   | Decrement -> { m with Count = m.Count - m.StepSize }
   | SetStepSize x -> { m with StepSize = x }
   | Reset -> init
-  | CompositeMsg msgs -> msgs |> List.map update |> List.fold (>>) id <| m
 
 let bindings () : Binding<Model, Msg> list = [
   "CounterValue" |> Binding.oneWay (fun m -> m.Count)
