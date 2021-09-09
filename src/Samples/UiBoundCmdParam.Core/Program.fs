@@ -27,7 +27,7 @@ let bindings () : Binding<Model, Msg> list = [
   "Limit" |> Binding.twoWay((fun m -> float m.EnabledMaxLimit), int >> SetLimit)
   "Command" |> Binding.cmdParamIf(
     (fun p m -> Command),
-    (fun p m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
+    (fun (p: obj) m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
     true)
 ]
 
