@@ -52,7 +52,7 @@ module internal Helpers2 =
     win.Dispatcher.InvokeAsync(fun () ->
       win.DataContext <- dataContext
       win.Closing.Add(fun ev ->
-        ev.Cancel <- !preventClose
+        ev.Cancel <- preventClose.Value
         getCurrentModel () |> onCloseRequested |> ValueOption.iter dispatch
       )
       if isDialog then
@@ -224,7 +224,7 @@ and internal SubModelSelectedItemLast() =
 
   member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
     fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
-    
+
 
 
 and internal FirstValidationErrors() =
@@ -267,7 +267,7 @@ and internal Initialize
        getNameChainForItem: string -> string -> string,
        name: string,
        getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
-  
+
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
@@ -449,14 +449,14 @@ and internal Update
       | Cmd cmd -> cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
         let d = b.SubModelData
-        match !b.Vm, d.GetModel newModel with
+        match b.Vm.Value, d.GetModel newModel with
         | ValueNone, ValueNone -> []
         | ValueSome _, ValueNone ->
-            b.Vm := ValueNone
+            b.Vm.Value <- ValueNone
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            b.Vm := ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            b.Vm.Value <- ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
@@ -465,7 +465,7 @@ and internal Update
           let d = b.SubModelWinData
           let winPropChain = getNameChainFor name
           let close () =
-            b.PreventClose := false
+            b.PreventClose.Value <- false
             match b.WinRef.TryGetTarget () with
             | false, _ ->
                 log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
@@ -498,14 +498,14 @@ and internal Update
                 w.Dispatcher.Invoke(fun () -> w.Visibility <- Visibility.Visible)
 
           let showNew vm =
-            b.PreventClose := true
+            b.PreventClose.Value <- true
             Helpers2.showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
 
-          match !b.VmWinState, d.GetState newModel with
+          match b.VmWinState.Value, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
               []
           | WindowState.Hidden vm, WindowState.Hidden m
@@ -515,29 +515,29 @@ and internal Update
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
               close ()
-              b.VmWinState := WindowState.Closed
+              b.VmWinState.Value <- WindowState.Closed
               [ PropertyChanged name ]
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               vm.UpdateModel m
-              b.VmWinState := WindowState.Hidden vm
+              b.VmWinState.Value <- WindowState.Hidden vm
               []
           | WindowState.Hidden vm, WindowState.Visible m ->
               vm.UpdateModel m
               showHidden ()
-              b.VmWinState := WindowState.Visible vm
+              b.VmWinState.Value <- WindowState.Visible vm
               []
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden (fun () -> currentModel) dispatch
-              b.VmWinState := WindowState.Hidden vm
+              b.VmWinState.Value <- WindowState.Hidden vm
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm Visibility.Visible (fun () -> currentModel) dispatch
-              b.VmWinState := WindowState.Visible vm
+              b.VmWinState.Value <- WindowState.Visible vm
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
@@ -579,13 +579,13 @@ and internal Update
           let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
           updates
           |> List.filter UpdateData.isPropertyChanged
-          |> List.iter (fun _ -> b.Cache := None)
+          |> List.iter (fun _ -> b.Cache.Value <- None)
           updates
       | Validatation b ->
           let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
           let newErrors = b.Validate newModel
-          if !b.Errors <> newErrors then
-            b.Errors := newErrors
+          if b.Errors.Value <> newErrors then
+            b.Errors.Value <- newErrors
             ErrorsChanged name :: updates
           else
             updates
@@ -607,9 +607,9 @@ and internal Get(nameChain: string) =
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
     | OneWaySeq { Values = vals } -> vals |> box |> Ok
     | Cmd cmd -> cmd |> box |> Ok
-    | SubModel { Vm = vm } -> !vm |> ValueOption.toObj |> box |> Ok
+    | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
     | SubModelWin { VmWinState = vm } ->
-        !vm
+        vm.Value
         |> WindowState.toVOption
         |> ValueOption.map box
         |> ValueOption.toObj
@@ -639,11 +639,11 @@ and internal Get(nameChain: string) =
     match binding with
     | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
-        match !b.Cache with
+        match b.Cache.Value with
         | Some v -> v |> Ok
         | None ->
             let x = this.Recursive(model, b.Binding)
-            x |> Result.iter (fun v -> b.Cache := Some v)
+            x |> Result.iter (fun v -> b.Cache.Value <- Some v)
             x
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(model, b.Binding)
@@ -651,7 +651,7 @@ and internal Get(nameChain: string) =
 
 
 and internal Set(value: obj) =
-  
+
   member _.Base(model: 'model, binding: BaseVmBinding<'model, 'msg>) =
     match binding with
     | TwoWay b ->
@@ -682,7 +682,7 @@ and internal Set(value: obj) =
     | Cached b ->
         let successful = this.Recursive(model, b.Binding)
         if successful then
-          b.Cache := None  // TODO #185: write test
+          b.Cache.Value <- None  // TODO #185: write test
         successful
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(model, b.Binding)
@@ -724,7 +724,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
     let getFunctionsForSubModelSelectedItem name =
       bindingDict
-      |> Dictionary.tryFind name 
+      |> Dictionary.tryFind name
       |> function
         | Some b ->
           match FuncsFromSubModelSeqKeyed().Recursive(b) with
@@ -815,7 +815,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
     member _.HasErrors =
       // WPF calls this too often, so don't log https://github.com/elmish/Elmish.WPF/issues/354
       validationErrors
-      |> Seq.map (fun (Kvp(_, errors)) -> !errors)
+      |> Seq.map (fun (Kvp(_, errors)) -> errors.Value)
       |> Seq.filter (not << List.isEmpty)
       |> (not << Seq.isEmpty)
     member _.GetErrors name =
@@ -823,6 +823,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       log.LogTrace("[{BindingNameChain}] GetErrors {BindingName}", nameChain, name)
       validationErrors
       |> IReadOnlyDictionary.tryFind name
-      |> Option.map (fun errors -> !errors)
+      |> Option.map (fun errors -> errors.Value)
       |> Option.defaultValue []
       |> (fun x -> upcast x)
