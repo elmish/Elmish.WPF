@@ -796,53 +796,53 @@ module Binding =
 
 
   module OneWay =
-    ///   Elemental instance of a one-way binding.
+    /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
       { Get = box }
       |> OneWayData
       |> BaseBindingData
       |> createBinding
 
-    ///   Creates a one-way binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let opt<'a, 'msg> : string -> Binding<'a option, 'msg> =
       id<obj, 'msg>
       >> mapModel BindingData.Option.box
 
-    ///   Creates a one-way binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg> =
       id<obj, 'msg>
       >> mapModel BindingData.ValueOption.box
 
 
   module OneWayToSource =
-    ///   Elemental instance of a one-way-to-source binding.
+    /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
       { Set = fun obj _ -> obj |> unbox }
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
 
-    ///   Creates a one-way-to-source binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let vopt<'model, 'a> : string -> Binding<'model, 'a voption> =
       id<'model, obj>
       >> mapMsg BindingData.ValueOption.unbox
 
-    ///   Creates a one-way-to-source binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let opt<'model, 'a> : string -> Binding<'model, 'a option> =
       id<'model, obj>
       >> mapMsg BindingData.Option.unbox
 
 
   module TwoWay =
-    ///   Elemental instance of a two-way binding.
+    /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a> =
       { Get = box
         Set = fun obj _ -> unbox obj }
@@ -850,17 +850,17 @@ module Binding =
       |> BaseBindingData
       |> createBinding
 
-    ///   Creates a one-way-to-source binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let vopt<'a> : string -> Binding<'a voption, 'a voption> =
       id<obj>
       >> mapModel BindingData.ValueOption.box
       >> mapMsg BindingData.ValueOption.unbox
 
-    ///   Creates a one-way-to-source binding to an optional value. The binding
-    ///   automatically converts between a missing value in the model and
-    ///   a <c>null</c> value in the view.
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
     let opt<'a> : string -> Binding<'a option, 'a option> =
       id<obj>
       >> mapModel BindingData.Option.box
@@ -869,21 +869,21 @@ module Binding =
 
   module SubModelSelectedItem =
 
-    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
-    ///   the
-    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
-    ///   binding. Automatically converts the dynamically created Elmish.WPF view
-    ///   models to/from their corresponding IDs, so the Elmish user code only has
-    ///   to work with the IDs.
+    /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    /// the
+    /// <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    /// binding. Automatically converts the dynamically created Elmish.WPF view
+    /// models to/from their corresponding IDs, so the Elmish user code only has
+    /// to work with the IDs.
     ///
-    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
-    ///   or
-    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
-    ///   binding. This binding is less type-safe. It will throw when initializing
-    ///   the bindings if <paramref name="subModelSeqBindingName" />
-    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
-    ///   throw at runtime if the inferred <c>'id</c> type does not match the
-    ///   actual ID type used in that binding.
+    /// Only use this if you are unable to use some kind of <c>SelectedValue</c>
+    /// or
+    /// <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    /// binding. This binding is less type-safe. It will throw when initializing
+    /// the bindings if <paramref name="subModelSeqBindingName" />
+    /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
+    /// throw at runtime if the inferred <c>'id</c> type does not match the
+    /// actual ID type used in that binding.
     let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption> =
       { Get = id
         Set = fun obj _ -> obj
@@ -894,21 +894,21 @@ module Binding =
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
 
-    ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
-    ///   the
-    ///   <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
-    ///   binding. Automatically converts the dynamically created Elmish.WPF view
-    ///   models to/from their corresponding IDs, so the Elmish user code only has
-    ///   to work with the IDs.
+    /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
+    /// the
+    /// <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    /// binding. Automatically converts the dynamically created Elmish.WPF view
+    /// models to/from their corresponding IDs, so the Elmish user code only has
+    /// to work with the IDs.
     ///
-    ///   Only use this if you are unable to use some kind of <c>SelectedValue</c>
-    ///   or
-    ///   <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
-    ///   binding. This binding is less type-safe. It will throw when initializing
-    ///   the bindings if <paramref name="subModelSeqBindingName" />
-    ///   does not correspond to a <see cref="subModelSeq" /> binding, and it will
-    ///   throw at runtime if the inferred <c>'id</c> type does not match the
-    ///   actual ID type used in that binding.
+    /// Only use this if you are unable to use some kind of <c>SelectedValue</c>
+    /// or
+    /// <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    /// binding. This binding is less type-safe. It will throw when initializing
+    /// the bindings if <paramref name="subModelSeqBindingName" />
+    /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
+    /// throw at runtime if the inferred <c>'id</c> type does not match the
+    /// actual ID type used in that binding.
     let opt subModelSeqBindingName : string -> Binding<'id option, 'id option> =
       vopt subModelSeqBindingName
       >> mapModel ValueOption.ofOption
@@ -965,13 +965,13 @@ module Binding =
 
 
   module SelectedIndex =
-    ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+    /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     let vopt =
       TwoWay.id
       >> mapModel (ValueOption.defaultValue -1)
       >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
 
-    ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+    /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     let opt =
       vopt
       >> mapModel ValueOption.ofOption
