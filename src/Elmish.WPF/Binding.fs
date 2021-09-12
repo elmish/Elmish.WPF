@@ -1498,7 +1498,7 @@ type Binding private () =
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<_, string>)
       : string -> Binding<'model, 'msg> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
@@ -1523,7 +1523,7 @@ type Binding private () =
   static member twoWayValidate
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<_, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.twoWayValidate (get, set, validate)
@@ -1688,7 +1688,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<_, string>)
       : string -> Binding<'model, 'msg> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
@@ -1715,7 +1715,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<_, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.twoWayOptValidate (get, set, validate)
@@ -1880,7 +1880,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>)
+       validate: 'model -> Result<_, string>)
       : string -> Binding<'model, 'msg> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
@@ -1907,7 +1907,7 @@ type Binding private () =
   static member twoWayOptValidate
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
-       validate: 'model -> Result<'ignored, string>,
+       validate: 'model -> Result<_, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.twoWayOptValidate (get, set, validate)
@@ -2061,7 +2061,7 @@ type Binding private () =
   /// </summary>
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmdIf
-      (exec: 'model -> Result<'msg, 'ignored>)
+      (exec: 'model -> Result<'msg, _>)
       : string -> Binding<'model, 'msg> =
     BindingData.Cmd.create
       (exec >> ValueOption.ofOk)
@@ -2083,7 +2083,7 @@ type Binding private () =
   /// </param>
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdIf
-      (exec: 'model -> Result<'msg, 'ignored>,
+      (exec: 'model -> Result<'msg, _>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdIf exec
@@ -2354,7 +2354,7 @@ type Binding private () =
   ///   to another UI property.
   /// </param>
   static member cmdParamIf
-      (exec: obj -> 'model -> Result<'msg, 'ignored>,
+      (exec: obj -> 'model -> Result<'msg, _>,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
     BindingData.Cmd.createWithParam
@@ -2377,7 +2377,7 @@ type Binding private () =
   /// </param>
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
-      (exec: obj -> 'model -> Result<'msg, 'ignored>,
+      (exec: obj -> 'model -> Result<'msg, _>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
     Binding.cmdParamIf exec
@@ -2406,7 +2406,7 @@ type Binding private () =
   /// </param>
   [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
   static member cmdParamIf
-      (exec: obj -> 'model -> Result<'msg, 'ignored>,
+      (exec: obj -> 'model -> Result<'msg, _>,
        uiBoundCmdParam: bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
       : string -> Binding<'model, 'msg> =
@@ -3545,7 +3545,7 @@ module Extensions =
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<_, string>)
         : string -> Binding<'model, 'msg> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
@@ -3570,7 +3570,7 @@ module Extensions =
     static member twoWayValidate
         (get: 'model -> 'a,
          set: 'a -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<_, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       Binding.twoWayValidate (get, set, validate)
@@ -3735,7 +3735,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<_, string>)
         : string -> Binding<'model, 'msg> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
@@ -3762,7 +3762,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<_, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       Binding.twoWayOptValidate (get, set, validate)
@@ -3927,7 +3927,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> Result<'ignored, string>)
+         validate: 'model -> Result<_, string>)
         : string -> Binding<'model, 'msg> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
@@ -3954,7 +3954,7 @@ module Extensions =
     static member twoWayOptValidate
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
-         validate: 'model -> Result<'ignored, string>,
+         validate: 'model -> Result<_, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       Binding.twoWayOptValidate (get, set, validate)
@@ -4214,7 +4214,7 @@ module Extensions =
     ///   to another UI property.
     /// </param>
     static member cmdParamIf
-        (exec: obj -> Result<'msg, 'ignored>,
+        (exec: obj -> Result<'msg, _>,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
       BindingData.Cmd.createWithParam
@@ -4237,7 +4237,7 @@ module Extensions =
     /// </param>
     [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
     static member cmdParamIf
-        (exec: obj -> Result<'msg, 'ignored>,
+        (exec: obj -> Result<'msg, _>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
       Binding.cmdParamIf exec
@@ -4266,7 +4266,7 @@ module Extensions =
     /// </param>
     [<System.Obsolete("In version 5, this method will be removed.  Use the overload without the \"wrapDispatch\" parameter followed by a call to \"Binding.alterMsgStream\".  For an example, see how this method is implemented.")>]
     static member cmdParamIf
-        (exec: obj -> Result<'msg, 'ignored>,
+        (exec: obj -> Result<'msg, _>,
          uiBoundCmdParam: bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
         : string -> Binding<'model, 'msg> =
