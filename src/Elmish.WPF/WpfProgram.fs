@@ -11,6 +11,8 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, unit>
     Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
+    ErrorHandler: string * exn -> unit
+    MsgErrorHandler: string * exn -> 'msg list
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
@@ -24,6 +26,8 @@ module WpfProgram =
     { ElmishProgram = program
       Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
+      ErrorHandler = ignore
+      MsgErrorHandler = fun _ -> []
       PerformanceLogThreshold = 1 }
 
 
@@ -92,12 +96,14 @@ module WpfProgram =
     let logMsgAndModel (msg: 'msg) (model: 'model) =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
 
-    let logError (msg: string, ex: exn) =
+    let errorHandler (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
+      program.ErrorHandler (msg, ex)
+      program.MsgErrorHandler (msg, ex) |> List.iter dispatch
 
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
-    |> Program.withErrorHandler logError
+    |> Program.withErrorHandler errorHandler
     |> Program.withSetState setState
     |> Program.withSyncDispatch cmdDispatch
     |> Program.run
@@ -153,6 +159,21 @@ module WpfProgram =
   /// Uses the specified ILoggerFactory for logging.
   let withLogger loggerFactory program =
     { program with LoggerFactory = loggerFactory }
+
+
+  /// Uses the specified handler for dispatch loop exceptions. The first (string) argument
+  /// of onError is message from Elmish describing the context of the exception, and may
+  /// contain a rendered message case.
+  let withErrorHandler onError program =
+    { program with ErrorHandler = onError }
+
+
+  /// Uses the specified handler for dispatch loop exceptions, dispatching the returned
+  /// messages when an exception occurs. The first (string) argument of onError is message
+  /// from Elmish describing the context of the exception, and may contain a rendered
+  /// message case.
+  let withMsgErrorHandler onError program =
+    { program with MsgErrorHandler = onError }
 
 
   /// Subscribe to an external source of events. The subscribe function is called once,
