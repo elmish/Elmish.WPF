@@ -11,8 +11,7 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, unit>
     Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
-    ErrorHandler: string * exn -> unit
-    MsgErrorHandler: string * exn -> 'msg list
+    ErrorHandler: string * exn -> 'msg list
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
@@ -26,8 +25,7 @@ module WpfProgram =
     { ElmishProgram = program
       Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
-      ErrorHandler = ignore
-      MsgErrorHandler = fun _ -> []
+      ErrorHandler = fun _ -> []
       PerformanceLogThreshold = 1 }
 
 
@@ -98,8 +96,7 @@ module WpfProgram =
 
     let errorHandler (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
-      program.ErrorHandler (msg, ex)
-      program.MsgErrorHandler (msg, ex) |> List.iter dispatch
+      program.ErrorHandler (msg, ex) |> List.iter dispatch
 
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
@@ -161,19 +158,15 @@ module WpfProgram =
     { program with LoggerFactory = loggerFactory }
 
 
-  /// Uses the specified handler for dispatch loop exceptions. The first (string) argument
-  /// of onError is message from Elmish describing the context of the exception, and may
-  /// contain a rendered message case.
-  let withErrorHandler onError program =
-    { program with ErrorHandler = onError }
-
-
   /// Uses the specified handler for dispatch loop exceptions, dispatching the returned
   /// messages when an exception occurs. The first (string) argument of onError is message
   /// from Elmish describing the context of the exception, and may contain a rendered
   /// message case.
-  let withMsgErrorHandler onError program =
-    { program with MsgErrorHandler = onError }
+  ///
+  /// The update handler for the dispatched messages MUST NOT cause exceptions themselves,
+  /// or the app will enter into an infinite loop.
+  let withErrorHandler onError program =
+    { program with ErrorHandler = onError }
 
 
   /// Subscribe to an external source of events. The subscribe function is called once,
