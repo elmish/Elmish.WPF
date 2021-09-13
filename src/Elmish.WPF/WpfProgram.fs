@@ -11,7 +11,7 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, unit>
     Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
-    ErrorHandler: string * exn -> 'msg list
+    ErrorHandler: string -> exn -> 'msg list
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
@@ -25,7 +25,7 @@ module WpfProgram =
     { ElmishProgram = program
       Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
-      ErrorHandler = fun _ -> []
+      ErrorHandler = fun _ _ -> []
       PerformanceLogThreshold = 1 }
 
 
@@ -96,7 +96,7 @@ module WpfProgram =
 
     let errorHandler (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
-      program.ErrorHandler (msg, ex) |> List.iter dispatch
+      program.ErrorHandler msg ex |> List.iter dispatch
 
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
