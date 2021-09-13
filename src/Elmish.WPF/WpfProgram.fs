@@ -164,7 +164,7 @@ module WpfProgram =
   /// message case.
   ///
   /// The update handler for the dispatched messages MUST NOT cause exceptions themselves,
-  /// or the app will enter into an infinite loop.
+  /// or the app may enter into an infinite loop.
   let withErrorHandler onError program =
     { program with ErrorHandler = onError }
 
