@@ -11,7 +11,7 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, unit>
     Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
-    ErrorHandler: string -> exn -> 'msg list
+    ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
@@ -25,7 +25,7 @@ module WpfProgram =
     { ElmishProgram = program
       Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
-      ErrorHandler = fun _ _ -> []
+      ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
 
 
@@ -96,7 +96,7 @@ module WpfProgram =
 
     let errorHandler (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
-      program.ErrorHandler msg ex |> List.iter dispatch
+      program.ErrorHandler msg ex
 
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
@@ -158,13 +158,11 @@ module WpfProgram =
     { program with LoggerFactory = loggerFactory }
 
 
-  /// Uses the specified handler for dispatch loop exceptions, dispatching the returned
-  /// messages when an exception occurs. The first (string) argument of onError is message
-  /// from Elmish describing the context of the exception, and may contain a rendered
-  /// message case.
-  ///
-  /// The update handler for the dispatched messages MUST NOT cause exceptions themselves,
-  /// or the app may enter into an infinite loop.
+  /// Calls the specified function for unhandled exceptions in the Elmish
+  /// dispatch loop (e.g. in commands or the update function). The first
+  /// (string) argument of onError is a message from Elmish describing the
+  /// context of the exception. Note that this may contain a rendered message
+  /// case with all data ("%A" formatting).
   let withErrorHandler onError program =
     { program with ErrorHandler = onError }
 
