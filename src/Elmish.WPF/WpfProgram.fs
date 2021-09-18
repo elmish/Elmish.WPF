@@ -159,11 +159,12 @@ module WpfProgram =
 
 
   /// Calls the specified function for unhandled exceptions in the Elmish
-  /// dispatch loop (e.g. in commands or the update function). The first
-  /// (string) argument of onError is a message from Elmish describing the
-  /// context of the exception. Note that this may contain a rendered message
-  /// case with all data ("%A" formatting).
-  let withErrorHandler onError program =
+  /// dispatch loop (e.g. in commands or the update function). This essentially
+  /// delegates to Elmish's Program.withErrorHandler. The first (string)
+  /// argument of onError is a message from Elmish describing the context of the
+  /// exception. Note that this may contain a rendered message case with all
+  /// data ("%A" formatting).
+  let withElmishErrorHandler onError program =
     { program with ErrorHandler = onError }
 
 
