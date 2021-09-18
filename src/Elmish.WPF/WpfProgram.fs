@@ -11,6 +11,7 @@ type WpfProgram<'model, 'msg> =
     ElmishProgram: Program<unit, 'model, 'msg, unit>
     Bindings: Binding<'model, 'msg> list
     LoggerFactory: ILoggerFactory
+    ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
@@ -24,6 +25,7 @@ module WpfProgram =
     { ElmishProgram = program
       Bindings = getBindings ()
       LoggerFactory = NullLoggerFactory.Instance
+      ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
 
 
@@ -92,12 +94,13 @@ module WpfProgram =
     let logMsgAndModel (msg: 'msg) (model: 'model) =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
 
-    let logError (msg: string, ex: exn) =
+    let errorHandler (msg: string, ex: exn) =
       updateLogger.LogError(ex, msg)
+      program.ErrorHandler msg ex
 
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
-    |> Program.withErrorHandler logError
+    |> Program.withErrorHandler errorHandler
     |> Program.withSetState setState
     |> Program.withSyncDispatch cmdDispatch
     |> Program.run
@@ -153,6 +156,20 @@ module WpfProgram =
   /// Uses the specified ILoggerFactory for logging.
   let withLogger loggerFactory program =
     { program with LoggerFactory = loggerFactory }
+
+
+  /// Calls the specified function for unhandled exceptions in the Elmish
+  /// dispatch loop (e.g. in commands or the update function). This essentially
+  /// delegates to Elmish's Program.withErrorHandler.
+  ///
+  /// The first (string) argument of onError is a message from Elmish describing
+  /// the context of the exception. Note that this may contain a rendered
+  /// message case with all data ("%A" formatting).
+  ///
+  /// Note that exceptions passed to onError are also logged to the logger
+  /// specified using WpfProgram.withLogger.
+  let withElmishErrorHandler onError program =
+    { program with ErrorHandler = onError }
 
 
   /// Subscribe to an external source of events. The subscribe function is called once,
