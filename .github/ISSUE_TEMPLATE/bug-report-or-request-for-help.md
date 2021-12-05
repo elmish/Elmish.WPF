@@ -2,7 +2,7 @@
 name: Bug report or request for help
 about: Report a bug or request help with your application
 title: ''
-labels: bug
+labels: ''
 assignees: ''
 
 ---
