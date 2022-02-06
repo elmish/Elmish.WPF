@@ -592,6 +592,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
         success
 
+  override _.GetDynamicMemberNames () =
+    log.LogTrace("[{BindingNameChain}] GetDynamicMemberNames", nameChain)
+    bindings.Keys
+
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
