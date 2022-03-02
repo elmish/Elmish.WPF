@@ -76,7 +76,7 @@ module WpfProgram =
       match viewModel with
       | None ->
           let uiDispatch msg = element.Dispatcher.Invoke(fun () -> dispatch msg)
-          let vm = ViewModel<'model, 'msg>(model, uiDispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
+          let vm = DynamicViewModel<'model, 'msg>(model, uiDispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->

@@ -7,6 +7,7 @@ open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
 open Microsoft.Extensions.Logging
+open System.Linq.Expressions
 
 open Elmish
 
@@ -312,7 +313,7 @@ and internal Initialize
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           d.GetModel initialModel
-          |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
+          |> ValueOption.map (fun m -> DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance) :> ViewModel<_, _>)
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
           |> Some
@@ -327,7 +328,7 @@ and internal Initialize
                 VmWinState = ref WindowState.Closed }
           | WindowState.Hidden m ->
               let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let vm = DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
@@ -338,7 +339,7 @@ and internal Initialize
                 VmWinState = ref <| WindowState.Hidden vm }
           | WindowState.Visible m ->
               let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let vm = DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
@@ -357,7 +358,7 @@ and internal Initialize
             |> Seq.indexed
             |> Seq.map (fun (idx, m) ->
                  let chain = getNameChainForItem name (idx |> string)
-                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
+                 DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> ViewModel<_, _>)
             |> ObservableCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
@@ -371,7 +372,7 @@ and internal Initialize
             |> Seq.map (fun m ->
                  let mId = d.GetId m
                  let chain = getNameChainForItem name (mId |> string)
-                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
+                 DynamicViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> ViewModel<_, _>)
             |> ObservableCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
@@ -456,7 +457,7 @@ and internal Update
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            b.Vm.Value <- ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            b.Vm.Value <- ValueSome <| DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
@@ -501,9 +502,9 @@ and internal Update
             b.PreventClose.Value <- true
             Helpers2.showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
-          let newVm model =
+          let newVm model : ViewModel<_, _> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            DynamicViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
 
           match b.VmWinState.Value, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
@@ -541,20 +542,20 @@ and internal Update
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
-          let create m idx =
+          let create m idx : ViewModel<_, _> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (idx |> string)
-            ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
-          let create m id =
+          let create m id : ViewModel<_, _> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (id |> string)
-            ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            DynamicViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
@@ -689,26 +690,22 @@ and internal Set(value: obj) =
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
-and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
+and [<AllowNullLiteral>] [<AbstractClass>] ViewModel<'model, 'msg>
       ( initialModel: 'model,
         dispatch: 'msg -> unit,
-        bindings: Binding<'model, 'msg> list,
         performanceLogThresholdMs: int,
         nameChain: string,
         log: ILogger,
         logPerformance: ILogger)
       as this =
-  inherit DynamicObject()
 
   let mutable currentModel = initialModel
 
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
-  let getNameChainFor name =
-    sprintf "%s.%s" nameChain name
-  let getNameChainForItem collectionBindingName itemId =
-    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
+  let validationErrors = Dictionary<string, string list ref>()
+  let bindings = Dictionary<string, VmBinding<'model, 'msg>>()
 
   let raisePropertyChanged name =
     log.LogTrace("[{BindingNameChain}] PropertyChanged {BindingName}", nameChain, name)
@@ -718,47 +715,22 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   let raiseErrorsChanged name =
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
+    
 
-  let (bindings, validationErrors) =
-    log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
-    let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
-    let getFunctionsForSubModelSelectedItem name =
-      bindingDict
-      |> Dictionary.tryFind name
-      |> function
-        | Some b ->
-          match FuncsFromSubModelSeqKeyed().Recursive(b) with
-          | Some x -> Some x
-          | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
-                    None
-        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
-                  None
-    let sortedBindings =
-      bindings
-      |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
-    for b in sortedBindings do
-      if bindingDict.ContainsKey b.Name then
-        log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
-      else
-        Initialize(log, logPerformance, performanceLogThresholdMs, nameChain, getNameChainFor, getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
-          .Recursive(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
-        |> Option.iter (fun binding ->
-          bindingDict.Add(b.Name, binding))
-    let validationDict = Dictionary<string, string list ref>()
-    bindingDict
-    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (FirstValidationErrors().Recursive) >> PairOption.sequence)
-    |> SeqOption.somes
-    |> Seq.iter validationDict.Add
-    (bindingDict    :> IReadOnlyDictionary<_,_>,
-     validationDict :> IReadOnlyDictionary<_,_>)
+  member internal _.getNameChainFor name =
+    sprintf "%s.%s" nameChain name
+  member internal _.getNameChainForItem collectionBindingName itemId =
+    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
+  member internal _.Bindings = bindings
+  member internal _.ValidationErrors = validationErrors
 
   member internal _.CurrentModel : 'model = currentModel
 
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance).Recursive(currentModel, newModel, dispatch, binding))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(name, nameChain, this.getNameChainFor, this.getNameChainForItem, performanceLogThresholdMs, log, logPerformance).Recursive(currentModel, newModel, dispatch, binding))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
@@ -766,44 +738,6 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       | ErrorsChanged name -> raiseErrorsChanged name
       | PropertyChanged name -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
-
-  override _.TryGetMember (binder, result) =
-    log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
-    match bindings.TryGetValue binder.Name with
-    | false, _ ->
-        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
-        false
-    | true, binding ->
-        try
-          match Get(nameChain).Recursive(currentModel, binding) with
-          | Ok v ->
-              result <- v
-              true
-          | Error e ->
-              match e with
-              | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
-              | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {SubModelSelectedItemName}", d.NameChain, d.SubModelSeqBindingName, d.Id)
-              false
-        with e ->
-          log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
-          reraise ()
-
-  override _.TrySetMember (binder, value) =
-    log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", nameChain, binder.Name)
-    match bindings.TryGetValue binder.Name with
-    | false, _ ->
-        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", nameChain, binder.Name)
-        false
-    | true, binding ->
-        try
-          let success = Set(value).Recursive(currentModel, binding)
-          if not success then
-            log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
-          success
-        with e ->
-          log.LogError(e, "[{BindingNameChain}] TrySetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
-          reraise ()
-
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
@@ -826,3 +760,114 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       |> Option.map (fun errors -> errors.Value)
       |> Option.defaultValue []
       |> (fun x -> upcast x)
+
+and DynamicViewModel<'model, 'msg>
+      ( initialModel: 'model,
+        dispatch: 'msg -> unit,
+        bindings: Binding<'model, 'msg> list,
+        performanceLogThresholdMs: int,
+        nameChain: string,
+        log: ILogger,
+        logPerformance: ILogger)
+        as this =
+  inherit ViewModel<'model, 'msg>(initialModel, dispatch, performanceLogThresholdMs, nameChain, log, logPerformance)
+
+  let initialize bindings =
+    log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
+    let getFunctionsForSubModelSelectedItem name =
+      this.Bindings
+      |> Dictionary.tryFind name
+      |> function
+        | Some b ->
+          match FuncsFromSubModelSeqKeyed().Recursive(b) with
+          | Some x -> Some x
+          | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
+                    None
+        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
+                  None
+    let sortedBindings =
+      bindings
+      |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
+    for b in sortedBindings do
+      if this.Bindings.ContainsKey b.Name then
+        log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
+      else
+        Initialize(log, logPerformance, performanceLogThresholdMs, nameChain, this.getNameChainFor, this.getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, (fun () -> this.CurrentModel), (unbox >> dispatch), b.Data)
+        |> Option.iter (fun binding ->
+          this.Bindings.Add(b.Name, binding))
+    this.Bindings
+    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (FirstValidationErrors().Recursive) >> PairOption.sequence)
+    |> SeqOption.somes
+    |> Seq.iter this.ValidationErrors.Add
+
+  do initialize bindings
+
+  member _.TryGetMember (name) =
+    log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, name)
+    match this.Bindings.TryGetValue name with
+    | false, _ ->
+        log.LogError("[{BindingNameChain}] TryGetMember FAILED: Property {BindingName} doesn't exist", nameChain, name)
+        null
+    | true, binding ->
+        try
+          match Get(nameChain).Recursive(this.CurrentModel, binding) with
+          | Ok v ->
+              v
+          | Error e ->
+              match e with
+              | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Binding {BindingName} is read-only", nameChain, name)
+              | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {SubModelSelectedItemName}", d.NameChain, d.SubModelSeqBindingName, d.Id)
+              null
+        with e ->
+          log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, name)
+          reraise ()
+
+  member _.TrySetMember (name, value: obj) =
+    log.LogTrace("[{BindingNameChain}] TrySetMember {BindingName}", nameChain, name)
+    match this.Bindings.TryGetValue name with
+    | false, _ ->
+        log.LogError("[{BindingNameChain}] TrySetMember FAILED: Property {BindingName} doesn't exist", nameChain, name)
+        obj()
+    | true, binding ->
+        try
+          let success = Set(value).Recursive(this.CurrentModel, binding)
+          if not success then
+            log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, name)
+          obj()
+        with e ->
+          log.LogError(e, "[{BindingNameChain}] TrySetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, name)
+          reraise ()
+
+  interface IDynamicMetaObjectProvider with
+    member __.GetMetaObject(parameter) : DynamicMetaObject =
+      DynamicViewModelMetaObject<'model, 'msg>(parameter, this)
+
+and DynamicViewModelMetaObject<'model, 'msg>(parameter: Expression, value: DynamicViewModel<'model, 'msg>) =
+  inherit DynamicMetaObject(parameter, BindingRestrictions.Empty, value)
+
+  override this.BindGetMember(binder) =
+    let parameters : Expression array = [| Expression.Constant(binder.Name) |]
+
+    let methodInfo = typeof<DynamicViewModel<'model, 'msg>>.GetMethod("TryGetMember")
+
+    DynamicMetaObject(
+      Expression.Call(
+        Expression.Convert(this.Expression, this.LimitType),
+        methodInfo,
+        parameters),
+      BindingRestrictions.GetTypeRestriction(this.Expression, this.LimitType))
+
+  override this.BindSetMember(binder, value) =
+    let parameters : Expression array = [|
+      Expression.Constant(binder.Name)
+      Expression.Convert(value.Expression, typeof<obj>) |]
+
+    let methodInfo = typeof<DynamicViewModel<'model, 'msg>>.GetMethod("TrySetMember")
+    
+    DynamicMetaObject(
+      Expression.Call(
+        Expression.Convert(this.Expression, this.LimitType),
+        methodInfo,
+        parameters),
+      BindingRestrictions.GetTypeRestriction(this.Expression, this.LimitType))
