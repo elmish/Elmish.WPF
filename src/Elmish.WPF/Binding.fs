@@ -4,7 +4,17 @@ open System.Collections.ObjectModel
 open System.Windows
 
 open Elmish
+open System.ComponentModel
 
+
+type [<AllowNullLiteral>] IViewModel =
+  abstract UpdateModel : obj -> unit
+  abstract CurrentModel : obj
+
+type [<AllowNullLiteral>] IViewModel<'model> =
+  inherit IViewModel
+  abstract UpdateModel : 'model -> unit
+  abstract CurrentModel : 'model
 
 
 type internal OneWayData<'model> =
@@ -49,6 +59,13 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
+
+
+type internal SubModelVmData<'model, 'msg, 'bindingModel, 'bindingMsg, 'viewModel when 'viewModel :> IViewModel> = {
+  GetModel: 'model -> 'bindingModel voption
+  CreateViewModel: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel
+  ToMsg: 'model -> 'bindingMsg -> 'msg
+}
 
 
 type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
@@ -125,6 +142,7 @@ and internal BaseBindingData<'model, 'msg> =
   | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj>
   | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
+  | SubModelVmData of SubModelVmData<'model, 'msg, obj, obj, IViewModel>
 
 
 and internal BindingData<'model, 'msg> =
@@ -180,6 +198,11 @@ module internal BindingData =
       | SubModelData d -> SubModelData {
           GetModel = f >> d.GetModel
           GetBindings = d.GetBindings
+          ToMsg = f >> d.ToMsg
+        }
+      | SubModelVmData d -> SubModelVmData {
+          GetModel = f >> d.GetModel
+          CreateViewModel = d.CreateViewModel
           ToMsg = f >> d.ToMsg
         }
       | SubModelWinData d -> SubModelWinData {
@@ -244,6 +267,11 @@ module internal BindingData =
       | SubModelData d -> SubModelData {
           GetModel = d.GetModel
           GetBindings = d.GetBindings
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
+        }
+      | SubModelVmData d -> SubModelVmData {
+          GetModel = d.GetModel
+          CreateViewModel = d.CreateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelWinData d -> SubModelWinData {
@@ -508,6 +536,27 @@ module internal BindingData =
       mapFunctions
         (mGet "get")
         (mSet "set")
+
+
+  module SubModelVm =
+
+    let mapFunctions
+        mGetModel
+        mCreateViewModel
+        mToMsg
+        (d: SubModelVmData<'model, 'msg, 'bindingModel, 'bindingMsg, 'viewModel>) =
+      { d with GetModel = mGetModel d.GetModel
+               CreateViewModel = mCreateViewModel d.CreateViewModel
+               ToMsg = mToMsg d.ToMsg }
+
+    let measureFunctions
+        mGetModel
+        mCreateViewModel
+        mToMsg =
+      mapFunctions
+        (mGetModel "getSubModel") // sic: "getModel" would be following the pattern
+        (mCreateViewModel "bindings") // sic: "getBindings" would be following the pattern
+        (mToMsg "toMsg")
 
 
   module SubModel =
@@ -913,6 +962,56 @@ module Binding =
       vopt subModelSeqBindingName
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+
+
+  module SubModelVm =
+
+    let private mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelVmData<'model, 'msg, 'bindingModel, 'bindingMsg, IViewModel<'bindingModel>>)
+        : SubModelVmData<'model, 'msg, 'bindingModel0, 'bindingMsg0, IViewModel> = {
+      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
+      CreateViewModel = (fun (m,dispatch) -> (inMapBindingModel m,outMapBindingMsg >> dispatch)) >> d.CreateViewModel >> (fun x -> x :> IViewModel)
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+    }
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let vopt (create: 'model * ('msg -> unit) -> IViewModel<'model>)
+        : string -> Binding<'model voption, 'msg> =
+      { GetModel = id
+        CreateViewModel = create
+        ToMsg = fun _ -> id }
+      |> mapMinorTypes box box unbox unbox
+      |> SubModelVmData
+      |> BaseBindingData
+      |> createBinding
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let opt (create: 'model * ('msg -> unit) -> IViewModel<'model>)
+        : string -> Binding<'model option, 'msg> =
+      vopt create
+      >> mapModel ValueOption.ofOption
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let required (create: 'model * ('msg -> unit) -> IViewModel<'model>)
+        : string -> Binding<'model, 'msg> =
+      vopt create
+      >> mapModel ValueSome
 
 
   module SubModel =

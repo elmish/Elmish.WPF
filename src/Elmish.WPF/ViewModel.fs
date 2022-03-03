@@ -10,6 +10,9 @@ open Microsoft.Extensions.Logging
 open System.Linq.Expressions
 
 open Elmish
+open System.Runtime.CompilerServices
+open Microsoft.Extensions.Logging.Abstractions
+open System.Windows.Input
 
 
 type internal UpdateData =
@@ -110,24 +113,29 @@ type internal TwoWayBinding<'model> = {
 
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>
-  Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
+  Vm: IViewModel<'bindingModel> voption ref
+}
+
+and internal SubModelVmBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'viewModel when 'viewModel :> IViewModel> = {
+  SubModelVmData: SubModelVmData<'model, 'msg, 'bindingModel, 'bindingMsg, 'viewModel>
+  Vm: 'viewModel voption ref
 }
 
 and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
-  VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
+  VmWinState: WindowState<IViewModel<'bindingModel>> ref
 }
 
 and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>
-  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
+  Vms: ObservableCollection<IViewModel<'bindingModel>>
 }
 
 and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
-    Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>> }
+    Vms: ObservableCollection<IViewModel<'bindingModel>> }
 
   member d.FromId(id: 'id) =
     d.Vms
@@ -138,7 +146,7 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
     GetId: 'bindingModel -> 'id
-    FromId: 'id -> ViewModel<'bindingModel, 'bindingMsg> option }
+    FromId: 'id -> IViewModel<'bindingModel> option }
 
   member d.TryGetMember (model: 'model) =
     d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.FromId selectedId)
@@ -179,6 +187,7 @@ and internal BaseVmBinding<'model, 'msg> =
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model>
   | Cmd of cmd: Command
+  | SubModelVm of SubModelVmBinding<'model, 'msg, obj, obj, IViewModel>
   | SubModel of SubModelBinding<'model, 'msg, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
   | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj>
@@ -250,7 +259,7 @@ and internal FuncsFromSubModelSeqKeyed() =
 
   member this.Recursive<'model, 'msg>
       (binding: VmBinding<'model, 'msg>)
-      : ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option =
+      : ((obj -> obj) * (obj -> IViewModel<obj> option)) option =
     match binding with
     | BaseVmBinding b -> this.Base b
     | Cached b -> this.Recursive b.Binding
@@ -267,7 +276,7 @@ and internal Initialize
        getNameChainFor: string -> string,
        getNameChainForItem: string -> string -> string,
        name: string,
-       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
+       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> IViewModel<obj> option)) option) =
 
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
@@ -313,9 +322,17 @@ and internal Initialize
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           d.GetModel initialModel
-          |> ValueOption.map (fun m -> DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance) :> ViewModel<_, _>)
+          |> ValueOption.map (fun m -> DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance) :> IViewModel<_>)
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
+          |> Some
+      | SubModelVmData d ->
+          let d = d |> BindingData.SubModelVm.measureFunctions measure measure measure2
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          d.GetModel initialModel
+          |> ValueOption.map (fun m -> d.CreateViewModel(m, toMsg >> dispatch))
+          |> (fun vm -> { SubModelVmData = d; Vm = ref vm })
+          |> SubModelVm
           |> Some
       | SubModelWinData d ->
           let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
@@ -358,7 +375,7 @@ and internal Initialize
             |> Seq.indexed
             |> Seq.map (fun (idx, m) ->
                  let chain = getNameChainForItem name (idx |> string)
-                 DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> ViewModel<_, _>)
+                 DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> IViewModel<_>)
             |> ObservableCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
@@ -372,7 +389,7 @@ and internal Initialize
             |> Seq.map (fun m ->
                  let mId = d.GetId m
                  let chain = getNameChainForItem name (mId |> string)
-                 DynamicViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> ViewModel<_, _>)
+                 DynamicViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance) :> IViewModel<_>)
             |> ObservableCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
@@ -462,6 +479,20 @@ and internal Update
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
             []
+      | SubModelVm b ->
+        let d = b.SubModelVmData
+        match b.Vm.Value, d.GetModel newModel with
+        | ValueNone, ValueNone -> []
+        | ValueSome _, ValueNone ->
+            b.Vm.Value <- ValueNone
+            [ PropertyChanged name ]
+        | ValueNone, ValueSome m ->
+            let toMsg = fun msg -> d.ToMsg currentModel msg
+            b.Vm.Value <- ValueSome <| d.CreateViewModel(m, toMsg >> dispatch)
+            [ PropertyChanged name ]
+        | ValueSome vm, ValueSome m ->
+            vm.UpdateModel m
+            []
       | SubModelWin b ->
           let d = b.SubModelWinData
           let winPropChain = getNameChainFor name
@@ -542,21 +573,21 @@ and internal Update
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
-          let create m idx : ViewModel<_, _> =
+          let create m idx : IViewModel<_> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (idx |> string)
             DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-          let update (vm: ViewModel<_, _>) = vm.UpdateModel
+          let update (vm: IViewModel<_>) = (vm :> IViewModel<obj>).UpdateModel
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
-          let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
-          let create m id : ViewModel<_, _> =
+          let getTargetId getId (vm: IViewModel<_>) = getId vm.CurrentModel
+          let create m id : IViewModel<_> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (id |> string)
             DynamicViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
-          let update (vm: ViewModel<_, _>) = vm.UpdateModel
+          let update (vm: IViewModel<_>) = (vm :> IViewModel<obj>).UpdateModel
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
             d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
@@ -609,6 +640,7 @@ and internal Get(nameChain: string) =
     | OneWaySeq { Values = vals } -> vals |> box |> Ok
     | Cmd cmd -> cmd |> box |> Ok
     | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
+    | SubModelVm { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
     | SubModelWin { VmWinState = vm } ->
         vm.Value
         |> WindowState.toVOption
@@ -663,7 +695,7 @@ and internal Set(value: obj) =
         true
     | SubModelSelectedItem b ->
         let bindingModel =
-          (value :?> ViewModel<obj, obj>)
+          (value :?> IViewModel<obj>)
           |> ValueOption.ofObj
           |> ValueOption.map (fun vm -> vm.CurrentModel)
         b.TrySetMember(model, bindingModel)
@@ -672,6 +704,7 @@ and internal Set(value: obj) =
     | OneWaySeq _
     | Cmd _
     | SubModel _
+    | SubModelVm _
     | SubModelWin _
     | SubModelSeqUnkeyed _
     | SubModelSeqKeyed _ ->
@@ -725,8 +758,8 @@ and [<AllowNullLiteral>] [<AbstractClass>] ViewModel<'model, 'msg>
   member internal _.Bindings = bindings
   member internal _.ValidationErrors = validationErrors
 
-  member internal _.CurrentModel : 'model = currentModel
 
+  member _.CurrentModel : 'model = currentModel
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
@@ -738,6 +771,15 @@ and [<AllowNullLiteral>] [<AbstractClass>] ViewModel<'model, 'msg>
       | ErrorsChanged name -> raiseErrorsChanged name
       | PropertyChanged name -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
+
+  
+  interface IViewModel<'model> with
+    member _.CurrentModel = this.CurrentModel
+    member _.UpdateModel (newModel) = this.UpdateModel(newModel)
+
+  interface IViewModel with
+    member _.CurrentModel = this.CurrentModel |> box
+    member _.UpdateModel (newModel) = newModel |> unbox |> this.UpdateModel
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
@@ -760,6 +802,35 @@ and [<AllowNullLiteral>] [<AbstractClass>] ViewModel<'model, 'msg>
       |> Option.map (fun errors -> errors.Value)
       |> Option.defaultValue []
       |> (fun x -> upcast x)
+      
+and public ViewModelBase<'model, 'msg>(initialModel: 'model, dispatch: 'msg -> unit) as this =
+  inherit ViewModel<'model, 'msg>(initialModel, dispatch, 0, "", NullLogger.Instance, NullLogger.Instance)
+
+  let initializeGetBindingIfNew name getter =
+    if this.Bindings.ContainsKey name |> not then
+      let bindingData = BaseBindingData (OneWayData { Get = getter >> box })
+      let vmBinding = Initialize(NullLogger.Instance, NullLogger.Instance, 0, name, this.getNameChainFor, this.getNameChainForItem, name, fun _ -> failwith "").Recursive(initialModel, (fun () -> this.CurrentModel), dispatch, bindingData)
+      Option.iter (fun binding -> this.Bindings.Add(name, binding)) vmBinding
+      
+  let initializeSetBindingIfNew name setter =
+    if this.Bindings.ContainsKey name |> not then
+      let bindingData = BaseBindingData (OneWayToSourceData { Set = unbox >> setter })
+      let vmBinding = Initialize(NullLogger.Instance, NullLogger.Instance, 0, name, this.getNameChainFor, this.getNameChainForItem, name, fun _ -> failwith "").Recursive(initialModel, (fun () -> this.CurrentModel), dispatch, bindingData)
+      Option.iter (fun binding -> this.Bindings.Add(name, binding)) vmBinding
+
+  let initializeCmdBindingIfNew name exec canExec =
+    if this.Bindings.ContainsKey name |> not then
+      let vmBinding = Command((fun p -> this.CurrentModel |> exec p |> ValueOption.iter dispatch), (fun p -> this.CurrentModel |> canExec p))
+      this.Bindings.Add(name, BaseVmBinding (Cmd vmBinding))
+      vmBinding
+    else
+      let (BaseVmBinding (Cmd vmBinding)) = this.Bindings.Item name
+      vmBinding
+
+  member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) = Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName; getter this.CurrentModel
+  member _.setValue(setter: 'a -> 'model -> 'msg, v: 'a, [<CallerMemberName>] ?memberName: string) = Option.iter (fun name -> initializeSetBindingIfNew name setter) memberName; this.CurrentModel |> setter v |> dispatch
+  member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, [<CallerMemberName>] ?memberName: string) = Option.map (fun name -> initializeCmdBindingIfNew name exec canExec :> ICommand) memberName |> Option.defaultValue null;
+
 
 and DynamicViewModel<'model, 'msg>
       ( initialModel: 'model,
