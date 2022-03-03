@@ -1,10 +1,66 @@
-module Elmish.WPF.Samples.SubModel.Program
+namespace Elmish.WPF.Samples.SubModel
 
 open System
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
 open Elmish.WPF
+open System.Runtime.CompilerServices
+
+
+type ViewModelBase2<'model, 'msg>() =
+  let mutable _bindings: Binding<'model, 'msg> list = []
+
+  member public _.Bindings
+    with get() = _bindings
+
+  member _.bind(memberName: string, b: string -> Binding<'model, 'msg>, designValue: 'b) =
+    //let memberName = Option.defaultValue "" memberName
+    let binding = b memberName
+    _bindings <- binding::_bindings
+    designValue
+
+  member this.oneWay(x: 'model -> 'b, designValue: 'b, [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> Binding.oneWay(x)
+    _bindings <- binding::_bindings
+    designValue
+
+  member _.cmd(x: 'msg, [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> Binding.cmd(x)
+    _bindings <- binding::_bindings
+    ()
+
+  member _.cmdIf(x: 'msg, canExec: 'model -> bool, [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> Binding.cmdIf(x, canExec)
+    _bindings <- binding::_bindings
+    ()
+
+  member _.twoWay(x: 'model -> 'b, y: 'b -> 'msg, designValue: 'b, [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> Binding.twoWay(x,y)
+    _bindings <- binding::_bindings
+    designValue
+
+  member _.subModel(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (viewModel: #ViewModelBase2<'bindingModel,'bindingMsg>), [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> (Binding.SubModel.required (fun () -> viewModel.Bindings)
+      >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
+      >> Binding.mapMsg toMsg)
+    //let binding = memberName |> Binding.subModel(getSubModel, toBindingModel, toMsg, (fun () -> viewModel.Bindings))
+    _bindings <- binding::_bindings
+    viewModel
+
+  member _.subModel2(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (createVm: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel when 'viewModel :> IViewModel<'bindingModel>), [<CallerMemberName>] ?memberName: string) =
+    let memberName = Option.defaultValue "" memberName
+    let binding = memberName |> (Binding.SubModelVm.required (createVm)
+      >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
+      >> Binding.mapMsg toMsg)
+    //let binding = memberName |> Binding.subModel(getSubModel, toBindingModel, toMsg, (fun () -> viewModel.Bindings))
+    _bindings <- binding::_bindings
+    null
 
 module Counter =
 
@@ -42,6 +98,35 @@ module Counter =
   ]
 
 
+type public CounterViewModel2(initialModel, dispatch) as this =
+  inherit ViewModelBase<Counter.Model, Counter.Msg>(initialModel, dispatch)
+
+  new() = CounterViewModel2(Counter.init, ignore)
+
+  member _.StepSize
+    with get() = this.getValue (fun m -> m.StepSize)
+    and set(v) = this.setValue ((fun v _m -> Counter.Msg.SetStepSize v), v)
+  member _.CounterValue = this.getValue (fun m -> m.Count)
+  member _.Increment = this.cmd((fun _ _ -> Counter.Increment |> ValueSome), (fun _ _ -> true))
+  member _.Decrement = this.cmd((fun _ _ -> Counter.Decrement |> ValueSome), (fun _ _ -> true))
+  member _.Reset = this.cmd((fun _ _ -> Counter.Reset |> ValueSome), (fun _ -> Counter.canReset))
+
+type public CounterViewModel() as this =
+  inherit ViewModelBase2<Counter.Model, Counter.Msg>()
+
+  let counterValueBinding = this.oneWay ((fun m -> m.Count), 3, nameof this.CounterValue)
+  let incrementBinding = this.cmd (Counter.Increment, nameof this.Increment)
+  let decrementBinding = this.cmd (Counter.Decrement, nameof this.Decrement)
+  let stepSizeBinding = this.twoWay((fun m -> float m.StepSize), int >> Counter.SetStepSize, 1.0, nameof this.StepSize)
+  let resetBinding = this.cmdIf(Counter.Reset, Counter.canReset, nameof this.Reset)
+  member _.CounterValue = counterValueBinding
+  member _.Increment = incrementBinding
+  member _.Decrement = decrementBinding
+  member _.StepSize
+    with get() = stepSizeBinding
+    and set(_:float) = ()
+  member _.Reset = resetBinding
+
 module Clock =
 
   type TimeType =
@@ -78,6 +163,20 @@ module Clock =
     "SetUtc" |> Binding.cmd (SetTimeType Utc)
   ]
 
+type public ClockViewModel() as this =
+  inherit ViewModelBase2<Clock.Model, Clock.Msg>()
+
+  let timeBinding = this.oneWay (Clock.getTime, DateTime.Now, nameof this.Time)
+  let isLocalBinding = this.oneWay ((fun m -> m.TimeType = Clock.Local), true, nameof this.IsLocal)
+  let setLocalBinding = this.cmd (Clock.SetTimeType Clock.Local, nameof this.SetLocal)
+  let isUtcBinding = this.oneWay ((fun m -> m.TimeType = Clock.Utc), false, nameof this.IsUtc)
+  let setUtcBinding = this.cmd (Clock.SetTimeType Clock.Utc, nameof this.SetUtc)
+  member _.Time = timeBinding
+  member _.IsLocal = isLocalBinding
+  member _.SetLocal = setLocalBinding
+  member _.IsUtc = isUtcBinding
+  member _.SetUtc = setUtcBinding
+
 
 module CounterWithClock =
 
@@ -109,8 +208,16 @@ module CounterWithClock =
       |> Binding.mapMsg ClockMsg
   ]
 
+type public CounterWithClockViewModel() as this =
+  inherit ViewModelBase2<CounterWithClock.Model, CounterWithClock.Msg>()
+  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel2 (m,d)), nameof this.Counter)
+  let clockBinding = this.subModel((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel(), nameof this.Clock)
 
-module App =
+  member _.Counter = counterBinding
+  member _.Clock = clockBinding
+
+
+module App2 =
 
   type Model =
     { ClockCounter1: CounterWithClock.Model
@@ -143,37 +250,47 @@ module App =
       |> Binding.mapMsg ClockCounter2Msg
   ]
 
+type public MainViewModel() as this =
+  inherit ViewModelBase2<App2.Model, App2.Msg>()
+  let clockCounter1Binding = this.subModel((fun m -> m.ClockCounter1), snd, App2.Msg.ClockCounter1Msg, CounterWithClockViewModel(), nameof this.ClockCounter1)
+  let clockCounter2Binding = this.subModel((fun m -> m.ClockCounter2), snd, App2.Msg.ClockCounter2Msg, CounterWithClockViewModel(), nameof this.ClockCounter2)
 
-let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
-let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
-let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
-let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
+  member _.ClockCounter1 = clockCounter1Binding
+  member _.ClockCounter2 = clockCounter2Binding
 
-
-let timerTick dispatch =
-  let timer = new System.Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ ->
-    let clockMsg =
-      DateTimeOffset.Now
-      |> Clock.Tick
-      |> CounterWithClock.ClockMsg
-    dispatch <| App.ClockCounter1Msg clockMsg
-    dispatch <| App.ClockCounter2Msg clockMsg
-  )
-  timer.Start()
+module Program =
+  let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
+  let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
+  let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+  let mainDesignVm = ViewModel.designInstance (App2.init ()) (App2.bindings ())
 
 
-let main window =
+  let timerTick dispatch =
+    let timer = new System.Timers.Timer(1000.)
+    timer.Elapsed.Add (fun _ ->
+      let clockMsg =
+        DateTimeOffset.Now
+        |> Clock.Tick
+        |> CounterWithClock.ClockMsg
+      dispatch <| App2.ClockCounter1Msg clockMsg
+      dispatch <| App2.ClockCounter2Msg clockMsg
+    )
+    timer.Start()
 
-  let logger =
-    LoggerConfiguration()
-      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
-      .WriteTo.Console()
-      .CreateLogger()
 
-  WpfProgram.mkSimple App.init App.update App.bindings
-  |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
-  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.startElmishLoop window
+  let main window =
+
+    let logger =
+      LoggerConfiguration()
+        .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+        .WriteTo.Console()
+        .CreateLogger()
+
+    let viewModel = MainViewModel()
+
+    WpfProgram.mkSimple App2.init App2.update (fun () -> viewModel.Bindings)
+    |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+    |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
+    |> WpfProgram.startElmishLoop window
