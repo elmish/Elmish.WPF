@@ -803,7 +803,7 @@ and [<AllowNullLiteral>] [<AbstractClass>] ViewModel<'model, 'msg>
       |> Option.defaultValue []
       |> (fun x -> upcast x)
       
-and public ViewModelBase<'model, 'msg>(initialModel: 'model, dispatch: 'msg -> unit) as this =
+and [<AllowNullLiteral>] public ViewModelBase<'model, 'msg>(initialModel: 'model, dispatch: 'msg -> unit) as this =
   inherit ViewModel<'model, 'msg>(initialModel, dispatch, 0, "", NullLogger.Instance, NullLogger.Instance)
 
   let initializeGetBindingIfNew name getter =
@@ -827,9 +827,27 @@ and public ViewModelBase<'model, 'msg>(initialModel: 'model, dispatch: 'msg -> u
       let (BaseVmBinding (Cmd vmBinding)) = this.Bindings.Item name
       vmBinding
 
+  let initializeSubModelBindingIfNew name (getModel: 'model -> 'bindingModel voption) (toMsg: 'model -> 'bindingMsg -> 'msg) (createViewModel: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel) =
+    if this.Bindings.ContainsKey name |> not then
+      let binding =
+        getModel initialModel
+        |> ValueOption.map (fun m -> createViewModel(m, toMsg this.CurrentModel >> dispatch))
+        |> (fun vm -> { SubModelVmData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel }; Vm = ref vm })
+      let toMsg2 = fun m bMsg -> binding.SubModelVmData.ToMsg m (unbox bMsg)
+      let getModel2 = binding.SubModelVmData.GetModel >> ValueOption.map box
+      let createViewModel2 = (fun (m,dispatch) -> (unbox m,box >> dispatch)) >> binding.SubModelVmData.CreateViewModel >> (fun x -> x :> IViewModel)
+      let initialVm2 = getModel2 this.CurrentModel |> ValueOption.map (fun m -> createViewModel2 (m, toMsg2 this.CurrentModel >> dispatch))
+      let vmBinding = { SubModelVmData = { GetModel = getModel2; ToMsg = toMsg2; CreateViewModel = createViewModel2 }; Vm = ref initialVm2 }
+      do this.Bindings.Add(name, BaseVmBinding (SubModelVm vmBinding))
+
+    let (BaseVmBinding (SubModelVm vmBinding)) = this.Bindings.Item name
+    vmBinding.Vm.Value |> ValueOption.map (fun vm -> vm :?> 'viewModel)
+    
+
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) = Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName; getter this.CurrentModel
   member _.setValue(setter: 'a -> 'model -> 'msg, v: 'a, [<CallerMemberName>] ?memberName: string) = Option.iter (fun name -> initializeSetBindingIfNew name setter) memberName; this.CurrentModel |> setter v |> dispatch
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, [<CallerMemberName>] ?memberName: string) = Option.map (fun name -> initializeCmdBindingIfNew name exec canExec :> ICommand) memberName |> Option.defaultValue null;
+  member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, [<CallerMemberName>] ?memberName: string) = memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel) |> ValueOption.defaultValue null;
 
 
 and DynamicViewModel<'model, 'msg>
