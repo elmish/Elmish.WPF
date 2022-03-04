@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModel"
              xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModel;assembly=SubModel.Core"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance vm:CounterWithClockViewModel}">
+             d:DataContext="{d:DesignInstance vm:CounterWithClockViewModel, IsDesignTimeCreatable=True}">
   <StackPanel>
     <local:Counter DataContext="{Binding Counter}" d:DataContext="{Binding DataContext.Counter, RelativeSource={RelativeSource AncestorType=UserControl}}" HorizontalAlignment="Center" />
     <local:Clock DataContext="{Binding Clock}" d:DataContext="{Binding DataContext.Clock, RelativeSource={RelativeSource AncestorType=UserControl}}" HorizontalAlignment="Center" />

@@ -98,10 +98,10 @@ module Counter =
   ]
 
 
-type public CounterViewModel2(initialModel, dispatch) as this =
+type [<AllowNullLiteral>] public CounterViewModel(initialModel, dispatch) as this =
   inherit ViewModelBase<Counter.Model, Counter.Msg>(initialModel, dispatch)
 
-  new() = CounterViewModel2(Counter.init, ignore)
+  new() = CounterViewModel(Counter.init, ignore)
 
   member _.StepSize
     with get() = this.getValue (fun m -> m.StepSize)
@@ -111,7 +111,7 @@ type public CounterViewModel2(initialModel, dispatch) as this =
   member _.Decrement = this.cmd((fun _ _ -> Counter.Decrement |> ValueSome), (fun _ _ -> true))
   member _.Reset = this.cmd((fun _ _ -> Counter.Reset |> ValueSome), (fun _ -> Counter.canReset))
 
-type public CounterViewModel() as this =
+type public CounterViewModel2() as this =
   inherit ViewModelBase2<Counter.Model, Counter.Msg>()
 
   let counterValueBinding = this.oneWay ((fun m -> m.Count), 3, nameof this.CounterValue)
@@ -163,7 +163,20 @@ module Clock =
     "SetUtc" |> Binding.cmd (SetTimeType Utc)
   ]
 
-type public ClockViewModel() as this =
+  
+type [<AllowNullLiteral>] public ClockViewModel(initialModel, dispatch) as this =
+  inherit ViewModelBase<Clock.Model, Clock.Msg>(initialModel, dispatch)
+  
+  new() = ClockViewModel(Clock.init (), ignore)
+
+  member _.Time = this.getValue (fun m -> m.Time)
+  member _.IsLocal = this.getValue (fun m -> m.TimeType = Clock.Local)
+  member _.SetLocal = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome), (fun _ _ -> true))
+  member _.IsUtc = this.getValue (fun m -> m.TimeType = Clock.Utc)
+  member _.SetUtc = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Utc |> ValueSome), (fun _ _ -> true))
+
+
+type public ClockViewModel2() as this =
   inherit ViewModelBase2<Clock.Model, Clock.Msg>()
 
   let timeBinding = this.oneWay (Clock.getTime, DateTime.Now, nameof this.Time)
@@ -207,11 +220,20 @@ module CounterWithClock =
       |> Binding.mapModel (fun m -> m.Clock)
       |> Binding.mapMsg ClockMsg
   ]
+  
+type [<AllowNullLiteral>] public CounterWithClockViewModel(initialModel, dispatch) as this =
+  inherit ViewModelBase<CounterWithClock.Model, CounterWithClock.Msg>(initialModel, dispatch)
 
-type public CounterWithClockViewModel() as this =
+  new() = CounterWithClockViewModel(CounterWithClock.init (), ignore)
+
+  member _.Counter = this.subModel((fun m -> m.Counter |> ValueSome), (fun _ -> CounterWithClock.Msg.CounterMsg), CounterViewModel)
+  member _.Clock = this.subModel((fun m -> m.Clock |> ValueSome), (fun _ -> CounterWithClock.Msg.ClockMsg), ClockViewModel)
+
+
+type public CounterWithClockViewModel2() as this =
   inherit ViewModelBase2<CounterWithClock.Model, CounterWithClock.Msg>()
-  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel2 (m,d)), nameof this.Counter)
-  let clockBinding = this.subModel((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel(), nameof this.Clock)
+  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel (m,d)), nameof this.Counter)
+  let clockBinding = this.subModel((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel2(), nameof this.Clock)
 
   member _.Counter = counterBinding
   member _.Clock = clockBinding
@@ -249,11 +271,19 @@ module App2 =
       |> Binding.mapModel (fun m -> m.ClockCounter2)
       |> Binding.mapMsg ClockCounter2Msg
   ]
+  
+type public MainViewModel(initialModel, dispatch) as this =
+  inherit ViewModelBase<App2.Model, App2.Msg>(initialModel, dispatch)
 
-type public MainViewModel() as this =
+  new() = MainViewModel(App2.init (), ignore)
+
+  member _.ClockCounter1 = this.subModel((fun m -> m.ClockCounter1 |> ValueSome), (fun _ -> App2.Msg.ClockCounter1Msg), CounterWithClockViewModel)
+  member _.ClockCounter2 = this.subModel((fun m -> m.ClockCounter2 |> ValueSome), (fun _ -> App2.Msg.ClockCounter2Msg), CounterWithClockViewModel)
+
+type public MainViewModel2() as this =
   inherit ViewModelBase2<App2.Model, App2.Msg>()
-  let clockCounter1Binding = this.subModel((fun m -> m.ClockCounter1), snd, App2.Msg.ClockCounter1Msg, CounterWithClockViewModel(), nameof this.ClockCounter1)
-  let clockCounter2Binding = this.subModel((fun m -> m.ClockCounter2), snd, App2.Msg.ClockCounter2Msg, CounterWithClockViewModel(), nameof this.ClockCounter2)
+  let clockCounter1Binding = this.subModel((fun m -> m.ClockCounter1), snd, App2.Msg.ClockCounter1Msg, CounterWithClockViewModel2(), nameof this.ClockCounter1)
+  let clockCounter2Binding = this.subModel((fun m -> m.ClockCounter2), snd, App2.Msg.ClockCounter2Msg, CounterWithClockViewModel2(), nameof this.ClockCounter2)
 
   member _.ClockCounter1 = clockCounter1Binding
   member _.ClockCounter2 = clockCounter2Binding
@@ -288,9 +318,7 @@ module Program =
         .WriteTo.Console()
         .CreateLogger()
 
-    let viewModel = MainViewModel()
-
-    WpfProgram.mkSimple App2.init App2.update (fun () -> viewModel.Bindings)
+    WpfProgram.mkSimple2 App2.init App2.update MainViewModel
     |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window

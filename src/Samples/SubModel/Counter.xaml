@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModel;assembly=SubModel.Core"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance vm:CounterViewModel2}">
+             d:DataContext="{d:DesignInstance vm:CounterViewModel, IsDesignTimeCreatable=True}">
   <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top">
     <TextBlock Text="{Binding CounterValue, StringFormat='Counter value: {0}'}" Width="110" Margin="0,5,10,5" />
     <Button Command="{Binding Decrement}" Content="-" Margin="0,5,10,5" Width="30" />
