@@ -169,7 +169,7 @@ type [<AllowNullLiteral>] public ClockViewModel(initialModel, dispatch) as this 
   
   new() = ClockViewModel(Clock.init (), ignore)
 
-  member _.Time = this.getValue (fun m -> m.Time)
+  member _.Time = this.getValue Clock.getTime
   member _.IsLocal = this.getValue (fun m -> m.TimeType = Clock.Local)
   member _.SetLocal = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome), (fun _ _ -> true))
   member _.IsUtc = this.getValue (fun m -> m.TimeType = Clock.Utc)
