@@ -103,12 +103,12 @@ type [<AllowNullLiteral>] public CounterViewModel(initialModel, dispatch) as thi
 
   new() = CounterViewModel(Counter.init, ignore)
 
-  member _.StepSize
-    with get() = this.getValue (fun m -> m.StepSize)
-    and set(v) = this.setValue ((fun v _m -> Counter.Msg.SetStepSize v), v)
   member _.CounterValue = this.getValue (fun m -> m.Count)
   member _.Increment = this.cmd((fun _ _ -> Counter.Increment |> ValueSome), (fun _ _ -> true))
   member _.Decrement = this.cmd((fun _ _ -> Counter.Decrement |> ValueSome), (fun _ _ -> true))
+  member _.StepSize
+    with get() = this.getValue (fun m -> m.StepSize)
+    and set(v) = this.setValue ((fun v _ -> Counter.Msg.SetStepSize v), v)
   member _.Reset = this.cmd((fun _ _ -> Counter.Reset |> ValueSome), (fun _ -> Counter.canReset))
 
 type public CounterViewModel2() as this =
