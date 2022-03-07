@@ -830,8 +830,9 @@ and [<AllowNullLiteral>] public ViewModelBase<'model, 'msg>(initialModel: 'model
       this.Bindings.Add(name, BaseVmBinding (Cmd vmBinding))
       vmBinding
     else
-      let (BaseVmBinding (Cmd vmBinding)) = this.Bindings.Item name
-      vmBinding
+      match this.Bindings.Item name with
+      | BaseVmBinding (Cmd vmBinding) -> vmBinding
+      | x -> failwithf "Wrong binding type found for %s, should be BaseVmBinding, found %A" name x
 
   let initializeSubModelBindingIfNew name (getModel: 'model -> 'bindingModel voption) (toMsg: 'model -> 'bindingMsg -> 'msg) (createViewModel: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel) =
     if this.Bindings.ContainsKey name |> not then
@@ -845,9 +846,10 @@ and [<AllowNullLiteral>] public ViewModelBase<'model, 'msg>(initialModel: 'model
       let initialVm2 = getModel2 this.CurrentModel |> ValueOption.map (fun m -> createViewModel2 (m, toMsg2 this.CurrentModel >> dispatch))
       let vmBinding = { SubModelVmData = { GetModel = getModel2; ToMsg = toMsg2; CreateViewModel = createViewModel2 }; Vm = ref initialVm2 }
       do this.Bindings.Add(name, BaseVmBinding (SubModelVm vmBinding))
-
-    let (BaseVmBinding (SubModelVm vmBinding)) = this.Bindings.Item name
-    vmBinding.Vm.Value |> ValueOption.map (fun vm -> vm :?> 'viewModel)
+    
+    match this.Bindings.Item name with
+    | BaseVmBinding (SubModelVm vmBinding) -> vmBinding.Vm.Value |> ValueOption.map (fun vm -> vm :?> 'viewModel)
+    | x -> failwithf "Wrong binding type found for %s, should be BaseVmBinding, found %A" name x
     
 
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) = Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName; getter this.CurrentModel
