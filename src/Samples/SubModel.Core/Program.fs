@@ -232,7 +232,7 @@ type [<AllowNullLiteral>] public CounterWithClockViewModel(initialModel, dispatc
 
 type public CounterWithClockViewModel2() as this =
   inherit ViewModelBase2<CounterWithClock.Model, CounterWithClock.Msg>()
-  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel (m,d)), nameof this.Counter)
+  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel (m,d) :> IViewModel<_>), nameof this.Counter)
   let clockBinding = this.subModel((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel2(), nameof this.Clock)
 
   member _.Counter = counterBinding

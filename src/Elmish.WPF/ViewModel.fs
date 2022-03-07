@@ -353,7 +353,7 @@ and internal Initialize
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
-                VmWinState = ref <| WindowState.Hidden vm }
+                VmWinState = vm :> IViewModel<_> |> WindowState.Hidden |> ref }
           | WindowState.Visible m ->
               let chain = getNameChainFor name
               let vm = DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
@@ -364,7 +364,7 @@ and internal Initialize
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
-                VmWinState = ref <| WindowState.Visible vm }
+                VmWinState = vm :> IViewModel<_> |> WindowState.Visible |> ref }
           |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
@@ -474,7 +474,10 @@ and internal Update
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            b.Vm.Value <- ValueSome <| DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            b.Vm.Value <-
+                DynamicViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+                :> IViewModel<_>
+                |> ValueSome
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
@@ -536,6 +539,7 @@ and internal Update
           let newVm model : ViewModel<_, _> =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             DynamicViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            :> ViewModel<_, _>
 
           match b.VmWinState.Value, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
@@ -563,13 +567,13 @@ and internal Update
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden (fun () -> currentModel) dispatch
-              b.VmWinState.Value <- WindowState.Hidden vm
+              b.VmWinState.Value <- vm :> IViewModel<_> |> WindowState.Hidden
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm Visibility.Visible (fun () -> currentModel) dispatch
-              b.VmWinState.Value <- WindowState.Visible vm
+              b.VmWinState.Value <- vm :> IViewModel<_> |> WindowState.Visible
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
@@ -577,6 +581,7 @@ and internal Update
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (idx |> string)
             DynamicViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            :> IViewModel<_>
           let update (vm: IViewModel<_>) = (vm :> IViewModel<obj>).UpdateModel
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
@@ -587,6 +592,7 @@ and internal Update
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = getNameChainForItem name (id |> string)
             DynamicViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            :> IViewModel<_>
           let update (vm: IViewModel<_>) = (vm :> IViewModel<obj>).UpdateModel
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
@@ -931,6 +937,7 @@ and DynamicViewModel<'model, 'msg>
   interface IDynamicMetaObjectProvider with
     member __.GetMetaObject(parameter) : DynamicMetaObject =
       DynamicViewModelMetaObject<'model, 'msg>(parameter, this)
+      :> DynamicMetaObject
 
 and DynamicViewModelMetaObject<'model, 'msg>(parameter: Expression, value: DynamicViewModel<'model, 'msg>) =
   inherit DynamicMetaObject(parameter, BindingRestrictions.Empty, value)
