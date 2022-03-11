@@ -44,7 +44,7 @@ type ViewModelBase2<'model, 'msg>() =
     _bindings <- binding::_bindings
     designValue
 
-  member _.subModel(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (viewModel: #ViewModelBase2<'bindingModel,'bindingMsg>), [<CallerMemberName>] ?memberName: string) =
+  member _.subModel2(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (viewModel: #ViewModelBase2<'bindingModel,'bindingMsg>), [<CallerMemberName>] ?memberName: string) =
     let memberName = Option.defaultValue "" memberName
     let binding = memberName |> (Binding.SubModel.required (fun () -> viewModel.Bindings)
       >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
@@ -53,7 +53,7 @@ type ViewModelBase2<'model, 'msg>() =
     _bindings <- binding::_bindings
     viewModel
 
-  member _.subModel2(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (createVm: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel when 'viewModel :> IViewModel<'bindingModel>), [<CallerMemberName>] ?memberName: string) =
+  member _.subModel(getSubModel: 'model -> 'subModel, toBindingModel: 'model * 'subModel -> 'bindingModel, toMsg: 'bindingMsg -> 'msg, (createVm: 'bindingModel * ('bindingMsg -> unit) -> 'viewModel when 'viewModel :> IViewModel<'bindingModel>), [<CallerMemberName>] ?memberName: string) =
     let memberName = Option.defaultValue "" memberName
     let binding = memberName |> (Binding.SubModelVm.required (createVm)
       >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
@@ -232,8 +232,8 @@ type [<AllowNullLiteral>] public CounterWithClockViewModel(initialModel, dispatc
 
 type public CounterWithClockViewModel2() as this =
   inherit ViewModelBase2<CounterWithClock.Model, CounterWithClock.Msg>()
-  let counterBinding = this.subModel2((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel (m,d) :> IViewModel<_>), nameof this.Counter)
-  let clockBinding = this.subModel((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel2(), nameof this.Clock)
+  let counterBinding = this.subModel((fun m -> m.Counter), snd, CounterWithClock.Msg.CounterMsg, (fun (m,d) -> CounterViewModel (m,d) :> IViewModel<_>), nameof this.Counter)
+  let clockBinding = this.subModel2((fun m -> m.Clock), snd, CounterWithClock.Msg.ClockMsg, ClockViewModel2(), nameof this.Clock)
 
   member _.Counter = counterBinding
   member _.Clock = clockBinding
@@ -282,8 +282,8 @@ type public MainViewModel(initialModel, dispatch) as this =
 
 type public MainViewModel2() as this =
   inherit ViewModelBase2<App2.Model, App2.Msg>()
-  let clockCounter1Binding = this.subModel((fun m -> m.ClockCounter1), snd, App2.Msg.ClockCounter1Msg, CounterWithClockViewModel2(), nameof this.ClockCounter1)
-  let clockCounter2Binding = this.subModel((fun m -> m.ClockCounter2), snd, App2.Msg.ClockCounter2Msg, CounterWithClockViewModel2(), nameof this.ClockCounter2)
+  let clockCounter1Binding = this.subModel2((fun m -> m.ClockCounter1), snd, App2.Msg.ClockCounter1Msg, CounterWithClockViewModel2(), nameof this.ClockCounter1)
+  let clockCounter2Binding = this.subModel2((fun m -> m.ClockCounter2), snd, App2.Msg.ClockCounter2Msg, CounterWithClockViewModel2(), nameof this.ClockCounter2)
 
   member _.ClockCounter1 = clockCounter1Binding
   member _.ClockCounter2 = clockCounter2Binding
