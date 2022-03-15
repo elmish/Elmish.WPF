@@ -11,6 +11,34 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
+type LoggingViewModelArgs =
+  { performanceLogThresholdMs: int
+    log: ILogger
+    logPerformance: ILogger
+    nameChain: string }
+
+module LoggingViewModelArgs =
+
+  let getNameChainFor nameChain name =
+    sprintf "%s.%s" nameChain name
+
+  let getNameChainForItem nameChain collectionBindingName itemId =
+    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
+
+  let map nameChain v = { v with nameChain = nameChain }
+
+type ViewModelArgs<'model, 'msg> =
+  { initialModel: 'model
+    dispatch: 'msg -> unit
+    loggingArgs: LoggingViewModelArgs }
+
+module ViewModelArgs =
+  let create initialModel dispatch nameChain loggingArgs =
+    { initialModel = initialModel
+      dispatch = dispatch
+      loggingArgs = LoggingViewModelArgs.map nameChain loggingArgs }
+
+
 type internal UpdateData =
   | ErrorsChanged of string
   | PropertyChanged of string
@@ -259,22 +287,23 @@ and internal FuncsFromSubModelSeqKeyed() =
 
 
 and internal Initialize
-      (log: ILogger,
-       logPerformance: ILogger,
-       performanceLogThresholdMs: int,
-       nameChain: string,
-       getNameChainFor: string -> string,
-       getNameChainForItem: string -> string -> string,
+      (loggingArgs: LoggingViewModelArgs,
        name: string,
        getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
+
+  let { log = log
+        logPerformance = logPerformance
+        performanceLogThresholdMs = performanceLogThresholdMs
+        nameChain = nameChain } =
+    loggingArgs
 
   let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
   member _.Base<'model, 'msg>
       (initialModel: 'model,
-       getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
+       getCurrentModel: unit -> 'model,
        binding: BaseBindingData<'model, 'msg>)
       : BaseVmBinding<'model, 'msg> option =
     match binding with
@@ -311,8 +340,10 @@ and internal Initialize
       | SubModelData d ->
           let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          let chain = LoggingViewModelArgs.getNameChainFor nameChain name
           d.GetModel initialModel
-          |> ValueOption.map (fun m -> ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance))
+          |> ValueOption.map (fun m -> ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs)
+          |> ValueOption.map (fun args -> ViewModel(args, d.GetBindings ()))
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
           |> Some
@@ -326,8 +357,9 @@ and internal Initialize
                 PreventClose = ref true
                 VmWinState = ref WindowState.Closed }
           | WindowState.Hidden m ->
-              let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+              let vm = ViewModel(args, d.GetBindings ())
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
@@ -337,8 +369,9 @@ and internal Initialize
                 PreventClose = preventClose
                 VmWinState = ref <| WindowState.Hidden vm }
           | WindowState.Visible m ->
-              let chain = getNameChainFor name
-              let vm = ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+              let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+              let vm = ViewModel(args, d.GetBindings ())
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
@@ -356,8 +389,9 @@ and internal Initialize
             d.GetModels initialModel
             |> Seq.indexed
             |> Seq.map (fun (idx, m) ->
-                 let chain = getNameChainForItem name (idx |> string)
-                 ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
+                 let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
+                 let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+                 ViewModel(args, d.GetBindings ()))
             |> ObservableCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
@@ -370,8 +404,9 @@ and internal Initialize
             d.GetSubModels initialModel
             |> Seq.map (fun m ->
                  let mId = d.GetId m
-                 let chain = getNameChainForItem name (mId |> string)
-                 ViewModel(m, (fun msg -> toMsg (mId, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance))
+                 let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
+                 let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
+                 ViewModel(args, d.GetBindings ()))
             |> ObservableCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
@@ -391,31 +426,31 @@ and internal Initialize
 
   member this.Recursive<'model, 'msg>
       (initialModel: 'model,
-       getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit,
+       getCurrentModel: unit -> 'model,
        binding: BindingData<'model, 'msg>)
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
       | BaseBindingData d ->
-          let! b = this.Base(initialModel, getCurrentModel, dispatch, d)
+          let! b = this.Base(initialModel, dispatch, getCurrentModel, d)
           return BaseVmBinding b
       | CachingData d ->
-          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d)
+          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d)
           return b.AddCaching
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
-          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d.BindingData)
+          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
           return b.AddValidation (getCurrentModel ()) d.Validate
       | LazyData d ->
           let d = d |> BindingData.Lazy.measureFunctions measure
-          let! b = this.Recursive(initialModel, getCurrentModel, dispatch, d.BindingData)
+          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
           return b.AddLazy d.Equals
       | AlterMsgStreamData d ->
           let initialModel' : obj = d.Get initialModel
           let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
           let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
-          let! b = this.Recursive(initialModel', getCurrentModel', dispatch', d.BindingData)
+          let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
                    Dispatch = dispatch' }
@@ -425,13 +460,12 @@ and internal Initialize
 
 /// Updates the binding and returns a list indicating what events to raise for this binding
 and internal Update
-    (name: string,
-     nameChain: string,
-     getNameChainFor: string -> string,
-     getNameChainForItem: string -> string -> string,
-     performanceLogThresholdMs: int,
-     log: ILogger,
-     logPerformance: ILogger) =
+    (loggingArgs: LoggingViewModelArgs,
+     name: string) =
+
+  let { log = log
+        nameChain = nameChain } =
+    loggingArgs
 
   member _.Base<'model, 'msg>
       (currentModel: 'model,
@@ -456,14 +490,16 @@ and internal Update
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            b.Vm.Value <- ValueSome <| ViewModel(m, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+            let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+            b.Vm.Value <- ValueSome <| ViewModel(args, d.GetBindings ())
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             vm.UpdateModel m
             []
       | SubModelWin b ->
           let d = b.SubModelWinData
-          let winPropChain = getNameChainFor name
+          let winPropChain = LoggingViewModelArgs.getNameChainFor nameChain name
           let close () =
             b.PreventClose.Value <- false
             match b.WinRef.TryGetTarget () with
@@ -503,7 +539,9 @@ and internal Update
 
           let newVm model =
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            ViewModel(model, toMsg >> dispatch, d.GetBindings (), performanceLogThresholdMs, getNameChainFor name, log, logPerformance)
+            let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+            let args = ViewModelArgs.create model (toMsg >> dispatch) chain loggingArgs
+            ViewModel(args, d.GetBindings ())
 
           match b.VmWinState.Value, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
@@ -543,8 +581,9 @@ and internal Update
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            let chain = getNameChainForItem name (idx |> string)
-            ViewModel(m, (fun msg -> toMsg (idx, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
+            let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+            ViewModel(args, d.GetBindings ())
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
@@ -553,8 +592,9 @@ and internal Update
           let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
           let create m id =
             let toMsg = fun msg -> d.ToMsg currentModel msg
-            let chain = getNameChainForItem name (id |> string)
-            ViewModel(m, (fun msg -> toMsg (id, msg) |> dispatch), d.GetBindings (), performanceLogThresholdMs, chain, log, logPerformance)
+            let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
+            let args = ViewModelArgs.create m (fun msg -> toMsg (id, msg) |> dispatch) chain loggingArgs
+            ViewModel(args, d.GetBindings ())
           let update (vm: ViewModel<_, _>) = vm.UpdateModel
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
@@ -690,25 +730,24 @@ and internal Set(value: obj) =
 
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
-      ( initialModel: 'model,
-        dispatch: 'msg -> unit,
-        bindings: Binding<'model, 'msg> list,
-        performanceLogThresholdMs: int,
-        nameChain: string,
-        log: ILogger,
-        logPerformance: ILogger)
+      ( args: ViewModelArgs<'model, 'msg>,
+        bindings: Binding<'model, 'msg> list)
       as this =
   inherit DynamicObject()
+
+  let { initialModel = initialModel
+        dispatch = dispatch
+        loggingArgs = loggingArgs
+      } = args
+
+  let { log = log
+        nameChain = nameChain
+      } = loggingArgs
 
   let mutable currentModel = initialModel
 
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
-
-  let getNameChainFor name =
-    sprintf "%s.%s" nameChain name
-  let getNameChainForItem collectionBindingName itemId =
-    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
 
   let raisePropertyChanged name =
     log.LogTrace("[{BindingNameChain}] PropertyChanged {BindingName}", nameChain, name)
@@ -740,8 +779,8 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        Initialize(log, logPerformance, performanceLogThresholdMs, nameChain, getNameChainFor, getNameChainForItem, b.Name, getFunctionsForSubModelSelectedItem)
-          .Recursive(initialModel, (fun () -> currentModel), (unbox >> dispatch), b.Data)
+        Initialize(loggingArgs, b.Name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, (unbox >> dispatch), (fun () -> currentModel), b.Data)
         |> Option.iter (fun binding ->
           bindingDict.Add(b.Name, binding))
     let validationDict = Dictionary<string, string list ref>()
@@ -758,7 +797,7 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(name, nameChain, getNameChainFor, getNameChainForItem, performanceLogThresholdMs, log, logPerformance).Recursive(currentModel, newModel, dispatch, binding))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(loggingArgs, name).Recursive(currentModel, newModel, dispatch, binding))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise

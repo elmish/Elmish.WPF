@@ -76,7 +76,15 @@ module WpfProgram =
       match viewModel with
       | None ->
           let uiDispatch msg = element.Dispatcher.Invoke(fun () -> dispatch msg)
-          let vm = ViewModel<'model, 'msg>(model, uiDispatch, program.Bindings, program.PerformanceLogThreshold, "main", bindingsLogger, performanceLogger)
+          let args =
+            { initialModel = model
+              dispatch = uiDispatch
+              loggingArgs =
+                { performanceLogThresholdMs = program.PerformanceLogThreshold
+                  nameChain = "main"
+                  log = bindingsLogger
+                  logPerformance = performanceLogger } }
+          let vm = ViewModel<'model, 'msg>(args, program.Bindings)
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->

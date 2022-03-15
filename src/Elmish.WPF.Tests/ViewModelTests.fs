@@ -26,8 +26,14 @@ module Extensions =
       (?<-) this propName value
 
 
+let private emptyLoggingArgs =
+  { performanceLogThresholdMs = 1
+    nameChain = ""
+    log = NullLogger.Instance
+    logPerformance = NullLogger.Instance }
+
 type internal TestVm<'model, 'msg>(model, bindings) as this =
-  inherit ViewModel<'model, 'msg>(model, (fun x -> this.Dispatch x), bindings, 1, "", NullLogger.Instance, NullLogger.Instance)
+  inherit ViewModel<'model, 'msg>({ initialModel = model; dispatch = (fun x -> this.Dispatch x); loggingArgs = emptyLoggingArgs }, bindings)
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
