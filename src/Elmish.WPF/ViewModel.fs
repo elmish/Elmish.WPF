@@ -804,6 +804,10 @@ and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
           log.LogError(e, "[{BindingNameChain}] TrySetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
           reraise ()
 
+  override _.GetDynamicMemberNames () =
+    log.LogTrace("[{BindingNameChain}] GetDynamicMemberNames", nameChain)
+    bindings.Keys
+
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
