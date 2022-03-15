@@ -1,3 +1,7 @@
+#### 4.0.0-beta-43
+* Added `WpfProgram.withElmishErrorHandler`
+* Improved debugging experience by overriding `GetDynamicMemberNames`
+
 #### 4.0.0-beta-42
 * Improved API of `WindowState<_>`
 * Dropped support for .NET Core 3.0.  Still have support for .NET Core 3.1.
