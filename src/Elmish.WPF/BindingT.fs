@@ -111,8 +111,13 @@ module BindingT =
   module SubModel =
     open BindingData.SubModel
 
-    let opt createVm : StaticBindingT<'bindingModel voption, 'msg, 'viewModel :> ISubModel<'bindingModel, 'msg>> =
-      create createVm (fun ((vm: #ISubModel<'bindingModel,'msg>),m) -> vm.StaticHelper.UpdateModel(m))
+    let opt<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel voption, 'msg, 'viewModel> =
+      create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
+      |> createStatic
+
+    let id<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel, 'msg, 'viewModel> =
+      create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
+      |> BindingData.mapModel ValueSome
       |> createStatic
 
 
@@ -126,7 +131,7 @@ type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
   member _.Model
-    with get() = BindingT.Get.id |> staticHelper.GetValue()
-    and set(v) = BindingT.Get.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
-  member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue()
-  member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.GetValue()
+    with get() = BindingT.Get.id |> staticHelper.Get()
+    and set(v) = BindingT.Get.id >> BindingT.mapMsg int32<string> |> staticHelper.Set(v)
+  member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.Get()
+  member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.Get()

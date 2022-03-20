@@ -61,7 +61,7 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
         log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
         None
 
-  member _.GetValue<'a> ([<CallerMemberName>] ?memberName: string) =
+  member _.Get<'a> ([<CallerMemberName>] ?memberName: string) =
     fun (binding: StaticBindingT<'model, 'msg, 'a>) ->
       option {
         let! name = memberName
@@ -87,7 +87,7 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
       |> ValueOption.toNull
       |> Result.errorWith (failwithf "Got null on non-nullable type %O")
 
-  member _.SetValue<'a> (value, [<CallerMemberName>] ?memberName: string) =
+  member _.Set<'a> (value, [<CallerMemberName>] ?memberName: string) =
     fun (binding: StaticBindingT<'model, 'msg, 'a>) ->
       option {
         let! name = memberName
@@ -145,7 +145,7 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
       |> (fun x -> upcast x)
 
 module StaticHelper =
-  let create args getSender = StaticHelper(args, getSender)
+  let create<'model, 'msg> args getSender = StaticHelper<'model, 'msg>(args, getSender)
 
 [<AllowNullLiteral>]
 type ISubModel<'model, 'msg> =
