@@ -10,8 +10,8 @@
         Width="500"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
-        d:DataContext="{x:Static vm:Program.mainDesignVm}">
-  <StackPanel>
+        d:DataContext="{d:DesignInstance Type=vm:AppViewModel, IsDesignTimeCreatable=True}">
+  <StackPanel DataContext="{Binding Main}" d:DataContext="{Binding}">
     <TextBlock Text="Counter with clock 1" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
     <local:CounterWithClock DataContext="{Binding ClockCounter1}" />
     <TextBlock Text="Counter with clock 2" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
