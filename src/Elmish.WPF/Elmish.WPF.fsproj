@@ -47,6 +47,7 @@
     <Compile Include="ViewModel.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModelModule.fs" />
+    <Compile Include="ViewModelBase.fs" />
     <Compile Include="WpfProgram.fs" />
   </ItemGroup>
 
