@@ -221,11 +221,14 @@ module Binding =
     let private mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
       GetModel = d.GetModel >> ValueOption.map outMapBindingModel
-      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+      UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
@@ -237,9 +240,10 @@ module Binding =
     let vopt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model voption, 'msg> =
       { GetModel = id
-        GetBindings = bindings
+        CreateViewModel = fun args -> ViewModel<'model, 'msg>(args, bindings ())
+        UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
         ToMsg = fun _ -> id }
-      |> mapMinorTypes box box unbox unbox
+      |> mapMinorTypes box box box unbox unbox unbox
       |> SubModelData
       |> BaseBindingData
       |> createBinding
@@ -2020,7 +2024,8 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
-      bindings
+      (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> toMsg)
       (fun m d -> upcast getWindow m d)
       (defaultArg isModal false)
@@ -2134,7 +2139,8 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      bindings
+      (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> toMsg)
       (fun m d -> upcast getWindow m d)
       (defaultArg isModal false)
@@ -2234,7 +2240,8 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      bindings
+      (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> id)
       (fun m d -> upcast getWindow m d)
       (defaultArg isModal false)
@@ -2290,13 +2297,19 @@ type Binding private () =
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg> list)
       : string -> Binding<'model seq, int * 'msg> =
-    BindingData.SubModelSeqUnkeyed.create getBindings
+    BindingData.SubModelSeqUnkeyed.create
+      (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
 
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg> list,
        getId: 'model -> 'id)
       : string -> Binding<'model seq, 'id * 'msg> =
-    BindingData.SubModelSeqKeyed.create getBindings getId
+    BindingData.SubModelSeqKeyed.create
+      (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
+      (fun vm -> vm.CurrentModel)
+      getId
 
 
   /// <summary>
@@ -2324,7 +2337,11 @@ type Binding private () =
        toMsg: 'id * 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create bindings getId
+    BindingData.SubModelSeqKeyed.create
+      (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
+      (fun vm -> vm.CurrentModel)
+      getId
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2350,7 +2367,11 @@ type Binding private () =
        toMsg: 'id * 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create bindings (snd >> getId)
+    BindingData.SubModelSeqKeyed.create
+      (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
+      (fun vm -> vm.CurrentModel)
+      (snd >> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2370,7 +2391,11 @@ type Binding private () =
        getId: 'subModel -> 'id,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create bindings (snd >> getId)
+    BindingData.SubModelSeqKeyed.create
+      (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
+      (fun (vm,m) -> vm.UpdateModel(m))
+      (fun vm -> vm.CurrentModel)
+      (snd >> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
