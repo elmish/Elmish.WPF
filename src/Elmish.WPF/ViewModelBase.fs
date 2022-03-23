@@ -61,12 +61,13 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
   let initializeSubModelBindingIfNew
     name (getModel: 'model -> 'bindingModel voption)
     (toMsg: 'model -> 'bindingMsg -> 'msg)
-    (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>) =
+    (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
+    (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
     if bindings.ContainsKey name |> not then
       let binding =
         getModel initialModel
         |> ValueOption.map (fun m -> createViewModel(ViewModelArgs.create m (toMsg currentModel >> dispatch) name loggingArgs))
-        |> (fun vm -> { SubModelData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel; UpdateViewModel = (fun (vm,m) -> vm.UpdateModel(m)) }; Vm = ref vm })
+        |> (fun vm -> { SubModelData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel; UpdateViewModel = updateViewModel }; Vm = ref vm })
       let toMsg2 = fun m bMsg -> binding.SubModelData.ToMsg m (unbox bMsg)
       let getModel2 = binding.SubModelData.GetModel >> ValueOption.map box
       let createViewModel2 = (fun args -> ViewModelArgs.map unbox box args |> binding.SubModelData.CreateViewModel |> box)
@@ -90,8 +91,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, [<CallerMemberName>] ?memberName: string) =
     Option.bind (fun name -> initializeCmdBindingIfNew name exec canExec) memberName |> Option.defaultValue null
 
-  member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel) |> ValueOption.defaultValue null
+  member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
 
   member internal _.CurrentModel : 'model = currentModel
 
@@ -128,3 +129,52 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       |> Option.map (fun errors -> errors.Value)
       |> Option.defaultValue []
       |> (fun x -> upcast x)
+
+type ViewModelBase<'model, 'msg> with
+  member this.subModel (getModel: 'model -> 'bindingModel voption, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
+    this.subModel (getModel, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+
+  member this.subModelBindings (getModel: 'model -> 'bindingModel voption, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModel (getModel, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+
+module BindingBase =
+  module SubModelBase =
+    open Binding
+    open Binding.SubModel
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let vopt (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
+        : string -> Binding<'model voption, 'msg> =
+      { GetModel = id
+        CreateViewModel = create
+        UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
+        ToMsg = fun _ -> id }
+      |> mapMinorTypes box box box unbox unbox unbox
+      |> SubModelData
+      |> BaseBindingData
+      |> createBinding
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let opt (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
+        : string -> Binding<'model option, 'msg> =
+      vopt create
+      >> mapModel ValueOption.ofOption
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
+        : string -> Binding<'model, 'msg> =
+      vopt create
+      >> mapModel ValueSome
+

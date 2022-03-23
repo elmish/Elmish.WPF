@@ -218,7 +218,7 @@ module Binding =
 
   module SubModel =
 
-    let private mapMinorTypes
+    let internal mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
