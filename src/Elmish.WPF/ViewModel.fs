@@ -11,34 +11,6 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
-type LoggingViewModelArgs =
-  { performanceLogThresholdMs: int
-    log: ILogger
-    logPerformance: ILogger
-    nameChain: string }
-
-module LoggingViewModelArgs =
-
-  let getNameChainFor nameChain name =
-    sprintf "%s.%s" nameChain name
-
-  let getNameChainForItem nameChain collectionBindingName itemId =
-    sprintf "%s.%s.%s" nameChain collectionBindingName itemId
-
-  let map nameChain v = { v with nameChain = nameChain }
-
-type ViewModelArgs<'model, 'msg> =
-  { initialModel: 'model
-    dispatch: 'msg -> unit
-    loggingArgs: LoggingViewModelArgs }
-
-module ViewModelArgs =
-  let create initialModel dispatch nameChain loggingArgs =
-    { initialModel = initialModel
-      dispatch = dispatch
-      loggingArgs = LoggingViewModelArgs.map nameChain loggingArgs }
-
-
 type internal UpdateData =
   | ErrorsChanged of string
   | PropertyChanged of string

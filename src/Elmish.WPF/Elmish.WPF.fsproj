@@ -42,6 +42,7 @@
     <Compile Include="Command.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="WindowState.fs" />
+    <Compile Include="ViewModelArgs.fs" />
     <Compile Include="BindingInternal.fs" />
     <Compile Include="ViewModel.fs" />
     <Compile Include="Binding.fs" />
