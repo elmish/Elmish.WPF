@@ -6,6 +6,7 @@ open System.ComponentModel
 open System.Runtime.CompilerServices
 open System.Windows.Input
 open Microsoft.Extensions.Logging
+open System.Collections.ObjectModel
 
 
 type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
@@ -59,7 +60,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); None
 
   let initializeSubModelBindingIfNew
-    name (getModel: 'model -> 'bindingModel voption)
+    name
+    (getModel: 'model -> 'bindingModel voption)
     (toMsg: 'model -> 'bindingMsg -> 'msg)
     (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
     (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
@@ -80,9 +82,26 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     | BaseVmBinding (SubModel vmBinding) -> vmBinding.Vm.Value |> ValueOption.map (fun vm -> vm :?> 'viewModel)
     | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); ValueNone
 
+  let initializeSubModelSeqBindingIfNew
+    name
+    (getModels: 'model -> 'bindingModel seq)
+    (toMsg: 'model -> int * 'bindingMsg -> 'msg)
+    (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
+    (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
+    if bindings.ContainsKey name |> not then
+      let bindingData = { GetModels = getModels; ToMsg = toMsg; CreateViewModel = createViewModel; CreateCollection = ObservableCollection >> CollectionTarget.create; UpdateViewModel = updateViewModel }
+      let bindingData2 = BindingData.SubModelSeqUnkeyed.box bindingData
+      let wrappedBindingData = bindingData2 |> SubModelSeqUnkeyedData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
+    
+    match bindings.Item name with
+    | BaseVmBinding (SubModelSeqUnkeyed vmBinding) -> vmBinding.Vms.BoxedCollection() |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
+    | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); ValueNone
+
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) =
     Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName
-    getter currentModel
+    currentModel |> getter
 
   member _.setValue(setter: 'model -> 'msg, [<CallerMemberName>] ?memberName: string) =
     Option.iter (fun name -> initializeSetBindingIfNew name setter) memberName
@@ -93,6 +112,9 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
   member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
+
+  member _.subModelSeq(getModels: 'model -> 'bindingModel seq, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqBindingIfNew name getModels toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
 
   member internal _.CurrentModel : 'model = currentModel
 
@@ -137,6 +159,12 @@ type ViewModelBase<'model, 'msg> with
   member this.subModelBindings (getModel: 'model -> 'bindingModel voption, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
     this.subModel (getModel, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
 
+  member this.subModelSeq (getModels: 'model -> 'bindingModel seq, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeq (getModels, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+
+  member this.subModelSeqBindings (getModels: 'model -> 'bindingModel seq, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeq (getModels, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+
 module BindingBase =
   module SubModelBase =
     open Binding
@@ -178,3 +206,15 @@ module BindingBase =
       vopt create
       >> mapModel ValueSome
 
+  module SubModelSeqUnkeyedBase =
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
+        : string -> Binding<'model seq, int * 'msg> =
+      BindingData.SubModelSeqUnkeyed.create
+        create
+        (fun (vm,m) -> vm.UpdateModel(m))
