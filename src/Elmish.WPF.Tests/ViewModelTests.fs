@@ -85,7 +85,7 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
           (fun _ me -> e :: me)) |> ignore
       )
     with _ ->
-      (this.Get propName |> unbox<ObservableCollection<ViewModel<obj, obj>>>).CollectionChanged.Add (fun e ->
+      (this.Get propName |> unbox<ObservableCollection<obj>>).CollectionChanged.Add (fun e ->
         ccTriggers.AddOrUpdate(
           propName,
           [e],
@@ -1063,11 +1063,11 @@ module SubModel =
       let binding = subModel name getModel toMsg [] sticky
       let vm = TestVm(m1, binding)
 
-      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel |> unbox = (getModel m1).Value @>
+      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
 
       vm.UpdateModel m2
 
-      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel |> unbox = (getModel m2).Value @>
+      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel = (getModel m2).Value @>
     }
 
 
@@ -1107,18 +1107,18 @@ module SubModel =
       let binding = subModel name getModel toMsg [] sticky
       let vm = TestVm(m1, binding)
 
-      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel |> unbox = (getModel m1).Value @>
+      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
 
       vm.UpdateModel m2
 
       if sticky then
-        test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel |> unbox = (getModel m1).Value @>
+        test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
       else
         test <@ vm.Get name |> isNull @>
 
       vm.UpdateModel m3
 
-      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel |> unbox = (getModel m3).Value @>
+      test <@ (vm.Get name : ViewModel<int, obj>).CurrentModel = (getModel m3).Value @>
     }
 
 
@@ -1165,7 +1165,7 @@ module SubModel =
       let binding = subModel name getModel toMsg [subBinding] sticky
       let vm = TestVm(m, binding)
 
-      test <@ (vm.Get name : ViewModel<int,obj>).Get subName |> unbox = ((getModel m).Value |> subGet) @>
+      test <@ (vm.Get name : ViewModel<int,obj>).Get subName = ((getModel m).Value |> subGet) @>
     }
 
 
@@ -1200,7 +1200,7 @@ module SubModelSeq =
     let actual =
       vm.Get name
       |> unbox<ObservableCollection<obj>>
-      |> Seq.map (fun vm -> vm |> unbox<ViewModel<Guid,obj>> |> (fun vm -> vm.CurrentModel) |> unbox)
+      |> Seq.map (fun vm -> vm |> unbox<ViewModel<Guid,obj>> |> (fun vm -> vm.CurrentModel))
       |> Seq.toList
     test <@ expected = actual @>
 
@@ -1347,7 +1347,7 @@ module SubModelSelectedItem =
       | ValueNone ->
           test <@ vm.Get selectedItemName = null @>
       | ValueSome sm ->
-          test <@ (vm.Get selectedItemName |> unbox<ViewModel<Guid,unit>>) |> Option.ofObj |> Option.map (fun vm -> unbox vm.CurrentModel)
+          test <@ (vm.Get selectedItemName |> unbox<ViewModel<Guid,unit>>) |> Option.ofObj |> Option.map (fun vm -> vm.CurrentModel)
                    = (m |> getModels |> List.tryFind (fun x -> getId x = getId sm))
                @>
     }
@@ -1381,7 +1381,7 @@ module SubModelSelectedItem =
         selectedSubModel |> ValueOption.bind (fun sm ->
           vm.Get subModelSeqName
           |> unbox<ObservableCollection<obj>>
-          |> Seq.tryFind (fun vm -> vm |> unbox<ViewModel<Guid,int voption>> |> (fun vm -> vm.CurrentModel) |> unbox |> getId = getId sm)
+          |> Seq.tryFind (fun vm -> vm |> unbox<ViewModel<Guid,int voption>> |> (fun vm -> vm.CurrentModel) |> getId = getId sm)
           |> ValueOption.ofOption
         )
         |> ValueOption.toObj
