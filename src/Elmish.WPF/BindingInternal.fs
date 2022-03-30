@@ -6,7 +6,6 @@ open System.Windows
 open Elmish
 
 
-
 type internal OneWayData<'model> =
   { Get: 'model -> obj }
 
@@ -51,16 +50,18 @@ type internal SubModelSelectedItemData<'model, 'msg, 'id> =
     SubModelSeqBindingName: string }
 
 
-type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   GetModel: 'model -> 'bindingModel voption
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+  UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
   ToMsg: 'model -> 'bindingMsg -> 'msg
 }
 
 
-and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   GetState: 'model -> WindowState<'bindingModel>
-  GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+  CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+  UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
   ToMsg: 'model -> 'bindingMsg -> 'msg
   GetWindow: 'model -> Dispatch<'msg> -> Window
   IsModal: bool
@@ -68,15 +69,18 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg> = {
 }
 
 
-and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg> =
+and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> =
   { GetModels: 'model -> 'bindingModel seq
-    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+    UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
 
 
-and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
+and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
   { GetSubModels: 'model -> 'bindingModel seq
-    GetBindings: unit -> Binding<'bindingModel, 'bindingMsg> list
+    CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+    UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
+    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
     GetId: 'bindingModel -> 'id }
 
@@ -120,10 +124,10 @@ and internal BaseBindingData<'model, 'msg> =
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg>
   | CmdData of CmdData<'model, 'msg>
-  | SubModelData of SubModelData<'model, 'msg, obj, obj>
-  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj>
-  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj>
-  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj>
+  | SubModelData of SubModelData<'model, 'msg, obj, obj, obj>
+  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, obj>
+  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj, obj>
+  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
 
@@ -179,12 +183,14 @@ module internal BindingData =
         }
       | SubModelData d -> SubModelData {
           GetModel = f >> d.GetModel
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
         }
       | SubModelWinData d -> SubModelWinData {
           GetState = f >> d.GetState
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
           GetWindow = f >> d.GetWindow
           IsModal = d.IsModal
@@ -192,12 +198,15 @@ module internal BindingData =
         }
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = f >> d.GetModels
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = f >> d.GetSubModels
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
+          GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = f >> d.ToMsg
           GetId = d.GetId
         }
@@ -243,12 +252,14 @@ module internal BindingData =
         }
       | SubModelData d -> SubModelData {
           GetModel = d.GetModel
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelWinData d -> SubModelWinData {
           GetState = d.GetState
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
           GetWindow = fun m dispatch -> d.GetWindow m (fun msg -> f msg m |> dispatch)
           IsModal = d.IsModal
@@ -256,12 +267,15 @@ module internal BindingData =
         }
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = d.GetModels
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = d.GetSubModels
-          GetBindings = d.GetBindings
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
+          GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
           GetId = d.GetId
         }
@@ -516,9 +530,9 @@ module internal BindingData =
         mGetModel
         mGetBindings
         mToMsg
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) =
       { d with GetModel = mGetModel d.GetModel
-               GetBindings = mGetBindings d.GetBindings
+               CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg }
 
     let measureFunctions
@@ -536,22 +550,26 @@ module internal BindingData =
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
       GetState = d.GetState >> WindowState.map outMapBindingModel
-      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+      UpdateViewModel = fun (vm,m) -> d.UpdateViewModel (inMapBindingViewModel vm,inMapBindingModel m)
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
       GetWindow = d.GetWindow
       IsModal = d.IsModal
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let box d = mapMinorTypes box box unbox unbox d
+    let box d = mapMinorTypes box box box unbox unbox unbox d
 
-    let create getState bindings toMsg getWindow isModal onCloseRequested =
+    let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
-        GetBindings = bindings
+        CreateViewModel = createViewModel
+        UpdateViewModel = updateViewModel
         ToMsg = toMsg
         GetWindow = getWindow
         IsModal = isModal
@@ -567,9 +585,9 @@ module internal BindingData =
         mToMsg
         mGetWindow
         mOnCloseRequested
-        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+        (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) =
       { d with GetState = mGetState d.GetState
-               GetBindings = mGetBindings d.GetBindings
+               CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg
                GetWindow = mGetWindow d.GetWindow
                OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
@@ -591,19 +609,23 @@ module internal BindingData =
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>) = {
+        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
-      GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+      UpdateViewModel = fun (vm,m) -> d.UpdateViewModel (inMapBindingViewModel vm,inMapBindingModel m)
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let box d = mapMinorTypes box box unbox unbox d
+    let box d = mapMinorTypes box box box unbox unbox unbox d
 
-    let create getBindings =
+    let create createViewModel updateViewModel =
       { GetModels = id
-        GetBindings = getBindings
+        CreateViewModel = createViewModel
+        UpdateViewModel = updateViewModel
         ToMsg = fun _ -> id }
       |> box
       |> SubModelSeqUnkeyedData
@@ -614,9 +636,9 @@ module internal BindingData =
         mGetModels
         mGetBindings
         mToMsg
-        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) =
       { d with GetModels = mGetModels d.GetModels
-               GetBindings = mGetBindings d.GetBindings
+               CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg }
 
     let measureFunctions
@@ -634,22 +656,28 @@ module internal BindingData =
       let mapMinorTypes
           (outMapBindingModel: 'bindingModel -> 'bindingModel0)
           (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+          (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
           (outMapId: 'id -> 'id0)
           (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
           (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+          (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
           (inMapId: 'id0 -> 'id)
-          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) = {
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
-        GetBindings = d.GetBindings >> Bindings.mapModel inMapBindingModel >> Bindings.mapMsg outMapBindingMsg
+        CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+        UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm,inMapBindingModel m) |> d.UpdateViewModel 
+        GetUnderlyingModel = fun vm -> vm |> inMapBindingViewModel |> d.GetUnderlyingModel |> outMapBindingModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let box d = mapMinorTypes box box box unbox unbox unbox d
+      let box d = mapMinorTypes box box box box unbox unbox unbox unbox d
 
-      let create getBindings getId =
+      let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id
-          GetBindings = getBindings
+          CreateViewModel = createViewModel
+          UpdateViewModel = updateViewModel
+          GetUnderlyingModel = getUnderlyingModel
           ToMsg = fun _ -> id
           GetId = getId }
         |> box
@@ -662,9 +690,9 @@ module internal BindingData =
           mGetBindings
           mToMsg
           mGetId
-          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>) =
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>) =
         { d with GetSubModels = mGetSubModels d.GetSubModels
-                 GetBindings = mGetBindings d.GetBindings
+                 CreateViewModel = mGetBindings d.CreateViewModel
                  ToMsg = mToMsg d.ToMsg
                  GetId = mGetId d.GetId }
 

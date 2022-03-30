@@ -107,37 +107,38 @@ type internal TwoWayBinding<'model> = {
   Set: obj -> 'model -> unit
 }
 
-type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg>
-  Vm: ViewModel<'bindingModel, 'bindingMsg> voption ref
+type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
+  Vm: 'bindingViewModel voption ref
 }
 
-and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg>
+and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
-  VmWinState: WindowState<ViewModel<'bindingModel, 'bindingMsg>> ref
+  VmWinState: WindowState<'bindingViewModel> ref
 }
 
-and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg>
-  Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>>
+and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
+  Vms: ObservableCollection<'bindingViewModel>
 }
 
-and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'id>
-    Vms: ObservableCollection<ViewModel<'bindingModel, 'bindingMsg>> }
+and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
+    Vms: ObservableCollection<'bindingViewModel> }
 
   member d.FromId(id: 'id) =
     d.Vms
-    |> Seq.tryFind (fun vm -> vm.CurrentModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
+    |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
-and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'id> =
+and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
     GetId: 'bindingModel -> 'id
-    FromId: 'id -> ViewModel<'bindingModel, 'bindingMsg> option }
+    FromId: 'id -> 'bindingViewModel option
+    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
 
   member d.TryGetMember (model: 'model) =
     d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.FromId selectedId)
@@ -178,11 +179,11 @@ and internal BaseVmBinding<'model, 'msg> =
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model>
   | Cmd of cmd: Command
-  | SubModel of SubModelBinding<'model, 'msg, obj, obj>
-  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj>
-  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj>
-  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj>
+  | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
 
 
 /// Represents all necessary data used in an active binding.
@@ -244,12 +245,12 @@ and internal FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
-    | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId)
+    | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId, b.SubModelSeqKeyedData.GetUnderlyingModel)
     | _ -> None
 
   member this.Recursive<'model, 'msg>
       (binding: VmBinding<'model, 'msg>)
-      : ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option =
+      : ((obj -> obj) * (obj -> obj option) * (obj -> obj)) option =
     match binding with
     | BaseVmBinding b -> this.Base b
     | Cached b -> this.Recursive b.Binding
@@ -261,7 +262,7 @@ and internal FuncsFromSubModelSeqKeyed() =
 and internal Initialize
       (loggingArgs: LoggingViewModelArgs,
        name: string,
-       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> ViewModel<obj, obj> option)) option) =
+       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> obj option) * (obj -> obj)) option) =
 
   let { log = log
         logPerformance = logPerformance
@@ -315,7 +316,7 @@ and internal Initialize
           let chain = LoggingViewModelArgs.getNameChainFor nameChain name
           d.GetModel initialModel
           |> ValueOption.map (fun m -> ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs)
-          |> ValueOption.map (fun args -> ViewModel(args, d.GetBindings ()))
+          |> ValueOption.map d.CreateViewModel
           |> (fun vm -> { SubModelData = d; Vm = ref vm })
           |> SubModel
           |> Some
@@ -331,7 +332,7 @@ and internal Initialize
           | WindowState.Hidden m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
-              let vm = ViewModel(args, d.GetBindings ())
+              let vm = d.CreateViewModel args
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
@@ -343,7 +344,7 @@ and internal Initialize
           | WindowState.Visible m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
-              let vm = ViewModel(args, d.GetBindings ())
+              let vm = d.CreateViewModel args
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
@@ -363,7 +364,7 @@ and internal Initialize
             |> Seq.map (fun (idx, m) ->
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
-                 ViewModel(args, d.GetBindings ()))
+                 d.CreateViewModel args)
             |> ObservableCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
@@ -378,7 +379,7 @@ and internal Initialize
                  let mId = d.GetId m
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
-                 ViewModel(args, d.GetBindings ()))
+                 d.CreateViewModel args)
             |> ObservableCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
@@ -388,12 +389,13 @@ and internal Initialize
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
           d.SubModelSeqBindingName
           |> getFunctionsForSubModelSelectedItem
-          |> Option.map (fun (getId, fromId) ->
+          |> Option.map (fun (getId, fromId, getUnderlyingModel) ->
               { Get = d.Get
                 Set = fun obj m -> d.Set obj m |> dispatch
                 SubModelSeqBindingName = d.SubModelSeqBindingName
                 GetId = getId
-                FromId = fromId }
+                FromId = fromId
+                GetUnderlyingModel = getUnderlyingModel }
               |> SubModelSelectedItem)
 
   member this.Recursive<'model, 'msg>
@@ -464,10 +466,10 @@ and internal Update
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
-            b.Vm.Value <- ValueSome <| ViewModel(args, d.GetBindings ())
+            b.Vm.Value <- ValueSome <| d.CreateViewModel(args)
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
-            vm.UpdateModel m
+            d.UpdateViewModel (vm, m)
             []
       | SubModelWin b ->
           let d = b.SubModelWinData
@@ -513,14 +515,14 @@ and internal Update
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create model (toMsg >> dispatch) chain loggingArgs
-            ViewModel(args, d.GetBindings ())
+            d.CreateViewModel args
 
           match b.VmWinState.Value, d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
               []
           | WindowState.Hidden vm, WindowState.Hidden m
           | WindowState.Visible vm, WindowState.Visible m ->
-              vm.UpdateModel m
+              d.UpdateViewModel (vm, m)
               []
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
@@ -529,11 +531,11 @@ and internal Update
               [ PropertyChanged name ]
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
-              vm.UpdateModel m
+              d.UpdateViewModel (vm, m)
               b.VmWinState.Value <- WindowState.Hidden vm
               []
           | WindowState.Hidden vm, WindowState.Visible m ->
-              vm.UpdateModel m
+              d.UpdateViewModel (vm, m)
               showHidden ()
               b.VmWinState.Value <- WindowState.Visible vm
               []
@@ -555,19 +557,19 @@ and internal Update
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
-            ViewModel(args, d.GetBindings ())
-          let update (vm: ViewModel<_, _>) = vm.UpdateModel
+            d.CreateViewModel args
+          let update vm m = d.UpdateViewModel (vm,m)
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
-          let getTargetId getId (vm: ViewModel<_, _>) = getId vm.CurrentModel
+          let getTargetId getId vm = vm |> d.GetUnderlyingModel |> getId
           let create m id =
             let toMsg = fun msg -> d.ToMsg currentModel msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (id, msg) |> dispatch) chain loggingArgs
-            ViewModel(args, d.GetBindings ())
-          let update (vm: ViewModel<_, _>) = vm.UpdateModel
+            d.CreateViewModel args
+          let update vm m = d.UpdateViewModel (vm,m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
             d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
@@ -673,10 +675,10 @@ and internal Set(value: obj) =
         b.Set value model
         true
     | SubModelSelectedItem b ->
-        let bindingModel =
-          (value :?> ViewModel<obj, obj>)
+        let bindingModel = 
+          value
           |> ValueOption.ofObj
-          |> ValueOption.map (fun vm -> vm.CurrentModel)
+          |> ValueOption.map b.GetUnderlyingModel
         b.TrySetMember(model, bindingModel)
         true
     | OneWay _
