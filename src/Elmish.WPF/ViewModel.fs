@@ -132,21 +132,24 @@ and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, '
     d.Vms
     |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
+and internal SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+  { GetId: 'bindingModel -> 'id
+    FromId: 'id -> 'bindingViewModel option
+    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
+
 and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
-    GetId: 'bindingModel -> 'id
-    FromId: 'id -> 'bindingViewModel option
-    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
+    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> }
 
   member d.TryGetMember (model: 'model) =
-    d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.FromId selectedId)
+    d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.SelectedItemBinding.FromId selectedId)
 
   member d.TrySetMember
       (model: 'model,
        bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map d.GetId
+    let id = bindingModel |> ValueOption.map d.SelectedItemBinding.GetId
     d.Set id model
 
 
@@ -245,12 +248,12 @@ and internal FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
-    | SubModelSeqKeyed b -> Some (b.SubModelSeqKeyedData.GetId, b.FromId, b.SubModelSeqKeyedData.GetUnderlyingModel)
+    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId; FromId = b.FromId; GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
     | _ -> None
 
   member this.Recursive<'model, 'msg>
       (binding: VmBinding<'model, 'msg>)
-      : ((obj -> obj) * (obj -> obj option) * (obj -> obj)) option =
+      : SelectedItemBinding<obj, obj, obj, obj> option =
     match binding with
     | BaseVmBinding b -> this.Base b
     | Cached b -> this.Recursive b.Binding
@@ -262,7 +265,7 @@ and internal FuncsFromSubModelSeqKeyed() =
 and internal Initialize
       (loggingArgs: LoggingViewModelArgs,
        name: string,
-       getFunctionsForSubModelSelectedItem: string -> ((obj -> obj) * (obj -> obj option) * (obj -> obj)) option) =
+       getFunctionsForSubModelSelectedItem: string -> SelectedItemBinding<obj, obj, obj, obj> option) =
 
   let { log = log
         logPerformance = logPerformance
@@ -389,13 +392,11 @@ and internal Initialize
           let d = d |> BindingData.SubModelSelectedItem.measureFunctions measure measure2
           d.SubModelSeqBindingName
           |> getFunctionsForSubModelSelectedItem
-          |> Option.map (fun (getId, fromId, getUnderlyingModel) ->
+          |> Option.map (fun selectedItemBinding ->
               { Get = d.Get
                 Set = fun obj m -> d.Set obj m |> dispatch
                 SubModelSeqBindingName = d.SubModelSeqBindingName
-                GetId = getId
-                FromId = fromId
-                GetUnderlyingModel = getUnderlyingModel }
+                SelectedItemBinding = selectedItemBinding }
               |> SubModelSelectedItem)
 
   member this.Recursive<'model, 'msg>
@@ -678,7 +679,7 @@ and internal Set(value: obj) =
         let bindingModel = 
           value
           |> ValueOption.ofObj
-          |> ValueOption.map b.GetUnderlyingModel
+          |> ValueOption.map b.SelectedItemBinding.GetUnderlyingModel
         b.TrySetMember(model, bindingModel)
         true
     | OneWay _
