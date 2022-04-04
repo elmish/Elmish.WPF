@@ -328,13 +328,13 @@ module internal BindingData =
     let mutable stickyModel = None
     let f newModel =
       match predicate newModel, stickyModel with
-      | _, None ->
+      | false, Some sm ->
+          sm
+      | false, None ->
           newModel
       | true, _ ->
           stickyModel <- Some newModel
           newModel
-      | false, Some sm ->
-          sm
     binding |> mapModel f
 
 
