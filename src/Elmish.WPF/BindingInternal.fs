@@ -327,14 +327,11 @@ module internal BindingData =
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
-      match predicate newModel, stickyModel with
-      | false, Some sm ->
-          sm
-      | false, None ->
-          newModel
-      | true, _ ->
-          stickyModel <- Some newModel
-          newModel
+      if predicate newModel then
+        stickyModel <- Some newModel
+        newModel
+      else
+        stickyModel |> Option.defaultValue newModel
     binding |> mapModel f
 
 
