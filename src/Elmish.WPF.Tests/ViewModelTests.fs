@@ -204,6 +204,26 @@ module OneWay =
       test <@ vm.NumPcTriggersFor name = if get m1 = get m2 then 0 else 1 @>
   }
 
+  [<Fact>]
+  let ``on model increment, sticky-to-even binding returns even number`` () =
+    let isEven x = x % 2 = 0
+
+    let returnEven a =
+      function
+      | b when isEven b -> b
+      | _ -> a
+
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m = GenX.auto<int>
+
+      let binding = oneWay id name |> Binding.addSticky isEven
+      let vm = TestVm(m, binding)
+
+      vm.UpdateModel (m + 1)
+      test <@ vm.Get name = returnEven m (m + 1) @>
+    }
+
 
 
 module OneWayLazy =

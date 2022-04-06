@@ -327,14 +327,11 @@ module internal BindingData =
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
-      match predicate newModel, stickyModel with
-      | _, None ->
-          newModel
-      | true, _ ->
-          stickyModel <- Some newModel
-          newModel
-      | false, Some sm ->
-          sm
+      if predicate newModel then
+        stickyModel <- Some newModel
+        newModel
+      else
+        stickyModel |> Option.defaultValue newModel
     binding |> mapModel f
 
 
@@ -665,7 +662,7 @@ module internal BindingData =
           (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-        UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm,inMapBindingModel m) |> d.UpdateViewModel 
+        UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm,inMapBindingModel m) |> d.UpdateViewModel
         GetUnderlyingModel = fun vm -> vm |> inMapBindingViewModel |> d.GetUnderlyingModel |> outMapBindingModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         GetId = inMapBindingModel >> d.GetId >> outMapId
