@@ -50,7 +50,7 @@ module internal CollectionTarget =
       RemoveAt = oc.RemoveAt
       Move = oc.Move
       Clear = oc.Clear
-      Enumerate = fun () -> oc
+      Enumerate = fun () -> upcast oc
       BoxedCollection = fun () -> oc |> box }
 
 module internal Merge =
