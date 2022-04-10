@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
+open System.Collections.Specialized
 
 
 type SourceOrTarget =
@@ -15,22 +16,58 @@ type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: 
   member this.Index2 = index2
   member this.Id = id
 
+type internal CollectionTarget<'a> =
+  { GetLength: unit -> int
+    GetAt: int -> 'a
+    Append: 'a -> unit
+    InsertAt: int * 'a -> unit
+    ReplaceAt: int * 'a -> unit
+    RemoveAt: int -> unit
+    Move: int * int -> unit
+    Clear: unit -> unit
+    Enumerate: unit -> 'a seq
+    BoxedCollection: unit -> obj }
+
+module internal CollectionTarget =
+  let map (f: 'a -> 'b) (f': 'b -> 'a) (ct: CollectionTarget<'a>) : CollectionTarget<'b> =
+    { GetLength = ct.GetLength
+      GetAt = ct.GetAt >> f
+      Append = f' >> ct.Append
+      InsertAt = Pair.mapAll id f' >> ct.InsertAt
+      ReplaceAt = Pair.mapAll id f' >> ct.ReplaceAt
+      RemoveAt = ct.RemoveAt
+      Move = ct.Move
+      Clear = ct.Clear
+      Enumerate = ct.Enumerate >> Seq.map f
+      BoxedCollection = ct.BoxedCollection }
+
+  let create (oc: ObservableCollection<'a>) =
+    { GetLength = fun () -> oc.Count
+      GetAt = fun i -> oc.[i]
+      Append = oc.Add
+      InsertAt = oc.Insert
+      ReplaceAt = fun (i,a) -> oc.[i] <- a
+      RemoveAt = oc.RemoveAt
+      Move = oc.Move
+      Clear = oc.Clear
+      Enumerate = fun () -> oc
+      BoxedCollection = fun () -> oc |> box }
 
 module internal Merge =
 
   let unkeyed
       (create: 's -> int -> 't)
       (update: 't -> 's -> unit)
-      (target: ObservableCollection<'t>)
+      (target: CollectionTarget<'t>)
       (source: 's seq) =
     let mutable lastIdx = -1
     for (idx, s) in source |> Seq.indexed do
       lastIdx <- idx
-      if idx < target.Count then
-        update target.[idx] s
+      if idx < target.GetLength() then
+        update (target.GetAt idx) s
       else // source is longer than target
-        create s idx |> target.Add
-    let mutable idx = target.Count - 1
+        create s idx |> target.Append
+    let mutable idx = target.GetLength() - 1
     while idx > lastIdx do // target is longer than source
       target.RemoveAt idx
       idx <- idx - 1
@@ -41,7 +78,7 @@ module internal Merge =
       (getTargetId: 't -> 'id)
       (create: 's -> 'id -> 't)
       (update: 't -> 's -> int -> unit)
-      (target: ObservableCollection<'t>)
+      (target: CollectionTarget<'t>)
       (source: 's array) =
     (*
      * Based on Elm's HTML.keyed
@@ -70,11 +107,11 @@ module internal Merge =
     let mutable shouldContinue = true
 
     let sourceCount = source.Length
-    let targetCount = target.Count
+    let targetCount = target.GetLength()
 
     while (shouldContinue && curSourceIdx < sourceCount && curTargetIdx < targetCount) do
       let curSource = source.[curSourceIdx]
-      let curTarget = target.[curTargetIdx]
+      let curTarget = target.GetAt curTargetIdx
 
       let curSourceId = getSourceId curSource
       let curTargetId = getTargetId curTarget
@@ -93,15 +130,15 @@ module internal Merge =
             s, id, id = curTargetId) // true => need to add
 
         let mNextTarget =
-          if curTargetIdx + 1 < targetCount then target.[curTargetIdx + 1] |> Some else None
+          if curTargetIdx + 1 < targetCount then target.GetAt (curTargetIdx + 1) |> Some else None
           |> Option.map (fun t ->
             let id = getTargetId t
             t, id, id = curSourceId) // true => need to remove
 
         match mNextSource, mNextTarget with
         | Some (nextSource, _, true), Some (nextTarget, _, true) -> // swap adjacent
-            target.[curTargetIdx] <- nextTarget
-            target.[curTargetIdx + 1] <- curTarget
+            target.ReplaceAt (curTargetIdx, nextTarget)
+            target.ReplaceAt ((curTargetIdx + 1), curTarget)
 
             update curTarget nextSource (curTargetIdx + 1)
             update nextTarget curSource curTargetIdx
@@ -143,7 +180,7 @@ module internal Merge =
     // replace many
     while (curSourceIdx < sourceCount && curTargetIdx < targetCount) do
       let curSource = source.[curSourceIdx]
-      let curTarget = target.[curTargetIdx]
+      let curTarget = target.GetAt curTargetIdx
 
       let curSourceId = getSourceId curSource
       let curTargetId = getTargetId curTarget
@@ -156,7 +193,7 @@ module internal Merge =
 
     // remove many
     for i in targetCount - 1..-1..curTargetIdx do
-      let t = target.[i]
+      let t = target.GetAt i
       let id = getTargetId t
       recordRemoval i t id
 
@@ -190,15 +227,15 @@ module internal Merge =
       |> Seq.append (additions |> Seq.map (fun (Kvp (id, (idx, s))) -> idx, create s id))
       |> Seq.append (moves |> Seq.map (fun (_, sIdx, t, _) -> sIdx, t))
       |> Seq.sortBy fst // insert by index from smallest to largest
-      |> Seq.iter target.Insert
+      |> Seq.iter target.InsertAt
 
     match moves, removals.Count, additions.Count with
     | [ (tIdx, sIdx, _, _) ], 0, 0 -> // single move
         target.Move(tIdx, sIdx)
     | [ (t1Idx, s1Idx, _, _); (t2Idx, s2Idx, _, _) ], 0, 0 when t1Idx = s2Idx && t2Idx = s1Idx-> // single swap
-        let temp = target.[t1Idx]
-        target.[t1Idx] <- target.[t2Idx]
-        target.[t2Idx] <- temp
+        let temp = target.GetAt t1Idx
+        target.ReplaceAt (t1Idx, target.GetAt t2Idx)
+        target.ReplaceAt (t2Idx, temp)
     | _, rc, _ when rc = targetCount && rc > 0 -> // remove everything (implies moves = [])
         target.Clear ()
         actuallyAdd ()

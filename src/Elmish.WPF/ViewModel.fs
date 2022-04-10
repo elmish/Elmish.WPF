@@ -99,7 +99,7 @@ type internal OneWayToSourceBinding<'model> = {
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
-  Values: ObservableCollection<'b>
+  Values: CollectionTarget<'b>
 }
 
 type internal TwoWayBinding<'model> = {
@@ -121,15 +121,15 @@ and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindi
 
 and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
-  Vms: ObservableCollection<'bindingViewModel>
+  Vms: CollectionTarget<'bindingViewModel>
 }
 
 and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
-    Vms: ObservableCollection<'bindingViewModel> }
+    Vms: CollectionTarget<'bindingViewModel> }
 
   member d.FromId(id: 'id) =
-    d.Vms
+    d.Vms.Enumerate ()
     |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
 and internal SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
@@ -294,7 +294,7 @@ and internal Initialize
           |> Some
       | OneWaySeqLazyData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
-            Values = ObservableCollection(initialModel |> d.Get |> d.Map) }
+            Values = d.CreateCollection (initialModel |> d.Get |> d.Map) }
           |> OneWaySeq
           |> Some
       | TwoWayData d ->
@@ -368,7 +368,7 @@ and internal Initialize
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
-            |> ObservableCollection
+            |> d.CreateCollection
           { SubModelSeqUnkeyedData = d
             Vms = vms }
           |> SubModelSeqUnkeyed
@@ -383,7 +383,7 @@ and internal Initialize
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
-            |> ObservableCollection
+            |> d.CreateCollection
           { SubModelSeqKeyedData = d
             Vms = vms }
           |> SubModelSeqKeyed
@@ -620,7 +620,7 @@ and internal Get(nameChain: string) =
     | OneWay { OneWayData = d } -> d.Get model |> Ok
     | TwoWay b -> b.Get model |> Ok
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
-    | OneWaySeq { Values = vals } -> vals |> box |> Ok
+    | OneWaySeq { Values = vals } -> vals.BoxedCollection() |> Ok
     | Cmd cmd -> cmd |> box |> Ok
     | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
     | SubModelWin { VmWinState = vm } ->
@@ -630,7 +630,7 @@ and internal Get(nameChain: string) =
         |> ValueOption.toObj
         |> Ok
     | SubModelSeqUnkeyed { Vms = vms }
-    | SubModelSeqKeyed { Vms = vms } -> vms |> box |> Ok
+    | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> Ok
     | SubModelSelectedItem b ->
         b.TryGetMember model
         |> function

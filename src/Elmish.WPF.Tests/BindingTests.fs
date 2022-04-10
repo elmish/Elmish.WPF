@@ -3053,7 +3053,7 @@ module sorting =
         let! s = GenX.auto<string>
         let data =
           [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
-            SubModelSeqKeyedData { GetSubModels = fail; GetId = fail; CreateViewModel = fail; UpdateViewModel = fail; GetUnderlyingModel = fail; ToMsg = fail }
+            SubModelSeqKeyedData { GetSubModels = fail; GetId = fail; CreateViewModel = fail; CreateCollection = fail; UpdateViewModel = fail; GetUnderlyingModel = fail; ToMsg = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ] |> List.map BaseBindingData
         let sorted = data |> List.sortWith (SubModelSelectedItemLast().CompareBindingDatas())

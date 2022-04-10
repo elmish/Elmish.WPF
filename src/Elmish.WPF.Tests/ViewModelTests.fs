@@ -78,14 +78,14 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   /// Will cause the property to be retrieved.
   member this.TrackCcTriggersFor propName =
     try
-      (this.Get propName : ObservableCollection<obj>).CollectionChanged.Add (fun e ->
+      (this.Get propName : INotifyCollectionChanged).CollectionChanged.Add (fun e ->
         ccTriggers.AddOrUpdate(
           propName,
           [e],
           (fun _ me -> e :: me)) |> ignore
       )
     with _ ->
-      (this.Get propName |> unbox<ObservableCollection<obj>>).CollectionChanged.Add (fun e ->
+      (this.Get propName |> unbox<INotifyCollectionChanged>).CollectionChanged.Add (fun e ->
         ccTriggers.AddOrUpdate(
           propName,
           [e],
@@ -379,7 +379,7 @@ module OneWaySeqLazy =
 
 
   let private testObservableCollectionContainsExpectedItems (vm: ViewModel<_, _>) name expected =
-    let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList |> List.map unbox
+    let actual = (vm.Get name : ObservableCollection<_>) |> Seq.toList
     test <@ expected = actual @>
 
 
@@ -1219,8 +1219,8 @@ module SubModelSeq =
   let private testObservableCollectionContainsExpectedItems (vm: ViewModel<Guid list, (Guid * obj)>) name expected =
     let actual =
       vm.Get name
-      |> unbox<ObservableCollection<obj>>
-      |> Seq.map (fun vm -> vm |> unbox<ViewModel<Guid,obj>> |> (fun vm -> vm.CurrentModel))
+      |> unbox<ObservableCollection<ViewModel<Guid,obj>>>
+      |> Seq.map (fun vm -> vm |> (fun vm -> vm.CurrentModel))
       |> Seq.toList
     test <@ expected = actual @>
 
@@ -1300,8 +1300,8 @@ module SubModelSeq =
 
       let actual =
         vm.Get name
-        |> unbox<ObservableCollection<obj>>
-        |> Seq.map (fun vm -> vm |> unbox<ViewModel<Guid,obj>> |> (fun vm -> vm.Get subName) |> unbox<string>)
+        |> unbox<ObservableCollection<ViewModel<Guid,obj>>>
+        |> Seq.map (fun vm -> vm |> (fun vm -> vm.Get subName) |> unbox<string>)
         |> Seq.toList
 
       let expected = getModels m |> Seq.map subGet |> Seq.toList
@@ -1328,8 +1328,8 @@ module SubModelSeq =
       let vm = TestVm(m, binding)
 
       vm.Get name
-      |> unbox<ObservableCollection<obj>>
-      |> Seq.iter (fun vm -> vm |> unbox<ViewModel<Guid,string>> |> (fun vm -> vm.Set subName p))
+      |> unbox<ObservableCollection<ViewModel<Guid,string>>>
+      |> Seq.iter (fun vm -> vm |> (fun vm -> vm.Set subName p))
 
       let expected = m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)
       test <@ expected = vm.Dispatches @>
@@ -1400,8 +1400,8 @@ module SubModelSelectedItem =
       let selectedVm =
         selectedSubModel |> ValueOption.bind (fun sm ->
           vm.Get subModelSeqName
-          |> unbox<ObservableCollection<obj>>
-          |> Seq.tryFind (fun vm -> vm |> unbox<ViewModel<Guid,int voption>> |> (fun vm -> vm.CurrentModel) |> getId = getId sm)
+          |> unbox<ObservableCollection<ViewModel<Guid,int voption>>>
+          |> Seq.tryFind (fun vm -> vm |> (fun vm -> vm.CurrentModel) |> getId = getId sm)
           |> ValueOption.ofOption
         )
         |> ValueOption.toObj

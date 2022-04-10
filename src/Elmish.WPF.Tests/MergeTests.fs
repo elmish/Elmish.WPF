@@ -14,7 +14,7 @@ open Elmish.WPF
 let getIdAsId = id
 let createAsId a _ = a
 let updateNoOp _ _ _ = ()
-let merge x = x |> Merge.keyed
+let internal merge x = x |> Merge.keyed
 
 
 let private trackCC (observableCollection: ObservableCollection<_>) =
@@ -37,7 +37,7 @@ let ``starting from empty, when items merged, should contain those items and cal
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array
 
     testObservableCollectionContainsDataInArray observableCollection array
     test <@ createTracker.Count = array.Length @>
@@ -54,7 +54,7 @@ let ``starting with random items, when merging the same items, should still cont
     let updateTracker = InvokeTester3 updateNoOp
     let ccEvents = trackCC observableCollection
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array
 
     testObservableCollectionContainsDataInArray observableCollection array
     test <@ createTracker.Count = 0 @>
@@ -71,7 +71,7 @@ let ``starting with random items, when merging random items, should contain the 
 
     let observableCollection = ObservableCollection<_> array1
 
-    merge getIdAsId getIdAsId createAsId updateNoOp observableCollection array2
+    merge getIdAsId getIdAsId createAsId updateNoOp (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
   }
@@ -88,7 +88,7 @@ let ``starting with random items, when merging after an addition, should contain
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 1 @>
@@ -107,7 +107,7 @@ let ``starting with random items, when merging after a removal, should contain t
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 0 @>
@@ -130,7 +130,7 @@ let ``starting with random items, when merging after a move, should contain the 
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 0 @>
@@ -154,7 +154,7 @@ let ``starting with random items, when merging after a replacement, should conta
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 1 @>
@@ -175,7 +175,7 @@ let ``starting with random items, when merging after swapping two adjacent items
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 0 @>
@@ -197,7 +197,7 @@ let ``starting with random items, when merging after swapping two items, should 
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 0 @>
@@ -215,7 +215,7 @@ let ``starting with random items, when merging after shuffling, should contain t
     let createTracker = InvokeTester2 createAsId
     let updateTracker = InvokeTester3 updateNoOp
 
-    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn observableCollection array2
+    merge getIdAsId getIdAsId createTracker.Fn updateTracker.Fn (observableCollection |> CollectionTarget.create) array2
 
     testObservableCollectionContainsDataInArray observableCollection array2
     test <@ createTracker.Count = 0 @>
@@ -247,7 +247,7 @@ let ``starting with two TestClass instances, when merging after removing the las
     let ccEvents = trackCC observableCollection
     let getId (tc: TestClass) = tc.Id
 
-    merge getId getId createAsId updateNoOp observableCollection array2
+    merge getId getId createAsId updateNoOp (observableCollection |> CollectionTarget.create) array2
 
     test <@ ((ccEvents
       |> Seq.filter (fun e -> e.Action = NotifyCollectionChangedAction.Remove)
@@ -275,7 +275,7 @@ let ``starting with two TestClass instances, when merging after updating the las
     let update target _ _ =
       mTarget <- Some target
 
-    merge getId getId createAsId update observableCollection array2
+    merge getId getId createAsId update (observableCollection |> CollectionTarget.create) array2
 
     let actual = mTarget
     test <@ actual.Value.Id = tc2.Id @>
