@@ -66,21 +66,16 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
     (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
     if bindings.ContainsKey name |> not then
-      let binding =
-        getModel initialModel
-        |> ValueOption.map (fun m -> createViewModel(ViewModelArgs.create m (toMsg currentModel >> dispatch) name loggingArgs))
-        |> (fun vm -> { SubModelData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel; UpdateViewModel = updateViewModel }; Vm = ref vm })
-      let toMsg2 = fun m bMsg -> binding.SubModelData.ToMsg m (unbox bMsg)
-      let getModel2 = binding.SubModelData.GetModel >> ValueOption.map box
-      let createViewModel2 = (fun args -> ViewModelArgs.map unbox box args |> binding.SubModelData.CreateViewModel |> box)
-      let updateViewModel2 = fun (vm,m) -> binding.SubModelData.UpdateViewModel(unbox vm, unbox m)
-      let initialVm2 = getModel2 currentModel |> ValueOption.map (fun m -> createViewModel2 (ViewModelArgs.create m (toMsg2 currentModel >> dispatch) name loggingArgs))
-      let vmBinding = { SubModelData = { GetModel = getModel2; ToMsg = toMsg2; CreateViewModel = createViewModel2; UpdateViewModel = updateViewModel2 }; Vm = ref initialVm2 }
-      do bindings.Add(name, BaseVmBinding (SubModel vmBinding))
-    
-    match bindings.Item name with
-    | BaseVmBinding (SubModel vmBinding) -> vmBinding.Vm.Value |> ValueOption.map (fun vm -> vm :?> 'viewModel)
-    | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); ValueNone
+      let bindingData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel; UpdateViewModel = updateViewModel }
+      let bindingData2 = Binding.SubModel.mapMinorTypes box box box unbox unbox unbox bindingData
+      let wrappedBindingData = bindingData2 |> SubModelData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
+      
+    let binding = Get(nameChain).Recursive(currentModel, bindings.Item name)
+    match binding with
+    | Ok o -> o |> unbox<'viewModel> |> ValueSome
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
 
   let initializeSubModelSeqBindingIfNew
     name
@@ -94,10 +89,11 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       let wrappedBindingData = bindingData2 |> SubModelSeqUnkeyedData |> BaseBindingData
       let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
-    
-    match bindings.Item name with
-    | BaseVmBinding (SubModelSeqUnkeyed vmBinding) -> vmBinding.Vms.BoxedCollection() |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
-    | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); ValueNone
+
+    let binding = Get(nameChain).Recursive(currentModel, bindings.Item name)
+    match binding with
+    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
 
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) =
     Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName
