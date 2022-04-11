@@ -88,11 +88,13 @@ module CounterWithClock =
 
   type Model =
     { Counter: Counter.Model
-      Clock: Clock.Model }
+      Clock: Clock.Model
+      Id: string }
 
-  let init () =
+  let init id =
     { Counter = Counter.init
-      Clock = Clock.init () }
+      Clock = Clock.init ()
+      Id = id }
 
   type Msg =
     | CounterMsg of Counter.Msg
@@ -106,39 +108,45 @@ module CounterWithClock =
 type [<AllowNullLiteral>] CounterWithClockViewModel (args) as this =
   inherit ViewModelBase<CounterWithClock.Model,CounterWithClock.Msg>(args, fun () -> box this)
   
-  new() = CounterWithClockViewModel(CounterWithClock.init () |> ViewModelArgs.simple)
+  new() = CounterWithClockViewModel(CounterWithClock.init "id" |> ViewModelArgs.simple)
 
   member _.Counter = this.subModel ((fun m -> m.Counter |> ValueSome), (fun _ msg -> CounterWithClock.CounterMsg msg), CounterViewModel)
   member _.Clock = this.subModel ((fun m -> m.Clock |> ValueSome), (fun _ msg -> CounterWithClock.ClockMsg msg), ClockViewModel)
+  member _.Id = this.getValue (fun m -> m.Id)
 
 module App2 =
 
   type Model =
-    { ClockCounter1: CounterWithClock.Model
-      ClockCounter2: CounterWithClock.Model }
+    { ClockCounters: CounterWithClock.Model seq }
 
   let init () =
-    { ClockCounter1 = CounterWithClock.init ()
-      ClockCounter2 = CounterWithClock.init () }
+    { ClockCounters = CounterWithClock.init |> Seq.replicate 4 |> Seq.mapi (fun i x -> i |> string |> x) }
 
   type Msg =
-    | ClockCounter1Msg of CounterWithClock.Msg
-    | ClockCounter2Msg of CounterWithClock.Msg
+    | ClockCountersMsg of int * CounterWithClock.Msg
+    | AllClockCountersMsg of CounterWithClock.Msg
+    | AddClockCounter
+    | RemoveClockCounter of int
 
   let update msg m =
     match msg with
-    | ClockCounter1Msg msg ->
-        { m with ClockCounter1 = CounterWithClock.update msg m.ClockCounter1 }
-    | ClockCounter2Msg msg ->
-        { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
+    | ClockCountersMsg (i, msg) ->
+        { m with ClockCounters = Seq.mapi (fun mi m -> if mi = i then CounterWithClock.update msg m else m) m.ClockCounters }
+    | AllClockCountersMsg msg ->
+        { m with ClockCounters = Seq.map (CounterWithClock.update msg) m.ClockCounters }
+    | AddClockCounter ->
+        { m with ClockCounters = Seq.append m.ClockCounters [ CounterWithClock.init (m.ClockCounters |> Seq.map (fun c -> c.Id |> int) |> Seq.max |> (+) 1 |> string) ] }
+    | RemoveClockCounter i ->
+        { m with ClockCounters = m.ClockCounters |> Seq.removeAt i }
 
 type [<AllowNullLiteral>] AppViewModel (args) as this =
   inherit ViewModelBase<App2.Model,App2.Msg>(args, fun () -> box this)
   
   new() = AppViewModel(App2.init () |> ViewModelArgs.simple)
 
-  member _.ClockCounter1 = this.subModel ((fun m -> m.ClockCounter1 |> ValueSome), (fun _ msg -> App2.ClockCounter1Msg msg), CounterWithClockViewModel)
-  member _.ClockCounter2 = this.subModel ((fun m -> m.ClockCounter2 |> ValueSome), (fun _ msg -> App2.ClockCounter2Msg msg), CounterWithClockViewModel)
+  member _.ClockCounters = this.subModelSeq ((fun m -> m.ClockCounters), (fun _ msg -> App2.ClockCountersMsg msg), CounterWithClockViewModel)
+  member _.AddClockCounter = this.cmd ((fun _ _ -> App2.AddClockCounter |> ValueSome), (fun _ _ -> true))
+  member _.RemoveClockCounter = this.cmd ((fun bi _ -> bi |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi m -> bi |> tryUnbox |> Option.map (fun i -> m.ClockCounters |> Seq.length > i && i >= 0) |> Option.defaultValue false))
 
 module Program =
 
@@ -149,8 +157,7 @@ module Program =
         DateTimeOffset.Now
         |> Clock.Tick
         |> CounterWithClock.ClockMsg
-      dispatch <| App2.ClockCounter1Msg clockMsg
-      dispatch <| App2.ClockCounter2Msg clockMsg
+      dispatch <| App2.AllClockCountersMsg clockMsg
     )
     timer.Start()
 

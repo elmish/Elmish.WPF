@@ -6,15 +6,26 @@
         xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModelStatic"
         xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelStatic;assembly=SubModelStatic.Core"
         Title="Sub-model"
-        Height="270"
+        Height="470"
         Width="500"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:AppViewModel, IsDesignTimeCreatable=True}">
   <StackPanel>
-    <TextBlock Text="Counter with clock 1" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
-    <local:CounterWithClock DataContext="{Binding ClockCounter1}" d:DataContext="{Binding DataContext.ClockCounter1, RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
-    <TextBlock Text="Counter with clock 2" FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" />
-    <local:CounterWithClock DataContext="{Binding ClockCounter2}" d:DataContext="{Binding DataContext.ClockCounter2, RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
+    <Button Command="{Binding AddClockCounter}">Add Clock Counter</Button>
+    <Button Command="{Binding RemoveClockCounter}" CommandParameter="{Binding ElementName=ListBox, Path=SelectedIndex}">Remove Selected Clock Counter</Button>
+    <ListBox x:Name="ListBox" ItemsSource="{Binding ClockCounters}">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="{x:Type vm:CounterWithClockViewModel}">
+          <StackPanel>
+            <TextBlock FontSize="18" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center">
+              <Run Text="Counter with clock"/>
+              <Run Text="{Binding Id, Mode=OneWay}"/>
+            </TextBlock>
+            <local:CounterWithClock DataContext="{Binding}"/>
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
   </StackPanel>
 </Window>
