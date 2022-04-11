@@ -77,7 +77,7 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     | Ok o -> o |> unbox<'viewModel> |> ValueSome
     | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
 
-  let initializeSubModelSeqBindingIfNew
+  let initializeSubModelSeqUnkeyedBindingIfNew
     name
     (getModels: 'model -> 'bindingModel seq)
     (toMsg: 'model -> int * 'bindingMsg -> 'msg)
@@ -87,6 +87,26 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       let bindingData = { GetModels = getModels; ToMsg = toMsg; CreateViewModel = createViewModel; CreateCollection = ObservableCollection >> CollectionTarget.create; UpdateViewModel = updateViewModel }
       let bindingData2 = BindingData.SubModelSeqUnkeyed.box bindingData
       let wrappedBindingData = bindingData2 |> SubModelSeqUnkeyedData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
+
+    let binding = Get(nameChain).Recursive(currentModel, bindings.Item name)
+    match binding with
+    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+
+  let initializeSubModelSeqKeyedBindingIfNew
+    name
+    (getModels: 'model -> 'bindingModel seq)
+    (getKey: 'bindingModel -> 'a)
+    (toMsg: 'model -> 'a * 'bindingMsg -> 'msg)
+    (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
+    (updateViewModel: 'bindingViewModel * 'bindingModel -> unit)
+    (getUnderlyingModel: 'bindingViewModel -> 'bindingModel) =
+    if bindings.ContainsKey name |> not then
+      let bindingData = { GetSubModels = getModels; ToMsg = toMsg; CreateViewModel = createViewModel; CreateCollection = ObservableCollection >> CollectionTarget.create; GetUnderlyingModel = getUnderlyingModel; UpdateViewModel = updateViewModel; GetId = getKey }
+      let bindingData2 = BindingData.SubModelSeqKeyed.box bindingData
+      let wrappedBindingData = bindingData2 |> SubModelSeqKeyedData |> BaseBindingData
       let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
 
@@ -109,8 +129,11 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
   member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
 
-  member _.subModelSeq(getModels: 'model -> 'bindingModel seq, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqBindingIfNew name getModels toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
+  member _.subModelSeqUnkeyed(getModels: 'model -> 'bindingModel seq, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqUnkeyedBindingIfNew name getModels toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
+
+  member _.subModelSeqKeyed(getModels: 'model -> 'bindingModel seq, toMsg, getKey, createViewModel, updateViewModel, getUnderlyingModel, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqKeyedBindingIfNew name getModels toMsg getKey createViewModel updateViewModel getUnderlyingModel) |> ValueOption.defaultValue null
 
   member internal _.CurrentModel : 'model = currentModel
 
@@ -155,11 +178,17 @@ type ViewModelBase<'model, 'msg> with
   member this.subModelBindings (getModel: 'model -> 'bindingModel voption, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
     this.subModel (getModel, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
 
-  member this.subModelSeq (getModels: 'model -> 'bindingModel seq, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeq (getModels, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModelSeqUnkeyed (getModels: 'model -> 'bindingModel seq, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqUnkeyed (getModels, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
 
-  member this.subModelSeqBindings (getModels: 'model -> 'bindingModel seq, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeq (getModels, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModelSeqUnkeyedBindings (getModels: 'model -> 'bindingModel seq, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqUnkeyed (getModels, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+
+  member this.subModelSeqKeyed (getModels: 'model -> 'bindingModel seq, getKey, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqKeyed (getModels, getKey, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), (fun vm -> vm.CurrentModel), ?memberName = memberName)
+
+  member this.subModelSeqKeyedBindings (getModels: 'model -> 'bindingModel seq, getKey, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqKeyed (getModels, getKey, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), (fun vm -> vm.CurrentModel), ?memberName = memberName)
 
 module BindingBase =
   module SubModelBase =
@@ -214,3 +243,18 @@ module BindingBase =
       BindingData.SubModelSeqUnkeyed.create
         create
         (fun (vm,m) -> vm.UpdateModel(m))
+
+  module SubModelSeqKeyedBase =
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component. You typically bind this
+    ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>) (getId: 'model -> 'id)
+        : string -> Binding<'model seq, 'id * 'msg> =
+      BindingData.SubModelSeqKeyed.create
+        create
+        (fun (vm,m) -> vm.UpdateModel(m))
+        (fun vm -> vm.CurrentModel)
+        getId

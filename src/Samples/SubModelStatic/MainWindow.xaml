@@ -13,7 +13,7 @@
         d:DataContext="{d:DesignInstance Type=vm:AppViewModel, IsDesignTimeCreatable=True}">
   <StackPanel>
     <Button Command="{Binding AddClockCounter}">Add Clock Counter</Button>
-    <Button Command="{Binding RemoveClockCounter}" CommandParameter="{Binding ElementName=ListBox, Path=SelectedIndex}">Remove Selected Clock Counter</Button>
+    <Button Command="{Binding RemoveClockCounter}" CommandParameter="{Binding ElementName=ListBox, Path=SelectedItem.Id}">Remove Selected Clock Counter</Button>
     <ListBox x:Name="ListBox" ItemsSource="{Binding ClockCounters}">
       <ListBox.ItemTemplate>
         <DataTemplate DataType="{x:Type vm:CounterWithClockViewModel}">

@@ -123,30 +123,30 @@ module App2 =
     { ClockCounters = CounterWithClock.init |> Seq.replicate 4 |> Seq.mapi (fun i x -> i |> string |> x) }
 
   type Msg =
-    | ClockCountersMsg of int * CounterWithClock.Msg
+    | ClockCountersMsg of string * CounterWithClock.Msg
     | AllClockCountersMsg of CounterWithClock.Msg
     | AddClockCounter
-    | RemoveClockCounter of int
+    | RemoveClockCounter of string
 
   let update msg m =
     match msg with
-    | ClockCountersMsg (i, msg) ->
-        { m with ClockCounters = Seq.mapi (fun mi m -> if mi = i then CounterWithClock.update msg m else m) m.ClockCounters }
+    | ClockCountersMsg (id, msg) ->
+        { m with ClockCounters = m.ClockCounters |> Seq.map (fun m -> if id = m.Id then CounterWithClock.update msg m else m) }
     | AllClockCountersMsg msg ->
-        { m with ClockCounters = Seq.map (CounterWithClock.update msg) m.ClockCounters }
+        { m with ClockCounters = m.ClockCounters |> Seq.map (CounterWithClock.update msg) }
     | AddClockCounter ->
         { m with ClockCounters = Seq.append m.ClockCounters [ CounterWithClock.init (m.ClockCounters |> Seq.map (fun c -> c.Id |> int) |> Seq.max |> (+) 1 |> string) ] }
-    | RemoveClockCounter i ->
-        { m with ClockCounters = m.ClockCounters |> Seq.removeAt i }
+    | RemoveClockCounter id ->
+        { m with ClockCounters = m.ClockCounters |> Seq.where (fun m -> id <> m.Id) }
 
 type [<AllowNullLiteral>] AppViewModel (args) as this =
   inherit ViewModelBase<App2.Model,App2.Msg>(args, fun () -> box this)
   
   new() = AppViewModel(App2.init () |> ViewModelArgs.simple)
 
-  member _.ClockCounters = this.subModelSeq ((fun m -> m.ClockCounters), (fun _ msg -> App2.ClockCountersMsg msg), CounterWithClockViewModel)
+  member _.ClockCounters = this.subModelSeqKeyed ((fun m -> m.ClockCounters), (fun m -> m.Id), (fun _ msg -> App2.ClockCountersMsg msg), CounterWithClockViewModel)
   member _.AddClockCounter = this.cmd ((fun _ _ -> App2.AddClockCounter |> ValueSome), (fun _ _ -> true))
-  member _.RemoveClockCounter = this.cmd ((fun bi _ -> bi |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi m -> bi |> tryUnbox |> Option.map (fun i -> m.ClockCounters |> Seq.length > i && i >= 0) |> Option.defaultValue false))
+  member _.RemoveClockCounter = this.cmd ((fun p _ -> p |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi _ -> bi <> null))
 
 module Program =
 
