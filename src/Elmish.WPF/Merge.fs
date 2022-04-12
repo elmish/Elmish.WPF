@@ -2,7 +2,6 @@
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
-open System.Collections.Specialized
 
 
 type SourceOrTarget =
@@ -138,7 +137,7 @@ module internal Merge =
         match mNextSource, mNextTarget with
         | Some (nextSource, _, true), Some (nextTarget, _, true) -> // swap adjacent
             target.ReplaceAt (curTargetIdx, nextTarget)
-            target.ReplaceAt ((curTargetIdx + 1), curTarget)
+            target.ReplaceAt (curTargetIdx + 1, curTarget)
 
             update curTarget nextSource (curTargetIdx + 1)
             update nextTarget curSource curTargetIdx

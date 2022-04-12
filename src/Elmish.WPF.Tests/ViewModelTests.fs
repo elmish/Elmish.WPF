@@ -1220,7 +1220,7 @@ module SubModelSeq =
     let actual =
       vm.Get name
       |> unbox<ObservableCollection<ViewModel<Guid,obj>>>
-      |> Seq.map (fun vm -> vm |> (fun vm -> vm.CurrentModel))
+      |> Seq.map (fun vm -> vm.CurrentModel)
       |> Seq.toList
     test <@ expected = actual @>
 
@@ -1301,7 +1301,7 @@ module SubModelSeq =
       let actual =
         vm.Get name
         |> unbox<ObservableCollection<ViewModel<Guid,obj>>>
-        |> Seq.map (fun vm -> vm |> (fun vm -> vm.Get subName) |> unbox<string>)
+        |> Seq.map (fun vm -> vm.Get subName |> unbox<string>)
         |> Seq.toList
 
       let expected = getModels m |> Seq.map subGet |> Seq.toList
@@ -1329,7 +1329,7 @@ module SubModelSeq =
 
       vm.Get name
       |> unbox<ObservableCollection<ViewModel<Guid,string>>>
-      |> Seq.iter (fun vm -> vm |> (fun vm -> vm.Set subName p))
+      |> Seq.iter (fun vm -> vm.Set subName p)
 
       let expected = m |> getModels |> List.map (fun m -> (getId m, subSet p m) |> toMsg)
       test <@ expected = vm.Dispatches @>
@@ -1401,7 +1401,7 @@ module SubModelSelectedItem =
         selectedSubModel |> ValueOption.bind (fun sm ->
           vm.Get subModelSeqName
           |> unbox<ObservableCollection<ViewModel<Guid,int voption>>>
-          |> Seq.tryFind (fun vm -> vm |> (fun vm -> vm.CurrentModel) |> getId = getId sm)
+          |> Seq.tryFind (fun vm -> vm.CurrentModel |> getId = getId sm)
           |> ValueOption.ofOption
         )
         |> ValueOption.toObj
