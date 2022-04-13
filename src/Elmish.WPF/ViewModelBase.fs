@@ -27,8 +27,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
   let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
   let errorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
 
-  let bindings = Dictionary<String, VmBinding<'model, 'msg>>()
-  let validationErrors = Dictionary<String, String list ref>()
+  let mutable bindings = Dictionary<String, VmBinding<'model, 'msg>>()
+  let mutable validationErrors = Dictionary<String, String list ref>()
 
   let raisePropertyChanged name =
     log.LogTrace("[{BindingNameChain}] PropertyChanged {BindingName}", nameChain, name)
@@ -41,23 +41,36 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
   let initializeGetBindingIfNew name getter =
     if bindings.ContainsKey name |> not then
-      let binding = BaseVmBinding (OneWay { OneWayData = { Get = getter >> box } })
-      bindings.Add(name, binding)
+      let bindingData: OneWayData<'model, obj> = { Get = getter >> box }
+      let wrappedBindingData = bindingData |> OneWayData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
+    else
+      let existingBinding = bindings.Item name
+      let newBinding =
+        match existingBinding with
+        | BaseVmBinding (OneWayToSource data) -> { Get = getter >> box; Set = data.Set } |> TwoWay |> BaseVmBinding |> Some
+        | _ -> None
+      do newBinding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
       
   let initializeSetBindingIfNew name (setter: 'model -> 'msg) =
     if bindings.ContainsKey name |> not then
-      let binding = BaseVmBinding (OneWayToSource { Set = (fun _ -> unbox >> setter >> dispatch) })
-      bindings.Add(name, binding)
+      let bindingData: OneWayToSourceData<'model, 'msg, obj> = { Set = (fun _ -> setter) }
+      let wrappedBindingData = bindingData |> OneWayToSourceData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
 
   let initializeCmdBindingIfNew name exec canExec =
     if bindings.ContainsKey name |> not then
-      let vmBinding = Command((fun p -> currentModel |> exec p |> ValueOption.iter dispatch), (fun p -> currentModel |> canExec p))
-      bindings.Add(name, BaseVmBinding (Cmd vmBinding))
-      vmBinding :> ICommand |> Some
-    else
-      match bindings.Item name with
-      | BaseVmBinding (Cmd vmBinding) -> vmBinding :> ICommand |> Some
-      | foundBinding -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, foundBinding); None
+      let bindingData = { Exec = exec; CanExec = canExec; AutoRequery = true }
+      let wrappedBindingData = bindingData |> CmdData |> BaseBindingData
+      let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
+      
+    let binding = Get(nameChain).Recursive(currentModel, bindings.Item name)
+    match binding with
+    | Ok o -> o |> unbox<ICommand> |> ValueSome
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
 
   let initializeSubModelBindingIfNew
     name
@@ -116,15 +129,15 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
 
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) =
-    Option.iter (fun name -> initializeGetBindingIfNew name getter) memberName
+    memberName |> Option.iter (fun name -> initializeGetBindingIfNew name getter)
     currentModel |> getter
 
   member _.setValue(setter: 'model -> 'msg, [<CallerMemberName>] ?memberName: string) =
-    Option.iter (fun name -> initializeSetBindingIfNew name setter) memberName
+    memberName |> Option.iter (fun name -> initializeSetBindingIfNew name setter)
     currentModel |> setter |> dispatch
 
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, [<CallerMemberName>] ?memberName: string) =
-    Option.bind (fun name -> initializeCmdBindingIfNew name exec canExec) memberName |> Option.defaultValue null
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec) |> ValueOption.defaultValue null
 
   member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
