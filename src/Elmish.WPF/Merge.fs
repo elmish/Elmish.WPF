@@ -20,7 +20,7 @@ type internal CollectionTarget<'a> =
     GetAt: int -> 'a
     Append: 'a -> unit
     InsertAt: int * 'a -> unit
-    ReplaceAt: int * 'a -> unit
+    SetAt: int * 'a -> unit
     RemoveAt: int -> unit
     Move: int * int -> unit
     Clear: unit -> unit
@@ -33,7 +33,7 @@ module internal CollectionTarget =
       GetAt = ct.GetAt >> fOut
       Append = fIn >> ct.Append
       InsertAt = Pair.map2 fIn >> ct.InsertAt
-      ReplaceAt = Pair.map2 fIn >> ct.ReplaceAt
+      SetAt = Pair.map2 fIn >> ct.SetAt
       RemoveAt = ct.RemoveAt
       Move = ct.Move
       Clear = ct.Clear
@@ -45,7 +45,7 @@ module internal CollectionTarget =
       GetAt = fun i -> oc.[i]
       Append = oc.Add
       InsertAt = oc.Insert
-      ReplaceAt = fun (i,a) -> oc.[i] <- a
+      SetAt = fun (i,a) -> oc.[i] <- a
       RemoveAt = oc.RemoveAt
       Move = oc.Move
       Clear = oc.Clear
@@ -136,8 +136,8 @@ module internal Merge =
 
         match mNextSource, mNextTarget with
         | Some (nextSource, _, true), Some (nextTarget, _, true) -> // swap adjacent
-            target.ReplaceAt (curTargetIdx, nextTarget)
-            target.ReplaceAt (curTargetIdx + 1, curTarget)
+            target.SetAt (curTargetIdx, nextTarget)
+            target.SetAt (curTargetIdx + 1, curTarget)
 
             update curTarget nextSource (curTargetIdx + 1)
             update nextTarget curSource curTargetIdx
@@ -233,8 +233,8 @@ module internal Merge =
         target.Move(tIdx, sIdx)
     | [ (t1Idx, s1Idx, _, _); (t2Idx, s2Idx, _, _) ], 0, 0 when t1Idx = s2Idx && t2Idx = s1Idx-> // single swap
         let temp = target.GetAt t1Idx
-        target.ReplaceAt (t1Idx, target.GetAt t2Idx)
-        target.ReplaceAt (t2Idx, temp)
+        target.SetAt (t1Idx, target.GetAt t2Idx)
+        target.SetAt (t2Idx, temp)
     | _, rc, _ when rc = targetCount && rc > 0 -> // remove everything (implies moves = [])
         target.Clear ()
         actuallyAdd ()

@@ -28,7 +28,7 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
       let create v _ = v
       let update oldVal newVal oldIdx =
         if not (d.ItemEquals newVal oldVal) then
-          values.ReplaceAt (oldIdx, newVal)
+          values.SetAt (oldIdx, newVal)
       let newVals = intermediate |> d.Map |> Seq.toArray
       Merge.keyed d.GetId d.GetId create update values newVals
 
