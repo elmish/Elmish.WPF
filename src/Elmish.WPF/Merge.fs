@@ -28,16 +28,16 @@ type internal CollectionTarget<'a> =
     BoxedCollection: unit -> obj }
 
 module internal CollectionTarget =
-  let map (f: 'a -> 'b) (f': 'b -> 'a) (ct: CollectionTarget<'a>) : CollectionTarget<'b> =
+  let map (fOut: 'a -> 'b) (fIn: 'b -> 'a) (ct: CollectionTarget<'a>) : CollectionTarget<'b> =
     { GetLength = ct.GetLength
-      GetAt = ct.GetAt >> f
-      Append = f' >> ct.Append
-      InsertAt = Pair.mapAll id f' >> ct.InsertAt
-      ReplaceAt = Pair.mapAll id f' >> ct.ReplaceAt
+      GetAt = ct.GetAt >> fOut
+      Append = fIn >> ct.Append
+      InsertAt = Pair.map2 fIn >> ct.InsertAt
+      ReplaceAt = Pair.map2 fIn >> ct.ReplaceAt
       RemoveAt = ct.RemoveAt
       Move = ct.Move
       Clear = ct.Clear
-      Enumerate = ct.Enumerate >> Seq.map f
+      Enumerate = ct.Enumerate >> Seq.map fOut
       BoxedCollection = ct.BoxedCollection }
 
   let create (oc: ObservableCollection<'a>) =
