@@ -93,6 +93,8 @@ module Pair =
 
   let mapAll f g (a, c) = (f a, g c)
 
+  let map2 f (a, c) = (a, f c)
+
 
 [<RequireQualifiedAccess>]
 module PairOption =

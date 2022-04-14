@@ -17,17 +17,18 @@ type internal OneWayToSourceData<'model, 'msg> =
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
   { Get: 'model -> 'a
     Map: 'a -> 'b seq
+    CreateCollection: 'b seq -> CollectionTarget<'b>
     Equals: 'a -> 'a -> bool
     GetId: 'b -> 'id
     ItemEquals: 'b -> 'b -> bool }
 
-  member d.Merge(values: ObservableCollection<'b>, currentModel: 'model, newModel: 'model) =
+  member d.Merge(values: CollectionTarget<'b>, currentModel: 'model, newModel: 'model) =
     let intermediate = d.Get newModel
     if not <| d.Equals intermediate (d.Get currentModel) then
       let create v _ = v
       let update oldVal newVal oldIdx =
         if not (d.ItemEquals newVal oldVal) then
-          values.[oldIdx] <- newVal
+          values.SetAt (oldIdx, newVal)
       let newVals = intermediate |> d.Map |> Seq.toArray
       Merge.keyed d.GetId d.GetId create update values newVals
 
@@ -72,6 +73,7 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingV
 and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> =
   { GetModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+    CreateCollection: 'bindingViewModel seq -> CollectionTarget<'bindingViewModel>
     UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
 
@@ -79,6 +81,7 @@ and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'b
 and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
   { GetSubModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel,'bindingMsg> -> 'bindingViewModel
+    CreateCollection: 'bindingViewModel seq -> CollectionTarget<'bindingViewModel>
     UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
     GetUnderlyingModel: 'bindingViewModel -> 'bindingModel
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
@@ -88,7 +91,7 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bin
       (getTargetId: ('bindingModel -> 'id) -> 't -> 'id,
        create: 'bindingModel -> 'id -> 't,
        update: 't -> 'bindingModel -> unit,
-       values: ObservableCollection<'t>,
+       values: CollectionTarget<'t>,
        newSubModels: 'bindingModel []) =
     let update t bm _ = update t bm
     Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
@@ -168,6 +171,7 @@ module internal BindingData =
       | OneWaySeqLazyData d -> OneWaySeqLazyData {
           Get = f >> d.Get
           Map = d.Map
+          CreateCollection = d.CreateCollection
           Equals = d.Equals
           GetId = d.GetId
           ItemEquals = d.ItemEquals
@@ -199,12 +203,14 @@ module internal BindingData =
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = f >> d.GetModels
           CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = f >> d.GetSubModels
           CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
           GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = f >> d.ToMsg
@@ -268,12 +274,14 @@ module internal BindingData =
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = d.GetModels
           CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = d.GetSubModels
           CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
           GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
@@ -410,6 +418,7 @@ module internal BindingData =
         (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) = {
       Get = d.Get >> outMapA
       Map = inMapA >> d.Map >> Seq.map outMapB
+      CreateCollection = Seq.map inMapB >> d.CreateCollection >> CollectionTarget.map outMapB inMapB
       Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
       GetId = inMapB >> d.GetId >> outMapId
       ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
@@ -421,6 +430,7 @@ module internal BindingData =
       { Get = get
         Equals = equals
         Map = fun a -> upcast map a
+        CreateCollection = ObservableCollection >> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId }
       |> box
@@ -613,6 +623,7 @@ module internal BindingData =
         (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
       CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
       UpdateViewModel = fun (vm,m) -> d.UpdateViewModel (inMapBindingViewModel vm,inMapBindingModel m)
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
@@ -622,6 +633,7 @@ module internal BindingData =
     let create createViewModel updateViewModel =
       { GetModels = id
         CreateViewModel = createViewModel
+        CreateCollection = ObservableCollection >> CollectionTarget.create
         UpdateViewModel = updateViewModel
         ToMsg = fun _ -> id }
       |> box
@@ -662,6 +674,7 @@ module internal BindingData =
           (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
         UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm,inMapBindingModel m) |> d.UpdateViewModel
         GetUnderlyingModel = fun vm -> vm |> inMapBindingViewModel |> d.GetUnderlyingModel |> outMapBindingModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
@@ -673,6 +686,7 @@ module internal BindingData =
       let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id
           CreateViewModel = createViewModel
+          CreateCollection = ObservableCollection >> CollectionTarget.create
           UpdateViewModel = updateViewModel
           GetUnderlyingModel = getUnderlyingModel
           ToMsg = fun _ -> id
