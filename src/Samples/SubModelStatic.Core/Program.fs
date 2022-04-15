@@ -40,9 +40,9 @@ type [<AllowNullLiteral>] CounterViewModel (args) as this =
     with get() = this.getValue (fun m -> m.StepSize)
     and set(v) = this.setValue (fun _m -> Counter.Msg.SetStepSize v)
   member _.CounterValue = this.getValue (fun m -> m.Count)
-  member _.Increment = this.cmd((fun _ _ -> Counter.Increment |> ValueSome), (fun _ _ -> true))
-  member _.Decrement = this.cmd((fun _ _ -> Counter.Decrement |> ValueSome), (fun _ _ -> true))
-  member _.Reset = this.cmd((fun _ _ -> Counter.Reset |> ValueSome), (fun _ -> Counter.canReset))
+  member _.Increment = this.cmd((fun _ _ -> Counter.Increment |> ValueSome), (fun _ _ -> true), false)
+  member _.Decrement = this.cmd((fun _ _ -> Counter.Decrement |> ValueSome), (fun _ _ -> true), false)
+  member _.Reset = this.cmd((fun _ _ -> Counter.Reset |> ValueSome), (fun _ -> Counter.canReset), false)
 
 
 module Clock =
@@ -80,9 +80,9 @@ type [<AllowNullLiteral>] ClockViewModel (args) as this =
 
   member _.Time = this.getValue Clock.getTime
   member _.IsLocal = this.getValue (fun m -> m.TimeType = Clock.Local)
-  member _.SetLocal = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome), (fun _ _ -> true))
+  member _.SetLocal = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome), (fun _ _ -> true), false)
   member _.IsUtc = this.getValue (fun m -> m.TimeType = Clock.Utc)
-  member _.SetUtc = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Utc |> ValueSome), (fun _ _ -> true))
+  member _.SetUtc = this.cmd ((fun _ _ -> Clock.SetTimeType Clock.Utc |> ValueSome), (fun _ _ -> true), false)
 
 module CounterWithClock =
 
@@ -145,8 +145,8 @@ type [<AllowNullLiteral>] AppViewModel (args) as this =
   new() = AppViewModel(App2.init () |> ViewModelArgs.simple)
 
   member _.ClockCounters = this.subModelSeqKeyed ((fun m -> m.ClockCounters), (fun m -> m.Id), (fun _ msg -> App2.ClockCountersMsg msg), CounterWithClockViewModel)
-  member _.AddClockCounter = this.cmd ((fun _ _ -> App2.AddClockCounter |> ValueSome), (fun _ _ -> true))
-  member _.RemoveClockCounter = this.cmd ((fun p _ -> p |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi _ -> bi <> null))
+  member _.AddClockCounter = this.cmd ((fun _ _ -> App2.AddClockCounter |> ValueSome), (fun _ _ -> true), true)
+  member _.RemoveClockCounter = this.cmd ((fun p _ -> p |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi _ -> bi <> null), true)
 
 module Program =
 

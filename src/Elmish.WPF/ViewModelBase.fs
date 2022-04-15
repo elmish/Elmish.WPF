@@ -60,9 +60,9 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
 
-  let initializeCmdBindingIfNew name exec canExec =
+  let initializeCmdBindingIfNew name exec canExec autoRequery =
     if bindings.ContainsKey name |> not then
-      let bindingData = { Exec = exec; CanExec = canExec; AutoRequery = true }
+      let bindingData = { Exec = exec; CanExec = canExec; AutoRequery = autoRequery }
       let wrappedBindingData = bindingData |> CmdData |> BaseBindingData
       let binding = Initialize(loggingArgs, name, fun _ -> None).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> bindings.Add(name, binding)) |> ignore
@@ -136,8 +136,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     memberName |> Option.iter (fun name -> initializeSetBindingIfNew name setter)
     currentModel |> setter |> dispatch
 
-  member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec) |> ValueOption.defaultValue null
+  member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, autoRequery: bool, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery) |> ValueOption.defaultValue null
 
   member _.subModel(getModel: 'model -> 'bindingModel voption, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
