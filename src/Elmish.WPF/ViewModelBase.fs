@@ -212,7 +212,7 @@ module BindingBase =
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
     /// </summary>
-    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    /// <param name="create">Returns the static view model for the sub-model.</param>
     let vopt (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
         : string -> Binding<'model voption, 'msg> =
       { GetModel = id
@@ -228,7 +228,7 @@ module BindingBase =
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
     /// </summary>
-    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    /// <param name="create">Returns the static view model for the sub-model.</param>
     let opt (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
         : string -> Binding<'model option, 'msg> =
       vopt create
@@ -238,7 +238,7 @@ module BindingBase =
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
     /// </summary>
-    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    /// <param name="create">Returns the static view model for the sub-model.</param>
     let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
         : string -> Binding<'model, 'msg> =
       vopt create
@@ -250,7 +250,7 @@ module BindingBase =
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
     /// </summary>
-    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    /// <param name="create">Returns the static view model for the sub-model.</param>
     let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>)
         : string -> Binding<'model seq, int * 'msg> =
       BindingData.SubModelSeqUnkeyed.create
@@ -263,7 +263,8 @@ module BindingBase =
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
     /// </summary>
-    /// <param name="bindings">Returns the bindings for the sub-model.</param>
+    /// <param name="create">Returns the static view model for the sub-model.</param>
+    /// <param name="getId">Returns the identifier for the model.</param>
     let required (create: ViewModelArgs<'model, 'msg> -> #ViewModelBase<'model,'msg>) (getId: 'model -> 'id)
         : string -> Binding<'model seq, 'id * 'msg> =
       BindingData.SubModelSeqKeyed.create
