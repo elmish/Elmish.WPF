@@ -20,6 +20,13 @@ module internal LoggingViewModelArgs =
 
   let map nameChain v = { v with nameChain = nameChain }
 
+  let fake =
+    { performanceLogThresholdMs = 1
+      log = NullLogger.Instance
+      logPerformance = NullLogger.Instance
+      nameChain = "" }
+
+
 type internal ViewModelArgs<'model, 'msg> =
   { initialModel: 'model
     dispatch: 'msg -> unit
@@ -35,3 +42,8 @@ module internal ViewModelArgs =
     { initialModel = v.initialModel |> mapModel
       dispatch = mapMsg >> v.dispatch
       loggingArgs = v.loggingArgs }
+  
+  let fake initialModel =
+    { initialModel = initialModel
+      dispatch = ignore
+      loggingArgs = LoggingViewModelArgs.fake }
