@@ -72,9 +72,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Capabilities.Core", "Sample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Capabilities", "Samples\Capabilities\Capabilities.csproj", "{BDA46408-691C-47FA-8670-92A5D04663EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multiselect", "Samples\Multiselect\Multiselect.csproj", "{57EB1D0A-9182-4A7F-818B-8FDCA58D7321}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Multiselect", "Samples\Multiselect\Multiselect.csproj", "{57EB1D0A-9182-4A7F-818B-8FDCA58D7321}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Multiselect.Core", "Samples\Multiselect.Core\Multiselect.Core.fsproj", "{DFF15AD9-337E-4301-9A05-5CFA147C457E}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Multiselect.Core", "Samples\Multiselect.Core\Multiselect.Core.fsproj", "{DFF15AD9-337E-4301-9A05-5CFA147C457E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
