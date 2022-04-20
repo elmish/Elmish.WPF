@@ -20,7 +20,7 @@ module internal LoggingViewModelArgs =
 
   let map nameChain v = { v with nameChain = nameChain }
 
-  let fake =
+  let none =
     { performanceLogThresholdMs = 1
       log = NullLogger.Instance
       logPerformance = NullLogger.Instance
@@ -43,7 +43,7 @@ module internal ViewModelArgs =
       dispatch = mapMsg >> v.dispatch
       loggingArgs = v.loggingArgs }
   
-  let fake initialModel =
+  let simple initialModel =
     { initialModel = initialModel
       dispatch = ignore
-      loggingArgs = LoggingViewModelArgs.fake }
+      loggingArgs = LoggingViewModelArgs.none }
