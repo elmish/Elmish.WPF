@@ -67,7 +67,7 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
         let! name = memberName
         let! vmBinding =
           option {
-            match setBindings.TryGetValue name with
+            match getBindings.TryGetValue name with
             | true, value ->
               return value |> MapOutputType.unboxVm
             | _ ->
