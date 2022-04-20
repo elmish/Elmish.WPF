@@ -703,7 +703,7 @@ and internal Set(value: obj) =
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
-and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
+and [<AllowNullLiteral>] ViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
         bindings: Binding<'model, 'msg> list)
       as this =

@@ -4,13 +4,13 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Abstractions
 
 
-type internal LoggingViewModelArgs =
+type LoggingViewModelArgs =
   { performanceLogThresholdMs: int
     log: ILogger
     logPerformance: ILogger
     nameChain: string }
 
-module internal LoggingViewModelArgs =
+module LoggingViewModelArgs =
 
   let getNameChainFor nameChain name =
     sprintf "%s.%s" nameChain name
@@ -27,12 +27,12 @@ module internal LoggingViewModelArgs =
       nameChain = "" }
 
 
-type internal ViewModelArgs<'model, 'msg> =
+type ViewModelArgs<'model, 'msg> =
   { initialModel: 'model
     dispatch: 'msg -> unit
     loggingArgs: LoggingViewModelArgs }
 
-module internal ViewModelArgs =
+module ViewModelArgs =
   let create initialModel dispatch nameChain loggingArgs =
     { initialModel = initialModel
       dispatch = dispatch
