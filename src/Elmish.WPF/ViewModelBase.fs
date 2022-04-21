@@ -59,12 +59,16 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
         log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
         None
 
-  let initializeGetBindingIfNew name getter =
+  let initializeGetBindingIfNew name (getter: 'model -> 'a) =
     if getBindings.ContainsKey name |> not then
       let bindingData: OneWayData<'model, obj> = { Get = getter >> box }
       let wrappedBindingData = bindingData |> OneWayData |> BaseBindingData
       let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+    let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
+    match binding with
+    | Ok o -> o |> unbox<'a> |> ValueSome
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
       
   let initializeSetBindingIfNew name (setter: 'model -> 'msg) =
     if setBindings.ContainsKey name |> not then
@@ -72,6 +76,9 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       let wrappedBindingData = bindingData |> OneWayToSourceData |> BaseBindingData
       let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
       do binding |> Option.map (fun binding -> setBindings.Add(name, binding)) |> ignore
+    let didSet = Set(setter |> box).Recursive(currentModel, setBindings.Item name)
+    if not didSet then
+      log.LogError("Failed to set binding {name}", name)
 
   let initializeCmdBindingIfNew name exec canExec autoRequery =
     if getBindings.ContainsKey name |> not then
@@ -213,12 +220,10 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     Set(v).Recursive(currentModel, setBindings.Item name) |> ignore
 
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) =
-    memberName |> Option.iter (fun name -> initializeGetBindingIfNew name getter)
-    currentModel |> getter
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeGetBindingIfNew name getter) |> ValueOption.defaultValue Unchecked.defaultof<'a>
 
   member _.setValue(setter: 'model -> 'msg, [<CallerMemberName>] ?memberName: string) =
     memberName |> Option.iter (fun name -> initializeSetBindingIfNew name setter)
-    currentModel |> setter |> dispatch
 
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, autoRequery: bool, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery) |> ValueOption.defaultValue null
@@ -235,11 +240,11 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
   member _.subModelWin(getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelWinBindingIfNew name getState toMsg getWindow isModal onCloseRequested createViewModel updateViewModel) |> ValueOption.defaultValue null
 
-  member _.getSubModelSelectedItem(seqBinding, get, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name get seqBinding) |> ValueOption.defaultValue null
+  member _.getSubModelSelectedItem(seqBinding, getter, [<CallerMemberName>] ?memberName: string) =
+    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name getter seqBinding) |> ValueOption.defaultValue null
   
-  member _.setSubModelSelectedItem(seqBinding, set, value, [<CallerMemberName>] ?memberName: string) =
-    memberName |> Option.iter (fun name -> initializeSetSubModelSelectedItemBindingIfNew name set seqBinding value)
+  member _.setSubModelSelectedItem(seqBinding, setter, value, [<CallerMemberName>] ?memberName: string) =
+    memberName |> Option.iter (fun name -> initializeSetSubModelSelectedItemBindingIfNew name setter seqBinding value)
 
   member internal _.CurrentModel : 'model = currentModel
 
