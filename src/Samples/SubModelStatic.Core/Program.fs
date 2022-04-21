@@ -117,16 +117,19 @@ type [<AllowNullLiteral>] CounterWithClockViewModel (args) as this =
 module App2 =
 
   type Model =
-    { ClockCounters: CounterWithClock.Model seq }
+    { ClockCounters: CounterWithClock.Model seq
+      SelectedId: string voption }
 
   let init () =
-    { ClockCounters = CounterWithClock.init |> Seq.replicate 4 |> Seq.mapi (fun i x -> i |> string |> x) }
+    { ClockCounters = CounterWithClock.init |> Seq.replicate 4 |> Seq.mapi (fun i x -> i |> string |> x)
+      SelectedId = ValueNone }
 
   type Msg =
     | ClockCountersMsg of string * CounterWithClock.Msg
     | AllClockCountersMsg of CounterWithClock.Msg
     | AddClockCounter
     | RemoveClockCounter of string
+    | SelectClockCounter of string voption
 
   let update msg m =
     match msg with
@@ -138,6 +141,8 @@ module App2 =
         { m with ClockCounters = Seq.append m.ClockCounters [ CounterWithClock.init (m.ClockCounters |> Seq.map (fun c -> c.Id |> int) |> Seq.max |> (+) 1 |> string) ] }
     | RemoveClockCounter id ->
         { m with ClockCounters = m.ClockCounters |> Seq.where (fun m -> id <> m.Id) }
+    | SelectClockCounter s ->
+        { m with SelectedId = s }
 
 type [<AllowNullLiteral>] AppViewModel (args) as this =
   inherit ViewModelBase<App2.Model,App2.Msg>(args, fun () -> box this)
@@ -147,6 +152,9 @@ type [<AllowNullLiteral>] AppViewModel (args) as this =
   member _.ClockCounters = this.subModelSeqKeyed ((fun m -> m.ClockCounters), (fun m -> m.Id), (fun _ msg -> App2.ClockCountersMsg msg), CounterWithClockViewModel)
   member _.AddClockCounter = this.cmd ((fun _ _ -> App2.AddClockCounter |> ValueSome), (fun _ _ -> true), true)
   member _.RemoveClockCounter = this.cmd ((fun p _ -> p |> unbox |> App2.RemoveClockCounter |> ValueSome), (fun bi _ -> bi <> null), true)
+  member _.SelectedClockCounter
+    with get() = this.getSubModelSelectedItem (<@ this.ClockCounters @>, (fun m -> m.SelectedId) )
+    and set(v) = this.setSubModelSelectedItem (<@ this.ClockCounters @>, (fun s _ -> App2.SelectClockCounter s), v)
 
 module Program =
 
