@@ -8,10 +8,8 @@ open System.Windows.Input
 open Microsoft.Extensions.Logging
 open System.Collections.ObjectModel
 open System.Windows
-open Microsoft.FSharp.Quotations
 open FSharp.Quotations
 open FSharp.Quotations.Patterns
-open FSharp.Quotations.DerivedPatterns
 
 
 type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
@@ -61,10 +59,13 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
   let initializeGetBindingIfNew name (getter: 'model -> 'a) =
     if getBindings.ContainsKey name |> not then
-      let bindingData: OneWayData<'model, obj> = { Get = getter >> box }
+      let bindingData: OneWayData<'model, obj> =
+        { Get = getter >> box }
       let wrappedBindingData = bindingData |> OneWayData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
     | Ok o -> o |> unbox<'a> |> ValueSome
@@ -72,20 +73,28 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       
   let initializeSetBindingIfNew name (setter: 'model -> 'msg) =
     if setBindings.ContainsKey name |> not then
-      let bindingData: OneWayToSourceData<'model, 'msg, obj> = { Set = (fun _ -> setter) }
+      let bindingData: OneWayToSourceData<'model, 'msg, obj> =
+        { Set = (fun setter -> setter |> unbox<'model -> 'msg>) }
       let wrappedBindingData = bindingData |> OneWayToSourceData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> setBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> setBindings.Add(name, binding))
     let didSet = Set(setter |> box).Recursive(currentModel, setBindings.Item name)
     if not didSet then
       log.LogError("Failed to set binding {name}", name)
 
   let initializeCmdBindingIfNew name exec canExec autoRequery =
     if getBindings.ContainsKey name |> not then
-      let bindingData = { Exec = exec; CanExec = canExec; AutoRequery = autoRequery }
+      let bindingData =
+        { Exec = exec
+          CanExec = canExec
+          AutoRequery = autoRequery }
       let wrappedBindingData = bindingData |> CmdData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -99,11 +108,17 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
     (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
     if getBindings.ContainsKey name |> not then
-      let bindingData = { GetModel = getModel; ToMsg = toMsg; CreateViewModel = createViewModel; UpdateViewModel = updateViewModel }
+      let bindingData =
+        { GetModel = getModel
+          ToMsg = toMsg
+          CreateViewModel = createViewModel
+          UpdateViewModel = updateViewModel }
       let bindingData2 = Binding.SubModel.mapMinorTypes box box box unbox unbox unbox bindingData
       let wrappedBindingData = bindingData2 |> SubModelData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -117,11 +132,18 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     (createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel)
     (updateViewModel: 'bindingViewModel * 'bindingModel -> unit) =
     if getBindings.ContainsKey name |> not then
-      let bindingData = { GetModels = getModels; ToMsg = toMsg; CreateViewModel = createViewModel; CreateCollection = ObservableCollection >> CollectionTarget.create; UpdateViewModel = updateViewModel }
+      let bindingData =
+        { GetModels = getModels
+          ToMsg = toMsg
+          CreateViewModel = createViewModel
+          CreateCollection = ObservableCollection >> CollectionTarget.create
+          UpdateViewModel = updateViewModel }
       let bindingData2 = BindingData.SubModelSeqUnkeyed.box bindingData
       let wrappedBindingData = bindingData2 |> SubModelSeqUnkeyedData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -137,11 +159,20 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
     (updateViewModel: 'bindingViewModel * 'bindingModel -> unit)
     (getUnderlyingModel: 'bindingViewModel -> 'bindingModel) =
     if getBindings.ContainsKey name |> not then
-      let bindingData = { GetSubModels = getModels; ToMsg = toMsg; CreateViewModel = createViewModel; CreateCollection = ObservableCollection >> CollectionTarget.create; GetUnderlyingModel = getUnderlyingModel; UpdateViewModel = updateViewModel; GetId = getKey }
+      let bindingData =
+        { GetSubModels = getModels
+          ToMsg = toMsg
+          CreateViewModel = createViewModel
+          CreateCollection = ObservableCollection >> CollectionTarget.create
+          GetUnderlyingModel = getUnderlyingModel
+          UpdateViewModel = updateViewModel
+          GetId = getKey }
       let bindingData2 = BindingData.SubModelSeqKeyed.box bindingData
       let wrappedBindingData = bindingData2 |> SubModelSeqKeyedData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -168,8 +199,10 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
           OnCloseRequested = onCloseRequested }
       let bindingData2 = BindingData.SubModelWin.mapMinorTypes box box box unbox unbox unbox bindingData
       let wrappedBindingData = bindingData2 |> SubModelWinData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -188,11 +221,19 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
           | x -> failwithf "Expected a property getter, got a %A" x
         watwat seqBinding
       let _ = eval seqBinding
-      let bindingData = { Get = get; Set = (fun _ _ -> failwith "should not be set"); SubModelSeqBindingName = subModelSeqBindingName }
-      let bindingData2 = { Get = bindingData.Get >> ValueOption.map box; Set = ValueOption.map unbox >> bindingData.Set; SubModelSeqBindingName = bindingData.SubModelSeqBindingName }
+      let bindingData =
+        { Get = get
+          Set = (fun _ _ -> failwith "should not be set")
+          SubModelSeqBindingName = subModelSeqBindingName }
+      let bindingData2 =
+        { Get = bindingData.Get >> ValueOption.map box
+          Set = ValueOption.map unbox >> bindingData.Set
+          SubModelSeqBindingName = bindingData.SubModelSeqBindingName }
       let wrappedBindingData = bindingData2 |> SubModelSelectedItemData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> getBindings.Add(name, binding)) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> getBindings.Add(name, binding))
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
@@ -212,39 +253,72 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
           | x -> failwithf "Expected a property getter, got a %A" x
         watwat seqBinding
       let _ = eval seqBinding
-      let bindingData = { Get = (fun _ -> failwith "should not get"); Set = set; SubModelSeqBindingName = subModelSeqBindingName }
-      let bindingData2 = { Get = bindingData.Get >> ValueOption.map box; Set = ValueOption.map unbox >> bindingData.Set; SubModelSeqBindingName = bindingData.SubModelSeqBindingName }
+      let bindingData =
+        { Get = (fun _ -> failwith "should not get")
+          Set = set
+          SubModelSeqBindingName = subModelSeqBindingName }
+      let bindingData2 =
+        { Get = bindingData.Get >> ValueOption.map box
+          Set = ValueOption.map unbox >> bindingData.Set
+          SubModelSeqBindingName = bindingData.SubModelSeqBindingName }
       let wrappedBindingData = bindingData2 |> SubModelSelectedItemData |> BaseBindingData
-      let binding = Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem).Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
-      do binding |> Option.map (fun binding -> setBindings.Add(name, binding)) |> ignore
-    Set(v).Recursive(currentModel, setBindings.Item name) |> ignore
+      let binding =
+        Initialize(loggingArgs, name, getFunctionsForSubModelSelectedItem)
+          .Recursive(initialModel, dispatch, (fun () -> currentModel), wrappedBindingData)
+      do binding |> Option.iter (fun binding -> setBindings.Add(name, binding))
+    let didSet = Set(v).Recursive(currentModel, setBindings.Item name)
+    if not didSet then
+      log.LogError("Failed to set binding {name}", name)
 
   member _.getValue(getter: 'model -> 'a, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeGetBindingIfNew name getter) |> ValueOption.defaultValue Unchecked.defaultof<'a>
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeGetBindingIfNew name getter)
+    |> ValueOption.defaultValue Unchecked.defaultof<'a>
 
   member _.setValue(setter: 'model -> 'msg, [<CallerMemberName>] ?memberName: string) =
-    memberName |> Option.iter (fun name -> initializeSetBindingIfNew name setter)
+    memberName
+    |> Option.iter (fun name -> initializeSetBindingIfNew name setter)
 
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, autoRequery: bool, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery)
+    |> ValueOption.defaultValue null
 
   member _.subModel(getModel, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel)
+    |> ValueOption.defaultValue null
 
   member _.subModelSeqUnkeyed(getModels: 'model -> 'bindingModel seq, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqUnkeyedBindingIfNew name getModels toMsg createViewModel updateViewModel) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeSubModelSeqUnkeyedBindingIfNew name getModels toMsg createViewModel updateViewModel)
+    |> ValueOption.defaultValue null
 
   member _.subModelSeqKeyed(getModels: 'model -> 'bindingModel seq, toMsg, getKey, createViewModel, updateViewModel, getUnderlyingModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelSeqKeyedBindingIfNew name getModels toMsg getKey createViewModel updateViewModel getUnderlyingModel) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeSubModelSeqKeyedBindingIfNew name getModels toMsg getKey createViewModel updateViewModel getUnderlyingModel)
+    |> ValueOption.defaultValue null
 
   member _.subModelWin(getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeSubModelWinBindingIfNew name getState toMsg getWindow isModal onCloseRequested createViewModel updateViewModel) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeSubModelWinBindingIfNew name getState toMsg getWindow isModal onCloseRequested createViewModel updateViewModel)
+    |> ValueOption.defaultValue null
 
   member _.getSubModelSelectedItem(seqBinding, getter, [<CallerMemberName>] ?memberName: string) =
-    memberName |> ValueOption.ofOption |> ValueOption.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name getter seqBinding) |> ValueOption.defaultValue null
+    memberName
+    |> ValueOption.ofOption
+    |> ValueOption.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name getter seqBinding)
+    |> ValueOption.defaultValue null
   
   member _.setSubModelSelectedItem(seqBinding, setter, value, [<CallerMemberName>] ?memberName: string) =
-    memberName |> Option.iter (fun name -> initializeSetSubModelSelectedItemBindingIfNew name setter seqBinding value)
+    memberName
+    |> Option.iter (fun name -> initializeSetSubModelSelectedItemBindingIfNew name setter seqBinding value)
 
   member internal _.CurrentModel : 'model = currentModel
 
