@@ -350,30 +350,40 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       |> Option.defaultValue []
       |> (fun x -> upcast x)
 
+module private BaseHelpers =
+  let updateViewModel = fun ((vm: #ViewModelBase<'bindingModel, 'bindingMsg>),m) -> vm.UpdateModel(m)
+  let getUnderlyingModel = fun (vm: #ViewModelBase<'bindingModel, 'bindingMsg>) -> vm.CurrentModel
+
+module private BindingHelpers =
+  let createViewModel bindings = fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)
+  let updateViewModel = fun ((vm: ViewModel<'bindingModel, 'bindingMsg>),m) -> vm.UpdateModel(m)
+  let getUnderlyingModel = fun (vm: ViewModel<'bindingModel, 'bindingMsg>) -> vm.CurrentModel
+  
 type ViewModelBase<'model, 'msg> with
-  member this.subModel (getModel: 'model -> 'bindingModel voption, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
-    this.subModel (getModel, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
 
-  member this.subModelBindings (getModel: 'model -> 'bindingModel voption, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
-    this.subModel (getModel, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModel (getModel, toMsg, createViewModel, [<CallerMemberName>] ?memberName: string) =
+    this.subModel (getModel, toMsg, createViewModel, BaseHelpers.updateViewModel, ?memberName = memberName)
 
-  member this.subModelSeqUnkeyed (getModels: 'model -> 'bindingModel seq, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeqUnkeyed (getModels, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModelBindings (getModel, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModel (getModel, toMsg, BindingHelpers.createViewModel bindings, BindingHelpers.updateViewModel, ?memberName = memberName)
 
-  member this.subModelSeqUnkeyedBindings (getModels: 'model -> 'bindingModel seq, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeqUnkeyed (getModels, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModelSeqUnkeyed (getModels, toMsg, createViewModel, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqUnkeyed (getModels, toMsg, createViewModel, BaseHelpers.updateViewModel, ?memberName = memberName)
 
-  member this.subModelSeqKeyed (getModels: 'model -> 'bindingModel seq, getKey, toMsg, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeqKeyed (getModels, getKey, toMsg, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), (fun vm -> vm.CurrentModel), ?memberName = memberName)
+  member this.subModelSeqUnkeyedBindings (getModels, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqUnkeyed (getModels, toMsg, BindingHelpers.createViewModel bindings, BindingHelpers.updateViewModel, ?memberName = memberName)
 
-  member this.subModelSeqKeyedBindings (getModels: 'model -> 'bindingModel seq, getKey, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
-    this.subModelSeqKeyed (getModels, getKey, toMsg, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), (fun vm -> vm.CurrentModel), ?memberName = memberName)
+  member this.subModelSeqKeyed (getModels, getKey, toMsg, createViewModel, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqKeyed (getModels, getKey, toMsg, createViewModel, BaseHelpers.updateViewModel, BaseHelpers.getUnderlyingModel, ?memberName = memberName)
 
-  member this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> #ViewModelBase<'bindingModel, 'bindingMsg>, [<CallerMemberName>] ?memberName: string) =
-    this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+  member this.subModelSeqKeyedBindings (getModels, getKey, toMsg, bindings, [<CallerMemberName>] ?memberName: string) =
+    this.subModelSeqKeyed (getModels, getKey, toMsg, BindingHelpers.createViewModel bindings, BindingHelpers.updateViewModel, BindingHelpers.getUnderlyingModel, ?memberName = memberName)
+
+  member this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, [<CallerMemberName>] ?memberName: string) =
+    this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, BaseHelpers.updateViewModel, ?memberName = memberName)
     
   member this.subModelWinBindings (getState, toMsg, getWindow, isModal, onCloseRequested, bindings, [<CallerMemberName>] ?memberName: string) =
-    this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings)), (fun (vm,m) -> vm.UpdateModel(m)), ?memberName = memberName)
+    this.subModelWin (getState, toMsg, getWindow, isModal, onCloseRequested, BindingHelpers.createViewModel bindings, BindingHelpers.updateViewModel, ?memberName = memberName)
 
 module BindingBase =
   module SubModelBase =
