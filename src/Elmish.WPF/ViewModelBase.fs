@@ -98,8 +98,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<ICommand> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<ICommand> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
 
   let initializeSubModelBindingIfNew
     name
@@ -122,8 +122,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<'bindingViewModel> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<'bindingViewModel> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
 
   let initializeSubModelSeqUnkeyedBindingIfNew
     name
@@ -147,8 +147,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
 
   let initializeSubModelSeqKeyedBindingIfNew
     name
@@ -176,8 +176,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<ObservableCollection<'bindingViewModel>> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
     
   let initializeSubModelWinBindingIfNew
     name
@@ -206,8 +206,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
       
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<'bindingViewModel> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<'bindingViewModel> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
     
   let initializeGetSubModelSelectedItemBindingIfNew
     name
@@ -237,8 +237,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
     let binding = Get(nameChain).Recursive(currentModel, getBindings.Item name)
     match binding with
-    | Ok o -> o |> unbox<'bindingViewModel> |> ValueSome
-    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); ValueNone
+    | Ok o -> o |> unbox<'bindingViewModel> |> Some
+    | Error error -> log.LogError("Wrong binding type found for {name}, should be BaseVmBinding, found {foundBinding}", name, error); None
     
   let initializeSetSubModelSelectedItemBindingIfNew
     name
@@ -282,39 +282,33 @@ type [<AllowNullLiteral>] ViewModelBase<'model,'msg>
 
   member _.cmd(exec: obj -> 'model -> 'msg voption, canExec: obj -> 'model -> bool, autoRequery: bool, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeCmdBindingIfNew name exec canExec autoRequery)
+    |> Option.defaultValue null
 
   member _.subModel(getModel, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeSubModelBindingIfNew name getModel toMsg createViewModel updateViewModel)
+    |> Option.defaultValue null
 
   member _.subModelSeqUnkeyed(getModels: 'model -> 'bindingModel seq, toMsg, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeSubModelSeqUnkeyedBindingIfNew name getModels toMsg createViewModel updateViewModel)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeSubModelSeqUnkeyedBindingIfNew name getModels toMsg createViewModel updateViewModel)
+    |> Option.defaultValue null
 
   member _.subModelSeqKeyed(getModels: 'model -> 'bindingModel seq, toMsg, getKey, createViewModel, updateViewModel, getUnderlyingModel, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeSubModelSeqKeyedBindingIfNew name getModels toMsg getKey createViewModel updateViewModel getUnderlyingModel)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeSubModelSeqKeyedBindingIfNew name getModels toMsg getKey createViewModel updateViewModel getUnderlyingModel)
+    |> Option.defaultValue null
 
   member _.subModelWin(getState, toMsg, getWindow, isModal, onCloseRequested, createViewModel, updateViewModel, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeSubModelWinBindingIfNew name getState toMsg getWindow isModal onCloseRequested createViewModel updateViewModel)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeSubModelWinBindingIfNew name getState toMsg getWindow isModal onCloseRequested createViewModel updateViewModel)
+    |> Option.defaultValue null
 
   member _.getSubModelSelectedItem(seqBinding, getter, [<CallerMemberName>] ?memberName: string) =
     memberName
-    |> ValueOption.ofOption
-    |> ValueOption.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name getter seqBinding)
-    |> ValueOption.defaultValue null
+    |> Option.bind (fun name -> initializeGetSubModelSelectedItemBindingIfNew name getter seqBinding)
+    |> Option.defaultValue null
   
   member _.setSubModelSelectedItem(seqBinding, setter, value, [<CallerMemberName>] ?memberName: string) =
     memberName
