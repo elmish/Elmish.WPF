@@ -13,7 +13,7 @@
 * Added `setMsgWithModel` in the `Binding` module
 * Removed `id` in the `Binding` module (that was added in 4.0.0-beta-3)
 * Lazy effect now exposed via the name `addLazy`
-* Validation effect now exposd via the name `addValidation`
+* Validation effect now exposed via the name `addValidation`
 * Sticky effect now exposed via the name `addSticky`
 * Added caching effect via the name `addCaching`
 * Now logging when WPF tries to get or set a binding and an exception is thrown
