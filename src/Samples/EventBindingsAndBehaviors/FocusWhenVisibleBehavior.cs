@@ -16,7 +16,7 @@ namespace Elmish.WPF.Samples.EventBindingsAndBehaviors
     {
       if (e.NewValue is bool b && b == true)
       {
-        AssociatedObject.Focus();
+        _ = AssociatedObject.Focus();
       }
     }
 
