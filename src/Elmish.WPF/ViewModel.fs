@@ -3,7 +3,6 @@ namespace Elmish.WPF
 open System
 open System.Dynamic
 open System.Collections.Generic
-open System.Collections.ObjectModel
 open System.ComponentModel
 open System.Windows
 open Microsoft.Extensions.Logging
