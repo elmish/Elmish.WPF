@@ -9,7 +9,7 @@ open Elmish
 type WpfProgram<'model, 'msg> =
   internal {
     ElmishProgram: Program<unit, 'model, 'msg, unit>
-    Bindings: Binding<'model, 'msg> list
+    Bindings: Binding<'model, 'msg, obj> list
     LoggerFactory: ILoggerFactory
     ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
@@ -33,7 +33,7 @@ module WpfProgram =
   let mkSimple
       (init: unit -> 'model)
       (update: 'msg  -> 'model -> 'model)
-      (bindings: unit -> Binding<'model, 'msg> list) =
+      (bindings: unit -> Binding<'model, 'msg, obj> list) =
     Program.mkSimple init update (fun _ _ -> ())
     |> create bindings
 
@@ -42,7 +42,7 @@ module WpfProgram =
   let mkProgram
       (init: unit -> 'model * Cmd<'msg>)
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
-      (bindings: unit -> Binding<'model, 'msg> list) =
+      (bindings: unit -> Binding<'model, 'msg, obj> list) =
     Program.mkProgram init update (fun _ _ -> ())
     |> create bindings
 
@@ -151,7 +151,7 @@ module WpfProgram =
   let mkProgramWithCmdMsg
       (init: unit -> 'model * 'cmdMsg list)
       (update: 'msg -> 'model -> 'model * 'cmdMsg list)
-      (bindings: unit -> Binding<'model, 'msg> list)
+      (bindings: unit -> Binding<'model, 'msg, obj> list)
       (toCmd: 'cmdMsg -> Cmd<'msg>) =
     let convert (model, cmdMsgs) =
       model, (cmdMsgs |> List.map toCmd |> Cmd.batch)

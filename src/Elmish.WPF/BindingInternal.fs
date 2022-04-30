@@ -45,7 +45,7 @@ type internal CmdData<'model, 'msg> = {
 }
 
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id> =
+type internal SubModelSelectedItemData<'model, 'msg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
@@ -97,18 +97,18 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bin
     Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
 
 
-and internal ValidationData<'model, 'msg> =
-  { BindingData: BindingData<'model, 'msg>
+and internal ValidationData<'model, 'msg, 'a> =
+  { BindingData: BindingData<'model, 'msg, 'a>
     Validate: 'model -> string list }
 
 
-and internal LazyData<'model, 'msg> =
-  { BindingData: BindingData<'model, 'msg>
+and internal LazyData<'model, 'msg, 'a> =
+  { BindingData: BindingData<'model, 'msg, 'a>
     Equals: 'model -> 'model -> bool }
 
 
-and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
- { BindingData: BindingData<'bindingModel, 'bindingMsg>
+and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg, 'a> =
+ { BindingData: BindingData<'bindingModel, 'bindingMsg, 'a>
    AlterMsgStream: ('dispatchMsg -> unit) -> 'bindingMsg -> unit
    Get: 'model -> 'bindingModel
    Set: 'dispatchMsg -> 'model -> 'msg }
@@ -121,32 +121,32 @@ and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispa
     this.AlterMsgStream dispatch'
 
 
-and internal BaseBindingData<'model, 'msg> =
-  | OneWayData of OneWayData<'model, obj>
-  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
-  | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
-  | TwoWayData of TwoWayData<'model, 'msg, obj>
+and internal BaseBindingData<'model, 'msg, 'a> =
+  | OneWayData of OneWayData<'model, 'a>
+  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, 'a>
+  | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, 'a, obj>
+  | TwoWayData of TwoWayData<'model, 'msg, 'a>
   | CmdData of CmdData<'model, 'msg>
-  | SubModelData of SubModelData<'model, 'msg, obj, obj, obj>
-  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, obj>
-  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj, obj>
-  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj, obj>
-  | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
+  | SubModelData of SubModelData<'model, 'msg, obj, obj, 'a>
+  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, 'a>
+  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj, 'a>
+  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, 'a, obj>
+  | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, 'a, obj>
 
 
-and internal BindingData<'model, 'msg> =
-  | BaseBindingData of BaseBindingData<'model, 'msg>
-  | CachingData of BindingData<'model, 'msg>
-  | ValidationData of ValidationData<'model, 'msg>
-  | LazyData of LazyData<'model, 'msg>
-  | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
+and internal BindingData<'model, 'msg, 'a> =
+  | BaseBindingData of BaseBindingData<'model, 'msg, 'a>
+  | CachingData of BindingData<'model, 'msg, 'a>
+  | ValidationData of ValidationData<'model, 'msg, 'a>
+  | LazyData of LazyData<'model, 'msg, 'a>
+  | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj, 'a>
 
 
 /// Represents all necessary data used to create a binding.
-and Binding<'model, 'msg> =
+and Binding<'model, 'msg, 'a> =
   internal
     { Name: string
-      Data: BindingData<'model, 'msg> }
+      Data: BindingData<'model, 'msg, 'a> }
 
 
 [<AutoOpen>]
@@ -321,8 +321,8 @@ module internal BindingData =
   let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
   let alterMsgStream
       (alteration: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
-      (b: BindingData<'bindingModel, 'bindingMsg>)
-      : BindingData<'model, 'msg> =
+      (b: BindingData<'bindingModel, 'bindingMsg, 'a>)
+      : BindingData<'model, 'msg, 'a> =
     { BindingData = b |> mapModel unbox |> mapMsg box
       AlterMsgStream =
         fun (f: obj -> unit) ->
@@ -332,7 +332,7 @@ module internal BindingData =
       Get = box
       Set = fun (dMsg: obj) _ -> unbox dMsg }
     |> AlterMsgStreamData
-  let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
+  let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg, 'a>) =
     let mutable stickyModel = None
     let f newModel =
       if predicate newModel then
@@ -356,7 +356,7 @@ module internal BindingData =
     let setMsgWithModel f = f |> setMsgWithModel |> mapData
     let setMsg msg = msg |> setMsg |> mapData
 
-    let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
+    let addCaching<'model, 'msg, 'a> : Binding<'model, 'msg, 'a> -> Binding<'model, 'msg, 'a> = addCaching |> mapData
     let addValidation vaidate = vaidate |> addValidation |> mapData
     let addLazy equals = equals |> addLazy |> mapData
     let addSticky predicate =  predicate |> addSticky |> mapData
@@ -372,12 +372,12 @@ module internal BindingData =
 
   module Option =
 
-    let box ma = ma |> Option.map box |> Option.toObj
+    let box ma = ma |> Option.defaultValue null
     let unbox obj = obj |> Option.ofObj |> Option.map unbox
 
   module ValueOption =
 
-    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
+    let box ma = ma |> ValueOption.defaultValue null
     let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
 
 
@@ -424,7 +424,7 @@ module internal BindingData =
       ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
     }
 
-    let box d = mapMinorTypes box box box unbox unbox d
+    let box d = mapMinorTypes box id box unbox id d
 
     let create get equals map itemEquals getId =
       { Get = get
@@ -519,7 +519,7 @@ module internal BindingData =
     let mapFunctions
         mGet
         mSet
-        (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
+        (d: SubModelSelectedItemData<'model, 'msg, 'id, 'a>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set }
 
@@ -571,7 +571,7 @@ module internal BindingData =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let box d = mapMinorTypes box box box unbox unbox unbox d
+    let box d = mapMinorTypes box box id unbox unbox id d
 
     let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
@@ -628,7 +628,7 @@ module internal BindingData =
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let box d = mapMinorTypes box box box unbox unbox unbox d
+    let box d = mapMinorTypes box box id unbox unbox id d
 
     let create createViewModel updateViewModel =
       { GetModels = id
@@ -681,7 +681,7 @@ module internal BindingData =
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let box d = mapMinorTypes box box box box unbox unbox unbox unbox d
+      let box d = mapMinorTypes box box id box unbox unbox id unbox d
 
       let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id
@@ -723,7 +723,7 @@ module internal BindingData =
 
     let mapFunctions
         mValidate
-        (d: ValidationData<'model, 'msg>) =
+        (d: ValidationData<'model, 'msg, 'a>) =
       { d with Validate = mValidate d.Validate }
 
     let measureFunctions
@@ -735,7 +735,7 @@ module internal BindingData =
 
     let mapFunctions
         mEquals
-        (d: LazyData<'model, 'msg>) =
+        (d: LazyData<'model, 'msg, 'a>) =
       { d with Equals = mEquals d.Equals }
 
     let measureFunctions

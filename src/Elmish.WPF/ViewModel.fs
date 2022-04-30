@@ -209,12 +209,12 @@ and internal VmBinding<'model, 'msg> =
 
 and internal SubModelSelectedItemLast() =
 
-  member _.Base(data: BaseBindingData<'model, 'msg>) : int =
+  member _.Base(data: BaseBindingData<'model, 'msg, obj>) : int =
     match data with
     | SubModelSelectedItemData _ -> 1
     | _ -> 0
 
-  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg>) : int =
+  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg, obj>) : int =
     match data with
     | BaseBindingData d -> this.Base d
     | CachingData d -> this.Recursive d
@@ -222,10 +222,10 @@ and internal SubModelSelectedItemLast() =
     | LazyData d -> this.Recursive d.BindingData
     | AlterMsgStreamData d -> this.Recursive d.BindingData
 
-  member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
+  member this.CompareBindingDatas() : BindingData<'model, 'msg, obj> -> BindingData<'model, 'msg, obj> -> int =
     fun a b -> this.Recursive(a) - this.Recursive(b)
 
-  member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
+  member this.CompareBindings() : Binding<'model, 'msg, obj> -> Binding<'model, 'msg, obj> -> int =
     fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
 
 
@@ -279,7 +279,7 @@ and internal Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BaseBindingData<'model, 'msg>)
+       binding: BaseBindingData<'model, 'msg, obj>)
       : BaseVmBinding<'model, 'msg> option =
     match binding with
       | OneWayData d ->
@@ -402,7 +402,7 @@ and internal Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BindingData<'model, 'msg>)
+       binding: BindingData<'model, 'msg, obj>)
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
@@ -705,7 +705,7 @@ and internal Set(value: obj) =
 
 and [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
-        bindings: Binding<'model, 'msg> list)
+        bindings: Binding<'model, 'msg, obj> list)
       as this =
   inherit DynamicObject()
 
