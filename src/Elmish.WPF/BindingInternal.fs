@@ -424,7 +424,7 @@ module internal BindingData =
       ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
     }
 
-    let box d = mapMinorTypes box id box unbox id d
+    let box d = mapMinorTypes box box box unbox unbox d
 
     let create get equals map itemEquals getId =
       { Get = get
@@ -571,7 +571,7 @@ module internal BindingData =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let box d = mapMinorTypes box box id unbox unbox id d
+    let box d = mapMinorTypes box box box unbox unbox unbox d
 
     let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
@@ -628,7 +628,7 @@ module internal BindingData =
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let box d = mapMinorTypes box box id unbox unbox id d
+    let box d = mapMinorTypes box box box unbox unbox unbox d
 
     let create createViewModel updateViewModel =
       { GetModels = id
@@ -681,7 +681,7 @@ module internal BindingData =
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let box d = mapMinorTypes box box id box unbox unbox id unbox d
+      let box d = mapMinorTypes box box box box unbox unbox unbox unbox d
 
       let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id

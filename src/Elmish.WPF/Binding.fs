@@ -3,7 +3,6 @@
 open System.Windows
 
 open Elmish
-open System.Windows.Input
 
 
 
@@ -99,8 +98,8 @@ module Binding =
 
   module OneWay =
     /// Elemental instance of a one-way binding.
-    let id<'a, 'msg> : string -> Binding<'a, 'msg, 'a> =
-      { Get = id }
+    let id<'a, 'msg> : string -> Binding<'a, 'msg, obj> =
+      { Get = box }
       |> OneWayData
       |> BaseBindingData
       |> createBinding
@@ -108,22 +107,22 @@ module Binding =
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a, 'msg when 'a: null> : string -> Binding<'a option, 'msg, 'a> =
+    let opt<'a, 'msg when 'a: null> : string -> Binding<'a option, 'msg, obj> =
       id<'a, 'msg>
       >> mapModel BindingData.Option.box
 
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'a, 'msg when 'a: null> : string -> Binding<'a voption, 'msg, 'a> =
+    let vopt<'a, 'msg when 'a: null> : string -> Binding<'a voption, 'msg, obj> =
       id<'a, 'msg>
       >> mapModel BindingData.ValueOption.box
 
 
   module OneWayToSource =
     /// Elemental instance of a one-way-to-source binding.
-    let id<'model, 'a> : string -> Binding<'model, 'a, 'a> =
-      { OneWayToSourceData.Set = fun obj _ -> obj }
+    let id<'model, 'a> : string -> Binding<'model, 'a, obj> =
+      { OneWayToSourceData.Set = fun obj _ -> unbox obj }
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
@@ -131,22 +130,22 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'model, 'a when 'a: null> : string -> Binding<'model, 'a voption, 'a> =
+    let vopt<'model, 'a when 'a: null> : string -> Binding<'model, 'a voption, obj> =
       id<'model, 'a>
       >> mapMsg BindingData.ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'model, 'a when 'a: null> : string -> Binding<'model, 'a option, 'a> =
+    let opt<'model, 'a when 'a: null> : string -> Binding<'model, 'a option, obj> =
       id<'model, 'a>
       >> mapMsg BindingData.Option.unbox
 
 
   module TwoWay =
     /// Elemental instance of a two-way binding.
-    let id<'a> : string -> Binding<'a, 'a, 'a> =
-      { TwoWayData.Get = id
+    let id<'a> : string -> Binding<'a, 'a, obj> =
+      { TwoWayData.Get = box
         Set = fun obj _ -> unbox obj }
       |> TwoWayData
       |> BaseBindingData
@@ -155,7 +154,7 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'a when 'a: null> : string -> Binding<'a voption, 'a voption, 'a> =
+    let vopt<'a when 'a: null> : string -> Binding<'a voption, 'a voption, obj> =
       id<'a>
       >> mapModel BindingData.ValueOption.box
       >> mapMsg BindingData.ValueOption.unbox
@@ -163,7 +162,7 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a when 'a: null> : string -> Binding<'a option, 'a option, 'a> =
+    let opt<'a when 'a: null> : string -> Binding<'a option, 'a option, obj> =
       id<'a>
       >> mapModel BindingData.Option.box
       >> mapMsg BindingData.Option.unbox
@@ -186,7 +185,7 @@ module Binding =
     /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
     /// throw at runtime if the inferred <c>'id</c> type does not match the
     /// actual ID type used in that binding.
-    let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption, 'vm> =
+    let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption, obj> =
       { Get = id
         Set = fun obj _ -> obj
         SubModelSeqBindingName = subModelSeqBindingName }
@@ -211,7 +210,7 @@ module Binding =
     /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
     /// throw at runtime if the inferred <c>'id</c> type does not match the
     /// actual ID type used in that binding.
-    let opt subModelSeqBindingName : string -> Binding<'id option, 'id option, 'vm> =
+    let opt subModelSeqBindingName : string -> Binding<'id option, 'id option, obj> =
       vopt subModelSeqBindingName
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
@@ -239,12 +238,12 @@ module Binding =
     /// </summary>
     /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let vopt (bindings: unit -> Binding<'model, 'msg, obj> list)
-        : string -> Binding<'model voption, 'msg, ViewModel<'model, 'msg> > =
+        : string -> Binding<'model voption, 'msg, obj> =
       { GetModel = id
         CreateViewModel = fun args -> ViewModel<'model, 'msg>(args, bindings ())
         UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
         ToMsg = fun _ -> id }
-      |> mapMinorTypes box box id unbox unbox id
+      |> mapMinorTypes box box box unbox unbox unbox
       |> SubModelData
       |> BaseBindingData
       |> createBinding
@@ -255,7 +254,7 @@ module Binding =
     /// </summary>
     /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let opt (bindings: unit -> Binding<'model, 'msg, obj> list)
-        : string -> Binding<'model option, 'msg, ViewModel<'model, 'msg> > =
+        : string -> Binding<'model option, 'msg, obj> =
       vopt bindings
       >> mapModel ValueOption.ofOption
 
@@ -265,7 +264,7 @@ module Binding =
     /// </summary>
     /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let required (bindings: unit -> Binding<'model, 'msg, obj> list)
-        : string -> Binding<'model, 'msg, ViewModel<'model, 'msg> > =
+        : string -> Binding<'model, 'msg, obj> =
       vopt bindings
       >> mapModel ValueSome
 
@@ -315,7 +314,7 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   static member oneWay
       (get: 'model -> 'a)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.id<'a, 'msg>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -330,7 +329,7 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   static member oneWayOpt
       (get: 'model -> 'a option)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.opt<'a, 'msg>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -345,7 +344,7 @@ type Binding private () =
   /// <param name="get">Gets the value from the model.</param>
   static member oneWayOpt
       (get: 'model -> 'a voption)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.vopt<'a, 'msg>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -369,7 +368,7 @@ type Binding private () =
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b)
-      : string -> Binding<'model, 'msg, 'b> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.id<'b, 'msg>
     >> Binding.mapModel map
     >> Binding.addLazy equals
@@ -399,7 +398,7 @@ type Binding private () =
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b option)
-      : string -> Binding<'model, 'msg, 'b> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.opt<'b, 'msg>
     >> Binding.mapModel map
     >> Binding.addLazy equals
@@ -429,7 +428,7 @@ type Binding private () =
       (get: 'model -> 'a,
        equals: 'a -> 'a -> bool,
        map: 'a -> 'b voption)
-      : string -> Binding<'model, 'msg, 'b> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWay.vopt<'b, 'msg>
     >> Binding.mapModel map
     >> Binding.addLazy equals
@@ -441,7 +440,7 @@ type Binding private () =
   /// <param name="set">Returns the message to dispatch.</param>
   static member oneWayToSource
       (set: 'a -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWayToSource.id<'model, 'a>
     >> Binding.mapMsgWithModel set
 
@@ -453,7 +452,7 @@ type Binding private () =
   /// <param name="set">Returns the message to dispatch.</param>
   static member oneWayToSourceOpt
       (set: 'a option -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWayToSource.opt
     >> Binding.mapMsgWithModel set
 
@@ -465,7 +464,7 @@ type Binding private () =
   /// <param name="set">Returns the message to dispatch.</param>
   static member oneWayToSourceOpt
       (set: 'a voption -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.OneWayToSource.vopt
     >> Binding.mapMsgWithModel set
 
@@ -498,7 +497,7 @@ type Binding private () =
        map: 'a -> #seq<'b>,
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
-      : string -> Binding<'model, 'msg, 'b> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.OneWaySeqLazy.create get equals map itemEquals getId
 
 
@@ -525,7 +524,7 @@ type Binding private () =
       (get: 'model -> #seq<'a>,
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.oneWaySeqLazy(get, refEq, id, itemEquals, getId)
 
 
@@ -535,7 +534,7 @@ type Binding private () =
   static member twoWay
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -553,7 +552,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWay (get, set)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -568,7 +567,7 @@ type Binding private () =
   static member twoWayOpt
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -590,7 +589,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOpt (get, set)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -605,7 +604,7 @@ type Binding private () =
   static member twoWayOpt
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -627,7 +626,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOpt (get, set)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -645,7 +644,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string list)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -671,7 +670,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string list,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -689,7 +688,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string voption)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -715,7 +714,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string voption,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -733,7 +732,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string option)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -759,7 +758,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> string option,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -777,7 +776,7 @@ type Binding private () =
       (get: 'model -> 'a,
        set: 'a -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.id<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -803,7 +802,7 @@ type Binding private () =
        set: 'a -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -823,7 +822,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string list)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -851,7 +850,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string list,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -871,7 +870,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string voption)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -899,7 +898,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string voption,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -919,7 +918,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string option)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -947,7 +946,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> string option,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -967,7 +966,7 @@ type Binding private () =
       (get: 'model -> 'a voption,
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.vopt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -995,7 +994,7 @@ type Binding private () =
        set: 'a voption -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1015,7 +1014,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string list)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -1043,7 +1042,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string list,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1063,7 +1062,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string voption)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -1091,7 +1090,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string voption,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1111,7 +1110,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string option)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -1139,7 +1138,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> string option,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1159,7 +1158,7 @@ type Binding private () =
       (get: 'model -> 'a option,
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.TwoWay.opt<'a>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -1187,7 +1186,7 @@ type Binding private () =
        set: 'a option -> 'model -> 'msg,
        validate: 'model -> Result<'ignored, string>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'a> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.twoWayOptValidate (get, set, validate)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1199,7 +1198,7 @@ type Binding private () =
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmd
       (exec: 'model -> 'msg)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.create
       (exec >> ValueSome)
       (fun _ -> true)
@@ -1217,7 +1216,7 @@ type Binding private () =
   static member cmd
       (exec: 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmd exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1233,7 +1232,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg,
        canExec: 'model -> bool)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.create
       (exec >> ValueSome)
       canExec
@@ -1255,7 +1254,7 @@ type Binding private () =
       (exec: 'model -> 'msg,
        canExec: 'model -> bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdIf (exec, canExec)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1269,7 +1268,7 @@ type Binding private () =
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmdIf
       (exec: 'model -> 'msg voption)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.create
       exec
       (exec >> ValueOption.isSome)
@@ -1289,7 +1288,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg voption,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1303,7 +1302,7 @@ type Binding private () =
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmdIf
       (exec: 'model -> 'msg option)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.create
       (exec >> ValueOption.ofOption)
       (exec >> Option.isSome)
@@ -1323,7 +1322,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg option,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1340,7 +1339,7 @@ type Binding private () =
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.create
       (exec >> ValueOption.ofOk)
       (exec >> Result.isOk)
@@ -1363,7 +1362,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1376,7 +1375,7 @@ type Binding private () =
   /// <param name="exec">Returns the message to dispatch.</param>
   static member cmdParam
       (exec: obj -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.createWithParam
       (fun p model -> exec p model |> ValueSome)
       (fun _ _ -> true)
@@ -1396,7 +1395,7 @@ type Binding private () =
   static member cmdParam
       (exec: obj -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParam exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1420,7 +1419,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg,
        canExec: obj -> 'model -> bool,
        ?uiBoundCmdParam: bool)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.createWithParam
       (fun p m -> exec p m |> ValueSome)
       canExec
@@ -1442,7 +1441,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg,
        canExec: obj -> 'model -> bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf (exec, canExec)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1471,7 +1470,7 @@ type Binding private () =
        canExec: obj -> 'model -> bool,
        uiBoundCmdParam: bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf (exec, canExec, uiBoundCmdParam)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1493,7 +1492,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
        ?uiBoundCmdParam: bool)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.createWithParam
       exec
       (fun p m -> exec p m |> ValueOption.isSome)
@@ -1513,7 +1512,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg voption,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1540,7 +1539,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg voption,
        uiBoundCmdParam: bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf (exec, uiBoundCmdParam)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1562,7 +1561,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
        ?uiBoundCmdParam: bool)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOption)
       (fun p m -> exec p m |> Option.isSome)
@@ -1582,7 +1581,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> 'msg option,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1609,7 +1608,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg option,
        uiBoundCmdParam: bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf (exec, uiBoundCmdParam)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1634,7 +1633,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        ?uiBoundCmdParam: bool)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.Cmd.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOk)
       (fun p m -> exec p m |> Result.isOk)
@@ -1657,7 +1656,7 @@ type Binding private () =
   static member cmdParamIf
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf exec
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1687,7 +1686,7 @@ type Binding private () =
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        uiBoundCmdParam: bool,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, ICommand> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.cmdParamIf (exec, uiBoundCmdParam)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -1712,7 +1711,7 @@ type Binding private () =
        toBindingModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.required bindings
     >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
     >> Binding.mapMsg toMsg
@@ -1733,7 +1732,7 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel,
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.required bindings
     >> Binding.mapModel (fun m -> (m, getSubModel m))
     >> Binding.mapMsg toMsg
@@ -1750,7 +1749,7 @@ type Binding private () =
   static member subModel
       (getSubModel: 'model -> 'subModel,
        bindings: unit -> Binding<'model * 'subModel, 'msg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.required bindings
     >> Binding.mapModel (fun m -> (m, getSubModel m))
 
@@ -1789,7 +1788,7 @@ type Binding private () =
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.vopt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
@@ -1830,7 +1829,7 @@ type Binding private () =
        toMsg: 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.opt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModel (m, sub)))
@@ -1866,7 +1865,7 @@ type Binding private () =
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.vopt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
@@ -1903,7 +1902,7 @@ type Binding private () =
        toMsg: 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.opt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
@@ -1935,7 +1934,7 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel voption,
        bindings: unit -> Binding<'model * 'subModel, 'msg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.vopt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
@@ -1966,7 +1965,7 @@ type Binding private () =
       (getSubModel: 'model -> 'subModel option,
        bindings: unit -> Binding<'model * 'subModel, 'msg, obj> list,
        ?sticky: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModel.opt bindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
@@ -2022,7 +2021,7 @@ type Binding private () =
        getWindow: 'model -> Dispatch<'msg> -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
       (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
@@ -2083,7 +2082,7 @@ type Binding private () =
        getWindow: unit -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.subModelWin(
       getState,
       toBindingModel,
@@ -2137,7 +2136,7 @@ type Binding private () =
        getWindow: 'model -> Dispatch<'msg> -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
       (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
@@ -2190,7 +2189,7 @@ type Binding private () =
        getWindow: unit -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.subModelWin(
       getState,
       toMsg,
@@ -2238,7 +2237,7 @@ type Binding private () =
        getWindow: 'model -> Dispatch<'msg> -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
       (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
@@ -2286,7 +2285,7 @@ type Binding private () =
        getWindow: unit -> #Window,
        ?onCloseRequested: 'msg,
        ?isModal: bool)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.subModelWin(
       getState,
       bindings,
@@ -2297,7 +2296,7 @@ type Binding private () =
 
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg, obj> list)
-      : string -> Binding<'model seq, int * 'msg, ViewModel<'model, 'msg> > =
+      : string -> Binding<'model seq, int * 'msg, obj> =
     BindingData.SubModelSeqUnkeyed.create
       (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2305,7 +2304,7 @@ type Binding private () =
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg, obj> list,
        getId: 'model -> 'id)
-      : string -> Binding<'model seq, 'id * 'msg, ViewModel<'model, 'msg> > =
+      : string -> Binding<'model seq, 'id * 'msg, obj> =
     BindingData.SubModelSeqKeyed.create
       (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2337,7 +2336,7 @@ type Binding private () =
        getId: 'bindingModel -> 'id,
        toMsg: 'id * 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'bindingModel, 'bindingMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelSeqKeyed.create
       (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2367,7 +2366,7 @@ type Binding private () =
        getId: 'subModel -> 'id,
        toMsg: 'id * 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'subMsg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelSeqKeyed.create
       (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2391,7 +2390,7 @@ type Binding private () =
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        bindings: unit -> Binding<'model * 'subModel, 'msg, obj> list)
-      : string -> Binding<'model, 'msg, ViewModel<'model * 'subModel, 'msg> > =
+      : string -> Binding<'model, 'msg, obj> =
     BindingData.SubModelSeqKeyed.create
       (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2431,7 +2430,7 @@ type Binding private () =
       (subModelSeqBindingName: string,
        get: 'model -> 'id voption,
        set: 'id voption -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'vm> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModelSelectedItem.vopt subModelSeqBindingName
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -2474,7 +2473,7 @@ type Binding private () =
        get: 'model -> 'id voption,
        set: 'id voption -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'vm> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -2509,7 +2508,7 @@ type Binding private () =
       (subModelSeqBindingName: string,
        get: 'model -> 'id option,
        set: 'id option -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, 'vm> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.SubModelSelectedItem.opt subModelSeqBindingName
     >> Binding.addLazy (=)
     >> Binding.mapModel get
@@ -2552,7 +2551,7 @@ type Binding private () =
        get: 'model -> 'id option,
        set: 'id option -> 'model -> 'msg,
        wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-      : string -> Binding<'model, 'msg, 'vm> =
+      : string -> Binding<'model, 'msg, obj> =
     Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
     >> Binding.alterMsgStream wrapDispatch
 
@@ -2568,7 +2567,7 @@ module Extensions =
     /// <param name="set">Returns the message to dispatch.</param>
     static member oneWayToSource
         (set: 'a -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.OneWayToSource.id<'model, 'a>
       >> Binding.mapMsg set
 
@@ -2580,7 +2579,7 @@ module Extensions =
     /// <param name="set">Returns the message to dispatch.</param>
     static member oneWayToSourceOpt
         (set: 'a option -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.OneWayToSource.opt
       >> Binding.mapMsg set
 
@@ -2592,7 +2591,7 @@ module Extensions =
     /// <param name="set">Returns the message to dispatch.</param>
     static member oneWayToSourceOpt
         (set: 'a voption -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.OneWayToSource.vopt
       >> Binding.mapMsg set
 
@@ -2603,7 +2602,7 @@ module Extensions =
     static member twoWay
         (get: 'model -> 'a,
          set: 'a -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2621,7 +2620,7 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWay (get, set)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2636,7 +2635,7 @@ module Extensions =
     static member twoWayOpt
         (get: 'model -> 'a option,
          set: 'a option -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2658,7 +2657,7 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOpt (get, set)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2673,7 +2672,7 @@ module Extensions =
     static member twoWayOpt
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2695,7 +2694,7 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOpt (get, set)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2713,7 +2712,7 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg,
          validate: 'model -> string list)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2739,7 +2738,7 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string list,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2757,7 +2756,7 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg,
          validate: 'model -> string voption)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2783,7 +2782,7 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string voption,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2801,7 +2800,7 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg,
          validate: 'model -> string option)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2827,7 +2826,7 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> string option,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2845,7 +2844,7 @@ module Extensions =
         (get: 'model -> 'a,
          set: 'a -> 'msg,
          validate: 'model -> Result<'ignored, string>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.id<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2871,7 +2870,7 @@ module Extensions =
          set: 'a -> 'msg,
          validate: 'model -> Result<'ignored, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2891,7 +2890,7 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
          validate: 'model -> string list)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2919,7 +2918,7 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string list,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2939,7 +2938,7 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
          validate: 'model -> string voption)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -2967,7 +2966,7 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string voption,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -2987,7 +2986,7 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
          validate: 'model -> string option)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3015,7 +3014,7 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> string option,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3035,7 +3034,7 @@ module Extensions =
         (get: 'model -> 'a voption,
          set: 'a voption -> 'msg,
          validate: 'model -> Result<'ignored, string>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.vopt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3063,7 +3062,7 @@ module Extensions =
          set: 'a voption -> 'msg,
          validate: 'model -> Result<'ignored, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3083,7 +3082,7 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
          validate: 'model -> string list)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3111,7 +3110,7 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string list,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3131,7 +3130,7 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
          validate: 'model -> string voption)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3159,7 +3158,7 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string voption,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3179,7 +3178,7 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
          validate: 'model -> string option)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3207,7 +3206,7 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> string option,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3227,7 +3226,7 @@ module Extensions =
         (get: 'model -> 'a option,
          set: 'a option -> 'msg,
          validate: 'model -> Result<'ignored, string>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.TwoWay.opt<'a>
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3255,7 +3254,7 @@ module Extensions =
          set: 'a option -> 'msg,
          validate: 'model -> Result<'ignored, string>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'a> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.twoWayOptValidate (get, set, validate)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3267,7 +3266,7 @@ module Extensions =
     /// <param name="exec">Returns the message to dispatch.</param>
     static member cmd
         (exec: 'msg)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.create
         (fun _ -> exec |> ValueSome)
         (fun _ -> true)
@@ -3285,7 +3284,7 @@ module Extensions =
     static member cmd
         (exec: 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmd exec
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3299,7 +3298,7 @@ module Extensions =
     static member cmdIf
         (exec: 'msg,
          canExec: 'model -> bool)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.create
         (fun _ -> exec |> ValueSome)
         canExec
@@ -3319,7 +3318,7 @@ module Extensions =
         (exec: 'msg,
          canExec: 'model -> bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdIf (exec, canExec)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3332,7 +3331,7 @@ module Extensions =
     /// <param name="exec">Returns the message to dispatch.</param>
     static member cmdParam
         (exec: obj -> 'msg)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun _ _ -> true)
@@ -3352,7 +3351,7 @@ module Extensions =
     static member cmdParam
         (exec: obj -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParam exec
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3374,7 +3373,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> 'msg voption,
          ?uiBoundCmdParam: bool)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.createWithParam
         (fun p _ -> exec p)
         (fun p _ -> exec p |> ValueOption.isSome)
@@ -3394,7 +3393,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> 'msg voption,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf exec
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3421,7 +3420,7 @@ module Extensions =
         (exec: obj -> 'msg voption,
          uiBoundCmdParam: bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf (exec, uiBoundCmdParam)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3443,7 +3442,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> 'msg option,
          ?uiBoundCmdParam: bool)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOption)
         (fun p _ -> exec p |> Option.isSome)
@@ -3463,7 +3462,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> 'msg option,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf exec
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3490,7 +3489,7 @@ module Extensions =
         (exec: obj -> 'msg option,
          uiBoundCmdParam: bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf (exec, uiBoundCmdParam)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3515,7 +3514,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> Result<'msg, 'ignored>,
          ?uiBoundCmdParam: bool)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOk)
         (fun p _ -> exec p |> Result.isOk)
@@ -3538,7 +3537,7 @@ module Extensions =
     static member cmdParamIf
         (exec: obj -> Result<'msg, 'ignored>,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf exec
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3568,7 +3567,7 @@ module Extensions =
         (exec: obj -> Result<'msg, 'ignored>,
          uiBoundCmdParam: bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf (exec, uiBoundCmdParam)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3592,7 +3591,7 @@ module Extensions =
         (exec: obj -> 'msg,
          canExec: obj -> bool,
          ?uiBoundCmdParam: bool)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       BindingData.Cmd.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun p _ -> canExec p)
@@ -3614,7 +3613,7 @@ module Extensions =
         (exec: obj -> 'msg,
          canExec: obj -> bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf (exec, canExec)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3643,7 +3642,7 @@ module Extensions =
          canExec: obj -> bool,
          uiBoundCmdParam: bool,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, ICommand> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.cmdParamIf (exec, canExec, uiBoundCmdParam)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3679,7 +3678,7 @@ module Extensions =
         (subModelSeqBindingName: string,
          get: 'model -> 'id voption,
          set: 'id voption -> 'msg)
-        : string -> Binding<'model, 'msg, 'vm> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.SubModelSelectedItem.vopt subModelSeqBindingName
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3723,7 +3722,7 @@ module Extensions =
          get: 'model -> 'id voption,
          set: 'id voption -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'vm> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
       >> Binding.alterMsgStream wrapDispatch
 
@@ -3759,7 +3758,7 @@ module Extensions =
         (subModelSeqBindingName: string,
          get: 'model -> 'id option,
          set: 'id option -> 'msg)
-        : string -> Binding<'model, 'msg, 'vm> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.SubModelSelectedItem.opt subModelSeqBindingName
       >> Binding.addLazy (=)
       >> Binding.mapModel get
@@ -3803,6 +3802,6 @@ module Extensions =
          get: 'model -> 'id option,
          set: 'id option -> 'msg,
          wrapDispatch: Dispatch<'msg> -> Dispatch<'msg>)
-        : string -> Binding<'model, 'msg, 'vm> =
+        : string -> Binding<'model, 'msg, obj> =
       Binding.subModelSelectedItem (subModelSeqBindingName, get, set)
       >> Binding.alterMsgStream wrapDispatch
