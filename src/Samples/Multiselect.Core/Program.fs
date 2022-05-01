@@ -25,7 +25,7 @@ let update msg m =
   | SetIsSelected (entityId, isSelected) -> { m with Entities = m.Entities |> List.map (fun e -> if e.Id = entityId then { e with IsSelected = isSelected } else e) }
   | DeselectAll -> { m with Entities = m.Entities |> List.map (fun e -> { e with IsSelected = false }) }
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "SelectRandom" |> Binding.cmd
     (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> (fun id -> SetIsSelected (id, true)))
 

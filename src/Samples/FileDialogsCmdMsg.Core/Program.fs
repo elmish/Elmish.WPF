@@ -61,7 +61,7 @@ module Platform =
   open Core
 
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings () : Binding<Model, Msg, obj> list = [
     "CurrentTime" |> Binding.oneWay (fun m -> m.CurrentTime)
     "Text" |> Binding.twoWay ((fun m -> m.Text), SetText)
     "StatusMsg" |> Binding.twoWay ((fun m -> m.StatusMsg), SetText)

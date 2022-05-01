@@ -53,7 +53,7 @@ let paramToNewMousePositionMsg (p: obj) =
   let point = args.GetPosition e
   NewMousePosition { X = int point.X; Y = int point.Y }
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "Msg1" |> Binding.oneWay (fun m -> m.Msg1)
   "Msg2" |> Binding.oneWay (fun m -> m.Msg2)
   "GotFocus1" |> Binding.cmd GotFocus1

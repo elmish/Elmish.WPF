@@ -72,7 +72,7 @@ let update msg m =
   | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with exception %s: %s" (ex.GetType().Name) ex.Message }, Cmd.none
 
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "CurrentTime" |> Binding.oneWay (fun m -> m.CurrentTime)
   "Text" |> Binding.twoWay ((fun m -> m.Text), SetText)
   "StatusMsg" |> Binding.twoWay ((fun m -> m.StatusMsg), SetText)

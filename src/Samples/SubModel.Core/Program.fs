@@ -31,7 +31,7 @@ module Counter =
     | SetStepSize x -> { m with StepSize = x }
     | Reset -> init
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings () : Binding<Model, Msg, obj> list = [
     "CounterValue" |> Binding.oneWay (fun m -> m.Count)
     "Increment" |> Binding.cmd Increment
     "Decrement" |> Binding.cmd Decrement
@@ -70,7 +70,7 @@ module Clock =
     | Tick t -> { m with Time = t }
     | SetTimeType t -> { m with TimeType = t }
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings () : Binding<Model, Msg, obj> list = [
     "Time" |> Binding.oneWay getTime
     "IsLocal" |> Binding.oneWay (fun m -> m.TimeType = Local)
     "SetLocal" |> Binding.cmd (SetTimeType Local)
@@ -98,7 +98,7 @@ module CounterWithClock =
     | CounterMsg msg -> { m with Counter = Counter.update msg m.Counter }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings () : Binding<Model, Msg, obj> list = [
     "Counter"
       |> Binding.SubModel.required Counter.bindings
       |> Binding.mapModel (fun m -> m.Counter)
@@ -131,7 +131,7 @@ module App =
     | ClockCounter2Msg msg ->
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
-  let bindings () : Binding<Model, Msg> list = [
+  let bindings () : Binding<Model, Msg, obj> list = [
     "ClockCounter1"
       |> Binding.SubModel.required CounterWithClock.bindings
       |> Binding.mapModel (fun m -> m.ClockCounter1)

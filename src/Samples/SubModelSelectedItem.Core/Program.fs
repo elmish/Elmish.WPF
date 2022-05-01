@@ -24,7 +24,7 @@ let update msg m =
   match msg with
   | Select entityId -> { m with Selected = entityId }
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "SelectRandom" |> Binding.cmd
     (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
 

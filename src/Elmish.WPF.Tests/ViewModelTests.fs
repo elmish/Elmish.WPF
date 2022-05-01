@@ -132,7 +132,7 @@ module Helpers =
       name
       (getModel: 'model -> 'subModel voption)
       (toMsg: 'subMsg -> 'msg)
-      (bindings: Binding<'subModel, 'subMsg> list)
+      (bindings: Binding<'subModel, 'subMsg, obj> list)
       (sticky: bool) =
     Binding.subModelOpt(getModel, snd, toMsg, (fun () -> bindings), sticky) name
 
@@ -142,7 +142,7 @@ module Helpers =
       (getModels: 'model -> 'subModel list)
       (getId: 'subModel -> 'id)
       (toMsg: 'id * 'subMsg -> 'msg)
-      (bindings: Binding<'subModel, 'subMsg> list) =
+      (bindings: Binding<'subModel, 'subMsg, obj> list) =
     name
     |> Binding.subModelSeq (getBindings = (fun () -> bindings), getId = getId)
     |> Binding.mapModel (fun m -> upcast getModels m)

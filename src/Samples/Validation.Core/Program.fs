@@ -75,7 +75,7 @@ let errorOnEven m =
   else
     []
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "UpdateCount"
     |> Binding.oneWay(fun m -> m.UpdateCount)
     |> Binding.addValidation errorOnEven

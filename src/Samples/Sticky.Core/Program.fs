@@ -27,7 +27,7 @@ let update msg m =
   | SetStepSize x -> { m with StepSize = x }
   | Reset -> init
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings () : Binding<Model, Msg, obj> list = [
   "CounterValue"
     |> Binding.oneWay id
     |> Binding.addSticky (fun v -> v % 2 = 0)

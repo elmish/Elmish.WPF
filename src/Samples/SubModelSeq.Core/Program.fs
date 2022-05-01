@@ -113,7 +113,7 @@ module Counter =
       | SetStepSize x -> { m with StepSize = x }
       | Reset -> init
 
-    let bindings () : Binding<Counter, CounterMsg> list = [
+    let bindings () : Binding<Counter, CounterMsg, obj> list = [
       "CounterValue" |> Binding.oneWay (fun m -> m.Count)
       "Increment" |> Binding.cmd Increment
       "Decrement" |> Binding.cmd Decrement
@@ -253,7 +253,7 @@ module Bindings =
         OutMoveDown |> Some
     | _ -> None
 
-  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>> list =
+  let rec subtreeBindings () : Binding<Model * SelfWithParent<RoseTree<Identifiable<Counter>>>, InOutMsg<RoseTreeMsg<Guid, SubtreeMsg>, SubtreeOutMsg>, obj> list =
     let counterBindings =
       Counter.bindings ()
       |> Bindings.mapModel (fun (_, { Self = s }) -> s.Data.Value)
@@ -282,7 +282,7 @@ module Bindings =
     outMsgBindings @ inMsgBindings
 
 
-  let rootBindings () : Binding<Model, Msg> list = [
+  let rootBindings () : Binding<Model, Msg, obj> list = [
     "Counters"
       |> Binding.subModelSeq (subtreeBindings, (fun (_, { Self = c }) -> c.Data.Id))
       |> Binding.mapModel (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> m, { Self = c; Parent = m.DummyRoot }))
