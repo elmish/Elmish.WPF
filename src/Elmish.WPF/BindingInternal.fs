@@ -6,12 +6,12 @@ open System.Windows
 open Elmish
 
 
-type internal OneWayData<'model> =
-  { Get: 'model -> obj }
+type internal OneWayData<'model, 'a> =
+  { Get: 'model -> 'a }
 
 
-type internal OneWayToSourceData<'model, 'msg> =
-  { Set: obj -> 'model -> 'msg }
+type internal OneWayToSourceData<'model, 'msg, 'a> =
+  { Set: 'a -> 'model -> 'msg }
 
 
 type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
@@ -33,9 +33,9 @@ type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
       Merge.keyed d.GetId d.GetId create update values newVals
 
 
-type internal TwoWayData<'model, 'msg> =
-  { Get: 'model -> obj
-    Set: obj -> 'model -> 'msg }
+type internal TwoWayData<'model, 'msg, 'a> =
+  { Get: 'model -> 'a
+    Set: 'a -> 'model -> 'msg }
 
 
 type internal CmdData<'model, 'msg> = {
@@ -122,10 +122,10 @@ and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispa
 
 
 and internal BaseBindingData<'model, 'msg> =
-  | OneWayData of OneWayData<'model>
-  | OneWayToSourceData of OneWayToSourceData<'model, 'msg>
+  | OneWayData of OneWayData<'model, obj>
+  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
   | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
-  | TwoWayData of TwoWayData<'model, 'msg>
+  | TwoWayData of TwoWayData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj, obj>
   | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, obj>
@@ -385,7 +385,7 @@ module internal BindingData =
 
     let mapFunctions
         mGet
-        (d: OneWayData<'model>) =
+        (d: OneWayData<'model, 'a>) =
       { d with Get = mGet d.Get }
 
     let measureFunctions
@@ -398,7 +398,7 @@ module internal BindingData =
 
     let mapFunctions
         mSet
-        (d: OneWayToSourceData<'model, 'msg>) =
+        (d: OneWayToSourceData<'model, 'msg, 'a>) =
       { d with Set = mSet d.Set }
 
     let measureFunctions
@@ -470,7 +470,7 @@ module internal BindingData =
     let mapFunctions
         mGet
         mSet
-        (d: TwoWayData<'model, 'msg>) =
+        (d: TwoWayData<'model, 'msg, 'a>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set }
 

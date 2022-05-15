@@ -88,12 +88,12 @@ module internal Helpers2 =
     else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
 
 
-type internal OneWayBinding<'model> = {
-  OneWayData: OneWayData<'model>
+type internal OneWayBinding<'model, 'a> = {
+  OneWayData: OneWayData<'model, 'a>
 }
 
-type internal OneWayToSourceBinding<'model> = {
-  Set: obj -> 'model -> unit
+type internal OneWayToSourceBinding<'model, 'a> = {
+  Set: 'a -> 'model -> unit
 }
 
 type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
@@ -101,9 +101,9 @@ type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
   Values: CollectionTarget<'b>
 }
 
-type internal TwoWayBinding<'model> = {
-  Get: 'model -> obj
-  Set: obj -> 'model -> unit
+type internal TwoWayBinding<'model, 'a> = {
+  Get: 'model -> 'a
+  Set: 'a -> 'model -> unit
 }
 
 type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
@@ -176,10 +176,10 @@ and internal AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
 
 
 and internal BaseVmBinding<'model, 'msg> =
-  | OneWay of OneWayBinding<'model>
-  | OneWayToSource of OneWayToSourceBinding<'model>
+  | OneWay of OneWayBinding<'model, obj>
+  | OneWayToSource of OneWayToSourceBinding<'model, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
-  | TwoWay of TwoWayBinding<'model>
+  | TwoWay of TwoWayBinding<'model, obj>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
