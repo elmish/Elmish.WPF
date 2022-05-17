@@ -107,22 +107,22 @@ module Binding =
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a, 'msg when 'a: null> : string -> Binding<'a option, 'msg, obj> =
-      id<'a, 'msg>
+    let opt<'a, 'msg> : string -> Binding<'a option, 'msg, obj> =
+      id<obj, 'msg>
       >> mapModel BindingData.Option.box
 
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'a, 'msg when 'a: null> : string -> Binding<'a voption, 'msg, obj> =
-      id<'a, 'msg>
+    let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg, obj> =
+      id<obj, 'msg>
       >> mapModel BindingData.ValueOption.box
 
 
   module OneWayToSource =
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a, obj> =
-      { OneWayToSourceData.Set = fun obj _ -> unbox obj }
+      { OneWayToSourceData.Set = fun obj _ -> obj |> unbox }
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
@@ -130,15 +130,15 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'model, 'a when 'a: null> : string -> Binding<'model, 'a voption, obj> =
-      id<'model, 'a>
+    let vopt<'model, 'a> : string -> Binding<'model, 'a voption, obj> =
+      id<'model, obj>
       >> mapMsg BindingData.ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'model, 'a when 'a: null> : string -> Binding<'model, 'a option, obj> =
-      id<'model, 'a>
+    let opt<'model, 'a> : string -> Binding<'model, 'a option, obj> =
+      id<'model, obj>
       >> mapMsg BindingData.Option.unbox
 
 
@@ -154,16 +154,16 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'a when 'a: null> : string -> Binding<'a voption, 'a voption, obj> =
-      id<'a>
+    let vopt<'a> : string -> Binding<'a voption, 'a voption, obj> =
+      id<obj>
       >> mapModel BindingData.ValueOption.box
       >> mapMsg BindingData.ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a when 'a: null> : string -> Binding<'a option, 'a option, obj> =
-      id<'a>
+    let opt<'a> : string -> Binding<'a option, 'a option, obj> =
+      id<obj>
       >> mapModel BindingData.Option.box
       >> mapMsg BindingData.Option.unbox
 

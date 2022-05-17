@@ -372,12 +372,12 @@ module internal BindingData =
 
   module Option =
 
-    let box ma = ma |> Option.defaultValue null
+    let box ma = ma |> Option.map box |> Option.toObj
     let unbox obj = obj |> Option.ofObj |> Option.map unbox
 
   module ValueOption =
 
-    let box ma = ma |> ValueOption.defaultValue null
+    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
     let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
 
 
@@ -484,7 +484,7 @@ module internal BindingData =
 
   module Cmd =
 
-    let createWithParam exec canExec autoRequery =
+    let createWithParam exec canExec autoRequery : (string -> Binding<'model, 'msg, obj>) =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
