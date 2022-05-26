@@ -108,19 +108,19 @@ type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'binding
   Vm: 'bindingViewModel voption ref
 }
 
-and internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+type internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
   VmWinState: WindowState<'bindingViewModel> ref
 }
 
-and internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+type internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   Vms: CollectionTarget<'bindingViewModel>
 }
 
-and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
+type internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
     Vms: CollectionTarget<'bindingViewModel> }
 
@@ -128,12 +128,12 @@ and internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, '
     d.Vms.Enumerate ()
     |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
-and internal SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type internal SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { GetId: 'bindingModel -> 'id
     FromId: 'id -> 'bindingViewModel option
     GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
 
-and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
@@ -149,7 +149,20 @@ and internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMs
     d.Set id model
 
 
-and internal CachedBinding<'model, 'msg, 'value> = {
+type internal BaseVmBinding<'model, 'msg> =
+  | OneWay of OneWayBinding<'model, obj>
+  | OneWayToSource of OneWayToSourceBinding<'model, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
+  | TwoWay of TwoWayBinding<'model, obj>
+  | Cmd of cmd: Command
+  | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
+  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
+
+
+type internal CachedBinding<'model, 'msg, 'value> = {
   Binding: VmBinding<'model, 'msg>
   Cache: 'value option ref
 }
@@ -171,20 +184,6 @@ and internal AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
   Dispatch: 'bindingMsg -> unit
 }
 
-
-and internal BaseVmBinding<'model, 'msg> =
-  | OneWay of OneWayBinding<'model, obj>
-  | OneWayToSource of OneWayToSourceBinding<'model, obj>
-  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
-  | TwoWay of TwoWayBinding<'model, obj>
-  | Cmd of cmd: Command
-  | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
-  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
-  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
-
-
 /// Represents all necessary data used in an active binding.
 and internal VmBinding<'model, 'msg> =
   | BaseVmBinding of BaseVmBinding<'model, 'msg>
@@ -204,7 +203,7 @@ and internal VmBinding<'model, 'msg> =
       |> Validatation
 
 
-and internal SubModelSelectedItemLast() =
+type internal SubModelSelectedItemLast() =
 
   member _.Base(data: BaseBindingData<'model, 'msg>) : int =
     match data with
@@ -227,7 +226,7 @@ and internal SubModelSelectedItemLast() =
 
 
 
-and internal FirstValidationErrors() =
+type internal FirstValidationErrors() =
 
   member this.Recursive<'model, 'msg>
       (binding: VmBinding<'model, 'msg>)
@@ -240,7 +239,7 @@ and internal FirstValidationErrors() =
     | Validatation b -> b.Errors |> Some // TODO: what if there is more than one validation effect?
 
 
-and internal FuncsFromSubModelSeqKeyed() =
+type internal FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
@@ -258,7 +257,7 @@ and internal FuncsFromSubModelSeqKeyed() =
     | AlterMsgStream b -> this.Recursive b.Binding
 
 
-and internal Initialize
+type internal Initialize
       (loggingArgs: LoggingViewModelArgs,
        name: string,
        getFunctionsForSubModelSelectedItem: string -> SelectedItemBinding<obj, obj, obj, obj> option) =
@@ -430,7 +429,7 @@ and internal Initialize
 
 
 /// Updates the binding and returns a list indicating what events to raise for this binding
-and internal Update
+type internal Update
     (loggingArgs: LoggingViewModelArgs,
      name: string) =
 
@@ -609,7 +608,7 @@ and internal Update
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
-and internal Get(nameChain: string) =
+type internal Get(nameChain: string) =
 
   member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg>) =
     match binding with
@@ -661,7 +660,7 @@ and internal Get(nameChain: string) =
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
-and internal Set(value: obj) =
+type internal Set(value: obj) =
 
   member _.Base(model: 'model, binding: BaseVmBinding<'model, 'msg>) =
     match binding with
