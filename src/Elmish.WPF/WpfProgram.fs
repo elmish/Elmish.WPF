@@ -84,7 +84,7 @@ module WpfProgram =
                   nameChain = "main"
                   log = bindingsLogger
                   logPerformance = performanceLogger } }
-          let vm = ViewModel<'model, 'msg>(args, program.Bindings)
+          let vm = DynamicViewModel<'model, 'msg>(args, program.Bindings)
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
