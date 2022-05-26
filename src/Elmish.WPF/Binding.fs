@@ -240,7 +240,7 @@ module Binding =
     let vopt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model voption, 'msg> =
       { GetModel = id
-        CreateViewModel = fun args -> ViewModel<'model, 'msg>(args, bindings ())
+        CreateViewModel = fun args -> DynamicViewModel<'model, 'msg>(args, bindings ())
         UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
         ToMsg = fun _ -> id }
       |> mapMinorTypes box box box unbox unbox unbox
@@ -2024,7 +2024,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
-      (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> toMsg)
       (fun m d -> upcast getWindow m d)
@@ -2139,7 +2139,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> toMsg)
       (fun m d -> upcast getWindow m d)
@@ -2240,7 +2240,7 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun _ -> id)
       (fun m d -> upcast getWindow m d)
@@ -2298,7 +2298,7 @@ type Binding private () =
       (getBindings: unit -> Binding<'model, 'msg> list)
       : string -> Binding<'model seq, int * 'msg> =
     BindingData.SubModelSeqUnkeyed.create
-      (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
 
   static member subModelSeq // TODO: make into function
@@ -2306,7 +2306,7 @@ type Binding private () =
        getId: 'model -> 'id)
       : string -> Binding<'model seq, 'id * 'msg> =
     BindingData.SubModelSeqKeyed.create
-      (fun args -> ViewModel<'model, 'msg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
       getId
@@ -2338,7 +2338,7 @@ type Binding private () =
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelSeqKeyed.create
-      (fun args -> ViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
       getId
@@ -2368,7 +2368,7 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelSeqKeyed.create
-      (fun args -> ViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
       (snd >> getId)
@@ -2392,7 +2392,7 @@ type Binding private () =
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     BindingData.SubModelSeqKeyed.create
-      (fun args -> ViewModel<'model * 'subModel, 'msg>(args, bindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
       (snd >> getId)

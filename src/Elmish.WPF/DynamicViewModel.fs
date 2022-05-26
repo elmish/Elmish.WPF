@@ -7,7 +7,7 @@ open System.ComponentModel
 open Microsoft.Extensions.Logging
 
 
-type [<AllowNullLiteral>] internal ViewModel<'model, 'msg>
+type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
         bindings: Binding<'model, 'msg> list)
       as this =
