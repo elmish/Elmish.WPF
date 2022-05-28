@@ -90,7 +90,7 @@ module Binding =
 
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
-      BindingData.OneWay.id<'msg>
+      BindingData.OneWay.id
       |> BindingData.mapModel box
       |> createBinding
 
@@ -113,7 +113,7 @@ module Binding =
 
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
-      BindingData.OneWayToSource.id<'model>
+      BindingData.OneWayToSource.id
       |> BindingData.mapMsg unbox
       |> createBinding
 
