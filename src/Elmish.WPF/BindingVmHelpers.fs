@@ -150,50 +150,50 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bind
     d.Set id model
 
 
-type BaseVmBinding<'model, 'msg> =
-  | OneWay of OneWayBinding<'model, obj>
-  | OneWayToSource of OneWayToSourceBinding<'model, obj>
+type BaseVmBinding<'model, 'msg, 'a> =
+  | OneWay of OneWayBinding<'model, 'a>
+  | OneWayToSource of OneWayToSourceBinding<'model, 'a>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj>
-  | TwoWay of TwoWayBinding<'model, obj>
+  | TwoWay of TwoWayBinding<'model, 'a>
   | Cmd of cmd: Command
-  | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
-  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
+  | SubModel of SubModelBinding<'model, 'msg, obj, obj, 'a>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, 'a>
   | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
-  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, 'a, obj>
 
 
 type CachedBinding<'model, 'msg, 'value> = {
-  Binding: VmBinding<'model, 'msg>
+  Binding: VmBinding<'model, 'msg, 'value>
   Cache: 'value option ref
 }
 
-and ValidationBinding<'model, 'msg> = {
-  Binding: VmBinding<'model, 'msg>
+and ValidationBinding<'model, 'msg, 'a> = {
+  Binding: VmBinding<'model, 'msg, 'a>
   Validate: 'model -> string list
   Errors: string list ref
 }
 
-and LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
-  Binding: VmBinding<'bindingModel, 'bindingMsg>
+and LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'a> = {
+  Binding: VmBinding<'bindingModel, 'bindingMsg, 'a>
   Get: 'model -> 'bindingModel
   Dispatch: 'bindingMsg -> unit
   Equals: 'bindingModel -> 'bindingModel -> bool
 }
 
-and AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
-  Binding: VmBinding<'bindingModel, 'bindingMsg>
+and AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg, 'a> = {
+  Binding: VmBinding<'bindingModel, 'bindingMsg, 'a>
   Get: 'model -> 'bindingModel
   Dispatch: 'bindingMsg -> unit
 }
 
 /// Represents all necessary data used in an active binding.
-and VmBinding<'model, 'msg> =
-  | BaseVmBinding of BaseVmBinding<'model, 'msg>
-  | Cached of CachedBinding<'model, 'msg, obj>
-  | Validatation of ValidationBinding<'model, 'msg>
-  | Lazy of LazyBinding<'model, 'msg, obj, obj>
-  | AlterMsgStream of AlterMsgStreamBinding<'model, obj, obj>
+and VmBinding<'model, 'msg, 'a> =
+  | BaseVmBinding of BaseVmBinding<'model, 'msg, 'a>
+  | Cached of CachedBinding<'model, 'msg, 'a>
+  | Validatation of ValidationBinding<'model, 'msg, 'a>
+  | Lazy of LazyBinding<'model, 'msg, obj, obj, 'a>
+  | AlterMsgStream of AlterMsgStreamBinding<'model, obj, obj, 'a>
 
   with
 
@@ -207,12 +207,12 @@ and VmBinding<'model, 'msg> =
 
 type SubModelSelectedItemLast() =
 
-  member _.Base(data: BaseBindingData<'model, 'msg>) : int =
+  member _.Base(data: BaseBindingData<'model, 'msg, obj>) : int =
     match data with
     | SubModelSelectedItemData _ -> 1
     | _ -> 0
 
-  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg>) : int =
+  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg, obj>) : int =
     match data with
     | BaseBindingData d -> this.Base d
     | CachingData d -> this.Recursive d
@@ -220,7 +220,7 @@ type SubModelSelectedItemLast() =
     | LazyData d -> this.Recursive d.BindingData
     | AlterMsgStreamData d -> this.Recursive d.BindingData
 
-  member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
+  member this.CompareBindingDatas() : BindingData<'model, 'msg, obj> -> BindingData<'model, 'msg, obj> -> int =
     fun a b -> this.Recursive(a) - this.Recursive(b)
 
   member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
@@ -229,8 +229,8 @@ type SubModelSelectedItemLast() =
 
 type FirstValidationErrors() =
 
-  member this.Recursive<'model, 'msg>
-      (binding: VmBinding<'model, 'msg>)
+  member this.Recursive<'model, 'msg, 'a>
+      (binding: VmBinding<'model, 'msg, 'a>)
       : string list ref option =
     match binding with
     | BaseVmBinding _ -> None
@@ -242,14 +242,18 @@ type FirstValidationErrors() =
 
 type FuncsFromSubModelSeqKeyed() =
 
-  member _.Base(binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base(binding: BaseVmBinding<'model, 'msg, 'a>): SelectedItemBinding<obj, obj, 'a, obj> option =
     match binding with
-    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId; FromId = b.FromId; GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
+    | SubModelSeqKeyed b ->
+      { GetId = b.SubModelSeqKeyedData.GetId
+        FromId = b.FromId >> Option.map unbox
+        GetUnderlyingModel = box >> b.SubModelSeqKeyedData.GetUnderlyingModel }
+      |> Some
     | _ -> None
 
-  member this.Recursive<'model, 'msg>
-      (binding: VmBinding<'model, 'msg>)
-      : SelectedItemBinding<obj, obj, obj, obj> option =
+  member this.Recursive<'model, 'msg, 'a>
+      (binding: VmBinding<'model, 'msg, 'a>)
+      : SelectedItemBinding<obj, obj, 'a, obj> option =
     match binding with
     | BaseVmBinding b -> this.Base b
     | Cached b -> this.Recursive b.Binding
@@ -258,10 +262,10 @@ type FuncsFromSubModelSeqKeyed() =
     | AlterMsgStream b -> this.Recursive b.Binding
 
 
-type Initialize
+type Initialize<'a>
       (loggingArgs: LoggingViewModelArgs,
        name: string,
-       getFunctionsForSubModelSelectedItem: string -> SelectedItemBinding<obj, obj, obj, obj> option) =
+       getFunctionsForSubModelSelectedItem: string -> SelectedItemBinding<obj, obj, 'a, obj> option) =
 
   let { log = log
         logPerformance = logPerformance
@@ -276,8 +280,8 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BaseBindingData<'model, 'msg>)
-      : BaseVmBinding<'model, 'msg> option =
+       binding: BaseBindingData<'model, 'msg, 'a>)
+      : BaseVmBinding<'model, 'msg, 'a> option =
     match binding with
       | OneWayData d ->
           { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
@@ -399,8 +403,8 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BindingData<'model, 'msg>)
-      : VmBinding<'model, 'msg> option =
+       binding: BindingData<'model, 'msg, 'a>)
+      : VmBinding<'model, 'msg, 'a> option =
     option {
       match binding with
       | BaseBindingData d ->
@@ -449,7 +453,7 @@ type Update
       (currentModel: 'model,
        newModel: 'model,
        dispatch: 'msg -> unit,
-       binding: BaseVmBinding<'model, 'msg>) =
+       binding: BaseVmBinding<'model, 'msg, obj>) =
     match binding with
       | OneWay _
       | TwoWay _
@@ -589,7 +593,7 @@ type Update
       (currentModel: 'model,
        newModel: 'model,
        dispatch: 'msg -> unit,
-       binding: VmBinding<'model, 'msg>)
+       binding: VmBinding<'model, 'msg, obj>)
       : UpdateData list =
     match binding with
       | BaseVmBinding b -> this.Base(currentModel, newModel, dispatch, b)
@@ -618,24 +622,25 @@ type Update
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
-type Get(nameChain: string) =
+type Get<'a>(nameChain: string) =
 
-  member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg, 'a>): Result<'a, GetError> =
     match binding with
     | OneWay { OneWayData = d } -> d.Get model |> Ok
     | TwoWay b -> b.Get model |> Ok
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
-    | OneWaySeq { Values = vals } -> vals.BoxedCollection() |> Ok
-    | Cmd cmd -> cmd |> box |> Ok
-    | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
+    | OneWaySeq { Values = vals } -> vals.BoxedCollection() |> unbox |> Ok
+    | Cmd cmd -> cmd |> unbox |> Ok
+    | SubModel { Vm = vm } -> vm.Value |> ValueOption.map box |> ValueOption.toObj |> unbox |> Ok
     | SubModelWin { VmWinState = vm } ->
         vm.Value
         |> WindowState.toVOption
         |> ValueOption.map box
         |> ValueOption.toObj
+        |> unbox
         |> Ok
     | SubModelSeqUnkeyed { Vms = vms }
-    | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> Ok
+    | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> unbox |> Ok
     | SubModelSelectedItem b ->
         b.TryGetMember model
         |> function
@@ -649,12 +654,12 @@ type Get(nameChain: string) =
                     Id = id.ToString() }
                   |> GetError.SubModelSelectedItem
                   |> Error
-        |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
+        |> Result.map (ValueOption.map snd >> ValueOption.map box >> ValueOption.toObj >> unbox)
 
   member this.Recursive<'model, 'msg>
       (model: 'model,
-       binding: VmBinding<'model, 'msg>)
-      : Result<obj, GetError> =
+       binding: VmBinding<'model, 'msg, 'a>)
+      : Result<'a, GetError> =
     match binding with
     | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
@@ -669,9 +674,9 @@ type Get(nameChain: string) =
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
-type Set(value: obj) =
+type Set<'a>(value: 'a) =
 
-  member _.Base(model: 'model, binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base<'model, 'msg>(model: 'model, binding: BaseVmBinding<'model, 'msg, 'a>) =
     match binding with
     | TwoWay b ->
         b.Set value model
@@ -680,9 +685,11 @@ type Set(value: obj) =
         b.Set value model
         true
     | SubModelSelectedItem b ->
-        let bindingModel = 
+        let bindingModel =
           value
+          |> box
           |> ValueOption.ofObj
+          |> ValueOption.map unbox
           |> ValueOption.map b.SelectedItemBinding.GetUnderlyingModel
         b.TrySetMember(model, bindingModel)
         true
@@ -695,7 +702,7 @@ type Set(value: obj) =
     | SubModelSeqKeyed _ ->
         false
 
-  member this.Recursive<'model, 'msg>(model: 'model, binding: VmBinding<'model, 'msg>) : bool =
+  member this.Recursive<'model, 'msg>(model: 'model, binding: VmBinding<'model, 'msg, 'a>) : bool =
     match binding with
     | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
@@ -705,4 +712,4 @@ type Set(value: obj) =
         successful
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(b.Get model, b.Binding)
-    | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
+    | AlterMsgStream b -> this.Recursive<obj, obj>(b.Get model, b.Binding)

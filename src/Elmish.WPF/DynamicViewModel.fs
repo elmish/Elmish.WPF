@@ -40,7 +40,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
 
   let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
-    let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
+    let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let getFunctionsForSubModelSelectedItem name =
       bindingDict
       |> Dictionary.tryFind name
