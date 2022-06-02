@@ -14,15 +14,15 @@ type internal OneWayToSourceData<'model, 'msg, 'a> =
   { Set: 'a -> 'model -> 'msg }
 
 
-type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
-  { Get: 'model -> 'a
-    Map: 'a -> 'b seq
-    CreateCollection: 'b seq -> CollectionTarget<'b>
-    Equals: 'a -> 'a -> bool
-    GetId: 'b -> 'id
-    ItemEquals: 'b -> 'b -> bool }
+type internal OneWaySeqLazyData<'model, 'bindingModel, 'bindingViewModel, 'id when 'id : equality> =
+  { Get: 'model -> 'bindingModel
+    Map: 'bindingModel -> 'bindingViewModel seq
+    CreateCollection: 'bindingViewModel seq -> CollectionTarget<'bindingViewModel>
+    Equals: 'bindingModel -> 'bindingModel -> bool
+    GetId: 'bindingViewModel -> 'id
+    ItemEquals: 'bindingViewModel -> 'bindingViewModel -> bool }
 
-  member d.Merge(values: CollectionTarget<'b>, currentModel: 'model, newModel: 'model) =
+  member d.Merge(values: CollectionTarget<'bindingViewModel>, currentModel: 'model, newModel: 'model) =
     let intermediate = d.Get newModel
     if not <| d.Equals intermediate (d.Get currentModel) then
       let create v _ = v
@@ -410,18 +410,18 @@ module internal BindingData =
   module OneWaySeqLazy =
 
     let mapMinorTypes
-        (outMapA: 'a -> 'a0)
-        (outMapB: 'b -> 'b0)
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
         (outMapId: 'id -> 'id0)
-        (inMapA: 'a0 -> 'a)
-        (inMapB: 'b0 -> 'b)
-        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) = {
-      Get = d.Get >> outMapA
-      Map = inMapA >> d.Map >> Seq.map outMapB
-      CreateCollection = Seq.map inMapB >> d.CreateCollection >> CollectionTarget.map outMapB inMapB
-      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
-      GetId = inMapB >> d.GetId >> outMapId
-      ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
+        (d: OneWaySeqLazyData<'model, 'bindingModel, 'bindingViewModel, 'id>) = {
+      Get = d.Get >> outMapBindingModel
+      Map = inMapBindingModel >> d.Map >> Seq.map outMapBindingViewModel
+      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
+      Equals = fun a1 a2 -> d.Equals (inMapBindingModel a1) (inMapBindingModel a2)
+      GetId = inMapBindingViewModel >> d.GetId >> outMapId
+      ItemEquals = fun b1 b2 -> d.ItemEquals (inMapBindingViewModel b1) (inMapBindingViewModel b2)
     }
 
     let box d = mapMinorTypes box box box unbox unbox d
@@ -444,7 +444,7 @@ module internal BindingData =
         mEquals
         mGetId
         mItemEquals
-        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) =
+        (d: OneWaySeqLazyData<'model, 'bindingModel, 'bindingViewModel, 'id>) =
       { d with Get = mGet d.Get
                Map = mMap d.Map
                Equals = mEquals d.Equals

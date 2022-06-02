@@ -93,9 +93,9 @@ type internal OneWayToSourceBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
-  OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
-  Values: CollectionTarget<'b>
+type internal OneWaySeqBinding<'model, 'bindingModel, 'bindingViewModel, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqLazyData<'model, 'bindingModel, 'bindingViewModel, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
+  Values: CollectionTarget<'bindingViewModel>
 }
 
 type internal TwoWayBinding<'model, 'a> = {
