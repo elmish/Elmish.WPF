@@ -113,7 +113,7 @@ module Helpers =
     Binding.twoWayValidate (get, set, validate) name
 
 
-  let internal cmd x = x |> BindingData.Cmd.create
+  let internal cmd x = x |> Binding.Cmd.create
 
 
 

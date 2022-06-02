@@ -1,43 +1,36 @@
 ﻿namespace Elmish.WPF
 
 open System.Windows
+open System.Collections.ObjectModel
 
 open Elmish
 
 
-module Bindings =
-
-  /// Maps the model of a list of bindings via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
-
-  /// Maps the message of a list of bindings with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
-
-  /// Maps the message of a list of bindings via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
-
-
-
 module Binding =
+  open BindingData
+
+  let internal mapData f binding =
+    { Name = binding.Name
+      Data = binding.Data |> f }
 
   /// Maps the model of a binding via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
+  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = f |> mapModel |> mapData <| binding
 
   /// Maps the message of a binding with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsgWithModel |> mapData <| binding
 
   /// Maps the message of a binding via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
+  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsg |> mapData <| binding
 
   /// Sets the message of a binding with access to the model.
-  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsgWithModel f binding
+  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Sets the message of a binding.
-  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
+  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = msg |> setMsg |> mapData <| binding
 
 
   /// Restricts the binding to models that satisfy the predicate after some model satisfies the predicate.
-  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = BindingData.Binding.addSticky predicate binding
+  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = predicate |> addSticky |> mapData <| binding
 
   /// <summary>
   ///   Adds caching to the given binding.  The cache holds a single value and
@@ -47,7 +40,7 @@ module Binding =
   /// <param name="binding">The binding to which caching is added.</param>
   let addCaching (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addCaching
+    |> mapData addCaching
 
   /// <summary>
   ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
@@ -56,7 +49,7 @@ module Binding =
   /// <param name="binding">The binding to which validation is added.</param>
   let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addValidation validate
+    |> (addValidation validate |> mapData)
 
   /// <summary>
   ///   Adds laziness to the updating of the given binding. If the models are considered equal,
@@ -66,7 +59,7 @@ module Binding =
   /// <param name="binding">The binding to which the laziness is added.</param>
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addLazy equals
+    |> (addLazy equals |> mapData)
 
   /// <summary>
   ///   Atlers the message stream via the given function.
@@ -91,7 +84,7 @@ module Binding =
   /// <param name="binding">The binding of the altered message stream.</param>
   let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
     binding
-    |> BindingData.Binding.alterMsgStream alteration
+    |> (alterMsgStream alteration |> mapData)
 
 
   module OneWay =
@@ -209,24 +202,40 @@ module Binding =
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
 
+      
+  module Cmd =
+
+    let createWithParam exec canExec autoRequery =
+      { Exec = exec
+        CanExec = canExec
+        AutoRequery = autoRequery }
+      |> CmdData
+      |> BaseBindingData
+      |> createBinding
+
+    let create exec canExec =
+      createWithParam
+        (fun _ -> exec)
+        (fun _ -> canExec)
+        false
+      >> addLazy (fun m1 m2 -> canExec m1 = canExec m2)
+
+  module OneWaySeq =
+    open BindingData.OneWaySeq
+
+    let internal create get itemEquals getId =
+      { Get = get >> (fun x -> upcast x)
+        CreateCollection = ObservableCollection >> CollectionTarget.create
+        ItemEquals = itemEquals
+        GetId = getId }
+      |> box
+      |> OneWaySeqData
+      |> BaseBindingData
+      |> createBinding
+
 
   module SubModel =
-
-    let private mapMinorTypes
-        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
-        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
-        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
-        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
-        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
-      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
-      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
-      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
-    }
-
-    let private boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+    open BindingData.SubModel
 
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
@@ -277,6 +286,63 @@ module Binding =
       vopt
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+      
+  module SubModelWin =
+    open BindingData.SubModelWin
+
+    let internal create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
+      { GetState = getState
+        CreateViewModel = createViewModel
+        UpdateViewModel = updateViewModel
+        ToMsg = toMsg
+        GetWindow = getWindow
+        IsModal = isModal
+        OnCloseRequested = onCloseRequested }
+      |> box
+      |> SubModelWinData
+      |> BaseBindingData
+      |> createBinding
+
+  module SubModelSeqUnkeyed =
+    open BindingData.SubModelSeqUnkeyed
+
+    let internal create createViewModel updateViewModel =
+      { GetModels = id
+        CreateViewModel = createViewModel
+        CreateCollection = ObservableCollection >> CollectionTarget.create
+        UpdateViewModel = updateViewModel
+        ToMsg = fun _ -> id }
+      |> box
+      |> SubModelSeqUnkeyedData
+      |> BaseBindingData
+      |> createBinding
+
+  module SubModelSeqKeyed =
+    open BindingData.SubModelSeqKeyed
+
+    let internal create createViewModel updateViewModel getUnderlyingModel getId =
+      { GetSubModels = id
+        CreateViewModel = createViewModel
+        CreateCollection = ObservableCollection >> CollectionTarget.create
+        UpdateViewModel = updateViewModel
+        GetUnderlyingModel = getUnderlyingModel
+        ToMsg = fun _ -> id
+        GetId = getId }
+      |> box
+      |> SubModelSeqKeyedData
+      |> BaseBindingData
+      |> createBinding
+
+module Bindings =
+
+  /// Map the model of a list of bindings via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = f |> Binding.mapModel |> List.map <| bindings
+
+  /// Map the message of a list of bindings with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = f |> Binding.mapMsgWithModel |> List.map <| bindings
+
+  /// Map the message of a list of bindings via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = f |> Binding.mapMsg |> List.map <| bindings
 
 [<AbstractClass; Sealed>]
 type Binding private () =
@@ -494,7 +560,7 @@ type Binding private () =
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWaySeq.create map itemEquals getId
+    Binding.OneWaySeq.create map itemEquals getId
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -523,7 +589,7 @@ type Binding private () =
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWaySeq.create id itemEquals getId
+    Binding.OneWaySeq.create id itemEquals getId
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1199,7 +1265,7 @@ type Binding private () =
   static member cmd
       (exec: 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    Binding.Cmd.create
       (exec >> ValueSome)
       (fun _ -> true)
 
@@ -1233,7 +1299,7 @@ type Binding private () =
       (exec: 'model -> 'msg,
        canExec: 'model -> bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    Binding.Cmd.create
       (exec >> ValueSome)
       canExec
 
@@ -1269,7 +1335,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg voption)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    Binding.Cmd.create
       exec
       (exec >> ValueOption.isSome)
 
@@ -1303,7 +1369,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> 'msg option)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    Binding.Cmd.create
       (exec >> ValueOption.ofOption)
       (exec >> Option.isSome)
 
@@ -1340,7 +1406,7 @@ type Binding private () =
   static member cmdIf
       (exec: 'model -> Result<'msg, 'ignored>)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.create
+    Binding.Cmd.create
       (exec >> ValueOption.ofOk)
       (exec >> Result.isOk)
 
@@ -1376,7 +1442,7 @@ type Binding private () =
   static member cmdParam
       (exec: obj -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createWithParam
+    Binding.Cmd.createWithParam
       (fun p model -> exec p model |> ValueSome)
       (fun _ _ -> true)
       false
@@ -1420,7 +1486,7 @@ type Binding private () =
        canExec: obj -> 'model -> bool,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createWithParam
+    Binding.Cmd.createWithParam
       (fun p m -> exec p m |> ValueSome)
       canExec
       (defaultArg uiBoundCmdParam false)
@@ -1493,7 +1559,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg voption,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createWithParam
+    Binding.Cmd.createWithParam
       exec
       (fun p m -> exec p m |> ValueOption.isSome)
       (defaultArg uiBoundCmdParam false)
@@ -1562,7 +1628,7 @@ type Binding private () =
       (exec: obj -> 'model -> 'msg option,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createWithParam
+    Binding.Cmd.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOption)
       (fun p m -> exec p m |> Option.isSome)
       (defaultArg uiBoundCmdParam false)
@@ -1634,7 +1700,7 @@ type Binding private () =
       (exec: obj -> 'model -> Result<'msg, 'ignored>,
        ?uiBoundCmdParam: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.Cmd.createWithParam
+    Binding.Cmd.createWithParam
       (fun p m -> exec p m |> ValueOption.ofOk)
       (fun p m -> exec p m |> Result.isOk)
       (defaultArg uiBoundCmdParam false)
@@ -2022,7 +2088,7 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelWin.create
+    Binding.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
       (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2137,7 +2203,7 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelWin.create
+    Binding.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
       (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2238,7 +2304,7 @@ type Binding private () =
        ?onCloseRequested: 'msg,
        ?isModal: bool)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelWin.create
+    Binding.SubModelWin.create
       (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
       (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
@@ -2297,7 +2363,7 @@ type Binding private () =
   static member subModelSeq // TODO: make into function
       (getBindings: unit -> Binding<'model, 'msg> list)
       : string -> Binding<'model seq, int * 'msg> =
-    BindingData.SubModelSeqUnkeyed.create
+    Binding.SubModelSeqUnkeyed.create
       (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
 
@@ -2305,7 +2371,7 @@ type Binding private () =
       (getBindings: unit -> Binding<'model, 'msg> list,
        getId: 'model -> 'id)
       : string -> Binding<'model seq, 'id * 'msg> =
-    BindingData.SubModelSeqKeyed.create
+    Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
@@ -2337,7 +2403,7 @@ type Binding private () =
        toMsg: 'id * 'bindingMsg -> 'msg,
        bindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create
+    Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
@@ -2367,7 +2433,7 @@ type Binding private () =
        toMsg: 'id * 'subMsg -> 'msg,
        bindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create
+    Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
@@ -2391,7 +2457,7 @@ type Binding private () =
        getId: 'subModel -> 'id,
        bindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
-    BindingData.SubModelSeqKeyed.create
+    Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm,m) -> vm.UpdateModel(m))
       (fun vm -> vm.CurrentModel)
@@ -3267,7 +3333,7 @@ module Extensions =
     static member cmd
         (exec: 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.create
+      Binding.Cmd.create
         (fun _ -> exec |> ValueSome)
         (fun _ -> true)
 
@@ -3299,7 +3365,7 @@ module Extensions =
         (exec: 'msg,
          canExec: 'model -> bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.create
+      Binding.Cmd.create
         (fun _ -> exec |> ValueSome)
         canExec
 
@@ -3332,7 +3398,7 @@ module Extensions =
     static member cmdParam
         (exec: obj -> 'msg)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createWithParam
+      Binding.Cmd.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun _ _ -> true)
         false
@@ -3374,7 +3440,7 @@ module Extensions =
         (exec: obj -> 'msg voption,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createWithParam
+      Binding.Cmd.createWithParam
         (fun p _ -> exec p)
         (fun p _ -> exec p |> ValueOption.isSome)
         (defaultArg uiBoundCmdParam false)
@@ -3443,7 +3509,7 @@ module Extensions =
         (exec: obj -> 'msg option,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createWithParam
+      Binding.Cmd.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOption)
         (fun p _ -> exec p |> Option.isSome)
         (defaultArg uiBoundCmdParam false)
@@ -3515,7 +3581,7 @@ module Extensions =
         (exec: obj -> Result<'msg, 'ignored>,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createWithParam
+      Binding.Cmd.createWithParam
         (fun p _ -> exec p |> ValueOption.ofOk)
         (fun p _ -> exec p |> Result.isOk)
         (defaultArg uiBoundCmdParam false)
@@ -3592,7 +3658,7 @@ module Extensions =
          canExec: obj -> bool,
          ?uiBoundCmdParam: bool)
         : string -> Binding<'model, 'msg> =
-      BindingData.Cmd.createWithParam
+      Binding.Cmd.createWithParam
         (fun p _ -> exec p |> ValueSome)
         (fun p _ -> canExec p)
         (defaultArg uiBoundCmdParam false)
