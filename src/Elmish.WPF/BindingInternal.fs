@@ -1,6 +1,5 @@
 namespace Elmish.WPF
 
-open System.Collections.ObjectModel
 open System.Windows
 
 open Elmish
@@ -444,16 +443,6 @@ module internal BindingData =
 
     let box d = mapMinorTypes box box unbox d
 
-    let create get itemEquals getId =
-      { Get = fun a -> upcast get a
-        CreateCollection = ObservableCollection >> CollectionTarget.create
-        ItemEquals = itemEquals
-        GetId = getId }
-      |> box
-      |> OneWaySeqData
-      |> BaseBindingData
-      |> createBinding
-
     let mapFunctions
         mGet
         mGetId
@@ -492,21 +481,6 @@ module internal BindingData =
 
   module Cmd =
 
-    let createWithParam exec canExec autoRequery =
-      { Exec = exec
-        CanExec = canExec
-        AutoRequery = autoRequery }
-      |> CmdData
-      |> BaseBindingData
-      |> createBinding
-
-    let create exec canExec =
-      createWithParam
-        (fun _ -> exec)
-        (fun _ -> canExec)
-        false
-      >> Binding.addLazy (fun m1 m2 -> canExec m1 = canExec m2)
-
     let mapFunctions
         mExec
         mCanExec
@@ -540,6 +514,22 @@ module internal BindingData =
 
 
   module SubModel =
+
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (outMapBindingViewModel: 'bindingViewModel -> 'bindingViewModel0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (inMapBindingViewModel: 'bindingViewModel0 -> 'bindingViewModel)
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>) = {
+      GetModel = d.GetModel >> ValueOption.map outMapBindingModel
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
+      UpdateViewModel = fun (vm,m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+    }
+    
+    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
 
     let mapFunctions
         mGetModel
@@ -580,19 +570,6 @@ module internal BindingData =
     }
 
     let box d = mapMinorTypes box box box unbox unbox unbox d
-
-    let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
-      { GetState = getState
-        CreateViewModel = createViewModel
-        UpdateViewModel = updateViewModel
-        ToMsg = toMsg
-        GetWindow = getWindow
-        IsModal = isModal
-        OnCloseRequested = onCloseRequested }
-      |> box
-      |> SubModelWinData
-      |> BaseBindingData
-      |> createBinding
 
     let mapFunctions
         mGetState
@@ -638,17 +615,6 @@ module internal BindingData =
 
     let box d = mapMinorTypes box box box unbox unbox unbox d
 
-    let create createViewModel updateViewModel =
-      { GetModels = id
-        CreateViewModel = createViewModel
-        CreateCollection = ObservableCollection >> CollectionTarget.create
-        UpdateViewModel = updateViewModel
-        ToMsg = fun _ -> id }
-      |> box
-      |> SubModelSeqUnkeyedData
-      |> BaseBindingData
-      |> createBinding
-
     let mapFunctions
         mGetModels
         mGetBindings
@@ -690,19 +656,6 @@ module internal BindingData =
       }
 
       let box d = mapMinorTypes box box box box unbox unbox unbox unbox d
-
-      let create createViewModel updateViewModel getUnderlyingModel getId =
-        { GetSubModels = id
-          CreateViewModel = createViewModel
-          CreateCollection = ObservableCollection >> CollectionTarget.create
-          UpdateViewModel = updateViewModel
-          GetUnderlyingModel = getUnderlyingModel
-          ToMsg = fun _ -> id
-          GetId = getId }
-        |> box
-        |> SubModelSeqKeyedData
-        |> BaseBindingData
-        |> createBinding
 
       let mapFunctions
           mGetSubModels
