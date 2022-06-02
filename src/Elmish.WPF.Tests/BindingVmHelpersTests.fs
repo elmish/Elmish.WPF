@@ -112,8 +112,7 @@ module Update =
 
       let binding =
         BindingData.TwoWay.id
-        |> BindingData.mapModel box
-        |> BindingData.mapMsg unbox
+        |> BindingData.boxT
 
       let dispatch msg =
         failwith $"Should not dispatch, got {msg}"
