@@ -155,20 +155,6 @@ and internal BindingData<'model, 'msg> =
   | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
 
 
-/// Represents all necessary data used to create a binding.
-and Binding<'model, 'msg> =
-  internal
-    { Name: string
-      Data: BindingData<'model, 'msg> }
-
-
-[<AutoOpen>]
-module internal Helpers =
-
-  let createBinding data name =
-    { Name = name
-      Data = data }
-
 
 module internal BindingData =
 
