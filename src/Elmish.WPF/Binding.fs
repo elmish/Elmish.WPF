@@ -90,7 +90,7 @@ module Binding =
   module OneWay =
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
-      { Get = box }
+      { Get = id }
       |> OneWayData
       |> BaseBindingData
       |> createBinding
@@ -113,7 +113,7 @@ module Binding =
   module OneWayToSource =
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
-      { OneWayToSourceData.Set = fun obj _ -> obj |> unbox }
+      { OneWayToSourceData.Set = fun obj _ -> obj }
       |> OneWayToSourceData
       |> BaseBindingData
       |> createBinding
@@ -136,8 +136,8 @@ module Binding =
   module TwoWay =
     /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a> =
-      { TwoWayData.Get = box
-        Set = fun obj _ -> unbox obj }
+      { TwoWayData.Get = id
+        Set = fun obj _ -> obj }
       |> TwoWayData
       |> BaseBindingData
       |> createBinding
@@ -202,7 +202,7 @@ module Binding =
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
 
-      
+
   module Cmd =
 
     let createWithParam exec canExec autoRequery =
@@ -286,7 +286,7 @@ module Binding =
       vopt
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
-      
+
   module SubModelWin =
     open BindingData.SubModelWin
 
