@@ -8,6 +8,23 @@ open Microsoft.Extensions.Logging
 
 open BindingVmHelpers
 
+/// Represents all necessary data used to create a binding.
+type Binding<'model, 'msg> =
+  internal
+    { Name: string
+      Data: BindingData<'model, 'msg, obj> }
+
+
+[<AutoOpen>]
+module internal Helpers =
+
+  let createBinding data name =
+    { Name = name
+      Data = data }
+
+  type SubModelSelectedItemLast with
+    member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
+      fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
 
 type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
