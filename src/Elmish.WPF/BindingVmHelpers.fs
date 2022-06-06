@@ -107,14 +107,16 @@ type TwoWayBinding<'model, 'a> = {
 
 type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
-  Vm: 'vm voption ref
+  GetVm: unit -> 'vm voption
+  SetVm: 'vm voption -> unit
 }
 
 type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
-  VmWinState: WindowState<'vm> ref
+  GetVmWinState: unit -> WindowState<'vm>
+  SetVmWinState: WindowState<'vm> -> unit
 }
 
 type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> = {
@@ -163,7 +165,8 @@ type BaseVmBinding<'model, 'msg, 't> =
 
 type CachedBinding<'model, 'msg, 't> = {
   Binding: VmBinding<'model, 'msg, 't>
-  Cache: 't option ref
+  GetCache: unit -> 't option
+  SetCache: 't option -> unit
 }
 
 and ValidationBinding<'model, 'msg, 't> = {
@@ -195,7 +198,7 @@ and VmBinding<'model, 'msg, 't> =
 
   with
 
-    member this.AddCaching = Cached { Binding = this; Cache = ref None }
+    member this.AddCaching = let mutable cache = None in Cached { Binding = this; GetCache = (fun () -> cache); SetCache = fun c -> cache <- c }
     member this.AddValidation currentModel validate =
       { Binding = this
         Validate = validate
@@ -314,7 +317,7 @@ type Initialize<'t>
           d.GetModel initialModel
           |> ValueOption.map (fun m -> ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs)
           |> ValueOption.map d.CreateViewModel
-          |> (fun vm -> { SubModelData = d; Vm = ref vm })
+          |> (fun vm -> let mutable vm = vm in { SubModelData = d; GetVm = (fun () -> vm); SetVm = fun nvm -> vm <- nvm })
           |> SubModel
           |> Some
       | SubModelWinData d ->
@@ -322,10 +325,12 @@ type Initialize<'t>
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           match d.GetState initialModel with
           | WindowState.Closed ->
+              let mutable vmWinState = WindowState.Closed
               { SubModelWinData = d
                 WinRef = WeakReference<_>(null)
                 PreventClose = ref true
-                VmWinState = ref WindowState.Closed }
+                GetVmWinState = fun () -> vmWinState
+                SetVmWinState = fun vmState -> vmWinState <- vmState }
           | WindowState.Hidden m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
@@ -334,10 +339,12 @@ type Initialize<'t>
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating hidden window", chain)
               Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Hidden getCurrentModel dispatch
+              let mutable vmWinState = WindowState.Hidden vm
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
-                VmWinState = ref <| WindowState.Hidden vm }
+                GetVmWinState = fun () -> vmWinState
+                SetVmWinState = fun vm -> vmWinState <- vm }
           | WindowState.Visible m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
@@ -346,10 +353,12 @@ type Initialize<'t>
               let preventClose = ref true
               log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
               Helpers2.showNewWindow winRef d.GetWindow d.IsModal d.OnCloseRequested preventClose vm Visibility.Visible getCurrentModel dispatch
+              let mutable vmWinState = WindowState.Visible vm
               { SubModelWinData = d
                 WinRef = winRef
                 PreventClose = preventClose
-                VmWinState = ref <| WindowState.Visible vm }
+                GetVmWinState = fun () -> vmWinState
+                SetVmWinState = fun vm -> vmWinState <- vm  }
           |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
@@ -459,16 +468,16 @@ type Update
       | Cmd cmd -> cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->
         let d = b.SubModelData
-        match b.Vm.Value, d.GetModel newModel with
+        match b.GetVm (), d.GetModel newModel with
         | ValueNone, ValueNone -> []
         | ValueSome _, ValueNone ->
-            b.Vm.Value <- ValueNone
+            b.SetVm ValueNone
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
-            b.Vm.Value <- ValueSome <| d.CreateViewModel(args)
+            b.SetVm (ValueSome <| d.CreateViewModel(args))
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
             d.UpdateViewModel (vm, m)
@@ -519,7 +528,7 @@ type Update
             let args = ViewModelArgs.create model (toMsg >> dispatch) chain loggingArgs
             d.CreateViewModel args
 
-          match b.VmWinState.Value, d.GetState newModel with
+          match b.GetVmWinState(), d.GetState newModel with
           | WindowState.Closed, WindowState.Closed ->
               []
           | WindowState.Hidden vm, WindowState.Hidden m
@@ -529,29 +538,29 @@ type Update
           | WindowState.Hidden _, WindowState.Closed
           | WindowState.Visible _, WindowState.Closed ->
               close ()
-              b.VmWinState.Value <- WindowState.Closed
+              b.SetVmWinState WindowState.Closed
               [ PropertyChanged name ]
           | WindowState.Visible vm, WindowState.Hidden m ->
               hide ()
               d.UpdateViewModel (vm, m)
-              b.VmWinState.Value <- WindowState.Hidden vm
+              b.SetVmWinState (WindowState.Hidden vm)
               []
           | WindowState.Hidden vm, WindowState.Visible m ->
               d.UpdateViewModel (vm, m)
               showHidden ()
-              b.VmWinState.Value <- WindowState.Visible vm
+              b.SetVmWinState (WindowState.Visible vm)
               []
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
               showNew vm Visibility.Hidden getCurrentModel dispatch
-              b.VmWinState.Value <- WindowState.Hidden vm
+              b.SetVmWinState (WindowState.Hidden vm)
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm Visibility.Visible getCurrentModel dispatch
-              b.VmWinState.Value <- WindowState.Visible vm
+              b.SetVmWinState (WindowState.Visible vm)
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
@@ -593,7 +602,7 @@ type Update
           let updates = this.Recursive(currentModel, getCurrentModel, newModel, dispatch, b.Binding)
           updates
           |> List.filter UpdateData.isPropertyChanged
-          |> List.iter (fun _ -> b.Cache.Value <- None)
+          |> List.iter (fun _ -> b.SetCache None)
           updates
       | Validatation b ->
           let updates = this.Recursive(currentModel, getCurrentModel, newModel, dispatch, b.Binding)
@@ -623,12 +632,12 @@ type Get<'t>(nameChain: string) =
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
     | OneWaySeq { Values = vals } -> vals.GetCollection() |> Ok
     | Cmd cmd -> cmd |> unbox |> Ok
-    | SubModel { Vm = vm } ->
-        vm.Value
+    | SubModel { GetVm = getvm } ->
+        getvm()
         |> ValueOption.toNull
         |> Result.mapError GetError.ToNullError
-    | SubModelWin { VmWinState = vm } ->
-        vm.Value
+    | SubModelWin { GetVmWinState = getvm } ->
+        getvm()
         |> WindowState.toVOption
         |> ValueOption.toNull
         |> Result.mapError GetError.ToNullError
@@ -656,11 +665,11 @@ type Get<'t>(nameChain: string) =
     match binding with
     | BaseVmBinding b -> this.Base(model, b)
     | Cached b ->
-        match b.Cache.Value with
+        match b.GetCache() with
         | Some v -> v |> Ok
         | None ->
             let x = this.Recursive(model, b.Binding)
-            x |> Result.iter (fun v -> b.Cache.Value <- Some v)
+            x |> Result.iter (fun v -> b.SetCache (Some v))
             x
     | Validatation b -> this.Recursive(model, b.Binding)
     | Lazy b -> this.Recursive(b.Get model, b.Binding)
