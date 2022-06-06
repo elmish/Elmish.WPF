@@ -9,8 +9,9 @@ open Microsoft.Extensions.Logging
 open Elmish.WPF.BindingVmHelpers
 
 
+type StaticBinding<'model, 'msg, 'a> = internal { Data: BindingData<'model, 'msg, 'a> }
 
-type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: unit -> obj) =
+type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: unit -> obj) =
 
   let { initialModel = initialModel
         dispatch = dispatch
@@ -55,7 +56,7 @@ type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getS
         log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
         None
 
-  member _.GetValue (binding: BindingData<'model, 'msg, 'a>, [<CallerMemberName>] ?memberName: string) =
+  member _.GetValue (binding: StaticBinding<'model, 'msg, 'a>, [<CallerMemberName>] ?memberName: string) =
     option {
       let! name = memberName
 
@@ -67,7 +68,7 @@ type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getS
             //let binding = BindingData.mapVm box unbox binding
             let! b =
               Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
-                .Recursive(currentModel, dispatch, (fun () -> currentModel), binding)
+                .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.Data)
             do getBindings.Add (name, b |> MapOutputType.recursivecase box unbox)
             return b
           }
@@ -80,7 +81,7 @@ type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getS
     } |> Option.defaultValue null
 
   member _.SetValue (value, [<CallerMemberName>] ?memberName: string) =
-    fun (binding: BindingData<'model, 'msg, 'a>) ->
+    fun (binding: StaticBinding<'model, 'msg, 'a>) ->
       option {
         let! name = memberName
 
@@ -92,7 +93,7 @@ type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getS
               //let binding = BindingData.mapVm box unbox binding
               let! b =
                 Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
-                  .Recursive(currentModel, dispatch, (fun () -> currentModel), binding)
+                  .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.Data)
               do setBindings.Add (name, b |> MapOutputType.recursivecase box unbox)
               return b
             }
@@ -136,9 +137,124 @@ type internal StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getS
       |> Option.defaultValue []
       |> (fun x -> upcast x)
 
-type ExampleViewModel() as this =
-  let staticHelper = StaticHelper<String, Int32>(ViewModelArgs.simple "", fun () -> this)
+[<AllowNullLiteral>]
+type ISubModel<'model, 'msg> =
+  abstract StaticHelper: StaticHelper<'model, 'msg>
 
-  member _.Model = BindingData.OneWay.create id |> staticHelper.GetValue
-  member _.Command = BindingData.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue
-  member _.SubModel = BindingData.SubModel.create (fun x -> x |> ValueSome) (failwith "x") (failwith "y") (fun _x y -> y) |> staticHelper.GetValue
+module StaticHelper =
+  let create args getSender = StaticHelper(args, getSender)
+
+module StaticBinding =
+  let internal createStatic bd = { Data = bd }
+  open BindingData
+
+  let internal mapData f binding =
+    { Data = binding.Data |> f }
+
+  /// Map the model of a binding via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (binding: StaticBinding<'b, 'msg, 'vm>) = f |> mapModel |> mapData <| binding
+
+  /// Map the message of a binding with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: StaticBinding<'model, 'a, 'vm>) = f |> mapMsgWithModel |> mapData <| binding
+
+  /// Map the message of a binding via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (binding: StaticBinding<'model, 'a, 'vm>) = f |> mapMsg |> mapData <| binding
+
+  /// Set the message of a binding with access to the model.
+  let SetMsgWithModel (f: 'model -> 'b) (binding: StaticBinding<'model, 'a, 'vm>) = f |> setMsgWithModel |> mapData <| binding
+
+  /// Set the message of a binding.
+  let setMsg (msg: 'b) (binding: StaticBinding<'model, 'a, 'vm>) = msg |> setMsg |> mapData <| binding
+
+
+  /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
+  let addSticky (predicate: 'model -> bool) (binding: StaticBinding<'model, 'msg, 'vm>) = predicate |> addSticky |> mapData <| binding
+
+  /// <summary>
+  ///   Adds caching to the given binding.  The cache holds a single value and
+  ///   is invalidated after the given binding raises the
+  ///   <c>PropertyChanged</c> event.
+  /// </summary>
+  /// <param name="binding">The binding to which caching is added.</param>
+  let addCaching (binding: StaticBinding<'model, 'msg, 'vm>) : StaticBinding<'model, 'msg, 'vm> =
+    binding
+    |> mapData addCaching
+
+  /// <summary>
+  ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
+  /// </summary>
+  /// <param name="validate">Returns the errors associated with the given model.</param>
+  /// <param name="binding">The binding to which validation is added.</param>
+  let addValidation (validate: 'model -> string list) (binding: StaticBinding<'model, 'msg, 'vm>) : StaticBinding<'model, 'msg, 'vm> =
+    binding
+    |> (addValidation validate |> mapData)
+
+  /// <summary>
+  ///   Adds laziness to the updating of the given binding. If the models are considered equal,
+  ///   then updating of the given binding is skipped.
+  /// </summary>
+  /// <param name="equals">Updating skipped when this function returns <c>true</c>.</param>
+  /// <param name="binding">The binding to which the laziness is added.</param>
+  let addLazy (equals: 'model -> 'model -> bool) (binding: StaticBinding<'model, 'msg, 'vm>) : StaticBinding<'model, 'msg, 'vm> =
+    binding
+    |> (addLazy equals |> mapData)
+
+  /// <summary>
+  ///   Accepts a function that can alter the message stream.
+  ///   Ideally suited for use with Reactive Extensions.
+  ///   <code>
+  ///     open FSharp.Control.Reactive
+  ///     let delay dispatch =
+  ///       let subject = Subject.broadcast
+  ///       let observable = subject :&gt; System.IObservable&lt;_&gt;
+  ///       observable
+  ///       |&gt; Observable.delay (System.TimeSpan.FromSeconds 1.0)
+  ///       |&gt; Observable.subscribe dispatch
+  ///       |&gt; ignore
+  ///       subject.OnNext
+  ///
+  ///     // ...
+  ///
+  ///     binding |&gt; Binding.alterMsgStream delay
+  ///   </code>
+  /// </summary>
+  /// <param name="alteration">The function that will alter the message stream.</param>
+  /// <param name="binding">The binding to which the message stream is altered.</param>
+  let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: StaticBinding<'model, 'a, 'vm>) : StaticBinding<'model, 'b, 'vm> =
+    binding
+    |> (alterMsgStream alteration |> mapData)
+
+  module OneWay =
+    open BindingData.OneWay
+
+    let opt () =
+      create id
+      |> createStatic
+
+  module Cmd =
+    open BindingData.Cmd
+
+    let createWithParam exec canExec autoRequery =
+      createWithParam exec canExec autoRequery
+      |> createStatic
+
+  module SubModel =
+    open BindingData.SubModel
+
+    let internal opt createVm : StaticBinding<'bindingModel voption, 'msg, 'viewModel :> ISubModel<'bindingModel, 'msg>> =
+      create id createVm (fun ((vm: #ISubModel<'bindingModel,'msg>),m) -> vm.StaticHelper.UpdateModel(m)) (fun _ m -> m)
+      |> createStatic
+
+
+[<AllowNullLiteral>]
+type InnerExampleViewModel(args) as this =
+  interface ISubModel<String, Int64> with
+    member _.StaticHelper = StaticHelper.create args (fun () -> this)
+    
+[<AllowNullLiteral>]
+type ExampleViewModel(args) as this =
+  let staticHelper = StaticHelper.create args (fun () -> this)
+
+  member _.Model = StaticBinding.OneWay.opt () |> staticHelper.GetValue
+  member _.Command = StaticBinding.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue
+  member _.SubModel = StaticBinding.SubModel.opt InnerExampleViewModel |> StaticBinding.mapModel ValueSome |> StaticBinding.mapMsg int32 |> staticHelper.GetValue
