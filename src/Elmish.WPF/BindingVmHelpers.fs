@@ -214,6 +214,100 @@ and VmBinding<'model, 'msg, 't> =
         Errors = currentModel |> validate |> ref }
       |> Validatation
 
+module internal MapOutputType =
+  let private baseCase (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: BaseVmBinding<'model, 'msg, 'a>) : BaseVmBinding<'model, 'msg, 'b> =
+    match data with
+    | OneWay b -> OneWay { OneWayData = { Get = b.OneWayData.Get >> fOut } }
+    | OneWayToSource b -> OneWayToSource { Set = fIn >> b.Set }
+    | Cmd b -> Cmd b
+    | TwoWay b -> TwoWay { Get = b.Get >> fOut; Set = fIn >> b.Set }
+    | OneWaySeq b -> OneWaySeq {
+        OneWaySeqData = {
+          Get = b.OneWaySeqData.Get
+          CreateCollection = b.OneWaySeqData.CreateCollection >> CollectionTarget.mapCollection fOut
+          GetId = b.OneWaySeqData.GetId
+          ItemEquals = b.OneWaySeqData.ItemEquals }
+        Values = b.Values |> CollectionTarget.mapCollection fOut }
+    | SubModel b -> SubModel {
+        SubModelData = {
+          GetModel = b.SubModelData.GetModel
+          CreateViewModel = b.SubModelData.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm,m) -> b.SubModelData.UpdateViewModel (fIn vm, m))
+          ToMsg = b.SubModelData.ToMsg }
+        Dispatch = b.Dispatch
+        GetVm = b.GetVm >> ValueOption.map fOut
+        SetVm = ValueOption.map fIn >> b.SetVm
+        GetCurrentModel = b.GetCurrentModel }
+    | SubModelWin b -> SubModelWin {
+        SubModelWinData = {
+          GetState = b.SubModelWinData.GetState
+          CreateViewModel = b.SubModelWinData.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm,m) -> b.SubModelWinData.UpdateViewModel (fIn vm, m))
+          ToMsg = b.SubModelWinData.ToMsg
+          GetWindow = b.SubModelWinData.GetWindow
+          IsModal = b.SubModelWinData.IsModal
+          OnCloseRequested = b.SubModelWinData.OnCloseRequested }
+        Dispatch = b.Dispatch
+        WinRef = b.WinRef
+        PreventClose = b.PreventClose
+        GetVmWinState = b.GetVmWinState >> WindowState.map fOut
+        SetVmWinState = WindowState.map fIn >> b.SetVmWinState
+        GetCurrentModel = b.GetCurrentModel }
+    | SubModelSeqUnkeyed b -> SubModelSeqUnkeyed {
+        SubModelSeqUnkeyedData = {
+          GetModels = b.SubModelSeqUnkeyedData.GetModels
+          CreateViewModel = b.SubModelSeqUnkeyedData.CreateViewModel
+          CreateCollection = b.SubModelSeqUnkeyedData.CreateCollection >> CollectionTarget.mapCollection fOut
+          UpdateViewModel = b.SubModelSeqUnkeyedData.UpdateViewModel
+          ToMsg = b.SubModelSeqUnkeyedData.ToMsg }
+        Dispatch = b.Dispatch
+        Vms = b.Vms |> CollectionTarget.mapCollection fOut
+        GetCurrentModel = b.GetCurrentModel }
+    | SubModelSeqKeyed b -> SubModelSeqKeyed {
+        SubModelSeqKeyedData = { 
+          GetSubModels = b.SubModelSeqKeyedData.GetSubModels
+          CreateViewModel = b.SubModelSeqKeyedData.CreateViewModel
+          CreateCollection = b.SubModelSeqKeyedData.CreateCollection >> CollectionTarget.mapCollection fOut
+          UpdateViewModel = b.SubModelSeqKeyedData.UpdateViewModel
+          ToMsg = b.SubModelSeqKeyedData.ToMsg
+          BmToId = b.SubModelSeqKeyedData.BmToId
+          VmToId = b.SubModelSeqKeyedData.VmToId }
+        Dispatch = b.Dispatch
+        Vms = b.Vms |> CollectionTarget.mapCollection fOut
+        GetCurrentModel = b.GetCurrentModel }
+    | SubModelSelectedItem b -> SubModelSelectedItem {
+        Get = b.Get
+        Set = b.Set
+        SubModelSeqBindingName = b.SubModelSeqBindingName
+        SelectedItemBinding = {
+          VmToId = fIn >> b.SelectedItemBinding.VmToId
+          FromId = b.SelectedItemBinding.FromId >> Option.map fOut } }
+
+  let rec private recursivecase<'model, 'msg, 'a, 'b> (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: VmBinding<'model, 'msg, 'a>) : VmBinding<'model, 'msg, 'b> =
+    match data with
+    | BaseVmBinding b -> baseCase fOut fIn b |> BaseVmBinding
+    | Cached b -> Cached {
+        Binding = recursivecase fOut fIn b.Binding
+        GetCache = b.GetCache >> Option.map fOut
+        SetCache = Option.map fIn >> b.SetCache
+      }
+    | AlterMsgStream b -> AlterMsgStream {
+        Binding = recursivecase fOut fIn b.Binding
+        Get = b.Get
+      }
+    | Lazy b -> Lazy {
+        Get = b.Get
+        Binding = recursivecase fOut fIn b.Binding
+        Equals = b.Equals
+      }
+    | Validatation b -> Validatation {
+        Binding = recursivecase fOut fIn b.Binding
+        Errors = b.Errors
+        Validate = b.Validate
+      }
+
+  let boxVm b = recursivecase box unbox b
+  let unboxVm b = recursivecase unbox box b
 
 type SubModelSelectedItemLast() =
 
