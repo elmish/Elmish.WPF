@@ -27,13 +27,11 @@ module internal LoggingViewModelArgs =
       nameChain = "" }
 
 
-type internal ViewModelArgs<'model, 'msg> =
-  { initialModel: 'model
-    dispatch: 'msg -> unit
-    loggingArgs: LoggingViewModelArgs }
+type ViewModelArgs<'model, 'msg> =
+  internal { initialModel: 'model; dispatch: 'msg -> unit; loggingArgs: LoggingViewModelArgs }
 
-module internal ViewModelArgs =
-  let create initialModel dispatch nameChain loggingArgs =
+module ViewModelArgs =
+  let internal create initialModel dispatch nameChain loggingArgs =
     { initialModel = initialModel
       dispatch = dispatch
       loggingArgs = LoggingViewModelArgs.map nameChain loggingArgs }
@@ -42,8 +40,10 @@ module internal ViewModelArgs =
     { initialModel = v.initialModel |> mapModel
       dispatch = mapMsg >> v.dispatch
       loggingArgs = v.loggingArgs }
-  
-  let simple initialModel =
+
+  let createWithoutLogging initialModel dispatch =
     { initialModel = initialModel
-      dispatch = ignore
+      dispatch = dispatch
       loggingArgs = LoggingViewModelArgs.none }
+  
+  let simple initialModel = createWithoutLogging initialModel ignore
