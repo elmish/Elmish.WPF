@@ -24,23 +24,19 @@ type internal OneWayToSourceData<'model, 'msg, 'a> =
   { Set: 'a -> 'model -> 'msg }
 
 
-type internal OneWaySeqLazyData<'model, 'a, 'b, 'id when 'id : equality> =
-  { Get: 'model -> 'a
-    Map: 'a -> 'b seq
-    CreateCollection: 'b seq -> CollectionTarget<'b>
-    Equals: 'a -> 'a -> bool
-    GetId: 'b -> 'id
-    ItemEquals: 'b -> 'b -> bool }
+type internal OneWaySeqData<'model, 'a, 'id when 'id : equality> =
+  { Get: 'model -> 'a seq
+    CreateCollection: 'a seq -> CollectionTarget<'a>
+    GetId: 'a -> 'id
+    ItemEquals: 'a -> 'a -> bool }
 
-  member d.Merge(values: CollectionTarget<'b>, currentModel: 'model, newModel: 'model) =
-    let intermediate = d.Get newModel
-    if not <| d.Equals intermediate (d.Get currentModel) then
-      let create v _ = v
-      let update oldVal newVal oldIdx =
-        if not (d.ItemEquals newVal oldVal) then
-          values.SetAt (oldIdx, newVal)
-      let newVals = intermediate |> d.Map |> Seq.toArray
-      Merge.keyed d.GetId d.GetId create update values newVals
+  member d.Merge(values: CollectionTarget<'a>, newModel: 'model) =
+    let create v _ = v
+    let update oldVal newVal oldIdx =
+      if not (d.ItemEquals newVal oldVal) then
+        values.SetAt (oldIdx, newVal)
+    let newVals = newModel |> d.Get |> Seq.toArray
+    Merge.keyed d.GetId d.GetId create update values newVals
 
 
 type internal TwoWayData<'model, 'msg, 'a> =
@@ -142,7 +138,7 @@ and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispa
 and internal BaseBindingData<'model, 'msg> =
   | OneWayData of OneWayData<'model, obj>
   | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
-  | OneWaySeqLazyData of OneWaySeqLazyData<'model, obj, obj, obj>
+  | OneWaySeqData of OneWaySeqData<'model, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, obj>
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, obj, obj, obj>
@@ -186,11 +182,9 @@ module internal BindingData =
       | OneWayToSourceData d -> OneWayToSourceData {
           Set = binaryHelper d.Set
         }
-      | OneWaySeqLazyData d -> OneWaySeqLazyData {
+      | OneWaySeqData d -> OneWaySeqData {
           Get = f >> d.Get
-          Map = d.Map
           CreateCollection = d.CreateCollection
-          Equals = d.Equals
           GetId = d.GetId
           ItemEquals = d.ItemEquals
         }
@@ -266,7 +260,7 @@ module internal BindingData =
       | OneWayToSourceData d -> OneWayToSourceData {
           Set = fun v m -> f (d.Set v m) m
         }
-      | OneWaySeqLazyData d -> d |> OneWaySeqLazyData
+      | OneWaySeqData d -> d |> OneWaySeqData
       | TwoWayData d -> TwoWayData {
           Get = d.Get
           Set = fun v m -> f (d.Set v m) m
@@ -435,60 +429,46 @@ module internal BindingData =
         (mSet "set")
 
 
-  module OneWaySeqLazy =
+  module OneWaySeq =
 
     let mapMinorTypes
         (outMapA: 'a -> 'a0)
-        (outMapB: 'b -> 'b0)
         (outMapId: 'id -> 'id0)
         (inMapA: 'a0 -> 'a)
-        (inMapB: 'b0 -> 'b)
-        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) = {
-      Get = d.Get >> outMapA
-      Map = inMapA >> d.Map >> Seq.map outMapB
-      CreateCollection = Seq.map inMapB >> d.CreateCollection >> CollectionTarget.map outMapB inMapB
-      Equals = fun a1 a2 -> d.Equals (inMapA a1) (inMapA a2)
-      GetId = inMapB >> d.GetId >> outMapId
-      ItemEquals = fun b1 b2 -> d.ItemEquals (inMapB b1) (inMapB b2)
+        (d: OneWaySeqData<'model, 'a, 'id>) = {
+      Get = d.Get >> Seq.map outMapA
+      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.map outMapA inMapA
+      GetId = inMapA >> d.GetId >> outMapId
+      ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let box d = mapMinorTypes box box box unbox unbox d
+    let box d = mapMinorTypes box box unbox d
 
-    let create get equals map itemEquals getId =
-      { Get = get
-        Equals = equals
-        Map = fun a -> upcast map a
+    let create get itemEquals getId =
+      { Get = fun a -> upcast get a
         CreateCollection = ObservableCollection >> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId }
       |> box
-      |> OneWaySeqLazyData
+      |> OneWaySeqData
       |> BaseBindingData
       |> createBinding
 
     let mapFunctions
         mGet
-        mMap
-        mEquals
         mGetId
         mItemEquals
-        (d: OneWaySeqLazyData<'model, 'a, 'b, 'id>) =
+        (d: OneWaySeqData<'model, 'a, 'id>) =
       { d with Get = mGet d.Get
-               Map = mMap d.Map
-               Equals = mEquals d.Equals
                GetId = mGetId d.GetId
                ItemEquals = mItemEquals d.ItemEquals }
 
     let measureFunctions
         mGet
-        mMap
-        mEquals
         mGetId
         mItemEquals =
       mapFunctions
         (mGet "get")
-        (mMap "map")
-        (mEquals "equals")
         (mGetId "getId")
         (mItemEquals "itemEquals")
 

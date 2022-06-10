@@ -94,9 +94,9 @@ type internal OneWayToSourceBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type internal OneWaySeqBinding<'model, 'a, 'b, 'id when 'id : equality> = {
-  OneWaySeqData: OneWaySeqLazyData<'model, 'a, 'b, 'id> // TODO: consider renaming so that both contain "Lazy" or neither do
-  Values: CollectionTarget<'b>
+type internal OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqData<'model, 'a, 'id>
+  Values: CollectionTarget<'a>
 }
 
 type internal TwoWayBinding<'model, 'a> = {
@@ -153,7 +153,7 @@ type internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingM
 type internal BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
   | OneWayToSource of OneWayToSourceBinding<'model, obj>
-  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj>
   | TwoWay of TwoWayBinding<'model, obj>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
@@ -289,9 +289,9 @@ type internal Initialize
           { Set = fun obj m -> d.Set obj m |> dispatch }
           |> OneWayToSource
           |> Some
-      | OneWaySeqLazyData d ->
-          { OneWaySeqData = d |> BindingData.OneWaySeqLazy.measureFunctions measure measure measure2 measure measure2
-            Values = d.CreateCollection (initialModel |> d.Get |> d.Map) }
+      | OneWaySeqData d ->
+          { OneWaySeqData = d |> BindingData.OneWaySeq.measureFunctions measure measure measure2
+            Values = d.CreateCollection (initialModel |> d.Get) }
           |> OneWaySeq
           |> Some
       | TwoWayData d ->
@@ -457,7 +457,7 @@ type internal Update
       | SubModelSelectedItem _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
       | OneWaySeq b ->
-          b.OneWaySeqData.Merge(b.Values, currentModel, newModel)
+          b.OneWaySeqData.Merge(b.Values, newModel)
           []
       | Cmd cmd -> cmd |> CanExecuteChanged |> List.singleton
       | SubModel b ->

@@ -28,9 +28,9 @@ module internal Helpers =
     | OneWayData d -> d
     | _ -> failwith "Incorrect binding"
 
-  let getOneWaySeqLazyData f =
+  let getOneWaySeqData f =
     match getBaseBindingData (f "").Data with
-    | OneWaySeqLazyData d -> d
+    | OneWaySeqData d -> d
     | _ -> failwith "Incorrect binding"
 
   let getTwoWayData f =
@@ -174,48 +174,10 @@ module oneWaySeq =
     Property.check <| property {
       let! x = GenX.auto<int>
 
-      let get = string<int>
-      let d = Binding.oneWaySeq(get, fail2, fail) |> getOneWaySeqLazyData
+      let get (i: int) = Seq.singleton i
+      let d = BindingData.OneWaySeq.create get fail2 fail |> getOneWaySeqData
 
-      test <@ d.Get x |> unbox = get x @>
-    }
-
-
-  [<Fact>]
-  let ``final map returns the seq its given`` () =
-    Property.check <| property {
-      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
-
-      let list = array |> Array.toList
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ list |> Seq.map box |> box |> d.Map |> Seq.map unbox |> Seq.toList = list @>
-    }
-
-
-  [<Fact>]
-  let ``final equals returns true for the same sequence references`` () =
-    Property.check <| property {
-      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
-
-      let list = array |> Seq.map box |> Seq.toList
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Equals (box list) (box list) = true @>
-    }
-
-
-  [<Fact>]
-  let ``final equals returns false for different reference sequences`` () =
-    Property.check <| property {
-      let! array = Gen.guid |> Gen.array (Range.constant 1 50)
-
-      let list1 = array |> Seq.map box |> Seq.toList
-      let list2 = list1 |> Seq.map id |> Seq.toList
-      let d = Binding.oneWaySeq(fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ refEq list1 list2 = false @> // ensure lists are not reference equal
-      test <@ d.Equals (box list1) (box list2) = false @>
+      test <@ d.Get x |> Seq.map unbox |> Seq.toList = (get x |> Seq.toList) @>
     }
 
 
@@ -225,7 +187,7 @@ module oneWaySeq =
       let! x = GenX.auto<int>
 
       let getId = string<int>
-      let d = Binding.oneWaySeq(fail, fail2, getId) |> getOneWaySeqLazyData
+      let d = Binding.oneWaySeq(fail, fail2, getId) |> getOneWaySeqData
 
       test <@ d.GetId (box x) |> unbox = getId x @>
     }
@@ -238,7 +200,7 @@ module oneWaySeq =
       let! y = GenX.auto<int>
 
       let itemEquals : int -> int -> bool = (=)
-      let d = Binding.oneWaySeq(fail, itemEquals, fail) |> getOneWaySeqLazyData
+      let d = Binding.oneWaySeq(fail, itemEquals, fail) |> getOneWaySeqData
 
       test <@ d.ItemEquals (box x) (box y) = itemEquals x y @>
     }
@@ -258,49 +220,12 @@ module oneWaySeqLazy =
 
 
   [<Fact>]
-  let ``final get returns value from original get`` () =
-    Property.check <| property {
-      let! x = GenX.auto<int>
-
-      let get = string<int>
-      let d = Binding.oneWaySeqLazy(get, fail2, fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Get x |> unbox = get x @>
-    }
-
-
-  [<Fact>]
-  let ``final equals returns value from original equals`` () =
-    Property.check <| property {
-      let! x = GenX.auto<int>
-      let! y = GenX.auto<int>
-
-      let equals : int -> int -> bool = (=)
-      let d = Binding.oneWaySeqLazy(fail, equals, fail, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Equals (box x) (box y) = equals x y @>
-    }
-
-
-  [<Fact>]
-  let ``final map returns value from original map`` () =
-    Property.check <| property {
-      let! x = GenX.auto<string>
-
-      let map : string -> char list = Seq.toList
-      let d = Binding.oneWaySeqLazy(fail, fail2, map, fail2, fail) |> getOneWaySeqLazyData
-
-      test <@ d.Map (box x) |> Seq.map unbox |> Seq.toList = map x @>
-    }
-
-
-  [<Fact>]
   let ``final getId returns value from original getId`` () =
     Property.check <| property {
       let! x = GenX.auto<int>
 
       let getId = string<int>
-      let d = Binding.oneWaySeqLazy(fail, fail2, fail, fail2, getId) |> getOneWaySeqLazyData
+      let d = Binding.oneWaySeqLazy(fail, fail2, fail, fail2, getId) |> getOneWaySeqData
 
       test <@ d.GetId (box x) |> unbox = getId x @>
     }
@@ -313,7 +238,7 @@ module oneWaySeqLazy =
       let! y = GenX.auto<int>
 
       let itemEquals : int -> int -> bool = (=)
-      let d = Binding.oneWaySeqLazy(fail, fail2, fail, itemEquals, fail) |> getOneWaySeqLazyData
+      let d = Binding.oneWaySeqLazy(fail, fail2, fail, itemEquals, fail) |> getOneWaySeqData
 
       test <@ d.ItemEquals (box x) (box y) = itemEquals x y @>
     }

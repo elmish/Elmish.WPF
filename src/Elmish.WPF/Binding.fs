@@ -5,8 +5,6 @@ open System.Windows
 open Elmish
 
 
-
-
 module Bindings =
 
   /// Map the model of a list of bindings via a contravariant mapping.
@@ -498,7 +496,9 @@ type Binding private () =
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
       : string -> Binding<'model, 'msg> =
-    BindingData.OneWaySeqLazy.create get equals map itemEquals getId
+    BindingData.OneWaySeq.create map itemEquals getId
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
 
 
   /// <summary>
@@ -525,7 +525,9 @@ type Binding private () =
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
       : string -> Binding<'model, 'msg> =
-    Binding.oneWaySeqLazy(get, refEq, id, itemEquals, getId)
+    BindingData.OneWaySeq.create id itemEquals getId
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
 
 
   /// <summary>Creates a two-way binding.</summary>
