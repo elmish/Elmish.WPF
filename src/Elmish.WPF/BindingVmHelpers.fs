@@ -409,7 +409,7 @@ type Initialize<'t>
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let chain = LoggingViewModelArgs.getNameChainFor nameChain name
           d.GetModel initialModel
-          |> ValueOption.map (fun m -> ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs)
+          |> ValueOption.map (fun m -> ViewModelArgs.createWithLogging m (toMsg >> dispatch) chain loggingArgs)
           |> ValueOption.map d.CreateViewModel
           |> (fun vm -> let mutable vm = vm in { SubModelData = d; Dispatch = dispatch; GetVm = (fun () -> vm); SetVm = fun nvm -> vm <- nvm })
           |> SubModel
@@ -428,7 +428,7 @@ type Initialize<'t>
                 SetVmWinState = fun vmState -> vmWinState <- vmState }
           | WindowState.Hidden m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+              let args = ViewModelArgs.createWithLogging m (toMsg >> dispatch) chain loggingArgs
               let vm = d.CreateViewModel args
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
@@ -443,7 +443,7 @@ type Initialize<'t>
                 SetVmWinState = fun vm -> vmWinState <- vm }
           | WindowState.Visible m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+              let args = ViewModelArgs.createWithLogging m (toMsg >> dispatch) chain loggingArgs
               let vm = d.CreateViewModel args
               let winRef = WeakReference<_>(null)
               let preventClose = ref true
@@ -466,7 +466,7 @@ type Initialize<'t>
             |> Seq.indexed
             |> Seq.map (fun (idx, m) ->
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
-                 let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+                 let args = ViewModelArgs.createWithLogging m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
             |> d.CreateCollection
           { SubModelSeqUnkeyedData = d
@@ -482,7 +482,7 @@ type Initialize<'t>
             |> Seq.map (fun m ->
                  let mId = d.BmToId m
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
-                 let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
+                 let args = ViewModelArgs.createWithLogging m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
             |> d.CreateCollection
           { SubModelSeqKeyedData = d
@@ -574,7 +574,7 @@ type Update
         | ValueNone, ValueSome m ->
             let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-            let args = ViewModelArgs.create m (toMsg >> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.createWithLogging m (toMsg >> b.Dispatch) chain loggingArgs
             b.SetVm (ValueSome <| d.CreateViewModel(args))
             [ PropertyChanged name ]
         | ValueSome vm, ValueSome m ->
@@ -623,7 +623,7 @@ type Update
           let newVm model =
             let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-            let args = ViewModelArgs.create model (toMsg >> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.createWithLogging model (toMsg >> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
 
           match b.GetVmWinState(), d.GetState newModel with
@@ -664,7 +664,7 @@ type Update
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
-            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (idx, msg) |> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.createWithLogging m (fun msg -> d.ToMsg (getCurrentModel ()) (idx, msg) |> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
           let update vm m = d.UpdateViewModel (vm, m)
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
@@ -673,7 +673,7 @@ type Update
           let d = b.SubModelSeqKeyedData
           let create m id =
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
-            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (id, msg) |> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.createWithLogging m (fun msg -> d.ToMsg (getCurrentModel ()) (id, msg) |> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
           let update vm m = d.UpdateViewModel (vm, m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray

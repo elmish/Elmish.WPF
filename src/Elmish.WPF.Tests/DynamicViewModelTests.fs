@@ -1448,7 +1448,7 @@ module SubModelSelectedItem =
                 member _.BeginScope _ = { new IDisposable with member _.Dispose() = () }
                 member _.IsEnabled _ = true
                 member _.Log (_, _, state, ex, formatter) = error <- formatter.Invoke(state, ex) |> Some } }
-    let viewModelArgs = ViewModelArgs.create 0.0 ignore "main" loggingArgs
+    let viewModelArgs = ViewModelArgs.createWithLogging 0.0 ignore "main" loggingArgs
     let vm = DynamicViewModel(viewModelArgs, bindings)
 
     raises<Microsoft.CSharp.RuntimeBinder.RuntimeBinderException> <@ vm.Get selectedItemName @>
