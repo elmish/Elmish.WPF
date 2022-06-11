@@ -231,6 +231,14 @@ module StaticBinding =
       create id
       |> createStatic
 
+
+  module OneWayToSource =
+    open BindingData.OneWayToSource
+    
+    let id () =
+      create (fun obj _ -> obj)
+      |> createStatic
+
   module Cmd =
     open BindingData.Cmd
 
@@ -255,6 +263,8 @@ type InnerExampleViewModel(args) as this =
 type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
-  member _.Model = StaticBinding.OneWay.opt () |> staticHelper.GetValue
+  member _.Model
+    with get() = StaticBinding.OneWay.opt () |> staticHelper.GetValue
+    and set(v) = StaticBinding.OneWayToSource.id () |> StaticBinding.mapMsg int32<string> |> staticHelper.SetValue(v)
   member _.Command = StaticBinding.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue
   member _.SubModel = StaticBinding.SubModel.opt InnerExampleViewModel |> StaticBinding.mapModel ValueSome |> StaticBinding.mapMsg int32 |> staticHelper.GetValue
