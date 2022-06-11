@@ -413,7 +413,7 @@ type internal Initialize
           let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
           return b.AddValidation (getCurrentModel ()) d.Validate
       | LazyData d ->
-          let d = d |> BindingData.Lazy.measureFunctions measure
+          let d = d |> BindingData.Lazy.measureFunctions measure2
           let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
           return b.AddLazy d.Equals
       | AlterMsgStreamData d ->
