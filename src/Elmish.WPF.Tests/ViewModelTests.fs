@@ -369,6 +369,7 @@ module OneWayLazy =
   }
 
 
+
 module OneWaySeqLazy =
 
 
@@ -1407,6 +1408,65 @@ module SubModelSelectedItem =
 
 
 
+module LazyEffect =
+
+  [<Fact>]
+  let ``model mapping called exactly once on initialize`` () =
+    let name = ""
+    let model = 0
+    let mapping = InvokeTester id
+    let binding =
+      name
+      |> Binding.TwoWay.id<int>
+      |> Binding.addLazy (=)
+      |> Binding.addLazy (=)
+      |> Binding.mapModel mapping.Fn
+
+    TestVm(model, binding) |> ignore
+
+    test <@ 1 = mapping.Count @>
+
+
+  [<Fact>]
+  let ``model mapping called exactly twice on update when new model is equal`` () =
+    let name = ""
+    let model = 0
+    let mapping = InvokeTester id
+    let binding =
+      name
+      |> Binding.TwoWay.id<int>
+      |> Binding.addLazy (=)
+      |> Binding.addLazy (=)
+      |> Binding.mapModel mapping.Fn
+    let vm = TestVm(model, binding)
+    mapping.Reset ()
+
+    vm.UpdateModel model
+
+    test <@ 2 = mapping.Count @>
+
+
+  [<Fact>]
+  let ``model mapping called exactly twice on update when new model is unequal`` () =
+    let name = ""
+    let initialModel = 0
+    let newModel = 1
+    let mapping = InvokeTester id
+    let binding =
+      name
+      |> Binding.TwoWay.id<int>
+      |> Binding.addLazy (=)
+      |> Binding.addLazy (=)
+      |> Binding.mapModel mapping.Fn
+    let vm = TestVm(initialModel, binding)
+    mapping.Reset ()
+
+    vm.UpdateModel newModel
+
+    test <@ 2 = mapping.Count @>
+
+
+
 module AlterMsgStream =
 
   [<Fact>]
@@ -1417,7 +1477,7 @@ module AlterMsgStream =
     let set _ _ = ()
     let alteration = InvokeTester id
     let binding =
-      twoWay get set ""
+      twoWay get set name
       |> Binding.alterMsgStream alteration.Fn
     let vm = TestVm(model, binding)
 

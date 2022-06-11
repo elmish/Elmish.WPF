@@ -6,6 +6,16 @@ open System.Windows
 open Elmish
 
 
+module internal Helper =
+
+  let mapDispatch
+      (getCurrentModel: unit -> 'model)
+      (set: 'bindingMsg -> 'model -> 'msg)
+      (dispatch: 'msg -> unit)
+      : 'bindingMsg -> unit =
+    fun bMsg -> getCurrentModel () |> set bMsg |> dispatch
+
+
 type internal OneWayData<'model, 'a> =
   { Get: 'model -> 'a }
 
@@ -102,23 +112,31 @@ and internal ValidationData<'model, 'msg> =
     Validate: 'model -> string list }
 
 
-and internal LazyData<'model, 'msg> =
-  { BindingData: BindingData<'model, 'msg>
-    Equals: 'model -> 'model -> bool }
+and internal LazyData<'model, 'msg, 'bindingModel, 'bindingMsg> =
+  { BindingData: BindingData<'bindingModel, 'bindingMsg>
+    Get: 'model -> 'bindingModel
+    Set: 'bindingMsg -> 'model -> 'msg
+    Equals: 'bindingModel -> 'bindingModel -> bool }
+
+  member this.MapDispatch
+      (getCurrentModel: unit -> 'model,
+       dispatch: 'msg -> unit)
+       : 'bindingMsg -> unit =
+    Helper.mapDispatch getCurrentModel this.Set dispatch
 
 
 and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
  { BindingData: BindingData<'bindingModel, 'bindingMsg>
-   AlterMsgStream: ('dispatchMsg -> unit) -> 'bindingMsg -> unit
    Get: 'model -> 'bindingModel
-   Set: 'dispatchMsg -> 'model -> 'msg }
+   Set: 'dispatchMsg -> 'model -> 'msg
+   AlterMsgStream: ('dispatchMsg -> unit) -> 'bindingMsg -> unit }
 
-  member this.CreateFinalDispatch
+  member this.MapDispatch
       (getCurrentModel: unit -> 'model,
        dispatch: 'msg -> unit)
        : 'bindingMsg -> unit =
-    let dispatch' (dMsg: 'dispatchMsg) = getCurrentModel () |> this.Set dMsg |> dispatch
-    this.AlterMsgStream dispatch'
+    Helper.mapDispatch getCurrentModel this.Set dispatch
+    |> this.AlterMsgStream
 
 
 and internal BaseBindingData<'model, 'msg> =
@@ -138,7 +156,7 @@ and internal BindingData<'model, 'msg> =
   | BaseBindingData of BaseBindingData<'model, 'msg>
   | CachingData of BindingData<'model, 'msg>
   | ValidationData of ValidationData<'model, 'msg>
-  | LazyData of LazyData<'model, 'msg>
+  | LazyData of LazyData<'model, 'msg, obj, obj>
   | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
 
 
@@ -229,8 +247,10 @@ module internal BindingData =
           Validate = f >> d.Validate
         }
       | LazyData d -> LazyData {
-          BindingData = recursiveCase d.BindingData
-          Equals = fun a1 a2 -> d.Equals (f a1) (f a2)
+          BindingData = d.BindingData
+          Get = f >> d.Get
+          Set = binaryHelper d.Set
+          Equals = d.Equals
         }
       | AlterMsgStreamData d -> AlterMsgStreamData {
           BindingData = d.BindingData
@@ -299,15 +319,18 @@ module internal BindingData =
           BindingData = recursiveCase d.BindingData
           Validate = d.Validate
         }
-      | LazyData d -> LazyData {
-          BindingData = recursiveCase d.BindingData
+      | LazyData d ->
+      LazyData {
+          BindingData = d.BindingData
+          Get = d.Get
+          Set = fun a m -> f (d.Set a m) m
           Equals = d.Equals
         }
       | AlterMsgStreamData d -> AlterMsgStreamData {
           BindingData = d.BindingData
-          AlterMsgStream = d.AlterMsgStream
           Get = d.Get
-          Set = fun bMsg m -> f (d.Set bMsg m) m
+          Set = fun a m -> f (d.Set a m) m
+          AlterMsgStream = d.AlterMsgStream
         }
     recursiveCase
 
@@ -318,20 +341,25 @@ module internal BindingData =
 
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
-  let addLazy equals b = { BindingData = b; Equals = equals } |> LazyData
+  let addLazy (equals: 'model -> 'model -> bool) b =
+      { BindingData = b |> mapModel unbox |> mapMsg box
+        Get = box
+        Set = fun (dMsg: obj) _ -> unbox dMsg
+        Equals = fun m1 m2 -> equals (unbox m1) (unbox m2)
+      } |> LazyData
   let alterMsgStream
       (alteration: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
       (b: BindingData<'bindingModel, 'bindingMsg>)
       : BindingData<'model, 'msg> =
     { BindingData = b |> mapModel unbox |> mapMsg box
+      Get = box
+      Set = fun (dMsg: obj) _ -> unbox dMsg
       AlterMsgStream =
         fun (f: obj -> unit) ->
           let f' = box >> f
           let g = alteration f'
           unbox >> g
-      Get = box
-      Set = fun (dMsg: obj) _ -> unbox dMsg }
-    |> AlterMsgStreamData
+    } |> AlterMsgStreamData
   let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
     let mutable stickyModel = None
     let f newModel =
@@ -734,11 +762,19 @@ module internal BindingData =
   module Lazy =
 
     let mapFunctions
+        mGet
+        mSet
         mEquals
-        (d: LazyData<'model, 'msg>) =
-      { d with Equals = mEquals d.Equals }
+        (d: LazyData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+      { d with Get = mGet d.Get
+               Set = mSet d.Set
+               Equals = mEquals d.Equals }
 
     let measureFunctions
+        mGet
+        mSet
         mEquals =
       mapFunctions
+        (mGet "get")
+        (mSet "set")
         (mEquals "equals")
