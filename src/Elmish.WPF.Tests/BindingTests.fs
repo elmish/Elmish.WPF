@@ -16,7 +16,11 @@ module internal Helpers =
     | BaseBindingData d -> d
     | CachingData d -> getBaseBindingData d
     | ValidationData d -> getBaseBindingData d.BindingData
-    | LazyData d -> getBaseBindingData d.BindingData
+    | LazyData d ->
+        d.BindingData
+        |> BindingData.mapModel d.Get
+        |> BindingData.mapMsgWithModel d.Set
+        |> getBaseBindingData
     | AlterMsgStreamData _ -> raise (System.NotSupportedException()) // hack: reasonable because this is test code and the tests don't currently use this case
 
   let getOneWayData f =

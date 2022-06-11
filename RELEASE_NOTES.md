@@ -1,5 +1,6 @@
 #### 4.0.0-beta-44
 * Fixed sticky effect that was broken in `4.0.0-beta-42`
+* Improved performance of Lazy effect by reducing calls to later model mappings
 
 #### 4.0.0-beta-43
 * Added `WpfProgram.withElmishErrorHandler`

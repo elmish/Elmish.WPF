@@ -1411,7 +1411,7 @@ module SubModelSelectedItem =
 module LazyEffect =
 
   [<Fact>]
-  let ``model mapping not called on initialize`` () =
+  let ``model mapping called exactly once on initialize`` () =
     let name = ""
     let model = 0
     let mapping = InvokeTester id
@@ -1424,7 +1424,7 @@ module LazyEffect =
 
     TestVm(model, binding) |> ignore
 
-    test <@ 0 = mapping.Count @>
+    test <@ 1 = mapping.Count @>
 
 
   [<Fact>]
@@ -1439,6 +1439,7 @@ module LazyEffect =
       |> Binding.addLazy (=)
       |> Binding.mapModel mapping.Fn
     let vm = TestVm(model, binding)
+    mapping.Reset ()
 
     vm.UpdateModel model
 
@@ -1458,6 +1459,7 @@ module LazyEffect =
       |> Binding.addLazy (=)
       |> Binding.mapModel mapping.Fn
     let vm = TestVm(initialModel, binding)
+    mapping.Reset ()
 
     vm.UpdateModel newModel
 

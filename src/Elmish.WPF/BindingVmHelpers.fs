@@ -81,7 +81,8 @@ module internal Helpers2 =
         b
 
   let measure2 (logPerformance: ILogger) performanceLogThresholdMs name nameChain callName f =
-    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
+    if not <| logPerformance.IsEnabled(LogLevel.Trace)
+    then f
     else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
 
 
@@ -173,9 +174,11 @@ and internal ValidationBinding<'model, 'msg> = {
   Errors: string list ref
 }
 
-and internal LazyBinding<'model, 'msg> = {
-  Binding: VmBinding<'model, 'msg>
-  Equals: 'model -> 'model -> bool
+and internal LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+  Binding: VmBinding<'bindingModel, 'bindingMsg>
+  Get: 'model -> 'bindingModel
+  Dispatch: 'bindingMsg -> unit
+  Equals: 'bindingModel -> 'bindingModel -> bool
 }
 
 and internal AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
@@ -189,13 +192,12 @@ and internal VmBinding<'model, 'msg> =
   | BaseVmBinding of BaseVmBinding<'model, 'msg>
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
-  | Lazy of LazyBinding<'model, 'msg>
+  | Lazy of LazyBinding<'model, 'msg, obj, obj>
   | AlterMsgStream of AlterMsgStreamBinding<'model, obj, obj>
 
   with
 
     member this.AddCaching = Cached { Binding = this; Cache = ref None }
-    member this.AddLazy equals = { Binding = this; Equals = equals } |> Lazy
     member this.AddValidation currentModel validate =
       { Binding = this
         Validate = validate
@@ -413,18 +415,25 @@ type internal Initialize
           let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
           return b.AddValidation (getCurrentModel ()) d.Validate
       | LazyData d ->
-          let d = d |> BindingData.Lazy.measureFunctions measure2
-          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
-          return b.AddLazy d.Equals
-      | AlterMsgStreamData d ->
           let initialModel' : obj = d.Get initialModel
           let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
-          let dispatch' : obj -> unit = d.CreateFinalDispatch(getCurrentModel, dispatch)
+          let dispatch' : obj -> unit = d.MapDispatch(getCurrentModel, dispatch)
+          let d = d |> BindingData.Lazy.measureFunctions measure measure2 measure2
           let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
-                   Dispatch = dispatch' }
-                 |> AlterMsgStream
+                   Dispatch = dispatch'
+                   Equals = d.Equals
+                 } |> Lazy
+      | AlterMsgStreamData d ->
+          let initialModel' : obj = d.Get initialModel
+          let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
+          let dispatch' : obj -> unit = d.MapDispatch(getCurrentModel, dispatch)
+          let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
+          return { Binding = b
+                   Get = d.Get
+                   Dispatch = dispatch'
+                 } |> AlterMsgStream
     }
 
 
@@ -600,10 +609,12 @@ type internal Update
           else
             updates
       | Lazy b ->
-          if b.Equals currentModel newModel then
+          let currentModel' = b.Get currentModel
+          let newModel' = b.Get newModel
+          if b.Equals currentModel' newModel' then
             []
           else
-            this.Recursive(currentModel, newModel, dispatch, b.Binding)
+            this.Recursive(currentModel', newModel', b.Dispatch, b.Binding)
       | AlterMsgStream b ->
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
@@ -656,7 +667,7 @@ type internal Get(nameChain: string) =
             x |> Result.iter (fun v -> b.Cache.Value <- Some v)
             x
     | Validatation b -> this.Recursive(model, b.Binding)
-    | Lazy b -> this.Recursive(model, b.Binding)
+    | Lazy b -> this.Recursive(b.Get model, b.Binding)
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
@@ -695,5 +706,5 @@ type internal Set(value: obj) =
           b.Cache.Value <- None  // TODO #185: write test
         successful
     | Validatation b -> this.Recursive(model, b.Binding)
-    | Lazy b -> this.Recursive(model, b.Binding)
+    | Lazy b -> this.Recursive(b.Get model, b.Binding)
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
