@@ -1,4 +1,4 @@
-module Elmish.WPF.Tests.ViewModelTests
+module Elmish.WPF.Tests.DynamicViewModelTests
 
 open System
 open System.Collections.Concurrent

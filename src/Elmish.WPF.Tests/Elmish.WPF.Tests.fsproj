@@ -16,7 +16,7 @@
   <ItemGroup>
     <Compile Include="InternalUtils.fs" />
     <Compile Include="MergeTests.fs" />
-    <Compile Include="ViewModelTests.fs" />
+    <Compile Include="DynamicViewModelTests.fs" />
     <Compile Include="BindingTests.fs" />
     <Compile Include="UtilsTests.fs" />
   </ItemGroup>
