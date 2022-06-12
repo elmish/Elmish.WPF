@@ -226,6 +226,8 @@ module Binding =
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
+    let private boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
@@ -237,7 +239,7 @@ module Binding =
         CreateViewModel = fun args -> DynamicViewModel<'model, 'msg>(args, bindings ())
         UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
         ToMsg = fun _ -> id }
-      |> mapMinorTypes box box box unbox unbox unbox
+      |> boxMinorTypes
       |> SubModelData
       |> BaseBindingData
       |> createBinding
