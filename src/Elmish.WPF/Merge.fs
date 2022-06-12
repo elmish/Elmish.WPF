@@ -1,21 +1,22 @@
-﻿namespace Elmish.WPF
+﻿[<AutoOpen>]
+module internal Elmish.WPF.Merge
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
 
 
-type internal SourceOrTarget =
+type SourceOrTarget =
   | Source
   | Target
 
-type internal DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: int, id: string) =
+type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: int, id: string) =
   inherit System.Exception(sprintf "In the %A sequence, the elements at indices %d and %d have the same ID %s" sourceOrTarget index1 index2 id)
   member this.SourceOrTarget = sourceOrTarget
   member this.Index1 = index1
   member this.Index2 = index2
   member this.Id = id
 
-type internal CollectionTarget<'a> =
+type CollectionTarget<'a> =
   { GetLength: unit -> int
     GetAt: int -> 'a
     Append: 'a -> unit
@@ -27,7 +28,7 @@ type internal CollectionTarget<'a> =
     Enumerate: unit -> 'a seq
     BoxedCollection: unit -> obj }
 
-module internal CollectionTarget =
+module CollectionTarget =
 
   let create (oc: ObservableCollection<'a>) =
     { GetLength = fun () -> oc.Count
@@ -55,7 +56,7 @@ module internal CollectionTarget =
 
 
 
-module internal Merge =
+module Merge =
 
   let unkeyed
       (create: 's -> int -> 't)
