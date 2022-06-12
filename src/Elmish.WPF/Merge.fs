@@ -4,11 +4,11 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 
 
-type SourceOrTarget =
+type internal SourceOrTarget =
   | Source
   | Target
 
-type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: int, id: string) =
+type internal DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: int, id: string) =
   inherit System.Exception(sprintf "In the %A sequence, the elements at indices %d and %d have the same ID %s" sourceOrTarget index1 index2 id)
   member this.SourceOrTarget = sourceOrTarget
   member this.Index1 = index1
