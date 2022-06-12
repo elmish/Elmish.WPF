@@ -7,36 +7,36 @@ open Elmish
 
 module Bindings =
 
-  /// Map the model of a list of bindings via a contravariant mapping.
+  /// Maps the model of a list of bindings via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
 
-  /// Map the message of a list of bindings with access to the model via a covariant mapping.
+  /// Maps the message of a list of bindings with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
 
-  /// Map the message of a list of bindings via a covariant mapping.
+  /// Maps the message of a list of bindings via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
 
 
 
 module Binding =
 
-  /// Map the model of a binding via a contravariant mapping.
+  /// Maps the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
 
-  /// Map the message of a binding with access to the model via a covariant mapping.
+  /// Maps the message of a binding with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
 
-  /// Map the message of a binding via a covariant mapping.
+  /// Maps the message of a binding via a covariant mapping.
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
 
-  /// Set the message of a binding with access to the model.
+  /// Sets the message of a binding with access to the model.
   let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsgWithModel f binding
 
-  /// Set the message of a binding.
+  /// Sets the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
 
 
-  /// Restrict the binding to models that satisfy the predicate after some model satisfies the predicate.
+  /// Restricts the binding to models that satisfy the predicate after some model satisfies the predicate.
   let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = BindingData.Binding.addSticky predicate binding
 
   /// <summary>
@@ -69,7 +69,7 @@ module Binding =
     |> BindingData.Binding.addLazy equals
 
   /// <summary>
-  ///   Accepts a function that can alter the message stream.
+  ///   Atlers the message stream via the given function.
   ///   Ideally suited for use with Reactive Extensions.
   ///   <code>
   ///     open FSharp.Control.Reactive
@@ -87,8 +87,8 @@ module Binding =
   ///     binding |&gt; Binding.alterMsgStream delay
   ///   </code>
   /// </summary>
-  /// <param name="alteration">The function that will alter the message stream.</param>
-  /// <param name="binding">The binding to which the message stream is altered.</param>
+  /// <param name="alteration">The function that can alter the message stream.</param>
+  /// <param name="binding">The binding of the altered message stream.</param>
   let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
     binding
     |> BindingData.Binding.alterMsgStream alteration
@@ -169,15 +169,13 @@ module Binding =
   module SubModelSelectedItem =
 
     /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
-    /// the
-    /// <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    /// the <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
     /// binding. Automatically converts the dynamically created Elmish.WPF view
     /// models to/from their corresponding IDs, so the Elmish user code only has
     /// to work with the IDs.
     ///
     /// Only use this if you are unable to use some kind of <c>SelectedValue</c>
-    /// or
-    /// <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    /// or <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
     /// binding. This binding is less type-safe. It will throw when initializing
     /// the bindings if <paramref name="subModelSeqBindingName" />
     /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
@@ -194,15 +192,13 @@ module Binding =
       >> mapMsg (ValueOption.map unbox)
 
     /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
-    /// the
-    /// <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
+    /// the <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
     /// binding. Automatically converts the dynamically created Elmish.WPF view
     /// models to/from their corresponding IDs, so the Elmish user code only has
     /// to work with the IDs.
     ///
     /// Only use this if you are unable to use some kind of <c>SelectedValue</c>
-    /// or
-    /// <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
+    /// or <c>SelectedIndex</c> property with a normal <see cref="twoWay" />
     /// binding. This binding is less type-safe. It will throw when initializing
     /// the bindings if <paramref name="subModelSeqBindingName" />
     /// does not correspond to a <see cref="subModelSeq" /> binding, and it will
@@ -230,6 +226,8 @@ module Binding =
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
+    let private boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
     ///   to the <c>DataContext</c> of a <c>UserControl</c> or similar.
@@ -241,7 +239,7 @@ module Binding =
         CreateViewModel = fun args -> DynamicViewModel<'model, 'msg>(args, bindings ())
         UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
         ToMsg = fun _ -> id }
-      |> mapMinorTypes box box box unbox unbox unbox
+      |> boxMinorTypes
       |> SubModelData
       |> BaseBindingData
       |> createBinding
@@ -284,7 +282,7 @@ module Binding =
 type Binding private () =
 
   /// <summary>
-  ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+  ///   Creates a binding intended for use with <code>Selector.SelectedIndex</code>.
   /// </summary>
   /// <param name="get">Gets the selected index from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>
@@ -296,7 +294,7 @@ type Binding private () =
     >> Binding.mapMsg set
 
   /// <summary>
-  ///   Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
+  ///   Creates a binding intended for use with <code>Selector.SelectedIndex</code>.
   /// </summary>
   /// <param name="get">Gets the selected index from the model.</param>
   /// <param name="set">Returns the message to dispatch.</param>

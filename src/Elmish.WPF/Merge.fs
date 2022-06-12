@@ -1,4 +1,5 @@
-﻿namespace Elmish.WPF
+﻿[<AutoOpen>]
+module internal Elmish.WPF.Merge
 
 open System.Collections.Generic
 open System.Collections.ObjectModel
@@ -15,7 +16,7 @@ type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: 
   member this.Index2 = index2
   member this.Id = id
 
-type internal CollectionTarget<'a> =
+type CollectionTarget<'a> =
   { GetLength: unit -> int
     GetAt: int -> 'a
     Append: 'a -> unit
@@ -27,7 +28,20 @@ type internal CollectionTarget<'a> =
     Enumerate: unit -> 'a seq
     BoxedCollection: unit -> obj }
 
-module internal CollectionTarget =
+module CollectionTarget =
+
+  let create (oc: ObservableCollection<'a>) =
+    { GetLength = fun () -> oc.Count
+      GetAt = fun i -> oc.[i]
+      Append = oc.Add
+      InsertAt = oc.Insert
+      SetAt = fun (i, a) -> oc.[i] <- a
+      RemoveAt = oc.RemoveAt
+      Move = oc.Move
+      Clear = oc.Clear
+      Enumerate = fun () -> upcast oc
+      BoxedCollection = fun () -> oc |> box }
+
   let map (fOut: 'a -> 'b) (fIn: 'b -> 'a) (ct: CollectionTarget<'a>) : CollectionTarget<'b> =
     { GetLength = ct.GetLength
       GetAt = ct.GetAt >> fOut
@@ -40,19 +54,9 @@ module internal CollectionTarget =
       Enumerate = ct.Enumerate >> Seq.map fOut
       BoxedCollection = ct.BoxedCollection }
 
-  let create (oc: ObservableCollection<'a>) =
-    { GetLength = fun () -> oc.Count
-      GetAt = fun i -> oc.[i]
-      Append = oc.Add
-      InsertAt = oc.Insert
-      SetAt = fun (i,a) -> oc.[i] <- a
-      RemoveAt = oc.RemoveAt
-      Move = oc.Move
-      Clear = oc.Clear
-      Enumerate = fun () -> upcast oc
-      BoxedCollection = fun () -> oc |> box }
 
-module internal Merge =
+
+module Merge =
 
   let unkeyed
       (create: 's -> int -> 't)
