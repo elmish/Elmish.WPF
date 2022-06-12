@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="InternalUtils.fs" />
+    <Compile Include="AutoOpen.fs" />
     <Compile Include="MergeTests.fs" />
     <Compile Include="DynamicViewModelTests.fs" />
     <Compile Include="BindingTests.fs" />
