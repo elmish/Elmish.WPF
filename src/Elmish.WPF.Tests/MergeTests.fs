@@ -1,4 +1,4 @@
-module Elmish.WPF.Tests.MergeTests
+module MergeTests.M
 
 open System
 open System.Collections.ObjectModel
@@ -232,7 +232,9 @@ type TestClass (id: int, data: string) =
     that :? TestClass
 
 [<Fact>]
-let ``starting with two TestClass instances, when merging after removing the last one, should trigger CC.Remove for removed item`` () =
+let ``starting with two TestClass instances, when merging after removing the last one, should trigger CC-Remove for removed item`` () =
+  // In test name, using "CC-Remove" instead of "CC.Remove" to avoid this bug:
+  // https://developercommunity.visualstudio.com/t/test-explorer-doesnt-show-tests-correctly-when-dot/297822
   Property.check <| property {
     let! id1 = GenX.auto<int>
     let! id2 = GenX.auto<int> |> GenX.notEqualTo id1
