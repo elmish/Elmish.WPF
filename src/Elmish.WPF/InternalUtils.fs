@@ -1,11 +1,34 @@
 ﻿[<AutoOpen>]
 module internal Elmish.WPF.InternalUtils
 
+open System.Collections.Generic
+open System.Diagnostics
+
+
+let flip f b a = f a b
+
+let ignore2 _ _ = ()
+
+/// Deconstructs a KeyValuePair into a tuple.
+[<DebuggerStepThrough>]
+let (|Kvp|) (kvp: KeyValuePair<_,_>) =
+  Kvp (kvp.Key, kvp.Value)
+
+  
+[<Struct>]
+type OptionalBuilder =
+  member _.Bind(ma, f) =
+    ma |> Option.bind f
+  member _.Return(a) =
+    Some a
+  member _.ReturnFrom(ma) =
+    ma
+    
+let option = OptionalBuilder()
+
 
 [<RequireQualifiedAccess>]
 module Kvp =
-
-  open System.Collections.Generic
 
   let key (kvp: KeyValuePair<_,_>) =
     kvp.Key
@@ -56,16 +79,12 @@ module ByRefPair =
 [<RequireQualifiedAccess>]
 module Dictionary =
 
-  open System.Collections.Generic
-
   let tryFind key (d: Dictionary<_, _>) =
     key |> d.TryGetValue |> ByRefPair.toOption
 
 
 [<RequireQualifiedAccess>]
 module IReadOnlyDictionary =
-
-  open System.Collections.Generic
 
   let tryFind key (d: IReadOnlyDictionary<_, _>) =
     key |> d.TryGetValue |> ByRefPair.toOption
@@ -86,8 +105,6 @@ module SeqOption =
 
 [<RequireQualifiedAccess>]
 module Pair =
-
-  open System.Collections.Generic
 
   let ofKvp (kvp: KeyValuePair<_,_>) = (kvp.Key, kvp.Value)
 
