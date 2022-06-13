@@ -6,6 +6,8 @@ open System.Collections.Generic
 open System.ComponentModel
 open Microsoft.Extensions.Logging
 
+open BindingVmHelpers
+
 
 type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,

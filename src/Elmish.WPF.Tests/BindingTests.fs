@@ -2977,6 +2977,8 @@ module subModelSelectedItem =
 
 module sorting =
 
+  open BindingVmHelpers
+
   [<Fact>]
     let ``SubModelSelectedItemData sorted last`` () =
       Property.check <| property {

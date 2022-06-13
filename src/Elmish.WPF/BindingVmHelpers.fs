@@ -1,4 +1,4 @@
-namespace Elmish.WPF
+module internal Elmish.WPF.BindingVmHelpers
 
 open System
 open System.Windows
@@ -7,27 +7,27 @@ open Microsoft.Extensions.Logging
 open Elmish
 
 
-type internal UpdateData =
+type UpdateData =
   | ErrorsChanged of string
   | PropertyChanged of string
   | CanExecuteChanged of Command
 
-module internal UpdateData =
+module UpdateData =
   let isPropertyChanged = function PropertyChanged _ -> true | _ -> false
 
 
-type internal GetErrorSubModelSelectedItem =
+type GetErrorSubModelSelectedItem =
   { NameChain: string
     SubModelSeqBindingName: string
     Id: string }
 
 [<RequireQualifiedAccess>]
-type internal GetError =
+type GetError =
   | OneWayToSource
   | SubModelSelectedItem of GetErrorSubModelSelectedItem
 
 
-module internal Helpers2 =
+module Helpers2 =
   let showNewWindow
       (winRef: WeakReference<Window>)
       (getWindow: 'model -> Dispatch<'msg> -> Window)
@@ -86,42 +86,42 @@ module internal Helpers2 =
     else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
 
 
-type internal OneWayBinding<'model, 'a> = {
+type OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
 }
 
-type internal OneWayToSourceBinding<'model, 'a> = {
+type OneWayToSourceBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type internal OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
+type OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
   OneWaySeqData: OneWaySeqData<'model, 'a, 'id>
   Values: CollectionTarget<'a>
 }
 
-type internal TwoWayBinding<'model, 'a> = {
+type TwoWayBinding<'model, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> unit
 }
 
-type internal SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   Vm: 'bindingViewModel voption ref
 }
 
-type internal SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
   VmWinState: WindowState<'bindingViewModel> ref
 }
 
-type internal SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
+type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
   Vms: CollectionTarget<'bindingViewModel>
 }
 
-type internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
+type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
     Vms: CollectionTarget<'bindingViewModel> }
 
@@ -129,12 +129,12 @@ type internal SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 
     d.Vms.Enumerate ()
     |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
 
-type internal SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { GetId: 'bindingModel -> 'id
     FromId: 'id -> 'bindingViewModel option
     GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
 
-type internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
@@ -150,7 +150,7 @@ type internal SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingM
     d.Set id model
 
 
-type internal BaseVmBinding<'model, 'msg> =
+type BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
   | OneWayToSource of OneWayToSourceBinding<'model, obj>
   | OneWaySeq of OneWaySeqBinding<'model, obj, obj>
@@ -163,32 +163,32 @@ type internal BaseVmBinding<'model, 'msg> =
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
 
 
-type internal CachedBinding<'model, 'msg, 'value> = {
+type CachedBinding<'model, 'msg, 'value> = {
   Binding: VmBinding<'model, 'msg>
   Cache: 'value option ref
 }
 
-and internal ValidationBinding<'model, 'msg> = {
+and ValidationBinding<'model, 'msg> = {
   Binding: VmBinding<'model, 'msg>
   Validate: 'model -> string list
   Errors: string list ref
 }
 
-and internal LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
+and LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   Binding: VmBinding<'bindingModel, 'bindingMsg>
   Get: 'model -> 'bindingModel
   Dispatch: 'bindingMsg -> unit
   Equals: 'bindingModel -> 'bindingModel -> bool
 }
 
-and internal AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
+and AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
   Binding: VmBinding<'bindingModel, 'bindingMsg>
   Get: 'model -> 'bindingModel
   Dispatch: 'bindingMsg -> unit
 }
 
 /// Represents all necessary data used in an active binding.
-and internal VmBinding<'model, 'msg> =
+and VmBinding<'model, 'msg> =
   | BaseVmBinding of BaseVmBinding<'model, 'msg>
   | Cached of CachedBinding<'model, 'msg, obj>
   | Validatation of ValidationBinding<'model, 'msg>
@@ -205,7 +205,7 @@ and internal VmBinding<'model, 'msg> =
       |> Validatation
 
 
-type internal SubModelSelectedItemLast() =
+type SubModelSelectedItemLast() =
 
   member _.Base(data: BaseBindingData<'model, 'msg>) : int =
     match data with
@@ -227,8 +227,7 @@ type internal SubModelSelectedItemLast() =
     fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
 
 
-
-type internal FirstValidationErrors() =
+type FirstValidationErrors() =
 
   member this.Recursive<'model, 'msg>
       (binding: VmBinding<'model, 'msg>)
@@ -241,7 +240,7 @@ type internal FirstValidationErrors() =
     | Validatation b -> b.Errors |> Some // TODO: what if there is more than one validation effect?
 
 
-type internal FuncsFromSubModelSeqKeyed() =
+type FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
@@ -259,7 +258,7 @@ type internal FuncsFromSubModelSeqKeyed() =
     | AlterMsgStream b -> this.Recursive b.Binding
 
 
-type internal Initialize
+type Initialize
       (loggingArgs: LoggingViewModelArgs,
        name: string,
        getFunctionsForSubModelSelectedItem: string -> SelectedItemBinding<obj, obj, obj, obj> option) =
@@ -438,7 +437,7 @@ type internal Initialize
 
 
 /// Updates the binding and returns a list indicating what events to raise for this binding
-type internal Update
+type Update
     (loggingArgs: LoggingViewModelArgs,
      name: string) =
 
@@ -619,7 +618,7 @@ type internal Update
           this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
 
 
-type internal Get(nameChain: string) =
+type Get(nameChain: string) =
 
   member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg>) =
     match binding with
@@ -652,7 +651,6 @@ type internal Get(nameChain: string) =
                   |> Error
         |> Result.map (ValueOption.map snd >> ValueOption.toObj >> box)
 
-
   member this.Recursive<'model, 'msg>
       (model: 'model,
        binding: VmBinding<'model, 'msg>)
@@ -671,7 +669,7 @@ type internal Get(nameChain: string) =
     | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
 
 
-type internal Set(value: obj) =
+type Set(value: obj) =
 
   member _.Base(model: 'model, binding: BaseVmBinding<'model, 'msg>) =
     match binding with
