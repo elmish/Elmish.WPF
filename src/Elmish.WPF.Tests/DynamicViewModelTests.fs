@@ -1,4 +1,4 @@
-module Elmish.WPF.Tests.ViewModelTests
+module DynamicViewModelTests.M
 
 open System
 open System.Collections.Concurrent
@@ -6,11 +6,13 @@ open System.Collections.ObjectModel
 open System.Collections.Specialized
 open System.ComponentModel
 open System.Windows.Input
-open Microsoft.Extensions.Logging.Abstractions
+
 open FSharp.Interop.Dynamic
+
 open Xunit
 open Hedgehog
 open Swensen.Unquote
+
 open Elmish.WPF
 
 
