@@ -6,39 +6,31 @@ open System.Collections.ObjectModel
 open Elmish
 
 
-module Bindings =
-
-  /// Maps the model of a list of bindings via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = BindingData.Bindings.mapModel f bindings
-
-  /// Maps the message of a list of bindings with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsgWithModel f bindings
-
-  /// Maps the message of a list of bindings via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = BindingData.Bindings.mapMsg f bindings
-
-
-
 module Binding =
+  open BindingData
+
+  let internal mapData f binding =
+    { Name = binding.Name
+      Data = binding.Data |> f }
 
   /// Maps the model of a binding via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = BindingData.Binding.mapModel f binding
+  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = f |> mapModel |> mapData <| binding
 
   /// Maps the message of a binding with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsgWithModel f binding
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsgWithModel |> mapData <| binding
 
   /// Maps the message of a binding via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.mapMsg f binding
+  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsg |> mapData <| binding
 
   /// Sets the message of a binding with access to the model.
-  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsgWithModel f binding
+  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Sets the message of a binding.
-  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = BindingData.Binding.setMsg msg binding
+  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = msg |> setMsg |> mapData <| binding
 
 
   /// Restricts the binding to models that satisfy the predicate after some model satisfies the predicate.
-  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = BindingData.Binding.addSticky predicate binding
+  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = predicate |> addSticky |> mapData <| binding
 
   /// <summary>
   ///   Adds caching to the given binding.  The cache holds a single value and
@@ -48,7 +40,7 @@ module Binding =
   /// <param name="binding">The binding to which caching is added.</param>
   let addCaching (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addCaching
+    |> mapData addCaching
 
   /// <summary>
   ///   Adds validation to the given binding using <c>INotifyDataErrorInfo</c>.
@@ -57,7 +49,7 @@ module Binding =
   /// <param name="binding">The binding to which validation is added.</param>
   let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addValidation validate
+    |> mapData (addValidation validate)
 
   /// <summary>
   ///   Adds laziness to the updating of the given binding. If the models are considered equal,
@@ -67,7 +59,7 @@ module Binding =
   /// <param name="binding">The binding to which the laziness is added.</param>
   let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
     binding
-    |> BindingData.Binding.addLazy equals
+    |> mapData (addLazy equals)
 
   /// <summary>
   ///   Atlers the message stream via the given function.
@@ -92,7 +84,7 @@ module Binding =
   /// <param name="binding">The binding of the altered message stream.</param>
   let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
     binding
-    |> BindingData.Binding.alterMsgStream alteration
+    |> mapData (alterMsgStream alteration)
 
 
   module OneWay =
@@ -348,6 +340,18 @@ module Binding =
       |> SubModelSeqKeyedData
       |> BaseBindingData
       |> createBinding
+
+
+module Bindings =
+
+  /// Maps the model of a list of bindings via a contravariant mapping.
+  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = f |> Binding.mapModel |> List.map <| bindings
+
+  /// Maps the message of a list of bindings with access to the model via a covariant mapping.
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) = f |> Binding.mapMsgWithModel |> List.map <| bindings
+
+  /// Maps the message of a list of bindings via a covariant mapping.
+  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = f |> Binding.mapMsg |> List.map <| bindings
 
 
 [<AbstractClass; Sealed>]
