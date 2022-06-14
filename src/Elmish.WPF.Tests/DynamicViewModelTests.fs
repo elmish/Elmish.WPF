@@ -1410,6 +1410,75 @@ module SubModelSelectedItem =
 
 
 
+module CacheEffect =
+
+  [<Fact>]
+  let ``model mapping called exactly once when Get called twice`` () =
+
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! model = GenX.auto<int>
+      let! bindingComponsitionOrder = Gen.bool
+    
+      let mapping = InvokeTester id
+      let cachingAndMapping =
+        if bindingComponsitionOrder
+        then Binding.mapModel mapping.Fn >> Binding.addCaching
+        else Binding.addCaching >> Binding.mapModel mapping.Fn
+      let binding =
+        name
+        |> Binding.OneWay.id
+        |> cachingAndMapping
+      let vm = TestVm(model, binding)
+      
+      vm.Get name |> ignore // populate cache
+      vm.Get name |> ignore
+      
+      test <@ 1 = mapping.Count @>
+    }
+
+
+  [<Fact>]
+  let ``second Get returns new model after first Get and then Update`` () =
+    let name = ""
+    let model = 0
+    let newModel = 1
+    let binding =
+      name
+      |> Binding.OneWay.id
+      |> Binding.addCaching
+    let vm = TestVm(model, binding)
+
+    vm.Get name |> ignore   // populate cache
+    vm.UpdateModel newModel // clear cache
+    let actual = vm.Get name |> unbox
+
+    test <@ newModel = actual @>
+
+
+  [<Fact>]
+  let ``cache not cleared on Set`` () =
+    let name = ""
+    let initialModel = 0
+    let newModel = 1
+    let mapping = InvokeTester (fun x -> x)
+    let binding =
+      name
+      |> Binding.TwoWay.id
+      |> Binding.mapModel mapping.Fn
+      |> Binding.addCaching
+    let vm = TestVm(initialModel, binding)
+
+    vm.Get name |> ignore // populate cache
+    vm.Set name newModel
+    mapping.Reset()       // Set calls mapping function, so reset count
+    let actual = vm.Get name |> unbox
+
+    test <@ initialModel = actual @>
+    test <@ 0 = mapping.Count @>
+
+
+
 module LazyEffect =
 
   [<Fact>]
