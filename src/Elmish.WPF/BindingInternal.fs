@@ -441,7 +441,7 @@ module internal BindingData =
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let box d = mapMinorTypes box box unbox d
+    let boxMinorTypes d = mapMinorTypes box box unbox d
 
     let mapFunctions
         mGet
@@ -569,7 +569,7 @@ module internal BindingData =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let box d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
 
     let mapFunctions
         mGetState
@@ -613,7 +613,7 @@ module internal BindingData =
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let box d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
 
     let mapFunctions
         mGetModels
@@ -655,7 +655,7 @@ module internal BindingData =
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let box d = mapMinorTypes box box box box unbox unbox unbox unbox d
+      let boxMinorTypes d = mapMinorTypes box box box box unbox unbox unbox unbox d
 
       let mapFunctions
           mGetSubModels

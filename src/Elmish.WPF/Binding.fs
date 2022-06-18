@@ -237,7 +237,7 @@ module Binding =
         CreateCollection = ObservableCollection >> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId }
-      |> box
+      |> boxMinorTypes
       |> OneWaySeqData
       |> BaseBindingData
       |> createBinding
@@ -310,7 +310,7 @@ module Binding =
         GetWindow = getWindow
         IsModal = isModal
         OnCloseRequested = onCloseRequested }
-      |> box
+      |> boxMinorTypes
       |> SubModelWinData
       |> BaseBindingData
       |> createBinding
@@ -326,7 +326,7 @@ module Binding =
         CreateCollection = ObservableCollection >> CollectionTarget.create
         UpdateViewModel = updateViewModel
         ToMsg = fun _ -> id }
-      |> box
+      |> boxMinorTypes
       |> SubModelSeqUnkeyedData
       |> BaseBindingData
       |> createBinding
@@ -344,7 +344,7 @@ module Binding =
         GetUnderlyingModel = getUnderlyingModel
         ToMsg = fun _ -> id
         GetId = getId }
-      |> box
+      |> boxMinorTypes
       |> SubModelSeqKeyedData
       |> BaseBindingData
       |> createBinding
