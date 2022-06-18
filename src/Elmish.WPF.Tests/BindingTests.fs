@@ -176,7 +176,7 @@ module oneWaySeq =
       let! x = GenX.auto<int>
 
       let get (i: int) = Seq.singleton i
-      let d = BindingData.OneWaySeq.create get fail2 fail |> getOneWaySeqData
+      let d = Binding.OneWaySeq.create get fail2 fail |> getOneWaySeqData
 
       test <@ d.Get x |> Seq.map unbox |> Seq.toList = (get x |> Seq.toList) @>
     }
