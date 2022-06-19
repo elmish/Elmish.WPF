@@ -155,20 +155,6 @@ and internal BindingData<'model, 'msg> =
   | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
 
 
-/// Represents all necessary data used to create a binding.
-and Binding<'model, 'msg> =
-  internal
-    { Name: string
-      Data: BindingData<'model, 'msg> }
-
-
-[<AutoOpen>]
-module internal Helpers =
-
-  let createBinding data name =
-    { Name = name
-      Data = data }
-
 
 module internal BindingData =
 
@@ -362,33 +348,6 @@ module internal BindingData =
       else
         stickyModel |> Option.defaultValue newModel
     binding |> mapModel f
-
-
-  module Binding =
-
-    let mapData f binding =
-      { Name = binding.Name
-        Data = binding.Data |> f }
-
-    let mapModel f = f |> mapModel |> mapData
-    let mapMsgWithModel f = f |> mapMsgWithModel |> mapData
-    let mapMsg f = f |> mapMsg |> mapData
-
-    let setMsgWithModel f = f |> setMsgWithModel |> mapData
-    let setMsg msg = msg |> setMsg |> mapData
-
-    let addCaching<'model, 'msg> : Binding<'model, 'msg> -> Binding<'model, 'msg> = addCaching |> mapData
-    let addValidation vaidate = vaidate |> addValidation |> mapData
-    let addLazy equals = equals |> addLazy |> mapData
-    let addSticky predicate =  predicate |> addSticky |> mapData
-    let alterMsgStream alteration = alteration |> alterMsgStream |> mapData
-
-
-  module Bindings =
-
-    let mapModel f = f |> Binding.mapModel |> List.map
-    let mapMsgWithModel f = f |> Binding.mapMsgWithModel |> List.map
-    let mapMsg f = f |> Binding.mapMsg |> List.map
 
 
   module Option =

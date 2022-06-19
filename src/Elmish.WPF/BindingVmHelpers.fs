@@ -223,9 +223,6 @@ type SubModelSelectedItemLast() =
   member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
     fun a b -> this.Recursive(a) - this.Recursive(b)
 
-  member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
-    fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
-
 
 type FirstValidationErrors() =
 
