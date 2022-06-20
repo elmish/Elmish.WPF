@@ -411,7 +411,7 @@ module internal BindingData =
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let boxMinorTypes d = mapMinorTypes box box unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox
 
     let create get itemEquals getId =
       { Get = get >> (fun x -> upcast x)
@@ -499,7 +499,7 @@ module internal BindingData =
       SubModelSeqBindingName = d.SubModelSeqBindingName
     }
 
-    let boxMinorTypes d = mapMinorTypes box unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box unbox
 
     let create subModelSeqBindingName : BindingData<'id voption, 'id voption> =
       { Get = id
@@ -540,7 +540,7 @@ module internal BindingData =
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModel = id
@@ -589,7 +589,7 @@ module internal BindingData =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
@@ -645,7 +645,7 @@ module internal BindingData =
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModels = id
@@ -697,7 +697,7 @@ module internal BindingData =
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let boxMinorTypes d = mapMinorTypes box box box box unbox unbox unbox unbox d
+      let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
       let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id
