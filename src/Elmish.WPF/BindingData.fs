@@ -369,7 +369,7 @@ module internal BindingData =
       |> OneWayData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         (d: OneWayData<'model, 'a>) =
       { d with Get = mGet d.Get }
@@ -387,7 +387,7 @@ module internal BindingData =
       |> OneWayToSourceData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mSet
         (d: OneWayToSourceData<'model, 'msg, 'a>) =
       { d with Set = mSet d.Set }
@@ -422,7 +422,7 @@ module internal BindingData =
       |> OneWaySeqData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mGetId
         mItemEquals
@@ -449,7 +449,7 @@ module internal BindingData =
       |> TwoWayData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         (d: TwoWayData<'model, 'msg, 'a>) =
@@ -473,7 +473,7 @@ module internal BindingData =
       |> CmdData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mExec
         mCanExec
         (d: CmdData<'model, 'msg>) =
@@ -509,7 +509,7 @@ module internal BindingData =
       |> SubModelSelectedItemData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
@@ -551,7 +551,7 @@ module internal BindingData =
       |> SubModelData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetModel
         mGetBindings
         mToMsg
@@ -603,7 +603,7 @@ module internal BindingData =
       |> SubModelWinData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetState
         mGetBindings
         mToMsg
@@ -657,7 +657,7 @@ module internal BindingData =
       |> SubModelSeqUnkeyedData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetModels
         mGetBindings
         mToMsg
@@ -711,7 +711,7 @@ module internal BindingData =
         |> SubModelSeqKeyedData
         |> BaseBindingData
 
-      let mapFunctions
+      let private mapFunctions
           mGetSubModels
           mGetBindings
           mToMsg
@@ -736,7 +736,7 @@ module internal BindingData =
 
   module Validation =
 
-    let mapFunctions
+    let private mapFunctions
         mValidate
         (d: ValidationData<'model, 'msg>) =
       { d with Validate = mValidate d.Validate }
@@ -748,7 +748,7 @@ module internal BindingData =
 
   module Lazy =
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         mEquals
