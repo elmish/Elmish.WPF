@@ -369,7 +369,7 @@ module internal BindingData =
       |> OneWayData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         (d: OneWayData<'model, 'a>) =
       { d with Get = mGet d.Get }
@@ -387,7 +387,7 @@ module internal BindingData =
       |> OneWayToSourceData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mSet
         (d: OneWayToSourceData<'model, 'msg, 'a>) =
       { d with Set = mSet d.Set }
@@ -411,7 +411,7 @@ module internal BindingData =
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let boxMinorTypes d = mapMinorTypes box box unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox
 
     let create get itemEquals getId =
       { Get = get >> (fun x -> upcast x)
@@ -422,7 +422,7 @@ module internal BindingData =
       |> OneWaySeqData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mGetId
         mItemEquals
@@ -449,7 +449,7 @@ module internal BindingData =
       |> TwoWayData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         (d: TwoWayData<'model, 'msg, 'a>) =
@@ -473,7 +473,7 @@ module internal BindingData =
       |> CmdData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mExec
         mCanExec
         (d: CmdData<'model, 'msg>) =
@@ -499,7 +499,7 @@ module internal BindingData =
       SubModelSeqBindingName = d.SubModelSeqBindingName
     }
 
-    let boxMinorTypes d = mapMinorTypes box unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box unbox
 
     let create subModelSeqBindingName : BindingData<'id voption, 'id voption> =
       { Get = id
@@ -509,7 +509,7 @@ module internal BindingData =
       |> SubModelSelectedItemData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         (d: SubModelSelectedItemData<'model, 'msg, 'id>) =
@@ -540,7 +540,7 @@ module internal BindingData =
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModel = id
@@ -551,7 +551,7 @@ module internal BindingData =
       |> SubModelData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetModel
         mGetBindings
         mToMsg
@@ -589,7 +589,7 @@ module internal BindingData =
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
@@ -603,7 +603,7 @@ module internal BindingData =
       |> SubModelWinData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetState
         mGetBindings
         mToMsg
@@ -645,7 +645,7 @@ module internal BindingData =
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let boxMinorTypes d = mapMinorTypes box box box unbox unbox unbox d
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModels = id
@@ -657,7 +657,7 @@ module internal BindingData =
       |> SubModelSeqUnkeyedData
       |> BaseBindingData
 
-    let mapFunctions
+    let private mapFunctions
         mGetModels
         mGetBindings
         mToMsg
@@ -697,7 +697,7 @@ module internal BindingData =
         GetId = inMapBindingModel >> d.GetId >> outMapId
       }
 
-      let boxMinorTypes d = mapMinorTypes box box box box unbox unbox unbox unbox d
+      let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
       let create createViewModel updateViewModel getUnderlyingModel getId =
         { GetSubModels = id
@@ -711,7 +711,7 @@ module internal BindingData =
         |> SubModelSeqKeyedData
         |> BaseBindingData
 
-      let mapFunctions
+      let private mapFunctions
           mGetSubModels
           mGetBindings
           mToMsg
@@ -736,7 +736,7 @@ module internal BindingData =
 
   module Validation =
 
-    let mapFunctions
+    let private mapFunctions
         mValidate
         (d: ValidationData<'model, 'msg>) =
       { d with Validate = mValidate d.Validate }
@@ -748,7 +748,7 @@ module internal BindingData =
 
   module Lazy =
 
-    let mapFunctions
+    let private mapFunctions
         mGet
         mSet
         mEquals
