@@ -1,7 +1,6 @@
 ﻿namespace Elmish.WPF
 
 open System.Windows
-open System.Collections.ObjectModel
 
 open Elmish
 
@@ -88,11 +87,10 @@ module Binding =
 
 
   module OneWay =
+
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
-      { Get = box }
-      |> OneWayData
-      |> BaseBindingData
+      BindingData.OneWay.id<'a, 'msg>
       |> createBinding
 
     /// Creates a one-way binding to an optional value. The binding
@@ -111,11 +109,10 @@ module Binding =
 
 
   module OneWayToSource =
+
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
-      { OneWayToSourceData.Set = fun obj _ -> obj |> unbox }
-      |> OneWayToSourceData
-      |> BaseBindingData
+      BindingData.OneWayToSource.id<'model, 'a>
       |> createBinding
 
     /// Creates a one-way-to-source binding to an optional value. The binding
@@ -134,12 +131,10 @@ module Binding =
 
 
   module TwoWay =
+
     /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a> =
-      { TwoWayData.Get = box
-        Set = fun obj _ -> unbox obj }
-      |> TwoWayData
-      |> BaseBindingData
+      BindingData.TwoWay.id<'a> 
       |> createBinding
 
     /// Creates a one-way-to-source binding to an optional value. The binding
@@ -175,11 +170,7 @@ module Binding =
     /// throw at runtime if the inferred <c>'id</c> type does not match the
     /// actual ID type used in that binding.
     let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption> =
-      { Get = id
-        Set = fun obj _ -> obj
-        SubModelSeqBindingName = subModelSeqBindingName }
-      |> SubModelSelectedItemData
-      |> BaseBindingData
+      BindingData.SubModelSelectedItem.create subModelSeqBindingName
       |> createBinding
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
@@ -206,11 +197,7 @@ module Binding =
   module Cmd =
 
     let internal createWithParam exec canExec autoRequery =
-      { Exec = exec
-        CanExec = canExec
-        AutoRequery = autoRequery }
-      |> CmdData
-      |> BaseBindingData
+      BindingData.Cmd.createWithParam exec canExec autoRequery
       |> createBinding
 
     let internal create exec canExec =
@@ -220,24 +207,15 @@ module Binding =
         false
       >> addLazy (fun m1 m2 -> canExec m1 = canExec m2)
 
+
   module OneWaySeq =
 
-    open BindingData.OneWaySeq
-
     let internal create get itemEquals getId =
-      { Get = get >> (fun x -> upcast x)
-        CreateCollection = ObservableCollection >> CollectionTarget.create
-        ItemEquals = itemEquals
-        GetId = getId }
-      |> boxMinorTypes
-      |> OneWaySeqData
-      |> BaseBindingData
+      BindingData.OneWaySeq.create get itemEquals getId
       |> createBinding
 
 
   module SubModel =
-
-    open BindingData.SubModel
 
     /// <summary>
     ///   Creates a binding to a sub-model/component. You typically bind this
@@ -246,13 +224,9 @@ module Binding =
     /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let vopt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model voption, 'msg> =
-      { GetModel = id
-        CreateViewModel = fun args -> DynamicViewModel<'model, 'msg>(args, bindings ())
-        UpdateViewModel = fun (vm,m) -> vm.UpdateModel(m)
-        ToMsg = fun _ -> id }
-      |> boxMinorTypes
-      |> SubModelData
-      |> BaseBindingData
+      BindingData.SubModel.create
+        (fun args -> DynamicViewModel<'model, 'msg>(args, bindings ()))
+        (fun (vm, m) -> vm.UpdateModel(m))
       |> createBinding
 
     /// <summary>
@@ -292,53 +266,22 @@ module Binding =
 
   module SubModelWin =
 
-    open BindingData.SubModelWin
-
     let internal create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
-      { GetState = getState
-        CreateViewModel = createViewModel
-        UpdateViewModel = updateViewModel
-        ToMsg = toMsg
-        GetWindow = getWindow
-        IsModal = isModal
-        OnCloseRequested = onCloseRequested }
-      |> boxMinorTypes
-      |> SubModelWinData
-      |> BaseBindingData
+      BindingData.SubModelWin.create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested
       |> createBinding
 
 
   module SubModelSeqUnkeyed =
 
-    open BindingData.SubModelSeqUnkeyed
-
     let internal create createViewModel updateViewModel =
-      { GetModels = id
-        CreateViewModel = createViewModel
-        CreateCollection = ObservableCollection >> CollectionTarget.create
-        UpdateViewModel = updateViewModel
-        ToMsg = fun _ -> id }
-      |> boxMinorTypes
-      |> SubModelSeqUnkeyedData
-      |> BaseBindingData
+      BindingData.SubModelSeqUnkeyed.create createViewModel updateViewModel
       |> createBinding
 
 
   module SubModelSeqKeyed =
 
-    open BindingData.SubModelSeqKeyed
-
     let internal create createViewModel updateViewModel getUnderlyingModel getId =
-      { GetSubModels = id
-        CreateViewModel = createViewModel
-        CreateCollection = ObservableCollection >> CollectionTarget.create
-        UpdateViewModel = updateViewModel
-        GetUnderlyingModel = getUnderlyingModel
-        ToMsg = fun _ -> id
-        GetId = getId }
-      |> boxMinorTypes
-      |> SubModelSeqKeyedData
-      |> BaseBindingData
+      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel getUnderlyingModel getId
       |> createBinding
 
 
