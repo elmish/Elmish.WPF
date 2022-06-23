@@ -45,6 +45,7 @@
     <Compile Include="BindingData.fs" />
     <Compile Include="BindingVmHelpers.fs" />
     <Compile Include="StaticViewModel.fs" />
+    <Compile Include="BindingT.fs" />
     <Compile Include="DynamicViewModel.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModelModule.fs" />
