@@ -377,7 +377,7 @@ Additionally, there is a section explaining how most dispatching bindings allow 
 
 ### One-way bindings
 
-*Relevant sample: SingleCounter*
+*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
 One-way bindings are used when you want to bind to a simple value.
 
@@ -401,7 +401,7 @@ In F#, it’s common to model missing values using the `Option` type. However, W
 
 ### Two-way bindings
 
-*Relevant sample: SingleCounter*
+*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
 Two-way bindings are commonly used for any kind of input (textboxes, checkboxes, sliders, etc.). The two-way bindings accept two functions: A function `get: 'model -> 'a` just like the one-way binding, and a function `set: 'a -> 'model -> 'msg ` that accepts the UI value to be set and the current model, and returns the message to be dispatched.
 
@@ -444,7 +444,7 @@ Just like one-way bindings, there is a variant of the two-way binding for `optio
 
 #### Using validation with two-way bindings
 
-*Relevant sample: Validation*
+*Relevant sample: Validation - ([XAML views](src/Samples/Validation) and [F# core](src/Samples/Validation.Core))*
 
 You might want to display validation errors when the input is invalid. The best way to do this in WPF is through `INotifyDataErrorInfo`. Elmish.WPF supports this directly through the `twoWayValidate` bindings. In addition to `get` and `set`, this binding also accepts a third parameter that returns the error string to be displayed. This can be returned as `string option` (where `None` indicates no error), or `Result<_, string>` (where `Ok` indicates no error; this variant might allow you to easily reuse existing validation functions you have).
 
@@ -454,7 +454,7 @@ There are also variants of the two-way validating bindings for option-wrapped va
 
 ### Command bindings
 
-*Relevant sample: SingleCounter*
+*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
 Command bindings are used whenever you use `Command`/`CommandParameter` in XAML, such as for button clicks.
 
@@ -480,7 +480,7 @@ For convenience, if you don’t need the model, there is also an overload that d
 
 #### Conditional commands (where you control `CanExecute`)
 
-*Relevant sample: SingleCounter*
+*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
 A command may not always be executable. As you might know, WPF’s `ICommand` interface contains a `CanExecute` method that, if `false`, will cause WPF to disable the bound control (e.g. the button).
 
@@ -501,7 +501,7 @@ There are several ways to indicate that a command can‘t execute. The `cmdIf` b
 
 #### Using the `CommandParameter`
 
-*Relevant sample: UiBoundCmdParam*
+*Relevant sample: UiBoundCmdParam - ([XAML views](src/Samples/UiBoundCmdParam) and [F# core](src/Samples/UiBoundCmdParam.Core))*
 
 There may be times you need to use the XAML `CommandParameter` property. You then need to use Elmish.WPF’s `cmdParam` binding, which works exactly like `cmd` but where `exec` function accepts the command parameter as its first parameter.
 
@@ -509,7 +509,7 @@ There is also `cmdParamIf` which combines `cmdParam` and `cmdIf`, allowing you t
 
 ### Sub-model bindings
 
-*Relevant sample: SubModel*
+*Relevant sample: SubModel - ([XAML views](src/Samples/SubModel) and [F# core](src/Samples/SubModel.Core))*
 
 Sub-model bindings are used when you want to bind to a complex object that has its own bindings. In MVVM, this happens when one of your view-model properties is another view model with its own properties the UI can bind to.
 
@@ -625,7 +625,7 @@ You now have the power to create child components. Use it with great care; as me
 
 #### Optional and “sticky” sub-model bindings
 
-*Relevant sample: SubModelOpt*
+*Relevant sample: SubModelOpt - ([XAML views](src/Samples/SubModelOpt) and [F# core](src/Samples/SubModelOpt.Core))*
 
 You can also use the `subModelOpt` binding. The signature is the same as the variants described above, except that `getSubModel` returns `'subModel option`. The UI will receive `null` when the sub-model is `None`.
 
@@ -633,7 +633,7 @@ Additionally, these bindings have an optional `sticky: bool` parameter. If `true
 
 ### Sub-model window bindings
 
-*Relevant sample: NewWindow*
+*Relevant sample: NewWindow - ([XAML views](src/Samples/NewWindow) and [F# core](src/Samples/NewWindow.Core))*
 
 The `subModelWin` binding is a variant of `subModelOpt` that allows you to control the opening/closing/hiding of new windows. It has the same overloads as `subModel` and `subModelOpt`, with two key differences: First, the sub-model is wrapped in a custom type called `WindowState` that is defined like this:
 
@@ -663,7 +663,7 @@ Again, check out the `NewWindow` sample to see `subModelWin` in action.
 
 ### Sub-model sequence bindings
 
-*Relevant sample: SubModelSeq*
+*Relevant sample: SubModelSeq - ([XAML views](src/Samples/SubModelSeq) and [F# core](src/Samples/SubModelSeq.Core))*
 
 If you understand `subModel`, then `subModelSeq` isn’t much more complex. It has similar overloads, but instead of returning a single sub-model, you return `#seq<'subModel>`. Furthermore, all overloads have an additional parameter `getId` (which for the “level 1” and “level 2” overloads has signature `'subModel -> 'id`) that gets a unique identifier for each model. This identifier must be unique among all sub-models in the collection, and is used to know which items to add, remove, re-order, and update.
 
@@ -677,7 +677,7 @@ There are two special bindings not yet covered.
 
 #### `subModelSeqSelectedItem`
 
-*Relevant sample: SubModelSelectedItem*
+*Relevant sample: SubModelSelectedItem - ([XAML views](src/Samples/SubModelSelectedItem) and [F# core](src/Samples/SubModelSelectedItem.Core))*
 
 The section on model normalization made it clear that it’s better to use IDs than complex objects in messages. This means that for bindings to the selected value of a `ListBox` or similar, you’ll likely have better luck using `SelectedValue` and `SelectedValuePath` rather than `SelectedItem`.
 
@@ -698,7 +698,7 @@ You bind the `SelectedItem` of a control to the `subModelSelectedItem` binding. 
 
 #### `oneWaySeq`
 
-*Relevant sample: OneWaySeq*
+*Relevant sample: OneWaySeq - ([XAML views](src/Samples/OneWaySeq) and [F# core](src/Samples/OneWaySeq.Core))*
 
 In some cases, you might want to have a one-way binding not to a single, simple value, but to a potentially large collection of simple values. If you use `oneWay` for this, the entire list will be replaced and re-rendered each time the model updates.
 
