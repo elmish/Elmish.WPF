@@ -561,7 +561,7 @@ type Update
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
-          let update vm m = d.UpdateViewModel (vm,m)
+          let update vm m = d.UpdateViewModel (vm, m)
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
       | SubModelSeqKeyed b ->
@@ -572,7 +572,7 @@ type Update
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (id, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
-          let update vm m = d.UpdateViewModel (vm,m)
+          let update vm m = d.UpdateViewModel (vm, m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
             d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
