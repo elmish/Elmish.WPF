@@ -94,12 +94,12 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bin
     GetId: 'bindingModel -> 'id }
 
   member d.MergeKeyed
-      (getTargetId: ('bindingModel -> 'id) -> 't -> 'id,
-       create: 'bindingModel -> 'id -> 't,
-       update: 't -> 'bindingModel -> unit,
-       values: CollectionTarget<'t>,
+      (getTargetId: ('bindingModel -> 'id) -> 'bindingViewModel -> 'id,
+       create: 'bindingModel -> 'id -> 'bindingViewModel,
+       update: 'bindingViewModel -> 'bindingModel -> unit,
+       values: CollectionTarget<'bindingViewModel>,
        newSubModels: 'bindingModel []) =
-    let update t bm _ = update t bm
+    let update vm bm _ = update vm bm
     Merge.keyed d.GetId (getTargetId d.GetId) create update values newSubModels
 
 
