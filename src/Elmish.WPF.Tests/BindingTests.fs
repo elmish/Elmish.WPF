@@ -2722,7 +2722,7 @@ module subModelSeqKeyed =
         let getSubModels : string -> char list = Seq.toList
         let getId : char -> string = string
         let d = Binding.subModelSeq(getSubModels, getId, fail) |> getSubModelSeqKeyedData
-        test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
+        test <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
       }
 
 
@@ -2755,7 +2755,7 @@ module subModelSeqKeyed =
         let getSubModels : string -> char list = Seq.toList
         let getId : char -> string = string
         let d = Binding.subModelSeq(getSubModels, getId, fail, fail) |> getSubModelSeqKeyedData
-        test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
+        test <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
       }
 
 
@@ -2790,7 +2790,7 @@ module subModelSeqKeyed =
           let toBindingModel (m: string, c: char) = (m + string c).Length
           let getId i = i * 2
           let d = Binding.subModelSeq(getSubModels, toBindingModel, getId, fail, fail) |> getSubModelSeqKeyedData
-          test <@ d.GetSubModels m |> Seq.map d.GetId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
+          test <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
         }
 
 
@@ -2985,7 +2985,7 @@ module sorting =
         let! s = GenX.auto<string>
         let data =
           [ SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
-            SubModelSeqKeyedData { GetSubModels = fail; GetId = fail; CreateViewModel = fail; CreateCollection = fail; UpdateViewModel = fail; ToMsg = fail; VmToId = fail }
+            SubModelSeqKeyedData { GetSubModels = fail; BmToId = fail; CreateViewModel = fail; CreateCollection = fail; UpdateViewModel = fail; ToMsg = fail; VmToId = fail }
             SubModelSelectedItemData { Get = fail; Set = fail2; SubModelSeqBindingName = s }
           ] |> List.map BaseBindingData
         let sorted = data |> List.sortWith (SubModelSelectedItemLast().CompareBindingDatas())

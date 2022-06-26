@@ -370,7 +370,7 @@ type Initialize
           let vms =
             d.GetSubModels initialModel
             |> Seq.map (fun m ->
-                 let mId = d.GetId m
+                 let mId = d.BmToId m
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
@@ -575,7 +575,7 @@ type Update
             | :? DuplicateIdException as e ->
               let messageTemplate = "[{BindingNameChain}] In the {SourceOrTarget} sequence of the binding {BindingName}, the elements at indices {Index1} and {Index2} have the same ID {ID}. To avoid this problem, the elements will be merged without using IDs."
               log.LogError(messageTemplate, nameChain, e.SourceOrTarget, name, e.Index1, e.Index2, e.Id)
-              let create m _ = create m (d.GetId m)
+              let create m _ = create m (d.BmToId m)
               Merge.unkeyed create update b.Vms newSubModels
           []
 

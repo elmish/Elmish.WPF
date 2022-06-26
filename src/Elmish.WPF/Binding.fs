@@ -280,8 +280,8 @@ module Binding =
 
   module SubModelSeqKeyed =
 
-    let internal create createViewModel updateViewModel getId vmToId =
-      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel getId vmToId
+    let internal create createViewModel updateViewModel bmToId vmToId =
+      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel bmToId vmToId
       |> createBinding
 
 
