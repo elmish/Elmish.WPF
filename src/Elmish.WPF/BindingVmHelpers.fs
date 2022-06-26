@@ -143,10 +143,8 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bind
   member b.TryGetMember (model: 'model) =
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
-  member b.TrySetMember
-      (model: 'model,
-       bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map b.SelectedItemBinding.GetId
+  member b.TrySetMember(model: 'model, vm: 'bindingViewModel voption) =
+    let id = vm |> ValueOption.map (b.SelectedItemBinding.GetUnderlyingModel >> b.SelectedItemBinding.GetId)
     b.Set id model
 
 
@@ -679,11 +677,7 @@ type Set(value: obj) =
         b.Set value model
         true
     | SubModelSelectedItem b ->
-        let bindingModel = 
-          value
-          |> ValueOption.ofObj
-          |> ValueOption.map b.SelectedItemBinding.GetUnderlyingModel
-        b.TrySetMember(model, bindingModel)
+        b.TrySetMember(model, ValueOption.ofObj value)
         true
     | OneWay _
     | OneWaySeq _
