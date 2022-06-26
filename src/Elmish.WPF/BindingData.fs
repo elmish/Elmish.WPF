@@ -89,9 +89,9 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bin
     CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'bindingViewModel
     CreateCollection: 'bindingViewModel seq -> CollectionTarget<'bindingViewModel>
     UpdateViewModel: 'bindingViewModel * 'bindingModel -> unit
-    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
-    GetId: 'bindingModel -> 'id }
+    GetId: 'bindingModel -> 'id
+    VmToId: 'bindingViewModel -> 'id }
 
   member d.MergeKeyed
       (create: 'bindingModel -> 'id -> 'bindingViewModel,
@@ -99,7 +99,7 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bin
        values: CollectionTarget<'bindingViewModel>,
        newSubModels: 'bindingModel []) =
     let update vm bm _ = update vm bm
-    Merge.keyed d.GetId (d.GetUnderlyingModel >> d.GetId) create update values newSubModels
+    Merge.keyed d.GetId d.VmToId create update values newSubModels
 
 
 and internal ValidationData<'model, 'msg> =
@@ -209,9 +209,9 @@ module internal BindingData =
           CreateViewModel = d.CreateViewModel
           CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
-          GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = f >> d.ToMsg
           GetId = d.GetId
+          VmToId = d.VmToId
         }
       | SubModelSelectedItemData d -> SubModelSelectedItemData {
           Get = f >> d.Get
@@ -282,9 +282,9 @@ module internal BindingData =
           CreateViewModel = d.CreateViewModel
           CreateCollection = d.CreateCollection
           UpdateViewModel = d.UpdateViewModel
-          GetUnderlyingModel = d.GetUnderlyingModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
           GetId = d.GetId
+          VmToId = d.VmToId
         }
       | SubModelSelectedItemData d -> SubModelSelectedItemData {
           Get = d.Get
@@ -691,21 +691,21 @@ module internal BindingData =
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
         CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
         UpdateViewModel = fun (vm, m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
-        GetUnderlyingModel = fun vm -> vm |> inMapBindingViewModel |> d.GetUnderlyingModel |> outMapBindingModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         GetId = inMapBindingModel >> d.GetId >> outMapId
+        VmToId = fun vm -> vm |> inMapBindingViewModel |> d.VmToId |> outMapId
       }
 
       let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
-      let create createViewModel updateViewModel getUnderlyingModel getId =
+      let create createViewModel updateViewModel getId vmToId =
         { GetSubModels = id
           CreateViewModel = createViewModel
           CreateCollection = ObservableCollection >> CollectionTarget.create
           UpdateViewModel = updateViewModel
-          GetUnderlyingModel = getUnderlyingModel
           ToMsg = fun _ -> id
-          GetId = getId }
+          GetId = getId
+          VmToId = vmToId }
         |> boxMinorTypes
         |> SubModelSeqKeyedData
         |> BaseBindingData

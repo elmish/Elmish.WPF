@@ -127,12 +127,11 @@ type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingV
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
-    |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.GetUnderlyingModel |> b.SubModelSeqKeyedData.GetId |> (=) id)
+    |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.VmToId |> (=) id)
 
 type SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
-  { GetId: 'bindingModel -> 'id
-    FromId: 'id -> 'bindingViewModel option
-    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
+  { FromId: 'id -> 'bindingViewModel option
+    VmToId: 'bindingViewModel -> 'id }
 
 type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { Get: 'model -> 'id voption
@@ -144,7 +143,7 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bind
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
   member b.TrySetMember(model: 'model, vm: 'bindingViewModel voption) =
-    let id = vm |> ValueOption.map (b.SelectedItemBinding.GetUnderlyingModel >> b.SelectedItemBinding.GetId)
+    let id = vm |> ValueOption.map b.SelectedItemBinding.VmToId
     b.Set id model
 
 
@@ -239,9 +238,8 @@ type FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
-    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId
-                                   FromId = b.FromId
-                                   GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
+    | SubModelSeqKeyed b -> Some { FromId = b.FromId
+                                   VmToId = b.SubModelSeqKeyedData.VmToId }
     | _ -> None
 
   member this.Recursive<'model, 'msg>

@@ -280,8 +280,8 @@ module Binding =
 
   module SubModelSeqKeyed =
 
-    let internal create createViewModel updateViewModel getUnderlyingModel getId =
-      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel getUnderlyingModel getId
+    let internal create createViewModel updateViewModel getId vmToId =
+      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel getId vmToId
       |> createBinding
 
 
@@ -2327,8 +2327,8 @@ type Binding private () =
     Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
       (fun (vm, m) -> vm.UpdateModel(m))
-      (fun vm -> vm.CurrentModel)
       getId
+      (fun (vm: DynamicViewModel<'model, 'msg>) -> vm.CurrentModel |> getId)
 
 
   /// <summary>
@@ -2359,8 +2359,8 @@ type Binding private () =
     Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings ()))
       (fun (vm, m) -> vm.UpdateModel(m))
-      (fun vm -> vm.CurrentModel)
       getId
+      (fun (vm: DynamicViewModel<'bindingModel, 'bindingMsg>) -> vm.CurrentModel |> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2389,8 +2389,8 @@ type Binding private () =
     Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings ()))
       (fun (vm, m) -> vm.UpdateModel(m))
-      (fun vm -> vm.CurrentModel)
       (snd >> getId)
+      (fun (vm: DynamicViewModel<'model * 'subModel, 'subMsg>) -> vm.CurrentModel |> snd |> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2413,8 +2413,8 @@ type Binding private () =
     Binding.SubModelSeqKeyed.create
       (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings ()))
       (fun (vm, m) -> vm.UpdateModel(m))
-      (fun vm -> vm.CurrentModel)
       (snd >> getId)
+      (fun (vm: DynamicViewModel<'model * 'subModel, 'msg>) -> vm.CurrentModel |> snd |> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
