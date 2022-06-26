@@ -241,7 +241,9 @@ type FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
-    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId; FromId = b.FromId; GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
+    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId
+                                   FromId = b.FromId
+                                   GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
     | _ -> None
 
   member this.Recursive<'model, 'msg>
