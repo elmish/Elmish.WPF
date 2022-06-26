@@ -104,45 +104,45 @@ type TwoWayBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
-  Vm: 'bindingViewModel voption ref
+type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+  Vm: 'vm voption ref
 }
 
-type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
+type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
-  VmWinState: WindowState<'bindingViewModel> ref
+  VmWinState: WindowState<'vm> ref
 }
 
-type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
-  Vms: CollectionTarget<'bindingViewModel>
+type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+  Vms: CollectionTarget<'vm>
 }
 
-type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
-    Vms: CollectionTarget<'bindingViewModel> }
+type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>
+    Vms: CollectionTarget<'vm> }
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
     |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.VmToId |> (=) id)
 
-type SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
-  { FromId: 'id -> 'bindingViewModel option
-    VmToId: 'bindingViewModel -> 'id }
+type SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> =
+  { FromId: 'id -> 'vm option
+    VmToId: 'vm -> 'id }
 
-type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
-    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> }
+    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> }
 
   member b.TryGetMember (model: 'model) =
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
-  member b.TrySetMember(model: 'model, vm: 'bindingViewModel voption) =
+  member b.TrySetMember(model: 'model, vm: 'vm voption) =
     let id = vm |> ValueOption.map b.SelectedItemBinding.VmToId
     b.Set id model
 
