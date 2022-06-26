@@ -566,7 +566,6 @@ type Update
           []
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
-          let getTargetId getId vm = vm |> d.GetUnderlyingModel |> getId
           let create m id =
             let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
@@ -575,7 +574,7 @@ type Update
           let update vm m = d.UpdateViewModel (vm, m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
-            d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
+            d.MergeKeyed(create, update, b.Vms, newSubModels)
           with
             | :? DuplicateIdException as e ->
               let messageTemplate = "[{BindingNameChain}] In the {SourceOrTarget} sequence of the binding {BindingName}, the elements at indices {Index1} and {Index2} have the same ID {ID}. To avoid this problem, the elements will be merged without using IDs."
