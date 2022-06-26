@@ -125,9 +125,9 @@ type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingV
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
     Vms: CollectionTarget<'bindingViewModel> }
 
-  member d.FromId(id: 'id) =
-    d.Vms.Enumerate ()
-    |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
+  member b.FromId(id: 'id) =
+    b.Vms.Enumerate ()
+    |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.GetUnderlyingModel |> b.SubModelSeqKeyedData.GetId |> (=) id)
 
 type SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
   { GetId: 'bindingModel -> 'id
@@ -140,14 +140,14 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bind
     SubModelSeqBindingName: string
     SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> }
 
-  member d.TryGetMember (model: 'model) =
-    d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.SelectedItemBinding.FromId selectedId)
+  member b.TryGetMember (model: 'model) =
+    b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
-  member d.TrySetMember
+  member b.TrySetMember
       (model: 'model,
        bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map d.SelectedItemBinding.GetId
-    d.Set id model
+    let id = bindingModel |> ValueOption.map b.SelectedItemBinding.GetId
+    b.Set id model
 
 
 type BaseVmBinding<'model, 'msg> =
