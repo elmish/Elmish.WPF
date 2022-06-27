@@ -64,48 +64,44 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
   member _.GetValue (binding: StaticBindingT<'model, 'msg, 'a>, [<CallerMemberName>] ?memberName: string) =
     option {
       let! name = memberName
-      let binding = binding name
-
-      let! b =
+      let! vmBinding =
         option {
-          if getBindings.ContainsKey name then
-            return getBindings.Item name |> MapOutputType.recursivecase unbox box
-          else
-            //let binding = BindingData.mapVm box unbox binding
-            let! b =
+          match setBindings.TryGetValue name with
+          | true, value ->
+            return value |> MapOutputType.unboxVm
+          | _ ->
+            let binding = binding name
+            let! vmBinding =
               Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
                 .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.DataT)
-            do getBindings.Add (name, b |> MapOutputType.recursivecase box unbox)
-            return b
+            do getBindings.Add (name, vmBinding |> MapOutputType.boxVm)
+            return vmBinding
           }
-      let c = Get(nameChain).Recursive(currentModel, b)
-      let! d =
-        match c with
+      return!
+        match Get(nameChain).Recursive(currentModel, vmBinding) with
         | Ok x -> Some x
         | Error _ -> None
-      return d
     } |> Option.defaultValue null
 
   member _.SetValue (value, [<CallerMemberName>] ?memberName: string) =
     fun (binding: StaticBindingT<'model, 'msg, 'a>) ->
       option {
         let! name = memberName
-        let binding = binding name
-
-        let! b =
+        let! vmBinding =
           option {
-            if setBindings.ContainsKey name then
-              return setBindings.Item name |> MapOutputType.recursivecase unbox box
-            else
-              //let binding = BindingData.mapVm box unbox binding
-              let! b =
+            match setBindings.TryGetValue name with
+            | true, value ->
+              return value |> MapOutputType.unboxVm
+            | _ ->
+              let binding = binding name
+              let! vmBinding =
                 Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
                   .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.DataT)
-              do setBindings.Add (name, b |> MapOutputType.recursivecase box unbox)
-              return b
+              do setBindings.Add (name, vmBinding |> MapOutputType.boxVm)
+              return vmBinding
             }
-        let _c = Set(value).Recursive(currentModel, b)
-        return ()
+        return
+          Set(value).Recursive(currentModel, vmBinding) |> ignore
       } |> Option.defaultValue ()
 
   member _.CurrentModel : 'model = currentModel

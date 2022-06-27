@@ -210,7 +210,7 @@ and VmBinding<'model, 'msg, 't> =
       |> Validatation
 
 module internal MapOutputType =
-  let baseCase (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: BaseVmBinding<'model, 'msg, 'a>) : BaseVmBinding<'model, 'msg, 'b> =
+  let private baseCase (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: BaseVmBinding<'model, 'msg, 'a>) : BaseVmBinding<'model, 'msg, 'b> =
     match data with
     | OneWay b -> OneWay { OneWayData = { Get = b.OneWayData.Get >> fOut } }
     | OneWayToSource b -> OneWayToSource { Set = fIn >> b.Set }
@@ -274,7 +274,7 @@ module internal MapOutputType =
           VmToId = fIn >> b.SelectedItemBinding.VmToId
           FromId = b.SelectedItemBinding.FromId >> Option.map fOut } }
 
-  let rec recursivecase<'model, 'msg, 'a, 'b> (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: VmBinding<'model, 'msg, 'a>) : VmBinding<'model, 'msg, 'b> =
+  let rec private recursivecase<'model, 'msg, 'a, 'b> (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: VmBinding<'model, 'msg, 'a>) : VmBinding<'model, 'msg, 'b> =
     match data with
     | BaseVmBinding b -> baseCase fOut fIn b |> BaseVmBinding
     | Cached b -> Cached {
@@ -298,6 +298,9 @@ module internal MapOutputType =
         Errors = b.Errors
         Validate = b.Validate
       }
+
+  let boxVm b = recursivecase box unbox b
+  let unboxVm b = recursivecase unbox box b
 
 
 type SubModelSelectedItemLast() =

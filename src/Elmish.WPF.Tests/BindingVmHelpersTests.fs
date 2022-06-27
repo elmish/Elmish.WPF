@@ -121,7 +121,7 @@ module Update =
           .Recursive(m1, dispatch, (fun () -> model.Value), binding)
         |> Option.defaultWith (fun () -> failwith $"Could not create VmBinding after passing in BindingData: {binding}")
 
-      let updateResult = Update(LoggingViewModelArgs.none, "Nothing").Recursive(ValueSome m1, (fun () -> model.Value), m2, vmBinding |> MapOutputType.recursivecase box unbox)
+      let updateResult = Update(LoggingViewModelArgs.none, "Nothing").Recursive(ValueSome m1, (fun () -> model.Value), m2, vmBinding |> MapOutputType.boxVm)
 
       test <@ updateResult |> List.length = 1 @>
     }
