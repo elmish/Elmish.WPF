@@ -22,7 +22,7 @@ module Binding =
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsg |> mapData <| binding
 
   /// Sets the message of a binding with access to the model.
-  let SetMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = f |> setMsgWithModel |> mapData <| binding
+  let setMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Sets the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = msg |> setMsg |> mapData <| binding
