@@ -1210,6 +1210,29 @@ module SubModel =
     }
 
 
+  [<Fact>]
+  let ``setMsgWithModel given current model after new submodel created`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! subName = GenX.auto<string>
+      let! initialModel = GenX.auto<int>
+      let! newModel = GenX.auto<int> |> GenX.notEqualTo initialModel
+
+      let subBinding = cmd ValueSome (fun _ -> true) subName
+      let binding =
+        Binding.SubModel.opt (fun () -> [subBinding]) name
+        |> Binding.mapModel (fun m -> if m <> initialModel then Some m else None)
+        |> Binding.setMsgWithModel id
+      let vm = TestVm(initialModel, binding)
+
+      vm.UpdateModel newModel
+      let subVm = vm.Get name : DynamicViewModel<int, int>
+      let command = subVm.Get subName : ICommand
+      command.Execute(true)
+
+      test <@ vm.Dispatches = [newModel] @>
+    }
+
 
 module SubModelSeq =
 
