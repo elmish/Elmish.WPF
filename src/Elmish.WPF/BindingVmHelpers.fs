@@ -443,7 +443,7 @@ type Update
     loggingArgs
 
   member _.Base<'model, 'msg>
-      (currentModel: 'model,
+      (getCurrentModel: unit -> 'model,
        newModel: 'model,
        dispatch: 'msg -> unit,
        binding: BaseVmBinding<'model, 'msg>) =
@@ -464,7 +464,7 @@ type Update
             b.Vm.Value <- ValueNone
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
-            let toMsg = fun msg -> d.ToMsg currentModel msg
+            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
             b.Vm.Value <- ValueSome <| d.CreateViewModel(args)
@@ -513,7 +513,7 @@ type Update
             Helpers2.showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
           let newVm model =
-            let toMsg = fun msg -> d.ToMsg currentModel msg
+            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create model (toMsg >> dispatch) chain loggingArgs
             d.CreateViewModel args
@@ -543,19 +543,19 @@ type Update
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
-              showNew vm Visibility.Hidden (fun () -> currentModel) dispatch
+              showNew vm Visibility.Hidden getCurrentModel dispatch
               b.VmWinState.Value <- WindowState.Hidden vm
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
-              showNew vm Visibility.Visible (fun () -> currentModel) dispatch
+              showNew vm Visibility.Visible getCurrentModel dispatch
               b.VmWinState.Value <- WindowState.Visible vm
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
-            let toMsg = fun msg -> d.ToMsg currentModel msg
+            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
@@ -566,7 +566,7 @@ type Update
           let d = b.SubModelSeqKeyedData
           let getTargetId getId vm = vm |> d.GetUnderlyingModel |> getId
           let create m id =
-            let toMsg = fun msg -> d.ToMsg currentModel msg
+            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
             let args = ViewModelArgs.create m (fun msg -> toMsg (id, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
@@ -583,21 +583,22 @@ type Update
           []
 
   member this.Recursive<'model, 'msg>
-      (currentModel: 'model,
+      (currentModel: 'model voption,
+       getCurrentModel: unit -> 'model,
        newModel: 'model,
        dispatch: 'msg -> unit,
        binding: VmBinding<'model, 'msg>)
       : UpdateData list =
     match binding with
-      | BaseVmBinding b -> this.Base(currentModel, newModel, dispatch, b)
+      | BaseVmBinding b -> this.Base(getCurrentModel, newModel, dispatch, b)
       | Cached b ->
-          let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
+          let updates = this.Recursive(currentModel, getCurrentModel, newModel, dispatch, b.Binding)
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.Cache.Value <- None)
           updates
       | Validatation b ->
-          let updates = this.Recursive(currentModel, newModel, dispatch, b.Binding)
+          let updates = this.Recursive(currentModel, getCurrentModel, newModel, dispatch, b.Binding)
           let newErrors = b.Validate newModel
           if b.Errors.Value <> newErrors then
             b.Errors.Value <- newErrors
@@ -605,14 +606,14 @@ type Update
           else
             updates
       | Lazy b ->
-          let currentModel' = b.Get currentModel
-          let newModel' = b.Get newModel
+          let currentModel' = currentModel |> ValueOption.defaultWith getCurrentModel |> b.Get
+          let newModel' = newModel |> b.Get
           if b.Equals currentModel' newModel' then
             []
           else
-            this.Recursive(currentModel', newModel', b.Dispatch, b.Binding)
+            this.Recursive((ValueSome currentModel'), getCurrentModel >> b.Get, newModel', b.Dispatch, b.Binding)
       | AlterMsgStream b ->
-          this.Recursive(b.Get currentModel, b.Get newModel, b.Dispatch, b.Binding)
+          this.Recursive(currentModel |> ValueOption.map b.Get, getCurrentModel >> b.Get, b.Get newModel, b.Dispatch, b.Binding)
 
 
 type Get(nameChain: string) =
