@@ -3,6 +3,7 @@
 * Improved performance of Lazy effect by reducing calls to later model mappings
 * Removed `SourceOrTarget` and `DuplicateIdException` from public API (added in 4.0.0-beta-42)
 * Improved caching effect to not invalidating the cache too early (an issue introduced in version 3.5.3 via PR 181)
+* Renamed `Binding.SetMsgWithModel` to `Binding.setMsgWithModel` (breaking public API added in `4.0.0-beta-42`)
 
 #### 4.0.0-beta-43
 * Added `WpfProgram.withElmishErrorHandler`
