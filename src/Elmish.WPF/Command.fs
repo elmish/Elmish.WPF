@@ -10,7 +10,7 @@ open System.Windows.Input
 /// another UI control (e.g. a ListView.SelectedItem).
 type internal Command(execute, canExecute) =
 
-  let canExecuteChanged = Event<EventHandler,EventArgs>()
+  let canExecuteChanged = Event<EventHandler, EventArgs>()
 
   // CommandManager only keeps a weak reference to the event handler,
   // so a strong reference must be maintained,

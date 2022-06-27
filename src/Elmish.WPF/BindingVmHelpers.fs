@@ -104,50 +104,47 @@ type TwoWayBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
-  Vm: 'bindingViewModel voption ref
+type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelData: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+  Vm: 'vm voption ref
 }
 
-type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
+type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
   WinRef: WeakReference<Window>
   PreventClose: bool ref
-  VmWinState: WindowState<'bindingViewModel> ref
+  VmWinState: WindowState<'vm> ref
 }
 
-type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel>
-  Vms: CollectionTarget<'bindingViewModel>
+type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+  Vms: CollectionTarget<'vm>
 }
 
-type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id>
-    Vms: CollectionTarget<'bindingViewModel> }
+type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>
+    Vms: CollectionTarget<'vm> }
 
-  member d.FromId(id: 'id) =
-    d.Vms.Enumerate ()
-    |> Seq.tryFind (fun vm -> vm |> d.SubModelSeqKeyedData.GetUnderlyingModel |> d.SubModelSeqKeyedData.GetId |> (=) id)
+  member b.FromId(id: 'id) =
+    b.Vms.Enumerate ()
+    |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.VmToId |> (=) id)
 
-type SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
-  { GetId: 'bindingModel -> 'id
-    FromId: 'id -> 'bindingViewModel option
-    GetUnderlyingModel: 'bindingViewModel -> 'bindingModel }
+type SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> =
+  { FromId: 'id -> 'vm option
+    VmToId: 'vm -> 'id }
 
-type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> =
+type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
-    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'bindingViewModel, 'id> }
+    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> }
 
-  member d.TryGetMember (model: 'model) =
-    d.Get model |> ValueOption.map (fun selectedId -> selectedId, d.SelectedItemBinding.FromId selectedId)
+  member b.TryGetMember (model: 'model) =
+    b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
-  member d.TrySetMember
-      (model: 'model,
-       bindingModel: 'bindingModel voption) =
-    let id = bindingModel |> ValueOption.map d.SelectedItemBinding.GetId
-    d.Set id model
+  member b.TrySetMember(model: 'model, vm: 'vm voption) =
+    let id = vm |> ValueOption.map b.SelectedItemBinding.VmToId
+    b.Set id model
 
 
 type BaseVmBinding<'model, 'msg> =
@@ -241,7 +238,8 @@ type FuncsFromSubModelSeqKeyed() =
 
   member _.Base(binding: BaseVmBinding<'model, 'msg>) =
     match binding with
-    | SubModelSeqKeyed b -> Some { GetId = b.SubModelSeqKeyedData.GetId; FromId = b.FromId; GetUnderlyingModel = b.SubModelSeqKeyedData.GetUnderlyingModel }
+    | SubModelSeqKeyed b -> Some { FromId = b.FromId
+                                   VmToId = b.SubModelSeqKeyedData.VmToId }
     | _ -> None
 
   member this.Recursive<'model, 'msg>
@@ -372,7 +370,7 @@ type Initialize
           let vms =
             d.GetSubModels initialModel
             |> Seq.map (fun m ->
-                 let mId = d.GetId m
+                 let mId = d.BmToId m
                  let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
                  let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
                  d.CreateViewModel args)
@@ -555,30 +553,27 @@ type Update
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
-            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
-            let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (idx, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
-          let update vm m = d.UpdateViewModel (vm,m)
+          let update vm m = d.UpdateViewModel (vm, m)
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
           []
       | SubModelSeqKeyed b ->
           let d = b.SubModelSeqKeyedData
-          let getTargetId getId vm = vm |> d.GetUnderlyingModel |> getId
           let create m id =
-            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
-            let args = ViewModelArgs.create m (fun msg -> toMsg (id, msg) |> dispatch) chain loggingArgs
+            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (id, msg) |> dispatch) chain loggingArgs
             d.CreateViewModel args
-          let update vm m = d.UpdateViewModel (vm,m)
+          let update vm m = d.UpdateViewModel (vm, m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
           try
-            d.MergeKeyed(getTargetId, create, update, b.Vms, newSubModels)
+            d.MergeKeyed(create, update, b.Vms, newSubModels)
           with
             | :? DuplicateIdException as e ->
               let messageTemplate = "[{BindingNameChain}] In the {SourceOrTarget} sequence of the binding {BindingName}, the elements at indices {Index1} and {Index2} have the same ID {ID}. To avoid this problem, the elements will be merged without using IDs."
               log.LogError(messageTemplate, nameChain, e.SourceOrTarget, name, e.Index1, e.Index2, e.Id)
-              let create m _ = create m (d.GetId m)
+              let create m _ = create m (d.BmToId m)
               Merge.unkeyed create update b.Vms newSubModels
           []
 
@@ -678,11 +673,7 @@ type Set(value: obj) =
         b.Set value model
         true
     | SubModelSelectedItem b ->
-        let bindingModel = 
-          value
-          |> ValueOption.ofObj
-          |> ValueOption.map b.SelectedItemBinding.GetUnderlyingModel
-        b.TrySetMember(model, bindingModel)
+        b.TrySetMember(model, ValueOption.ofObj value)
         true
     | OneWay _
     | OneWaySeq _
