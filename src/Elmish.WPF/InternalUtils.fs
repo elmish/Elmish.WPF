@@ -68,6 +68,23 @@ module ValueOption =
     | Ok x -> ValueSome x
     | Error _ -> ValueNone
 
+  [<RequireQualifiedAccess>]
+  type ToNullError =
+    | ValueCannotBeNull
+
+  let ofNull<'a> (x: 'a) =
+    match box x with
+    | null -> ValueNone
+    | _ -> ValueSome x
+
+  let toNull<'a> = function
+    | ValueSome x -> Ok x
+    | ValueNone ->
+      if box Unchecked.defaultof<'a> = null then
+        null |> unbox<'a> |> Ok
+      else
+        ToNullError.ValueCannotBeNull |> Error
+
 
 [<RequireQualifiedAccess>]
 module ByRefPair =

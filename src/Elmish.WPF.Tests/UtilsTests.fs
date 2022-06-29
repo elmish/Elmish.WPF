@@ -95,3 +95,63 @@ module elmEq =
         let t2 = { t2 with t = t1.t }
         test <@ elmEq t1 t2 = (t1.i = t2.i && t1.s = t2.s) @>
       }
+
+
+module ValueOption =
+
+  open System
+
+  module toNull =
+
+    let testNonNull (ga: Gen<'a>) =
+      Property.check <| property {
+        let! expected = ga
+        test <@ Ok expected = (expected |> ValueSome |> ValueOption.toNull) @>
+      }
+
+    [<Fact>]
+    let ``toNull returns contents of ValueSome when given ValueSome`` () =
+      testNonNull GenX.auto<obj>
+      testNonNull GenX.auto<string>
+      testNonNull GenX.auto<int>
+
+    let testNullForNullable<'a when 'a : equality> () =
+      test <@ Ok Unchecked.defaultof<'a> = ValueOption.toNull<'a> ValueNone @>
+
+    [<Fact>]
+    let ``toNull returns null when given ValueNone for nullable type`` () =
+      testNullForNullable<obj> ()
+      testNullForNullable<string> ()
+      testNullForNullable<Nullable<int>> ()
+
+    let testNullForNonNullable<'a when 'a : equality> () =
+      test <@ Error ValueOption.ToNullError.ValueCannotBeNull = ValueOption.toNull<'a> ValueNone @>
+
+    [<Fact>]
+    let ``toNull returns ValueConnotBeNull Error when given ValueNone for nonnullable type`` () =
+      testNullForNonNullable<int> ()
+
+
+  module ofNull =
+  
+    let testNull<'a when 'a : equality> () =
+      let input = Unchecked.defaultof<'a>
+      test <@ ValueNone = ValueOption.ofNull input @>
+
+    [<Fact>]
+    let ``ofNull returns ValueNone when input is null`` () =
+      testNull<obj> ()
+      testNull<string> ()
+      testNull<Nullable<int>> ()
+
+    let testNonNull (ga: Gen<'a>) =
+      Property.check <| property {
+        let! input = ga
+        test <@ ValueSome input = ValueOption.ofNull input @>
+      }
+
+    [<Fact>]
+    let ``ofNull returns ValueSome of input when input is nonnull`` () =
+      testNonNull GenX.auto<obj>
+      testNonNull GenX.auto<string>
+      testNonNull GenX.auto<int>
