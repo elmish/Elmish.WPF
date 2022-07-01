@@ -61,27 +61,28 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
         log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
         None
 
-  member _.GetValue (binding: StaticBindingT<'model, 'msg, 'a>, [<CallerMemberName>] ?memberName: string) =
-    option {
-      let! name = memberName
-      let! vmBinding =
-        option {
-          match setBindings.TryGetValue name with
-          | true, value ->
-            return value |> MapOutputType.unboxVm
-          | _ ->
-            let binding = binding name
-            let! vmBinding =
-              Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
-                .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.DataT)
-            do getBindings.Add (name, vmBinding |> MapOutputType.boxVm)
-            return vmBinding
-          }
-      return!
-        match Get(nameChain).Recursive(currentModel, vmBinding) with
-        | Ok x -> Some x
-        | Error _ -> None
-    } |> Option.defaultValue null
+  member _.GetValue ([<CallerMemberName>] ?memberName: string) =
+    fun (binding: StaticBindingT<'model, 'msg, 'a>) ->
+      option {
+        let! name = memberName
+        let! vmBinding =
+          option {
+            match setBindings.TryGetValue name with
+            | true, value ->
+              return value |> MapOutputType.unboxVm
+            | _ ->
+              let binding = binding name
+              let! vmBinding =
+                Initialize(args.loggingArgs, name, getFunctionsForSubModelSelectedItem)
+                  .Recursive(currentModel, dispatch, (fun () -> currentModel), binding.DataT)
+              do getBindings.Add (name, vmBinding |> MapOutputType.boxVm)
+              return vmBinding
+            }
+        return!
+          match Get(nameChain).Recursive(currentModel, vmBinding) with
+          | Ok x -> Some x
+          | Error _ -> None
+      } |> Option.defaultValue null
 
   member _.SetValue (value, [<CallerMemberName>] ?memberName: string) =
     fun (binding: StaticBindingT<'model, 'msg, 'a>) ->

@@ -126,7 +126,7 @@ type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
   member _.Model
-    with get() = BindingT.OneWay.id |> staticHelper.GetValue
+    with get() = BindingT.OneWay.id |> staticHelper.GetValue()
     and set(v) = BindingT.OneWay.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
-  member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue
-  member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.GetValue
+  member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue()
+  member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.GetValue()
