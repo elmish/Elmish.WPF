@@ -48,6 +48,10 @@ module Result =
     | Ok x -> f x
     | Error _ -> ()
 
+  let errorWith f = function
+    | Ok x -> x
+    | Error e -> f e
+
 
 [<RequireQualifiedAccess>]
 module ValueOption =

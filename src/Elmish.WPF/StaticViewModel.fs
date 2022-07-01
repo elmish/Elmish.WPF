@@ -82,7 +82,10 @@ type StaticHelper<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, getSender: un
           match Get(nameChain).Recursive(currentModel, vmBinding) with
           | Ok x -> Some x
           | Error _ -> None
-      } |> Option.defaultValue null
+      }
+      |> ValueOption.ofOption
+      |> ValueOption.toNull
+      |> Result.errorWith (failwithf "Got null on non-nullable type %O")
 
   member _.SetValue (value, [<CallerMemberName>] ?memberName: string) =
     fun (binding: StaticBindingT<'model, 'msg, 'a>) ->
