@@ -19,7 +19,7 @@ module BindingT =
   let mapMsg (f: 'a -> 'b) (binding: BindingT<'model, 'a, 'vm>) = f |> mapMsg |> mapData <| binding
 
   /// Set the message of a binding with access to the model.
-  let SetMsgWithModel (f: 'model -> 'b) (binding: BindingT<'model, 'a, 'vm>) = f |> setMsgWithModel |> mapData <| binding
+  let setMsgWithModel (f: 'model -> 'b) (binding: BindingT<'model, 'a, 'vm>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Set the message of a binding.
   let setMsg (msg: 'b) (binding: BindingT<'model, 'a, 'vm>) = msg |> setMsg |> mapData <| binding
