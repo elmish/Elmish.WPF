@@ -82,7 +82,7 @@ module BindingT =
     binding
     |> (alterMsgStream alteration |> mapData)
 
-  module OneWay =
+  module Get =
     open BindingData.OneWay
 
     let id<'a, 'msg> =
@@ -94,7 +94,7 @@ module BindingT =
       >> mapModel get
 
 
-  module OneWayToSource =
+  module Set =
     open BindingData.OneWayToSource
     
     let id<'model, 'a> =
@@ -126,7 +126,7 @@ type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
   member _.Model
-    with get() = BindingT.OneWay.id |> staticHelper.GetValue()
-    and set(v) = BindingT.OneWay.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
+    with get() = BindingT.Get.id |> staticHelper.GetValue()
+    and set(v) = BindingT.Get.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
   member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue()
   member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.GetValue()
