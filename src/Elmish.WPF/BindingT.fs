@@ -85,16 +85,20 @@ module BindingT =
   module OneWay =
     open BindingData.OneWay
 
-    let opt =
-      create id
+    let id<'a, 'msg> =
+      id<'a, 'msg>
       |> createStatic
+
+    let get get =
+      id
+      >> mapModel get
 
 
   module OneWayToSource =
     open BindingData.OneWayToSource
     
-    let id =
-      create (fun obj _ -> obj)
+    let id<'model, 'a> =
+      id<'model, 'a>
       |> createStatic
 
   module Cmd =
@@ -108,7 +112,7 @@ module BindingT =
     open BindingData.SubModel
 
     let opt createVm : StaticBindingT<'bindingModel voption, 'msg, 'viewModel :> ISubModel<'bindingModel, 'msg>> =
-      create id createVm (fun ((vm: #ISubModel<'bindingModel,'msg>),m) -> vm.StaticHelper.UpdateModel(m)) (fun _ m -> m)
+      create createVm (fun ((vm: #ISubModel<'bindingModel,'msg>),m) -> vm.StaticHelper.UpdateModel(m))
       |> createStatic
 
 
@@ -122,7 +126,7 @@ type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
   member _.Model
-    with get() = BindingT.OneWay.opt |> staticHelper.GetValue
-    and set(v) = BindingT.OneWayToSource.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
+    with get() = BindingT.OneWay.id |> staticHelper.GetValue
+    and set(v) = BindingT.OneWay.id >> BindingT.mapMsg int32<string> |> staticHelper.SetValue(v)
   member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.GetValue
   member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.GetValue
