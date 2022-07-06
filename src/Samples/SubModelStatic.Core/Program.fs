@@ -5,6 +5,7 @@ open Serilog
 open Serilog.Extensions.Logging
 open Elmish
 open Elmish.WPF
+open System.ComponentModel
 
 module Counter =
 
@@ -46,6 +47,10 @@ type [<AllowNullLiteral>] CounterViewModel (args) as this =
 
   interface ISubModel<Counter.Model, Counter.Msg> with
     member _.StaticHelper = sh
+
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member this.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
 
 
 module Clock =
@@ -90,6 +95,10 @@ type [<AllowNullLiteral>] ClockViewModel (args) as this =
   interface ISubModel<Clock.Model, Clock.Msg> with
     member _.StaticHelper = sh
 
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member this.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
+
 module CounterWithClock =
 
   type Model =
@@ -126,6 +135,10 @@ type [<AllowNullLiteral>] CounterWithClockViewModel (args) as this =
   interface ISubModel<CounterWithClock.Model, CounterWithClock.Msg> with
     member _.StaticHelper = sh
 
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member this.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
+
 module App2 =
 
   type Model =
@@ -160,6 +173,13 @@ type [<AllowNullLiteral>] AppViewModel (args) as this =
 
   member _.ClockCounter1 = sh.Get() (BindingT.SubModel.id CounterWithClockViewModel >> BindingT.mapModel App2.ModelM.ClockCounter1.get >> BindingT.mapMsg App2.ClockCounter1Msg)
   member _.ClockCounter2 = sh.Get() (BindingT.SubModel.id CounterWithClockViewModel >> BindingT.mapModel App2.ModelM.ClockCounter2.get >> BindingT.mapMsg App2.ClockCounter2Msg)
+
+  interface ISubModel<App2.Model, App2.Msg> with
+    member _.StaticHelper = sh
+
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member this.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
 
 module Program =
 
