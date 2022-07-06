@@ -6,10 +6,11 @@ open Microsoft.Extensions.Logging.Abstractions
 open Elmish
 
 
-type WpfProgram<'model, 'msg> =
+type WpfProgram<'model, 'msg, 'viewModel> =
   internal {
     ElmishProgram: Program<unit, 'model, 'msg, unit>
-    Bindings: Binding<'model, 'msg> list
+    CreateViewModel: ViewModelArgs<'model,'msg> -> 'viewModel
+    UpdateViewModel: 'viewModel * 'model -> unit
     LoggerFactory: ILoggerFactory
     ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
@@ -20,10 +21,27 @@ type WpfProgram<'model, 'msg> =
 [<RequireQualifiedAccess>]
 module WpfProgram =
 
+  let private mapVm mapOut mapIn (p: WpfProgram<'model, 'msg, 'viewModel0>) : WpfProgram<'model, 'msg, 'viewModel1> =
+    { ElmishProgram = p.ElmishProgram
+      CreateViewModel = p.CreateViewModel >> mapOut
+      UpdateViewModel = (fun (vm, m) -> p.UpdateViewModel(mapIn vm, m))
+      LoggerFactory = p.LoggerFactory
+      ErrorHandler = p.ErrorHandler
+      PerformanceLogThreshold = p.PerformanceLogThreshold }
 
-  let private create getBindings program =
+  let private createWithBindings (getBindings: unit -> Binding<'model,'msg> list) program =
     { ElmishProgram = program
-      Bindings = getBindings ()
+      CreateViewModel = fun args -> DynamicViewModel<'model,'msg>(args, getBindings ())
+      UpdateViewModel = fun (vm,m) -> vm.UpdateModel m
+      LoggerFactory = NullLoggerFactory.Instance
+      ErrorHandler = fun _ _ -> ()
+      PerformanceLogThreshold = 1 }
+    |> mapVm box unbox
+
+  let private createWithBase (createViewModel: ViewModelArgs<'model,'msg> -> #ISubModel<'model,'msg>) program =
+    { ElmishProgram = program
+      CreateViewModel = createViewModel
+      UpdateViewModel = fun (vm: #ISubModel<'model,'msg>,m) -> vm.StaticHelper.UpdateModel m
       LoggerFactory = NullLoggerFactory.Instance
       ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
@@ -35,7 +53,15 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkSimple init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
+
+  /// Creates a WpfProgram that does not use commands.
+  let mkSimpleBase
+      (init: unit -> 'model)
+      (update: 'msg  -> 'model -> 'model)
+      createViewModel =
+    Program.mkSimple init update (fun _ _ -> ())
+    |> createWithBase createViewModel
 
 
   /// Creates a WpfProgram that uses commands
@@ -44,7 +70,15 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkProgram init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
+    
+  /// Creates a WpfProgram that uses commands
+  let mkProgramBase
+      (init: unit -> 'model * Cmd<'msg>)
+      (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
+      createViewModel =
+    Program.mkProgram init update (fun _ _ -> ())
+    |> createWithBase createViewModel
 
 
   /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
@@ -52,7 +86,7 @@ module WpfProgram =
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
   let startElmishLoop
       (element: FrameworkElement)
-      (program: WpfProgram<'model, 'msg>) =
+      (program: WpfProgram<'model, 'msg, 'viewModel>) =
     let mutable viewModel = None
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
@@ -84,11 +118,11 @@ module WpfProgram =
                   nameChain = "main"
                   log = bindingsLogger
                   logPerformance = performanceLogger } }
-          let vm = DynamicViewModel<'model, 'msg>(args, program.Bindings)
+          let vm = program.CreateViewModel args
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
-          vm.UpdateModel model
+          program.UpdateViewModel (vm, model)
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
