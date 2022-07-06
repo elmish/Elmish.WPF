@@ -6,10 +6,11 @@ open Microsoft.Extensions.Logging.Abstractions
 open Elmish
 
 
-type WpfProgram<'model, 'msg> =
+type WpfProgram<'model, 'msg, 'viewModel> =
   internal {
     ElmishProgram: Program<unit, 'model, 'msg, unit>
-    Bindings: Binding<'model, 'msg> list
+    CreateViewModel: ViewModelArgs<'model,'msg> -> 'viewModel
+    UpdateViewModel: 'viewModel * 'model -> unit
     LoggerFactory: ILoggerFactory
     ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
@@ -20,13 +21,22 @@ type WpfProgram<'model, 'msg> =
 [<RequireQualifiedAccess>]
 module WpfProgram =
 
+  let private mapVm fOut fIn (p: WpfProgram<'model, 'msg, 'viewModel0>) : WpfProgram<'model, 'msg, 'viewModel1> =
+    { ElmishProgram = p.ElmishProgram
+      CreateViewModel = p.CreateViewModel >> fOut
+      UpdateViewModel = (fun (vm, m) -> p.UpdateViewModel(fIn vm, m))
+      LoggerFactory = p.LoggerFactory
+      ErrorHandler = p.ErrorHandler
+      PerformanceLogThreshold = p.PerformanceLogThreshold }
 
-  let private create getBindings program =
+  let private createWithBindings (getBindings: unit -> Binding<'model,'msg> list) program =
     { ElmishProgram = program
-      Bindings = getBindings ()
+      CreateViewModel = fun args -> DynamicViewModel<'model,'msg>(args, getBindings ())
+      UpdateViewModel = IViewModel.updateModel
       LoggerFactory = NullLoggerFactory.Instance
       ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
+    |> mapVm box unbox
 
 
   /// Creates a WpfProgram that does not use commands.
@@ -35,7 +45,7 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkSimple init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
 
 
   /// Creates a WpfProgram that uses commands
@@ -44,7 +54,7 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkProgram init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
 
 
   /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
@@ -52,7 +62,7 @@ module WpfProgram =
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
   let startElmishLoop
       (element: FrameworkElement)
-      (program: WpfProgram<'model, 'msg>) =
+      (program: WpfProgram<'model, 'msg, 'viewModel>) =
     let mutable viewModel = None
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
@@ -84,11 +94,11 @@ module WpfProgram =
                   nameChain = "main"
                   log = bindingsLogger
                   logPerformance = performanceLogger } }
-          let vm = DynamicViewModel<'model, 'msg>(args, program.Bindings)
+          let vm = program.CreateViewModel args
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
-          IViewModel.updateModel (vm, model)
+          program.UpdateViewModel (vm, model)
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
