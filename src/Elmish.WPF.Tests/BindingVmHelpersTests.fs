@@ -69,6 +69,24 @@ module Get =
     GenX.auto<string> |> GenX.withNull |> checker
     GenX.auto<obj> |> GenX.withNull |> checker
 
+  [<Fact>]
+  let ``should return error on bad typing`` () =
+    let binding = Binding.SubModel.opt (fun () -> []) >> Binding.mapModel (fun () -> None) <| ""
+
+    let dispatch msg =
+      failwith $"Should not dispatch, got {msg}"
+
+    let vmBinding =
+      Initialize(LoggingViewModelArgs.none, "Nothing", (fun _ -> failwith "Should not call get selected item"))
+        .Recursive((), dispatch, (fun () -> ()), binding.Data)
+      |> Option.defaultWith (fun () -> failwith $"Could not create VmBinding after passing in BindingData: {binding}")
+
+    let vmBinding2 = vmBinding |> MapOutputType.unboxVm
+
+    let getResult: Result<int, GetError> =  Get("Nothing").Recursive((), vmBinding2)
+
+    test <@ getResult = Error (GetError.ToNullError ValueOption.ToNullError.ValueCannotBeNull) @>
+
 module Set =
 
   let checker<'t when 't : equality> (g: Gen<'t>) =
