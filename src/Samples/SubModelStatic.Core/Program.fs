@@ -32,20 +32,35 @@ module Counter =
     | SetStepSize x -> { m with StepSize = x }
     | Reset -> init
 
+open Counter
 type [<AllowNullLiteral>] CounterViewModel (args) as this =
   let sh = StaticHelper.create args (fun () -> box this)
 
-  new() = CounterViewModel(Counter.init |> ViewModelArgs.simple)
+  new() = CounterViewModel(init |> ViewModelArgs.simple)
 
   member _.StepSize
-    with get() = sh.Get () (BindingT.Get.id >> BindingT.mapModel (fun m -> m.StepSize))
-    and set(v) = sh.Set (v) (BindingT.Set.id >> BindingT.mapMsg Counter.Msg.SetStepSize)
-  member _.CounterValue = sh.Get () (BindingT.Get.id >> BindingT.mapModel (fun m -> m.Count))
-  member _.Increment = sh.Get () (BindingT.Cmd.createWithParam (fun _ _ -> Counter.Increment |> ValueSome) (fun _ _ -> true) true)
-  member _.Decrement = sh.Get () (BindingT.Cmd.createWithParam (fun _ _ -> Counter.Decrement |> ValueSome) (fun _ _ -> true) true)
-  member _.Reset = sh.Get () (BindingT.Cmd.createWithParam (fun _ _ -> Counter.Reset |> ValueSome) (fun _ -> Counter.canReset) true)
+    with get() =
+      BindingT.Get.get (fun m -> m.StepSize)
+      |> sh.Get ()
+    and set(v) =
+      BindingT.Set.id
+      >> BindingT.mapMsg (fun msg -> Msg.SetStepSize msg)
+      |> sh.Set (v)
 
-  interface ISubModel<Counter.Model, Counter.Msg> with
+  member _.CounterValue =
+    BindingT.Get.get (fun m -> m.Count)
+    |> sh.Get ()
+  member _.Increment =
+    BindingT.Cmd.createWithParam (fun _ _ -> Increment |> ValueSome) (fun _ _ -> true) true
+    |> sh.Get ()
+  member _.Decrement =
+    BindingT.Cmd.createWithParam (fun _ _ -> Decrement |> ValueSome) (fun _ _ -> true) true
+    |> sh.Get ()
+  member _.Reset =
+    BindingT.Cmd.createWithParam (fun _ _ -> Reset |> ValueSome) (fun _ -> canReset) true
+    |> sh.Get ()
+
+  interface ISubModel<Model, Msg> with
     member _.StaticHelper = sh
 
   interface INotifyPropertyChanged with
@@ -81,18 +96,31 @@ module Clock =
     | Tick t -> { m with Time = t }
     | SetTimeType t -> { m with TimeType = t }
 
+open Clock
 type [<AllowNullLiteral>] ClockViewModel (args) as this =
   let sh = StaticHelper.create args (fun () -> box this)
   
-  new() = ClockViewModel(Clock.init () |> ViewModelArgs.simple)
+  new() = ClockViewModel(init () |> ViewModelArgs.simple)
 
-  member _.Time = sh.Get() (BindingT.Get.id >> BindingT.mapModel Clock.getTime)
-  member _.IsLocal = sh.Get() (BindingT.Get.id >> BindingT.mapModel (fun m -> m.TimeType = Clock.Local))
-  member _.SetLocal = sh.Get () (BindingT.Cmd.createWithParam (fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome) (fun _ _ -> true) true)
-  member _.IsUtc = sh.Get() (BindingT.Get.id >> BindingT.mapModel (fun m -> m.TimeType = Clock.Utc))
-  member _.SetUtc = sh.Get () (BindingT.Cmd.createWithParam (fun _ _ -> Clock.SetTimeType Clock.Utc |> ValueSome) (fun _ _ -> true) true)
+  member _.Time =
+    BindingT.Get.get getTime
+    |> sh.Get ()
+  member _.IsLocal =
+    BindingT.Get.id
+    >> BindingT.mapModel (fun m -> m.TimeType = Clock.Local)
+    |> sh.Get()
+  member _.SetLocal =
+    BindingT.Cmd.createWithParam (fun _ _ -> Clock.SetTimeType Clock.Local |> ValueSome) (fun _ _ -> true) true
+    |> sh.Get ()
+  member _.IsUtc =
+    BindingT.Get.id
+    >> BindingT.mapModel (fun m -> m.TimeType = Clock.Utc)
+    |> sh.Get ()
+  member _.SetUtc =
+    BindingT.Cmd.createWithParam (fun _ _ -> Clock.SetTimeType Clock.Utc |> ValueSome) (fun _ _ -> true) true
+    |> sh.Get ()
 
-  interface ISubModel<Clock.Model, Clock.Msg> with
+  interface ISubModel<Model, Msg> with
     member _.StaticHelper = sh
 
   interface INotifyPropertyChanged with
@@ -104,12 +132,6 @@ module CounterWithClock =
   type Model =
     { Counter: Counter.Model
       Clock: Clock.Model }
-
-  module ModelM =
-    module Counter =
-      let get m = m.Counter
-    module Clock =
-      let get m = m.Clock
 
   let init () =
     { Counter = Counter.init
@@ -124,32 +146,35 @@ module CounterWithClock =
     | CounterMsg msg -> { m with Counter = Counter.update msg m.Counter }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
+open CounterWithClock
 type [<AllowNullLiteral>] CounterWithClockViewModel (args) as this =
   let sh = StaticHelper.create args (fun () -> box this)
   
-  new() = CounterWithClockViewModel(CounterWithClock.init () |> ViewModelArgs.simple)
+  new() = CounterWithClockViewModel(init () |> ViewModelArgs.simple)
 
-  member _.Counter = sh.Get() (BindingT.SubModel.id CounterViewModel >> BindingT.mapModel CounterWithClock.ModelM.Counter.get >> BindingT.mapMsg CounterWithClock.CounterMsg)
-  member _.Clock = sh.Get() (BindingT.SubModel.id ClockViewModel >> BindingT.mapModel CounterWithClock.ModelM.Clock.get >> BindingT.mapMsg CounterWithClock.ClockMsg)
+  member _.Counter =
+    BindingT.SubModel.req CounterViewModel
+    >> BindingT.mapModel (fun m -> m.Counter)
+    >> BindingT.mapMsg CounterMsg
+    |> sh.Get()
+  member _.Clock =
+    BindingT.SubModel.req ClockViewModel
+    >> BindingT.mapModel (fun m -> m.Clock)
+    >> BindingT.mapMsg ClockMsg
+    |> sh.Get()
 
-  interface ISubModel<CounterWithClock.Model, CounterWithClock.Msg> with
+  interface ISubModel<Model, Msg> with
     member _.StaticHelper = sh
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
-    member this.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
+    member _.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
 
 module App2 =
 
   type Model =
     { ClockCounter1: CounterWithClock.Model
       ClockCounter2: CounterWithClock.Model }
-
-  module ModelM =
-    module ClockCounter1 =
-      let get m = m.ClockCounter1
-    module ClockCounter2 =
-      let get m = m.ClockCounter2
 
   let init () =
     { ClockCounter1 = CounterWithClock.init ()
@@ -166,15 +191,24 @@ module App2 =
     | ClockCounter2Msg msg ->
         { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
+open App2
 type [<AllowNullLiteral>] AppViewModel (args) as this =
   let sh = StaticHelper.create args (fun () -> box this)
-  
-  new() = AppViewModel(App2.init () |> ViewModelArgs.simple)
 
-  member _.ClockCounter1 = sh.Get() (BindingT.SubModel.id CounterWithClockViewModel >> BindingT.mapModel App2.ModelM.ClockCounter1.get >> BindingT.mapMsg App2.ClockCounter1Msg)
-  member _.ClockCounter2 = sh.Get() (BindingT.SubModel.id CounterWithClockViewModel >> BindingT.mapModel App2.ModelM.ClockCounter2.get >> BindingT.mapMsg App2.ClockCounter2Msg)
+  new() = AppViewModel(init () |> ViewModelArgs.simple)
 
-  interface ISubModel<App2.Model, App2.Msg> with
+  member _.ClockCounter1 =
+    BindingT.SubModel.req CounterWithClockViewModel
+    >> BindingT.mapModel (fun m -> m.ClockCounter1)
+    >> BindingT.mapMsg ClockCounter1Msg
+    |> sh.Get ()
+  member _.ClockCounter2 =
+    BindingT.SubModel.req CounterWithClockViewModel
+    >> BindingT.mapModel (fun m -> m.ClockCounter2)
+    >> BindingT.mapMsg ClockCounter2Msg
+    |> sh.Get ()
+
+  interface ISubModel<Model, Msg> with
     member _.StaticHelper = sh
 
   interface INotifyPropertyChanged with

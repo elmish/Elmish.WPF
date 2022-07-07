@@ -1,5 +1,9 @@
 ﻿namespace Elmish.WPF
 
+open System.Windows
+
+open Elmish
+
 
 module BindingT =
   let internal createStatic data name = { DataT = data; Name = name }
@@ -115,10 +119,10 @@ module BindingT =
       create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
       |> createStatic
 
-    let id<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel, 'msg, 'viewModel> =
+    let req<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel, 'msg, 'viewModel> =
       create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
-      |> BindingData.mapModel ValueSome
       |> createStatic
+      >> mapModel ValueSome
 
 
 [<AllowNullLiteral>]
