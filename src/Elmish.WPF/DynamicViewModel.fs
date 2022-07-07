@@ -18,10 +18,6 @@ type Binding<'model, 'msg> =
 [<AutoOpen>]
 module internal Helpers =
 
-  let createBinding data name =
-    { Name = name
-      Data = data |> BindingData.boxT }
-
   type SubModelSelectedItemLast with
     member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
       fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)

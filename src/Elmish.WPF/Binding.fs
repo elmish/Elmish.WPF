@@ -6,11 +6,12 @@ open Elmish
 
 
 module Binding =
+  let internal createBinding data name = { Data = data |> BindingData.boxT; Name = name }
   open BindingData
 
   let internal mapData f binding =
-    { Name = binding.Name
-      Data = binding.Data |> f }
+    { Data = binding.Data |> f
+      Name = binding.Name }
 
   /// Maps the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = f |> mapModel |> mapData <| binding
