@@ -44,10 +44,11 @@
     <Compile Include="ViewModelArgs.fs" />
     <Compile Include="BindingData.fs" />
     <Compile Include="BindingVmHelpers.fs" />
-    <Compile Include="StaticViewModel.fs" />
-    <Compile Include="BindingT.fs" />
     <Compile Include="DynamicViewModel.fs" />
     <Compile Include="Binding.fs" />
+    <Compile Include="StaticViewModel.fs" />
+    <Compile Include="BindingT.fs" />
+    <Compile Include="StaticDynamicInterop.fs" />
     <Compile Include="ViewModelModule.fs" />
     <Compile Include="WpfProgram.fs" />
   </ItemGroup>

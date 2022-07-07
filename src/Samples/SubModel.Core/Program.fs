@@ -1,10 +1,13 @@
-module Elmish.WPF.Samples.SubModel.Program
+namespace Elmish.WPF.Samples.SubModel
 
 open System
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
 open Elmish.WPF
+open System.ComponentModel
+
+open Elmish.WPF.StaticDynamicInterop
 
 module Counter =
 
@@ -98,19 +101,33 @@ module CounterWithClock =
     | CounterMsg msg -> { m with Counter = Counter.update msg m.Counter }
     | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
 
-  let bindings () : Binding<Model, Msg> list = [
-    "Counter"
-      |> Binding.SubModel.required Counter.bindings
-      |> Binding.mapModel (fun m -> m.Counter)
-      |> Binding.mapMsg CounterMsg
-    "Clock"
-      |> Binding.SubModel.required Clock.bindings
-      |> Binding.mapModel (fun m -> m.Clock)
-      |> Binding.mapMsg ClockMsg
-  ]
+open CounterWithClock
+type CounterWithClockViewModel(args) as this =
+  let sh = StaticHelper.create args (fun () -> box this)
+  
+  new() = CounterWithClockViewModel(init () |> ViewModelArgs.simple)
+
+  member _.Counter =
+    Binding.SubModel.required Counter.bindings
+    >> Binding.mapModel (fun m -> m.Counter)
+    >> Binding.mapMsg CounterMsg
+    |> sh.GetBinding()
+
+  member _.Clock =
+    Binding.SubModel.required Clock.bindings
+    >> Binding.mapModel (fun m -> m.Clock)
+    >> Binding.mapMsg ClockMsg
+    |> sh.GetBinding()
+
+  interface ISubModel<Model, Msg> with
+    member _.StaticHelper = sh
+
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member _.PropertyChanged = (sh :> INotifyPropertyChanged).PropertyChanged
 
 
-module App =
+module App2 =
 
   type Model =
     { ClockCounter1: CounterWithClock.Model
@@ -133,47 +150,49 @@ module App =
 
   let bindings () : Binding<Model, Msg> list = [
     "ClockCounter1"
-      |> Binding.SubModel.required CounterWithClock.bindings
-      |> Binding.mapModel (fun m -> m.ClockCounter1)
-      |> Binding.mapMsg ClockCounter1Msg
+      |> BindingT.SubModel.req CounterWithClockViewModel
+      |> BindingT.mapModel (fun m -> m.ClockCounter1)
+      |> BindingT.mapMsg ClockCounter1Msg
+      |> BindingT.toBinding
 
     "ClockCounter2"
-      |> Binding.SubModel.required CounterWithClock.bindings
-      |> Binding.mapModel (fun m -> m.ClockCounter2)
-      |> Binding.mapMsg ClockCounter2Msg
+      |> BindingT.SubModel.req CounterWithClockViewModel
+      |> BindingT.mapModel (fun m -> m.ClockCounter2)
+      |> BindingT.mapMsg ClockCounter2Msg
+      |> BindingT.toBinding
   ]
 
-
-let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
-let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
-let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
-let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
-
-
-let timerTick dispatch =
-  let timer = new System.Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ ->
-    let clockMsg =
-      DateTimeOffset.Now
-      |> Clock.Tick
-      |> CounterWithClock.ClockMsg
-    dispatch <| App.ClockCounter1Msg clockMsg
-    dispatch <| App.ClockCounter2Msg clockMsg
-  )
-  timer.Start()
+module Program =
+  let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
+  let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
+  //let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+  let mainDesignVm = ViewModel.designInstance (App2.init ()) (App2.bindings ())
 
 
-let main window =
+  let timerTick dispatch =
+    let timer = new System.Timers.Timer(1000.)
+    timer.Elapsed.Add (fun _ ->
+      let clockMsg =
+        DateTimeOffset.Now
+        |> Clock.Tick
+        |> CounterWithClock.ClockMsg
+      dispatch <| App2.ClockCounter1Msg clockMsg
+      dispatch <| App2.ClockCounter2Msg clockMsg
+    )
+    timer.Start()
 
-  let logger =
-    LoggerConfiguration()
-      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
-      .WriteTo.Console()
-      .CreateLogger()
 
-  WpfProgram.mkSimple App.init App.update App.bindings
-  |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
-  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.startElmishLoop window
+  let main window =
+
+    let logger =
+      LoggerConfiguration()
+        .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+        .WriteTo.Console()
+        .CreateLogger()
+
+    WpfProgram.mkSimple App2.init App2.update App2.bindings
+    |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+    |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
+    |> WpfProgram.startElmishLoop window
