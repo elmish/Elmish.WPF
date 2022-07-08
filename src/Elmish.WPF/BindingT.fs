@@ -112,30 +112,90 @@ module BindingT =
       createWithParam exec canExec autoRequery
       |> createStatic
 
+  module OneWaySeq =
+    open System.Collections.ObjectModel
+    open BindingData.OneWaySeq
+
+    let id<'bindingModel, 'bindingModelCollection, 'msg, 'id when 'bindingModelCollection :> seq<'bindingModel> and 'id: equality>
+      itemEquals
+      (getId: 'bindingModel -> 'id)
+      : StaticBindingT<'bindingModelCollection, 'id * 'msg, ObservableCollection<'bindingModel>>
+      =
+      create itemEquals getId
+      |> createStatic
+
   module SubModel =
     open BindingData.SubModel
 
-    let opt<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel voption, 'msg, 'viewModel> =
-      create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
+    let internal updateSubModel (vm: #ISubModel<'model, 'msg>, m: 'model) = vm.StaticHelper.UpdateModel(m)
+
+    let opt<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>>
+      createVm
+      : StaticBindingT<'bindingModel voption, 'msg, 'viewModel>
+      =
+      create createVm updateSubModel
       |> createStatic
 
-    let req<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>> createVm : StaticBindingT<'bindingModel, 'msg, 'viewModel> =
-      create createVm (fun ((vm: 'viewModel),m) -> vm.StaticHelper.UpdateModel(m))
+    let req<'bindingModel, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg>>
+      createVm
+      : StaticBindingT<'bindingModel, 'msg, 'viewModel>
+      =
+      create createVm updateSubModel
       |> createStatic
       >> mapModel ValueSome
+
+  module SubModelSeqUnkeyed =
+    open System.Collections.ObjectModel
+    open BindingData.SubModelSeqUnkeyed
+
+    let id<'bindingModel, 'bindingModelCollection, 'msg, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg> and 'bindingModelCollection :> seq<'bindingModel>>
+      createVm
+      : StaticBindingT<'bindingModelCollection, int * 'msg, ObservableCollection<'viewModel>>
+      =
+      create createVm SubModel.updateSubModel
+      |> createStatic
+
+  module SubModelSeqKeyed =
+    open System.Collections.ObjectModel
+    open BindingData.SubModelSeqKeyed
+
+    let id<'bindingModel, 'bindingModelCollection, 'msg, 'id, 'viewModel when 'viewModel :> ISubModel<'bindingModel, 'msg> and 'bindingModelCollection :> seq<'bindingModel> and 'id: equality>
+      createVm
+      (bmToId: 'bindingModel -> 'id)
+      (vmToId: 'viewModel -> 'id)
+      : StaticBindingT<'bindingModelCollection, 'id * 'msg, ObservableCollection<'viewModel>>
+      =
+      create createVm SubModel.updateSubModel bmToId vmToId
+      |> createStatic
 
 
 [<AllowNullLiteral>]
 type InnerExampleViewModel(args) as this =
   interface ISubModel<string, int64> with
     member _.StaticHelper = StaticHelper.create args (fun () -> this)
-    
+  member _.StaticHelper = (this :> ISubModel<string, int64>).StaticHelper
+
 [<AllowNullLiteral>]
 type ExampleViewModel(args) as this =
   let staticHelper = StaticHelper.create args (fun () -> this)
 
   member _.Model
-    with get() = BindingT.Get.id |> staticHelper.Get()
-    and set(v) = BindingT.Get.id >> BindingT.mapMsg int32<string> |> staticHelper.Set(v)
-  member _.Command = BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false |> staticHelper.Get()
-  member _.SubModel = BindingT.SubModel.opt InnerExampleViewModel >> BindingT.mapModel ValueSome >> BindingT.mapMsg int32 |> staticHelper.Get()
+    with get() =
+      BindingT.Get.id
+      |> staticHelper.Get()
+    and set(v) =
+      BindingT.Get.id
+      >> BindingT.mapMsg int32<string>
+      |> staticHelper.Set(v)
+  member _.Command =
+    BindingT.Cmd.createWithParam (fun _ _ -> ValueNone) (fun _ _ -> true) false
+    |> staticHelper.Get()
+  member _.SubModel =
+    BindingT.SubModel.req InnerExampleViewModel
+    >> BindingT.mapMsg int32
+    |> staticHelper.Get()
+  member _.List =
+    BindingT.SubModelSeqKeyed.id InnerExampleViewModel id (fun vm -> vm.StaticHelper.CurrentModel)
+    >> BindingT.mapModel Seq.singleton
+    >> BindingT.mapMsg (fun (_i,x) -> int32 x)
+    |> staticHelper.Get()
