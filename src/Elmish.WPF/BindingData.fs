@@ -362,9 +362,9 @@ module internal BindingData =
 
 
   module OneWay =
-  
-    let id<'a, 'msg> : BindingData<'a, 'msg> =
-      { Get = box }
+
+    let id<'msg> : BindingData<obj, 'msg> =
+      { Get = id }
       |> OneWayData
       |> BaseBindingData
 
@@ -380,9 +380,9 @@ module internal BindingData =
 
 
   module OneWayToSource =
-  
-    let id<'model, 'a> : BindingData<'model, 'a> =
-      { OneWayToSourceData.Set = fun obj _ -> obj |> unbox }
+
+    let id<'model> : BindingData<'model, obj> =
+      { OneWayToSourceData.Set = Func2.id1 }
       |> OneWayToSourceData
       |> BaseBindingData
 
@@ -412,8 +412,8 @@ module internal BindingData =
 
     let boxMinorTypes d = d |> mapMinorTypes box box unbox
 
-    let create get itemEquals getId =
-      { Get = get >> (fun x -> upcast x)
+    let create itemEquals getId =
+      { Get = (fun x -> upcast x)
         CreateCollection = ObservableCollection >> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId }
@@ -441,10 +441,10 @@ module internal BindingData =
 
 
   module TwoWay =
-  
-    let id<'a> : BindingData<'a, 'a> =
-      { TwoWayData.Get = box
-        Set = fun obj _ -> obj |> unbox }
+
+    let id : BindingData<obj, obj> =
+      { TwoWayData.Get = id
+        Set = Func2.id1 }
       |> TwoWayData
       |> BaseBindingData
 
@@ -500,7 +500,7 @@ module internal BindingData =
 
     let boxMinorTypes d = d |> mapMinorTypes box unbox
 
-    let create subModelSeqBindingName : BindingData<'id voption, 'id voption> =
+    let create subModelSeqBindingName =
       { Get = id
         Set = Func2.id1
         SubModelSeqBindingName = subModelSeqBindingName }
@@ -545,7 +545,7 @@ module internal BindingData =
       { GetModel = id
         CreateViewModel = createViewModel
         UpdateViewModel = updateViewModel
-        ToMsg = fun _ -> id }
+        ToMsg = Func2.id2 }
       |> boxMinorTypes
       |> SubModelData
       |> BaseBindingData
@@ -647,11 +647,11 @@ module internal BindingData =
     let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
-      { GetModels = id
+      { GetModels = (fun x -> upcast x)
         CreateViewModel = createViewModel
         CreateCollection = ObservableCollection >> CollectionTarget.create
         UpdateViewModel = updateViewModel
-        ToMsg = fun _ -> id }
+        ToMsg = Func2.id2 }
       |> boxMinorTypes
       |> SubModelSeqUnkeyedData
       |> BaseBindingData
@@ -699,11 +699,11 @@ module internal BindingData =
       let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
       let create createViewModel updateViewModel bmToId vmToId =
-        { GetSubModels = id
+        { GetSubModels = (fun x -> upcast x)
           CreateViewModel = createViewModel
           CreateCollection = ObservableCollection >> CollectionTarget.create
           UpdateViewModel = updateViewModel
-          ToMsg = fun _ -> id
+          ToMsg = Func2.id2
           BmToId = bmToId
           VmToId = vmToId }
         |> boxMinorTypes
