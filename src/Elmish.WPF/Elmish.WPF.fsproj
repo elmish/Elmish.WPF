@@ -52,11 +52,11 @@
 
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.1.0, 3.99]" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[3.1.6, 99]" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1, 99]" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="[4.6.2, 99]" />
+    <PackageReference Update="FSharp.Core" Version="[6.0.5, 99]" />
   </ItemGroup>
 
 </Project>
