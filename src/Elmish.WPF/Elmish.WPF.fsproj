@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;netcoreapp3.1;net480</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -52,11 +52,11 @@
 
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.1.0, 3.99]" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[3.1.6, 99]" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1, 99]" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="[4.6.2, 99]" />
+    <PackageReference Update="FSharp.Core" Version="[6.0.5, 99]" />
   </ItemGroup>
 
 </Project>

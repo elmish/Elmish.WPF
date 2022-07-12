@@ -13,15 +13,12 @@ jobs:
 
     - uses: actions/checkout@v2
 
-    - name: Install .NET SDK 3.1.x
+    - name: Install .NET SDKs
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.x
-
-    - name: Install .NET SDK 5.0.103
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.103
+        dotnet-version: |
+          3.1.x
+          6.0.x
 
     - name: Restore
       run: dotnet restore src/Elmish.WPF.sln

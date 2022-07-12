@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;netcoreapp3.1;net480</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
@@ -22,13 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.0.250" />
-    <PackageReference Include="Hedgehog" Version="0.10.0" />
-    <PackageReference Include="Hedgehog.Experimental" Version="0.4.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
-    <PackageReference Include="Unquote" Version="5.0.0" />
+    <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
+    <PackageReference Include="Hedgehog" Version="0.12.1" />
+    <PackageReference Include="Hedgehog.Experimental" Version="0.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="Unquote" Version="6.1.0" />
     <PackageReference Include="xunit.core" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
