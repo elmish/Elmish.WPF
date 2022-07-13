@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:CounterWithClockViewModel, IsDesignTimeCreatable=True}">
   <StackPanel>
-    <local:Counter DataContext="{Binding Counter}" d:DataContext="{Binding DataContext.Counter, RelativeSource={RelativeSource AncestorType=UserControl}}" HorizontalAlignment="Center" />
-    <local:Clock DataContext="{Binding Clock}" d:DataContext="{Binding DataContext.Clock, RelativeSource={RelativeSource AncestorType=UserControl}}" HorizontalAlignment="Center" />
+    <local:Counter DataContext="{Binding Counter}" HorizontalAlignment="Center" />
+    <local:Clock DataContext="{Binding Clock}" HorizontalAlignment="Center" />
   </StackPanel>
 </UserControl>
