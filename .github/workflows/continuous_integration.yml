@@ -30,7 +30,7 @@ jobs:
       run: dotnet test --no-build --configuration Release src/Elmish.WPF.Tests/Elmish.WPF.Tests.fsproj
 
     - name: Publish NuGet
-      uses: brandedoutcast/publish-nuget@v2.5.5
+      uses: alirezanet/publish-nuget@v3.0.4
       with:
         PROJECT_FILE_PATH: "src/Elmish.WPF/Elmish.WPF.fsproj"
         PACKAGE_NAME: "Elmish.WPF"
