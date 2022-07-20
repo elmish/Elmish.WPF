@@ -1442,7 +1442,7 @@ module CacheEffect =
       let! name = GenX.auto<string>
       let! model = GenX.auto<int>
       let! bindingComponsitionOrder = Gen.bool
-    
+
       let mapping = InvokeTester id
       let cachingAndMapping =
         if bindingComponsitionOrder
@@ -1453,10 +1453,10 @@ module CacheEffect =
         |> Binding.OneWay.id
         |> cachingAndMapping
       let vm = TestVm(model, binding)
-      
+
       vm.Get name |> ignore // populate cache
       vm.Get name |> ignore
-      
+
       test <@ 1 = mapping.Count @>
     }
 
