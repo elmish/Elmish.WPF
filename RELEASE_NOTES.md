@@ -8,6 +8,7 @@
 * Replaced framework targets `net461` and `net5.0-windows` with `net480` and `net6.0-windows` respectively.
 * Updated minimum `FSharp.Core` version to `6.0.5`.
 * Updated minimum `Microsoft.Extensions.Logging.Abstractions` version to `6.0.1`.
+* Fixed broken log statement called when a `SubModelSelectedItem` binding can't find an item in a `SubModelSeq` binding.
 
 #### 4.0.0-beta-43
 * Added `WpfProgram.withElmishErrorHandler`
