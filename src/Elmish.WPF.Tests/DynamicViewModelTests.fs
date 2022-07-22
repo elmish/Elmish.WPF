@@ -1431,6 +1431,29 @@ module SubModelSelectedItem =
       test <@ vm.Dispatches = [ set (selectedSubModel |> ValueOption.map getId) m ] @>
     }
 
+  [<Fact>]
+  let ``attempting to select a nonexistent item throws RuntimeBinderException`` () =
+    let selectedItemName = "Foo"
+    let subModelSeqName = "Bar"
+    let bindings =
+      [ selectedItemName |> Binding.subModelSelectedItem (subModelSeqName, Some, ignore)
+        subModelSeqName |> Binding.subModelSeq ((fun _ -> []), ignore, (fun () -> [])) ]
+    let mutable error : string option = None
+    let loggingArgs =
+      { LoggingViewModelArgs.none
+        with
+          log =
+            { new Microsoft.Extensions.Logging.ILogger
+              with
+                member _.BeginScope _ = { new IDisposable with member _.Dispose() = () }
+                member _.IsEnabled _ = true
+                member _.Log (_, _, state, ex, formatter) = error <- formatter.Invoke(state, ex) |> Some } }
+    let viewModelArgs = ViewModelArgs.create 0.0 ignore "main" loggingArgs
+    let vm = DynamicViewModel(viewModelArgs, bindings)
+
+    raises<Microsoft.CSharp.RuntimeBinder.RuntimeBinderException> <@ vm.Get selectedItemName @>
+    test <@ error.Value.Contains "TryGetMember FAILED: Failed to find an element" @>
+
 
 
 module CacheEffect =
