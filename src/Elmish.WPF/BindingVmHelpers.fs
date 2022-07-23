@@ -139,7 +139,7 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 
     SubModelSeqBindingName: string
     SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> }
 
-  member b.TryGetMember (model: 'model) =
+  member b.TypedGet(model: 'model) =
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
   member b.TrySetMember(model: 'model, vm: 'vm voption) =
@@ -632,7 +632,7 @@ type Get(nameChain: string) =
     | SubModelSeqUnkeyed { Vms = vms }
     | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> Ok
     | SubModelSelectedItem b ->
-        b.TryGetMember model
+        b.TypedGet model
         |> function
           | ValueNone -> ValueNone |> Ok // deselecting successful
           | ValueSome (id, mVm) ->
