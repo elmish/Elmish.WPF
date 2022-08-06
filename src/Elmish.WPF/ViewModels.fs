@@ -20,7 +20,7 @@ module internal Helpers =
 
   let createBinding data name =
     { Name = name
-      Data = data }
+      Data = data |> BindingData.boxT }
 
   type SubModelSelectedItemLast with
     member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =

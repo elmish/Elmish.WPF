@@ -159,6 +159,92 @@ and BindingData<'model, 'msg, 't> =
 
 module BindingData =
 
+  module private MapT =
+
+    let baseCase (fOut: 't0 -> 't1) (fIn: 't1 -> 't0) =
+      function
+      | OneWayData d -> OneWayData {
+          Get = d.Get >> fOut
+        }
+      | OneWayToSourceData d -> OneWayToSourceData {
+          Set = fIn >> d.Set
+        }
+      | OneWaySeqData d -> OneWaySeqData {
+          Get = d.Get
+          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          GetId = d.GetId
+          ItemEquals = d.ItemEquals
+        }
+      | TwoWayData d -> TwoWayData {
+          Get = d.Get >> fOut
+          Set = fIn >> d.Set
+        }
+      | CmdData d -> CmdData {
+          Exec = d.Exec
+          CanExec = d.CanExec
+          AutoRequery = d.AutoRequery
+        }
+      | SubModelData d -> SubModelData {
+          GetModel = d.GetModel
+          CreateViewModel = d.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm,m) -> d.UpdateViewModel (fIn vm, m))
+          ToMsg = d.ToMsg
+        }
+      | SubModelWinData d -> SubModelWinData {
+          GetState = d.GetState
+          CreateViewModel = d.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm,m) -> d.UpdateViewModel (fIn vm, m))
+          ToMsg = d.ToMsg
+          GetWindow = d.GetWindow
+          IsModal = d.IsModal
+          OnCloseRequested = d.OnCloseRequested
+        }
+      | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
+          GetModels = d.GetModels
+          CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          UpdateViewModel = d.UpdateViewModel
+          ToMsg = d.ToMsg
+        }
+      | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
+          GetSubModels = d.GetSubModels
+          CreateViewModel = d.CreateViewModel
+          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          UpdateViewModel = d.UpdateViewModel
+          ToMsg = d.ToMsg
+          VmToId = d.VmToId
+          BmToId = d.BmToId
+        }
+      | SubModelSelectedItemData d -> SubModelSelectedItemData {
+          Get = d.Get
+          Set = d.Set
+          SubModelSeqBindingName = d.SubModelSeqBindingName
+        }
+
+    let rec recursiveCase<'model, 'msg, 't0, 't1> (fOut: 't0 -> 't1) (fIn: 't1 -> 't0)
+      : BindingData<'model, 'msg, 't0> -> BindingData<'model, 'msg, 't1> =
+      function
+      | BaseBindingData d -> d |> baseCase fOut fIn |> BaseBindingData
+      | CachingData d -> d |> recursiveCase<'model, 'msg, 't0, 't1> fOut fIn |> CachingData
+      | ValidationData d -> ValidationData {
+          BindingData = recursiveCase<'model, 'msg, 't0, 't1> fOut fIn d.BindingData
+          Validate = d.Validate
+        }
+      | LazyData d -> LazyData {
+          Get = d.Get
+          Set = d.Set
+          BindingData = recursiveCase<obj, obj, 't0, 't1> fOut fIn d.BindingData
+          Equals = d.Equals
+        }
+      | AlterMsgStreamData d -> AlterMsgStreamData {
+          BindingData = recursiveCase<obj, obj, 't0, 't1> fOut fIn d.BindingData
+          AlterMsgStream = d.AlterMsgStream
+          Get = d.Get
+          Set = d.Set
+        }
+
+  let boxT b = MapT.recursiveCase box unbox b
+
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
     let baseCase = function
@@ -403,16 +489,15 @@ module BindingData =
     let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (outMapId: 'id -> 'id0)
-        (outMapACollection: 'aCollection -> 'aCollection0)
         (inMapA: 'a0 -> 'a)
         (d: OneWaySeqData<'model, 'a, 'aCollection, 'id>) = {
       Get = d.Get >> Seq.map outMapA
-      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.map outMapA outMapACollection inMapA
+      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.mapA outMapA inMapA
       GetId = inMapA >> d.GetId >> outMapId
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box box unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox
 
     let create itemEquals getId =
       { Get = (fun x -> upcast x)
@@ -530,18 +615,16 @@ module BindingData =
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
-        (outMapBindingViewModel: 'vm -> 'vm0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (inMapBindingViewModel: 'vm0 -> 'vm)
         (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) = {
       GetModel = d.GetModel >> ValueOption.map outMapBindingModel
-      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      UpdateViewModel = fun (vm, m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg)
+      UpdateViewModel = fun (vm, m) -> (vm, inMapBindingModel m) |> d.UpdateViewModel
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModel = id
@@ -577,21 +660,19 @@ module BindingData =
     let mapMinorTypes
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
-        (outMapBindingViewModel: 'vm -> 'vm0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
-        (inMapBindingViewModel: 'vm0 -> 'vm)
         (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) = {
       GetState = d.GetState >> WindowState.map outMapBindingModel
-      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (inMapBindingViewModel vm, inMapBindingModel m)
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg)
+      UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (vm, inMapBindingModel m)
       ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
       GetWindow = d.GetWindow
       IsModal = d.IsModal
       OnCloseRequested = d.OnCloseRequested
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox unbox
 
     let create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
       { GetState = getState
@@ -636,19 +717,18 @@ module BindingData =
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (outMapBindingViewModel: 'vm -> 'vm0)
-        (outMapBindingVmCollection: 'vmCollection -> 'vmCollection0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
         (inMapBindingViewModel: 'vm0 -> 'vm)
         (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
       CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel outMapBindingVmCollection inMapBindingViewModel
+      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
       UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (inMapBindingViewModel vm, inMapBindingModel m)
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModels = (fun x -> upcast x)
@@ -685,7 +765,6 @@ module BindingData =
           (outMapBindingModel: 'bindingModel -> 'bindingModel0)
           (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
           (outMapBindingViewModel: 'vm -> 'vm0)
-          (outMapBindingVmCollection: 'vmCollection -> 'vmCollection0)
           (outMapId: 'id -> 'id0)
           (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
           (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
@@ -694,14 +773,14 @@ module BindingData =
           (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel outMapBindingVmCollection inMapBindingViewModel
+        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
         UpdateViewModel = fun (vm, m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         BmToId = inMapBindingModel >> d.BmToId >> outMapId
         VmToId = fun vm -> vm |> inMapBindingViewModel |> d.VmToId |> outMapId
       }
 
-      let boxMinorTypes d = d |> mapMinorTypes box box box box box unbox unbox unbox unbox
+      let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
       let create createViewModel updateViewModel bmToId vmToId =
         { GetSubModels = (fun x -> upcast x)
