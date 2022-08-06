@@ -95,7 +95,7 @@ type OneWayToSourceBinding<'model, 'a> = {
 }
 
 type OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
-  OneWaySeqData: OneWaySeqData<'model, 'a, 'id>
+  OneWaySeqData: OneWaySeqData<'model, 'a, obj, 'id>
   Values: CollectionTarget<'a, obj>
 }
 
@@ -117,12 +117,12 @@ type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 }
 
 type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, obj>
   Vms: CollectionTarget<'vm, obj>
 }
 
 type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, obj, 'id>
     Vms: CollectionTarget<'vm, obj> }
 
   member b.FromId(id: 'id) =
