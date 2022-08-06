@@ -3,6 +3,7 @@ module internal Elmish.WPF.BindingData
 
 open System.Collections.ObjectModel
 open System.Windows
+open System.Windows.Input
 
 open Elmish
 
@@ -552,7 +553,7 @@ module BindingData =
 
   module Cmd =
 
-    let createWithParam exec canExec autoRequery : BindingData<'model, 'msg, 't> =
+    let createWithParam exec canExec autoRequery : BindingData<'model, 'msg, ICommand> =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
