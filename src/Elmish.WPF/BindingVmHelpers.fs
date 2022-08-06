@@ -96,7 +96,7 @@ type OneWayToSourceBinding<'model, 'a> = {
 
 type OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
   OneWaySeqData: OneWaySeqData<'model, 'a, 'id>
-  Values: CollectionTarget<'a>
+  Values: CollectionTarget<'a, obj>
 }
 
 type TwoWayBinding<'model, 'a> = {
@@ -118,12 +118,12 @@ type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 
 type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
-  Vms: CollectionTarget<'vm>
+  Vms: CollectionTarget<'vm, obj>
 }
 
 type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>
-    Vms: CollectionTarget<'vm> }
+    Vms: CollectionTarget<'vm, obj> }
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
@@ -620,7 +620,7 @@ type Get(nameChain: string) =
     | OneWay { OneWayData = d } -> d.Get model |> Ok
     | TwoWay b -> b.Get model |> Ok
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
-    | OneWaySeq { Values = vals } -> vals.BoxedCollection() |> Ok
+    | OneWaySeq { Values = vals } -> vals.GetCollection () |> Ok
     | Cmd cmd -> cmd |> box |> Ok
     | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
     | SubModelWin { VmWinState = vm } ->
@@ -630,7 +630,7 @@ type Get(nameChain: string) =
         |> ValueOption.toObj
         |> Ok
     | SubModelSeqUnkeyed { Vms = vms }
-    | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> Ok
+    | SubModelSeqKeyed { Vms = vms } -> vms.GetCollection () |> Ok
     | SubModelSelectedItem b ->
         b.TypedGet model
         |> function

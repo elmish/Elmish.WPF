@@ -16,7 +16,7 @@ type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: 
   member this.Index2 = index2
   member this.Id = id
 
-type CollectionTarget<'a> =
+type CollectionTarget<'a, 'aCollection> =
   { GetLength: unit -> int
     GetAt: int -> 'a
     Append: 'a -> unit
@@ -26,7 +26,7 @@ type CollectionTarget<'a> =
     Move: int * int -> unit
     Clear: unit -> unit
     Enumerate: unit -> 'a seq
-    BoxedCollection: unit -> obj }
+    GetCollection: unit -> 'aCollection }
 
 module CollectionTarget =
 
@@ -40,9 +40,9 @@ module CollectionTarget =
       Move = oc.Move
       Clear = oc.Clear
       Enumerate = fun () -> upcast oc
-      BoxedCollection = fun () -> oc |> box }
+      GetCollection = fun () -> oc }
 
-  let map (fOut: 'a -> 'b) (fIn: 'b -> 'a) (ct: CollectionTarget<'a>) : CollectionTarget<'b> =
+  let mapA (fOut: 'a0 -> 'a1) (fIn: 'a1 -> 'a0) (ct: CollectionTarget<'a0, 'aCollection>) : CollectionTarget<'a1, 'aCollection> =
     { GetLength = ct.GetLength
       GetAt = ct.GetAt >> fOut
       Append = fIn >> ct.Append
@@ -52,7 +52,23 @@ module CollectionTarget =
       Move = ct.Move
       Clear = ct.Clear
       Enumerate = ct.Enumerate >> Seq.map fOut
-      BoxedCollection = ct.BoxedCollection }
+      GetCollection = ct.GetCollection }
+
+  let mapCollection (fOut: 'aCollection0 -> 'aCollection1) (ct: CollectionTarget<'a, 'aCollection0>) : CollectionTarget<'a, 'aCollection1> =
+    { GetLength = ct.GetLength
+      GetAt = ct.GetAt
+      Append = ct.Append
+      InsertAt = ct.InsertAt
+      SetAt = ct.SetAt
+      RemoveAt = ct.RemoveAt
+      Move = ct.Move
+      Clear = ct.Clear
+      Enumerate = ct.Enumerate
+      GetCollection = ct.GetCollection >> fOut }
+
+  let map outMapA outMapCollection inMapA =
+    mapA outMapA inMapA
+    >> mapCollection outMapCollection
 
 
 
@@ -61,7 +77,7 @@ module Merge =
   let unkeyed
       (create: 's -> int -> 't)
       (update: 't -> 's -> unit)
-      (target: CollectionTarget<'t>)
+      (target: CollectionTarget<'t, 'tCollection>)
       (source: 's seq) =
     let mutable lastIdx = -1
     for (idx, s) in source |> Seq.indexed do
@@ -81,7 +97,7 @@ module Merge =
       (getTargetId: 't -> 'id)
       (create: 's -> 'id -> 't)
       (update: 't -> 's -> int -> unit)
-      (target: CollectionTarget<'t>)
+      (target: CollectionTarget<'t, 'tCollection>)
       (source: 's array) =
     (*
      * Based on Elm's HTML.keyed
