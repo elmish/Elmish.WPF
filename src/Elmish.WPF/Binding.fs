@@ -91,7 +91,6 @@ module Binding =
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
       OneWay.id
-      |> BindingData.mapModel box
       |> createBinding
 
     /// Creates a one-way binding to an optional value. The binding
@@ -114,7 +113,6 @@ module Binding =
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
       OneWayToSource.id
-      |> BindingData.mapMsg unbox
       |> createBinding
 
     /// Creates a one-way-to-source binding to an optional value. The binding
@@ -137,8 +135,6 @@ module Binding =
     /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a> =
       TwoWay.id
-      |> BindingData.mapModel box
-      |> BindingData.mapMsg unbox
       |> createBinding
 
     /// Creates a one-way-to-source binding to an optional value. The binding
