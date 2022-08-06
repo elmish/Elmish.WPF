@@ -94,9 +94,9 @@ type OneWayToSourceBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
-  OneWaySeqData: OneWaySeqData<'model, 'a, obj, 'id>
-  Values: CollectionTarget<'a, obj>
+type OneWaySeqBinding<'model, 'a, 'aCollection, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqData<'model, 'a, 'aCollection, 'id>
+  Values: CollectionTarget<'a, 'aCollection>
 }
 
 type TwoWayBinding<'model, 'a> = {
@@ -116,14 +116,14 @@ type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   VmWinState: WindowState<'vm> ref
 }
 
-type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, obj>
-  Vms: CollectionTarget<'vm, obj>
+type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> = {
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>
+  Vms: CollectionTarget<'vm, 'vmCollection>
 }
 
-type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, obj, 'id>
-    Vms: CollectionTarget<'vm, obj> }
+type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>
+    Vms: CollectionTarget<'vm, 'vmCollection> }
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
@@ -150,13 +150,13 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 
 type BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
   | OneWayToSource of OneWayToSourceBinding<'model, obj>
-  | OneWaySeq of OneWaySeqBinding<'model, obj, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, obj>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
 
 
