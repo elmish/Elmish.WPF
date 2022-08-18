@@ -16,6 +16,7 @@
   <ItemGroup>
     <Compile Include="AutoOpen.fs" />
     <Compile Include="MergeTests.fs" />
+    <Compile Include="BindingVmHelpersTests.fs" />
     <Compile Include="DynamicViewModelTests.fs" />
     <Compile Include="BindingTests.fs" />
     <Compile Include="UtilsTests.fs" />
