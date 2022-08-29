@@ -42,7 +42,7 @@ module CollectionTarget =
       Enumerate = fun () -> upcast oc
       GetCollection = fun () -> oc }
 
-  let mapA (fOut: 'a0 -> 'a1) (fIn: 'a1 -> 'a0) (ct: CollectionTarget<'a0, 'aCollection>) : CollectionTarget<'a1, 'aCollection> =
+  let private mapA (fOut: 'a0 -> 'a1) (fIn: 'a1 -> 'a0) (ct: CollectionTarget<'a0, 'aCollection>) : CollectionTarget<'a1, 'aCollection> =
     { GetLength = ct.GetLength
       GetAt = ct.GetAt >> fOut
       Append = fIn >> ct.Append
@@ -54,7 +54,7 @@ module CollectionTarget =
       Enumerate = ct.Enumerate >> Seq.map fOut
       GetCollection = ct.GetCollection }
 
-  let mapCollection (fOut: 'aCollection0 -> 'aCollection1) (ct: CollectionTarget<'a, 'aCollection0>) : CollectionTarget<'a, 'aCollection1> =
+  let private mapCollection (fOut: 'aCollection0 -> 'aCollection1) (ct: CollectionTarget<'a, 'aCollection0>) : CollectionTarget<'a, 'aCollection1> =
     { GetLength = ct.GetLength
       GetAt = ct.GetAt
       Append = ct.Append
