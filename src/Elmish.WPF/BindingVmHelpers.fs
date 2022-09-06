@@ -236,7 +236,7 @@ type FirstValidationErrors() =
 
 type FuncsFromSubModelSeqKeyed() =
 
-  member _.Base(binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base(binding: BaseVmBinding<'model, 'msg>) : SelectedItemBinding<'a, 'b, obj, obj> option =
     match binding with
     | SubModelSeqKeyed b ->
       { VmToId = b.SubModelSeqKeyedData.VmToId
