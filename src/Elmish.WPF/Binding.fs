@@ -113,7 +113,7 @@ module Binding =
 
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
-      OneWayToSource.id<'model>
+      OneWayToSource.id
       |> BindingData.mapMsg unbox
       |> createBinding
 
