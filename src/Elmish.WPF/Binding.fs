@@ -90,7 +90,7 @@ module Binding =
 
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
-      OneWay.id<'msg>
+      OneWay.id
       |> BindingData.mapModel box
       |> createBinding
 
