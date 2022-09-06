@@ -555,7 +555,8 @@ module internal BindingData =
         mGetModel
         mGetBindings
         mToMsg
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) =
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>)
+        : SubModelData<'model,'msg,'bindingModel,'bindingMsg,'vm> =
       { d with GetModel = mGetModel d.GetModel
                CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg }
