@@ -90,7 +90,7 @@ module Binding =
 
     /// Elemental instance of a one-way binding.
     let id<'a, 'msg> : string -> Binding<'a, 'msg> =
-      BindingData.OneWay.id<'msg>
+      OneWay.id
       |> BindingData.mapModel box
       |> createBinding
 
@@ -99,21 +99,21 @@ module Binding =
     /// a <c>null</c> value in the view.
     let opt<'a, 'msg> : string -> Binding<'a option, 'msg> =
       id<obj, 'msg>
-      >> mapModel BindingData.Option.box
+      >> mapModel Option.box
 
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
     let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg> =
       id<obj, 'msg>
-      >> mapModel BindingData.ValueOption.box
+      >> mapModel ValueOption.box
 
 
   module OneWayToSource =
 
     /// Elemental instance of a one-way-to-source binding.
     let id<'model, 'a> : string -> Binding<'model, 'a> =
-      BindingData.OneWayToSource.id<'model>
+      OneWayToSource.id
       |> BindingData.mapMsg unbox
       |> createBinding
 
@@ -122,21 +122,21 @@ module Binding =
     /// a <c>null</c> value in the view.
     let vopt<'model, 'a> : string -> Binding<'model, 'a voption> =
       id<'model, obj>
-      >> mapMsg BindingData.ValueOption.unbox
+      >> mapMsg ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
     let opt<'model, 'a> : string -> Binding<'model, 'a option> =
       id<'model, obj>
-      >> mapMsg BindingData.Option.unbox
+      >> mapMsg Option.unbox
 
 
   module TwoWay =
 
     /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a> =
-      BindingData.TwoWay.id
+      TwoWay.id
       |> BindingData.mapModel box
       |> BindingData.mapMsg unbox
       |> createBinding
@@ -146,16 +146,16 @@ module Binding =
     /// a <c>null</c> value in the view.
     let vopt<'a> : string -> Binding<'a voption, 'a voption> =
       id<obj>
-      >> mapModel BindingData.ValueOption.box
-      >> mapMsg BindingData.ValueOption.unbox
+      >> mapModel ValueOption.box
+      >> mapMsg ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
     let opt<'a> : string -> Binding<'a option, 'a option> =
       id<obj>
-      >> mapModel BindingData.Option.box
-      >> mapMsg BindingData.Option.unbox
+      >> mapModel Option.box
+      >> mapMsg Option.unbox
 
 
   module SubModelSelectedItem =
@@ -174,7 +174,7 @@ module Binding =
     /// throw at runtime if the inferred <c>'id</c> type does not match the
     /// actual ID type used in that binding.
     let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption> =
-      BindingData.SubModelSelectedItem.create subModelSeqBindingName
+      SubModelSelectedItem.create subModelSeqBindingName
       |> createBinding
       >> mapModel (ValueOption.map box)
       >> mapMsg (ValueOption.map unbox)
@@ -201,7 +201,7 @@ module Binding =
   module Cmd =
 
     let internal createWithParam exec canExec autoRequery =
-      BindingData.Cmd.createWithParam exec canExec autoRequery
+      Cmd.createWithParam exec canExec autoRequery
       |> createBinding
 
     let internal create exec canExec =
@@ -215,7 +215,7 @@ module Binding =
   module OneWaySeq =
 
     let internal create get itemEquals getId =
-      BindingData.OneWaySeq.create itemEquals getId
+      OneWaySeq.create itemEquals getId
       |> BindingData.mapModel get
       |> createBinding
 
@@ -229,7 +229,7 @@ module Binding =
     /// <param name="bindings">Returns the bindings for the sub-model.</param>
     let vopt (bindings: unit -> Binding<'model, 'msg> list)
         : string -> Binding<'model voption, 'msg> =
-      BindingData.SubModel.create
+      SubModel.create
         (fun args -> DynamicViewModel<'model, 'msg>(args, bindings ()))
         (fun (vm, m) -> vm.UpdateModel(m))
       |> createBinding
@@ -272,21 +272,21 @@ module Binding =
   module SubModelWin =
 
     let internal create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested =
-      BindingData.SubModelWin.create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested
+      SubModelWin.create getState createViewModel updateViewModel toMsg getWindow isModal onCloseRequested
       |> createBinding
 
 
   module SubModelSeqUnkeyed =
 
     let internal create createViewModel updateViewModel =
-      BindingData.SubModelSeqUnkeyed.create createViewModel updateViewModel
+      SubModelSeqUnkeyed.create createViewModel updateViewModel
       |> createBinding
 
 
   module SubModelSeqKeyed =
 
     let internal create createViewModel updateViewModel bmToId vmToId =
-      BindingData.SubModelSeqKeyed.create createViewModel updateViewModel bmToId vmToId
+      SubModelSeqKeyed.create createViewModel updateViewModel bmToId vmToId
       |> createBinding
 
 

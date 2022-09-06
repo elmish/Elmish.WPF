@@ -236,7 +236,7 @@ type FirstValidationErrors() =
 
 type FuncsFromSubModelSeqKeyed() =
 
-  member _.Base(binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base(binding: BaseVmBinding<'model, 'msg>) : SelectedItemBinding<'a, 'b, obj, obj> option =
     match binding with
     | SubModelSeqKeyed b ->
       { VmToId = b.SubModelSeqKeyedData.VmToId
@@ -693,7 +693,7 @@ type Set(value: obj) =
         // UpdateModel changes the model,
         // but Set only dispatches a message,
         // so don't clear the cache here
-        this.Recursive(model, b.Binding)
-    | Validatation b -> this.Recursive(model, b.Binding)
-    | Lazy b -> this.Recursive(b.Get model, b.Binding)
-    | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
+        this.Recursive<'model, 'msg>(model, b.Binding)
+    | Validatation b -> this.Recursive<'model, 'msg>(model, b.Binding)
+    | Lazy b -> this.Recursive<obj, obj>(b.Get model, b.Binding)
+    | AlterMsgStream b -> this.Recursive<obj, obj>(b.Get model, b.Binding)
