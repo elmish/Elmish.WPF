@@ -12,7 +12,7 @@ open BindingVmHelpers
 type Binding<'model, 'msg> =
   internal
     { Name: string
-      Data: BindingData<'model, 'msg> }
+      Data: BindingData<'model, 'msg, obj> }
 
 
 [<AutoOpen>]

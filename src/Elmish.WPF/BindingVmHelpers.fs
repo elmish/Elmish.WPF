@@ -204,12 +204,12 @@ and VmBinding<'model, 'msg> =
 
 type SubModelSelectedItemLast() =
 
-  member _.Base(data: BaseBindingData<'model, 'msg>) : int =
+  member _.Base(data: BaseBindingData<'model, 'msg, obj>) : int =
     match data with
     | SubModelSelectedItemData _ -> 1
     | _ -> 0
 
-  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg>) : int =
+  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg, obj>) : int =
     match data with
     | BaseBindingData d -> this.Base d
     | CachingData d -> this.Recursive d
@@ -217,7 +217,7 @@ type SubModelSelectedItemLast() =
     | LazyData d -> this.Recursive d.BindingData
     | AlterMsgStreamData d -> this.Recursive d.BindingData
 
-  member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
+  member this.CompareBindingDatas() : BindingData<'model, 'msg, obj> -> BindingData<'model, 'msg, obj> -> int =
     fun a b -> this.Recursive(a) - this.Recursive(b)
 
 
@@ -273,7 +273,7 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BaseBindingData<'model, 'msg>)
+       binding: BaseBindingData<'model, 'msg, obj>)
       : BaseVmBinding<'model, 'msg> option =
     match binding with
       | OneWayData d ->
@@ -396,7 +396,7 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BindingData<'model, 'msg>)
+       binding: BindingData<'model, 'msg, obj>)
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
