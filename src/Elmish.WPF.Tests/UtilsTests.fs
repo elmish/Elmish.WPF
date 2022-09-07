@@ -114,6 +114,7 @@ module ValueOption =
       testNonNull GenX.auto<obj>
       testNonNull GenX.auto<string>
       testNonNull GenX.auto<int>
+      testNonNull GenX.auto<bool>
 
     let testNullForNullable<'a when 'a : equality> () =
       test <@ Ok Unchecked.defaultof<'a> = ValueOption.toNull<'a> ValueNone @>
@@ -123,13 +124,16 @@ module ValueOption =
       testNullForNullable<obj> ()
       testNullForNullable<string> ()
       testNullForNullable<Nullable<int>> ()
+      testNullForNullable<Nullable<bool>> ()
 
     let testNullForNonNullable<'a when 'a : equality> () =
-      test <@ Error ValueOption.ToNullError.ValueCannotBeNull = ValueOption.toNull<'a> ValueNone @>
+      let expected = typeof<'a>.Name |> ValueOption.ToNullError.ValueCannotBeNull |> Error
+      test <@ expected = ValueOption.toNull<'a> ValueNone @>
 
     [<Fact>]
     let ``toNull returns ValueConnotBeNull Error when given ValueNone for nonnullable type`` () =
       testNullForNonNullable<int> ()
+      testNullForNonNullable<bool> ()
 
 
   module ofNull =

@@ -70,7 +70,7 @@ module ValueOption =
 
   [<RequireQualifiedAccess>]
   type ToNullError =
-    | ValueCannotBeNull
+    | ValueCannotBeNull of string
 
   let ofNull<'a> (x: 'a) =
     match box x with
@@ -83,7 +83,7 @@ module ValueOption =
       if box Unchecked.defaultof<'a> = null then
         null |> unbox<'a> |> Ok
       else
-        ToNullError.ValueCannotBeNull |> Error
+        typeof<'a>.Name |> ToNullError.ValueCannotBeNull |> Error
 
 
 [<RequireQualifiedAccess>]
