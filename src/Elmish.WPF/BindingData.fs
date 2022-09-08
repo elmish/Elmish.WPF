@@ -467,7 +467,7 @@ module BindingData =
 
   module Cmd =
 
-    let createWithParam exec canExec autoRequery : BindingData<'model,'msg, 't> =
+    let createWithParam exec canExec autoRequery : BindingData<'model, 'msg, 't> =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
