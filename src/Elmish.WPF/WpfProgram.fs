@@ -17,6 +17,8 @@ type WpfProgram<'model, 'msg, 'viewModel> =
     PerformanceLogThreshold: int
   }
 
+type WpfProgram<'model, 'msg> = WpfProgram<'model, 'msg, obj>
+
 
 [<RequireQualifiedAccess>]
 module WpfProgram =
