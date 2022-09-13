@@ -31,6 +31,7 @@ module InOutModule =
       | InOut.In  msg -> msg |> f
       | InOut.Out msg -> msg |> g
 
-    let map f g = cata (f >> InOut.In) (g >> InOut.Out)
-    let mapIn  f = map f id
-    let mapOut f = map id f
+    // Unused code
+    //let map f g = cata (f >> InOut.In) (g >> InOut.Out)
+    //let mapIn  f = map f id
+    //let mapOut f = map id f
