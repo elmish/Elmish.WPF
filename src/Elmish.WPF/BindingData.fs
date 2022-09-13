@@ -1,4 +1,5 @@
-namespace Elmish.WPF
+[<AutoOpen>]
+module internal Elmish.WPF.BindingData
 
 open System.Collections.ObjectModel
 open System.Windows
@@ -6,7 +7,7 @@ open System.Windows
 open Elmish
 
 
-module internal Helper =
+module Helper =
 
   let mapDispatch
       (getCurrentModel: unit -> 'model)
@@ -16,21 +17,21 @@ module internal Helper =
     fun bMsg -> getCurrentModel () |> set bMsg |> dispatch
 
 
-type internal OneWayData<'model, 'a> =
+type OneWayData<'model, 'a> =
   { Get: 'model -> 'a }
 
 
-type internal OneWayToSourceData<'model, 'msg, 'a> =
+type OneWayToSourceData<'model, 'msg, 'a> =
   { Set: 'a -> 'model -> 'msg }
 
 
-type internal OneWaySeqData<'model, 'a, 'id when 'id : equality> =
+type OneWaySeqData<'model, 'a, 'aCollection, 'id when 'id : equality> =
   { Get: 'model -> 'a seq
-    CreateCollection: 'a seq -> CollectionTarget<'a>
+    CreateCollection: 'a seq -> CollectionTarget<'a, 'aCollection>
     GetId: 'a -> 'id
     ItemEquals: 'a -> 'a -> bool }
 
-  member d.Merge(values: CollectionTarget<'a>, newModel: 'model) =
+  member d.Merge(values: CollectionTarget<'a, 'aCollection>, newModel: 'model) =
     let create v _ = v
     let update oldVal newVal oldIdx =
       if not (d.ItemEquals newVal oldVal) then
@@ -39,25 +40,25 @@ type internal OneWaySeqData<'model, 'a, 'id when 'id : equality> =
     Merge.keyed d.GetId d.GetId create update values newVals
 
 
-type internal TwoWayData<'model, 'msg, 'a> =
+type TwoWayData<'model, 'msg, 'a> =
   { Get: 'model -> 'a
     Set: 'a -> 'model -> 'msg }
 
 
-type internal CmdData<'model, 'msg> = {
+type CmdData<'model, 'msg> = {
   Exec: obj -> 'model -> 'msg voption
   CanExec: obj -> 'model -> bool
   AutoRequery: bool
 }
 
 
-type internal SubModelSelectedItemData<'model, 'msg, 'id> =
+type SubModelSelectedItemData<'model, 'msg, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> 'msg
     SubModelSeqBindingName: string }
 
 
-type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+type SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   GetModel: 'model -> 'bindingModel voption
   CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
   UpdateViewModel: 'vm * 'bindingModel -> unit
@@ -65,7 +66,7 @@ type internal SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 }
 
 
-and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+and SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   GetState: 'model -> WindowState<'bindingModel>
   CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
   UpdateViewModel: 'vm * 'bindingModel -> unit
@@ -76,18 +77,18 @@ and internal SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 }
 
 
-and internal SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> =
+and SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> =
   { GetModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
-    CreateCollection: 'vm seq -> CollectionTarget<'vm>
+    CreateCollection: 'vm seq -> CollectionTarget<'vm, 'vmCollection>
     UpdateViewModel: 'vm * 'bindingModel -> unit
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
 
 
-and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
+and SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality> =
   { GetSubModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
-    CreateCollection: 'vm seq -> CollectionTarget<'vm>
+    CreateCollection: 'vm seq -> CollectionTarget<'vm, 'vmCollection>
     UpdateViewModel: 'vm * 'bindingModel -> unit
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
     BmToId: 'bindingModel -> 'id
@@ -96,19 +97,19 @@ and internal SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm,
   member d.MergeKeyed
       (create: 'bindingModel -> 'id -> 'vm,
        update: 'vm -> 'bindingModel -> unit,
-       values: CollectionTarget<'vm>,
+       values: CollectionTarget<'vm, 'vmCollection>,
        newSubModels: 'bindingModel []) =
     let update vm bm _ = update vm bm
     Merge.keyed d.BmToId d.VmToId create update values newSubModels
 
 
-and internal ValidationData<'model, 'msg> =
-  { BindingData: BindingData<'model, 'msg>
+and ValidationData<'model, 'msg, 't> =
+  { BindingData: BindingData<'model, 'msg, 't>
     Validate: 'model -> string list }
 
 
-and internal LazyData<'model, 'msg, 'bindingModel, 'bindingMsg> =
-  { BindingData: BindingData<'bindingModel, 'bindingMsg>
+and LazyData<'model, 'msg, 'bindingModel, 'bindingMsg, 't> =
+  { BindingData: BindingData<'bindingModel, 'bindingMsg, 't>
     Get: 'model -> 'bindingModel
     Set: 'bindingMsg -> 'model -> 'msg
     Equals: 'bindingModel -> 'bindingModel -> bool }
@@ -120,8 +121,8 @@ and internal LazyData<'model, 'msg, 'bindingModel, 'bindingMsg> =
     Helper.mapDispatch getCurrentModel this.Set dispatch
 
 
-and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg> =
- { BindingData: BindingData<'bindingModel, 'bindingMsg>
+and AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg, 't> =
+ { BindingData: BindingData<'bindingModel, 'bindingMsg, 't>
    Get: 'model -> 'bindingModel
    Set: 'dispatchMsg -> 'model -> 'msg
    AlterMsgStream: ('dispatchMsg -> unit) -> 'bindingMsg -> unit }
@@ -134,29 +135,29 @@ and internal AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispa
     |> this.AlterMsgStream
 
 
-and internal BaseBindingData<'model, 'msg> =
-  | OneWayData of OneWayData<'model, obj>
-  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, obj>
-  | OneWaySeqData of OneWaySeqData<'model, obj, obj>
-  | TwoWayData of TwoWayData<'model, 'msg, obj>
+and BaseBindingData<'model, 'msg, 't> =
+  | OneWayData of OneWayData<'model, 't>
+  | OneWayToSourceData of OneWayToSourceData<'model, 'msg, 't>
+  | OneWaySeqData of OneWaySeqData<'model, obj, 't, obj>
+  | TwoWayData of TwoWayData<'model, 'msg, 't>
   | CmdData of CmdData<'model, 'msg>
-  | SubModelData of SubModelData<'model, 'msg, obj, obj, obj>
-  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, obj>
-  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj, obj>
-  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj, obj>
+  | SubModelData of SubModelData<'model, 'msg, obj, obj, 't>
+  | SubModelWinData of SubModelWinData<'model, 'msg, obj, obj, 't>
+  | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, obj, obj, obj, 't>
+  | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, obj, obj, obj, 't, obj>
   | SubModelSelectedItemData of SubModelSelectedItemData<'model, 'msg, obj>
 
 
-and internal BindingData<'model, 'msg> =
-  | BaseBindingData of BaseBindingData<'model, 'msg>
-  | CachingData of BindingData<'model, 'msg>
-  | ValidationData of ValidationData<'model, 'msg>
-  | LazyData of LazyData<'model, 'msg, obj, obj>
-  | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj>
+and BindingData<'model, 'msg, 't> =
+  | BaseBindingData of BaseBindingData<'model, 'msg, 't>
+  | CachingData of BindingData<'model, 'msg, 't>
+  | ValidationData of ValidationData<'model, 'msg, 't>
+  | LazyData of LazyData<'model, 'msg, obj, obj, 't>
+  | AlterMsgStreamData of AlterMsgStreamData<'model, 'msg, obj, obj, obj, 't>
 
 
 
-module internal BindingData =
+module BindingData =
 
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
@@ -328,8 +329,8 @@ module internal BindingData =
       } |> LazyData
   let alterMsgStream
       (alteration: ('dispatchMsg -> unit) -> 'bindingMsg -> unit)
-      (b: BindingData<'bindingModel, 'bindingMsg>)
-      : BindingData<'model, 'msg> =
+      (b: BindingData<'bindingModel, 'bindingMsg, 't>)
+      : BindingData<'model, 'msg, 't> =
     { BindingData = b |> mapModel unbox |> mapMsg box
       Get = box
       Set = fun (dMsg: obj) _ -> unbox dMsg
@@ -339,7 +340,7 @@ module internal BindingData =
           let g = alteration f'
           unbox >> g
     } |> AlterMsgStreamData
-  let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg>) =
+  let addSticky (predicate: 'model -> bool) (binding: BindingData<'model, 'msg, 't>) =
     let mutable stickyModel = None
     let f newModel =
       if predicate newModel then
@@ -363,7 +364,7 @@ module internal BindingData =
 
   module OneWay =
 
-    let id<'msg> : BindingData<obj, 'msg> =
+    let id<'a, 'msg> : BindingData<'a, 'msg, 'a> =
       { Get = id }
       |> OneWayData
       |> BaseBindingData
@@ -381,7 +382,7 @@ module internal BindingData =
 
   module OneWayToSource =
 
-    let id<'model> : BindingData<'model, obj> =
+    let id<'model, 'a> : BindingData<'model, 'a, 'a> =
       { OneWayToSourceData.Set = Func2.id1 }
       |> OneWayToSourceData
       |> BaseBindingData
@@ -402,15 +403,16 @@ module internal BindingData =
     let mapMinorTypes
         (outMapA: 'a -> 'a0)
         (outMapId: 'id -> 'id0)
+        (outMapACollection: 'aCollection -> 'aCollection0)
         (inMapA: 'a0 -> 'a)
-        (d: OneWaySeqData<'model, 'a, 'id>) = {
+        (d: OneWaySeqData<'model, 'a, 'aCollection, 'id>) = {
       Get = d.Get >> Seq.map outMapA
-      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.map outMapA inMapA
+      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.map outMapA outMapACollection inMapA
       GetId = inMapA >> d.GetId >> outMapId
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox
 
     let create itemEquals getId =
       { Get = (fun x -> upcast x)
@@ -425,7 +427,7 @@ module internal BindingData =
         mGet
         mGetId
         mItemEquals
-        (d: OneWaySeqData<'model, 'a, 'id>) =
+        (d: OneWaySeqData<'model, 'a, 'aCollection, 'id>) =
       { d with Get = mGet d.Get
                GetId = mGetId d.GetId
                ItemEquals = mItemEquals d.ItemEquals }
@@ -442,7 +444,7 @@ module internal BindingData =
 
   module TwoWay =
 
-    let id : BindingData<obj, obj> =
+    let id<'a> : BindingData<'a, 'a, 'a> =
       { TwoWayData.Get = id
         Set = Func2.id1 }
       |> TwoWayData
@@ -465,7 +467,7 @@ module internal BindingData =
 
   module Cmd =
 
-    let createWithParam exec canExec autoRequery =
+    let createWithParam exec canExec autoRequery : BindingData<'model, 'msg, 't> =
       { Exec = exec
         CanExec = canExec
         AutoRequery = autoRequery }
@@ -554,7 +556,8 @@ module internal BindingData =
         mGetModel
         mGetBindings
         mToMsg
-        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) =
+        (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>)
+        : SubModelData<'model,'msg,'bindingModel,'bindingMsg,'vm> =
       { d with GetModel = mGetModel d.GetModel
                CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg }
@@ -633,18 +636,19 @@ module internal BindingData =
         (outMapBindingModel: 'bindingModel -> 'bindingModel0)
         (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
         (outMapBindingViewModel: 'vm -> 'vm0)
+        (outMapBindingVmCollection: 'vmCollection -> 'vmCollection0)
         (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
         (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
         (inMapBindingViewModel: 'vm0 -> 'vm)
-        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) = {
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
       CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
+      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel outMapBindingVmCollection inMapBindingViewModel
       UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (inMapBindingViewModel vm, inMapBindingModel m)
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
-    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModels = (fun x -> upcast x)
@@ -660,7 +664,7 @@ module internal BindingData =
         mGetModels
         mGetBindings
         mToMsg
-        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) =
+        (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>) =
       { d with GetModels = mGetModels d.GetModels
                CreateViewModel = mGetBindings d.CreateViewModel
                ToMsg = mToMsg d.ToMsg }
@@ -681,22 +685,23 @@ module internal BindingData =
           (outMapBindingModel: 'bindingModel -> 'bindingModel0)
           (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
           (outMapBindingViewModel: 'vm -> 'vm0)
+          (outMapBindingVmCollection: 'vmCollection -> 'vmCollection0)
           (outMapId: 'id -> 'id0)
           (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
           (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
           (inMapBindingViewModel: 'vm0 -> 'vm)
           (inMapId: 'id0 -> 'id)
-          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>) = {
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel inMapBindingViewModel
+        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.map outMapBindingViewModel outMapBindingVmCollection inMapBindingViewModel
         UpdateViewModel = fun (vm, m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         BmToId = inMapBindingModel >> d.BmToId >> outMapId
         VmToId = fun vm -> vm |> inMapBindingViewModel |> d.VmToId |> outMapId
       }
 
-      let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
+      let boxMinorTypes d = d |> mapMinorTypes box box box box box unbox unbox unbox unbox
 
       let create createViewModel updateViewModel bmToId vmToId =
         { GetSubModels = (fun x -> upcast x)
@@ -715,7 +720,7 @@ module internal BindingData =
           mGetBindings
           mToMsg
           mGetId
-          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>) =
+          (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>) =
         { d with GetSubModels = mGetSubModels d.GetSubModels
                  CreateViewModel = mGetBindings d.CreateViewModel
                  ToMsg = mToMsg d.ToMsg
@@ -737,7 +742,7 @@ module internal BindingData =
 
     let private mapFunctions
         mValidate
-        (d: ValidationData<'model, 'msg>) =
+        (d: ValidationData<'model, 'msg, 't>) =
       { d with Validate = mValidate d.Validate }
 
     let measureFunctions
@@ -751,7 +756,7 @@ module internal BindingData =
         mGet
         mSet
         mEquals
-        (d: LazyData<'model, 'msg, 'bindingModel, 'bindingMsg>) =
+        (d: LazyData<'model, 'msg, 'bindingModel, 'bindingMsg, 't>) =
       { d with Get = mGet d.Get
                Set = mSet d.Set
                Equals = mEquals d.Equals }

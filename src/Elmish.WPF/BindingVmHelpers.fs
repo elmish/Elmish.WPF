@@ -94,9 +94,9 @@ type OneWayToSourceBinding<'model, 'a> = {
   Set: 'a -> 'model -> unit
 }
 
-type OneWaySeqBinding<'model, 'a, 'id when 'id : equality> = {
-  OneWaySeqData: OneWaySeqData<'model, 'a, 'id>
-  Values: CollectionTarget<'a>
+type OneWaySeqBinding<'model, 'a, 'aCollection, 'id when 'id : equality> = {
+  OneWaySeqData: OneWaySeqData<'model, 'a, 'aCollection, 'id>
+  Values: CollectionTarget<'a, 'aCollection>
 }
 
 type TwoWayBinding<'model, 'a> = {
@@ -116,14 +116,14 @@ type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   VmWinState: WindowState<'vm> ref
 }
 
-type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
-  Vms: CollectionTarget<'vm>
+type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> = {
+  SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>
+  Vms: CollectionTarget<'vm, 'vmCollection>
 }
 
-type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id when 'id : equality> =
-  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id>
-    Vms: CollectionTarget<'vm> }
+type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality> =
+  { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>
+    Vms: CollectionTarget<'vm, 'vmCollection> }
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
@@ -139,10 +139,10 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 
     SubModelSeqBindingName: string
     SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> }
 
-  member b.TryGetMember (model: 'model) =
+  member b.TypedGet(model: 'model) =
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
 
-  member b.TrySetMember(model: 'model, vm: 'vm voption) =
+  member b.TypedSet(model: 'model, vm: 'vm voption) =
     let id = vm |> ValueOption.map b.SelectedItemBinding.VmToId
     b.Set id model
 
@@ -150,13 +150,13 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 
 type BaseVmBinding<'model, 'msg> =
   | OneWay of OneWayBinding<'model, obj>
   | OneWayToSource of OneWayToSourceBinding<'model, obj>
-  | OneWaySeq of OneWaySeqBinding<'model, obj, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, obj, obj, obj>
   | TwoWay of TwoWayBinding<'model, obj>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, obj, obj, obj>
   | SubModelWin of SubModelWinBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj>
-  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, obj, obj, obj, obj>
+  | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, obj, obj, obj, obj, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, obj, obj, obj, obj>
 
 
@@ -204,12 +204,12 @@ and VmBinding<'model, 'msg> =
 
 type SubModelSelectedItemLast() =
 
-  member _.Base(data: BaseBindingData<'model, 'msg>) : int =
+  member _.Base(data: BaseBindingData<'model, 'msg, obj>) : int =
     match data with
     | SubModelSelectedItemData _ -> 1
     | _ -> 0
 
-  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg>) : int =
+  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg, obj>) : int =
     match data with
     | BaseBindingData d -> this.Base d
     | CachingData d -> this.Recursive d
@@ -217,7 +217,7 @@ type SubModelSelectedItemLast() =
     | LazyData d -> this.Recursive d.BindingData
     | AlterMsgStreamData d -> this.Recursive d.BindingData
 
-  member this.CompareBindingDatas() : BindingData<'model, 'msg> -> BindingData<'model, 'msg> -> int =
+  member this.CompareBindingDatas() : BindingData<'model, 'msg, obj> -> BindingData<'model, 'msg, obj> -> int =
     fun a b -> this.Recursive(a) - this.Recursive(b)
 
 
@@ -236,10 +236,12 @@ type FirstValidationErrors() =
 
 type FuncsFromSubModelSeqKeyed() =
 
-  member _.Base(binding: BaseVmBinding<'model, 'msg>) =
+  member _.Base(binding: BaseVmBinding<'model, 'msg>) : SelectedItemBinding<'a, 'b, obj, obj> option =
     match binding with
-    | SubModelSeqKeyed b -> Some { FromId = b.FromId
-                                   VmToId = b.SubModelSeqKeyedData.VmToId }
+    | SubModelSeqKeyed b ->
+      { VmToId = b.SubModelSeqKeyedData.VmToId
+        FromId = b.FromId }
+      |> Some
     | _ -> None
 
   member this.Recursive<'model, 'msg>
@@ -271,7 +273,7 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BaseBindingData<'model, 'msg>)
+       binding: BaseBindingData<'model, 'msg, obj>)
       : BaseVmBinding<'model, 'msg> option =
     match binding with
       | OneWayData d ->
@@ -394,7 +396,7 @@ type Initialize
       (initialModel: 'model,
        dispatch: 'msg -> unit,
        getCurrentModel: unit -> 'model,
-       binding: BindingData<'model, 'msg>)
+       binding: BindingData<'model, 'msg, obj>)
       : VmBinding<'model, 'msg> option =
     option {
       match binding with
@@ -618,7 +620,7 @@ type Get(nameChain: string) =
     | OneWay { OneWayData = d } -> d.Get model |> Ok
     | TwoWay b -> b.Get model |> Ok
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
-    | OneWaySeq { Values = vals } -> vals.BoxedCollection() |> Ok
+    | OneWaySeq { Values = vals } -> vals.GetCollection () |> Ok
     | Cmd cmd -> cmd |> box |> Ok
     | SubModel { Vm = vm } -> vm.Value |> ValueOption.toObj |> box |> Ok
     | SubModelWin { VmWinState = vm } ->
@@ -628,9 +630,9 @@ type Get(nameChain: string) =
         |> ValueOption.toObj
         |> Ok
     | SubModelSeqUnkeyed { Vms = vms }
-    | SubModelSeqKeyed { Vms = vms } -> vms.BoxedCollection () |> Ok
+    | SubModelSeqKeyed { Vms = vms } -> vms.GetCollection () |> Ok
     | SubModelSelectedItem b ->
-        b.TryGetMember model
+        b.TypedGet model
         |> function
           | ValueNone -> ValueNone |> Ok // deselecting successful
           | ValueSome (id, mVm) ->
@@ -673,7 +675,7 @@ type Set(value: obj) =
         b.Set value model
         true
     | SubModelSelectedItem b ->
-        b.TrySetMember(model, ValueOption.ofObj value)
+        b.TypedSet(model, ValueOption.ofObj value)
         true
     | OneWay _
     | OneWaySeq _
@@ -691,7 +693,7 @@ type Set(value: obj) =
         // UpdateModel changes the model,
         // but Set only dispatches a message,
         // so don't clear the cache here
-        this.Recursive(model, b.Binding)
-    | Validatation b -> this.Recursive(model, b.Binding)
-    | Lazy b -> this.Recursive(b.Get model, b.Binding)
-    | AlterMsgStream b -> this.Recursive(b.Get model, b.Binding)
+        this.Recursive<'model, 'msg>(model, b.Binding)
+    | Validatation b -> this.Recursive<'model, 'msg>(model, b.Binding)
+    | Lazy b -> this.Recursive<obj, obj>(b.Get model, b.Binding)
+    | AlterMsgStream b -> this.Recursive<obj, obj>(b.Get model, b.Binding)
