@@ -617,7 +617,7 @@ type Update
           if b.Equals currentModel' newModel' then
             []
           else
-            this.Recursive((ValueSome currentModel'), getCurrentModel >> b.Get, newModel', b.Dispatch, b.Binding)
+            this.Recursive(ValueSome currentModel', getCurrentModel >> b.Get, newModel', b.Dispatch, b.Binding)
       | AlterMsgStream b ->
           this.Recursive(currentModel |> ValueOption.map b.Get, getCurrentModel >> b.Get, b.Get newModel, b.Dispatch, b.Binding)
 
