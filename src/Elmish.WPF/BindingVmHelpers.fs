@@ -181,14 +181,12 @@ and ValidationBinding<'model, 'msg> = {
 and LazyBinding<'model, 'msg, 'bindingModel, 'bindingMsg> = {
   Binding: VmBinding<'bindingModel, 'bindingMsg>
   Get: 'model -> 'bindingModel
-  Dispatch: 'bindingMsg -> unit
   Equals: 'bindingModel -> 'bindingModel -> bool
 }
 
 and AlterMsgStreamBinding<'model, 'bindingModel, 'bindingMsg> = {
   Binding: VmBinding<'bindingModel, 'bindingMsg>
   Get: 'model -> 'bindingModel
-  Dispatch: 'bindingMsg -> unit
 }
 
 /// Represents all necessary data used in an active binding.
@@ -436,7 +434,6 @@ type Initialize
           let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
-                   Dispatch = dispatch'
                    Equals = d.Equals
                  } |> Lazy
       | AlterMsgStreamData d ->
@@ -446,7 +443,6 @@ type Initialize
           let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
-                   Dispatch = dispatch'
                  } |> AlterMsgStream
     }
 
