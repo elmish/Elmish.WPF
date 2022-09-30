@@ -46,7 +46,7 @@ Table of contents
   + [Sub-model window bindings](#sub-model-window-bindings)
   + [Sub-model sequence bindings](#sub-model-sequence-bindings)
   + [Other bindings](#other-bindings)
-    - [`subModelSeqSelectedItem`](#submodelseqselecteditem)
+    - [`subModelSelectedItem`](#submodelselecteditem)
     - [`oneWaySeq`](#onewayseq)
   + [Lazy bindings](#lazy-bindings)
   + [Mapping bindings](#mapping-bindings)
@@ -675,7 +675,7 @@ Finally, in the “level 3” overload that allows you to transform the model us
 
 There are two special bindings not yet covered.
 
-#### `subModelSeqSelectedItem`
+#### `subModelSelectedItem`
 
 *Relevant sample: SubModelSelectedItem - ([XAML views](src/Samples/SubModelSelectedItem) and [F# core](src/Samples/SubModelSelectedItem.Core))*
 
