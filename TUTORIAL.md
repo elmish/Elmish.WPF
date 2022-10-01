@@ -111,7 +111,7 @@ let update (msg: Msg) (model: Model) : Model =
   match msg with
   | Increment -> { model with Count = model.Count + model.StepSize}
   | Decrement -> { model with Count = model.Count - model.StepSize}
-  | SetStepSize i -> { model with StepSize = i }  
+  | SetStepSize i -> { model with StepSize = i }
 ```
 
 ### View in standard MVU (not Elmish.WPF)
@@ -283,7 +283,7 @@ module Child =
   type Model = { ... }
   type Msg = ...
   let update msg model = ...
-  
+
 module Parent =
 
   type Model = {
@@ -367,7 +367,7 @@ The Elmish.WPF bindings can be categorized into the following types:
 - **One-way bindings**, for when you want to bind to a simple value.
 - **Two-way bindings**, for when you want to bind to a simple value as well as update this value by dispatching a message. Used for inputs, checkboxes, sliders, etc. Can optionally support validation (e.g. provide an error message using `INotifyDataErrorInfo` that can be displayed when an input is not valid).
 - **Command bindings**, for when you want a message to be dispatched when something happens (e.g. a button is clicked).
-- **Sub-model bindings**, for when you want to bind to a complex object that has its own bindings. 
+- **Sub-model bindings**, for when you want to bind to a complex object that has its own bindings.
 - **Sub-model window bindings**, for when you want to control the opening/closing/hiding of new windows.
 - **Sub-model sequence bindings**, for when you want to bind to a collection of complex objects, each of which has its own bindings.
 - **Other bindings** not fitting into the categories above
@@ -495,7 +495,7 @@ In the counter example, we might want to prohibit negative numbers, disabling th
 
 There are several ways to indicate that a command can‘t execute. The `cmdIf` binding has overloads for the following:
 
-- `exec: 'model -> 'msg option`, where the command is disabled if `exec` returns `None` 
+- `exec: 'model -> 'msg option`, where the command is disabled if `exec` returns `None`
 - `exec: 'model -> Result<'msg, _>`, where the command is disabled if `exec` returns `Error`
 - `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to dispatch)
 
@@ -521,7 +521,7 @@ The `subModel` binding has three overloads, increasing in complexity depending o
 
 This is sufficient for many purposes. The overload accepts two parameters:
 
-- `getSubModel: 'model -> 'subModel` to obtain the sub-model 
+- `getSubModel: 'model -> 'subModel` to obtain the sub-model
 - `bindings: unit -> Binding<'model * 'subModel, 'msg> list`, the bindings for the sub-model
 
 In other words, inside the sub-bindings, the model parameter (in each binding) is a tuple with the parent model and the sub-model.
@@ -546,7 +546,7 @@ Note also that the sub-bindings still use the top-level message type. There is n
 
 This overload is just like the first one except it has an additional parameter to transform the message type:
 
-- `getSubModel: 'model -> 'subModel` to obtain the sub-model 
+- `getSubModel: 'model -> 'subModel` to obtain the sub-model
 - `toMsg: 'subMsg -> 'msg` to wrap the child message in a parent message
 - `bindings: unit -> Binding<'model * 'subModel, 'subMsg> list`, the bindings for the sub-model
 
@@ -580,7 +580,7 @@ It’s also nice to have if you simply want to “clean up” or otherwise custo
 
 Compared to the “level 2” overload, it has one additional parameter, `toBindingModel`. All the parameters are:
 
-- `getSubModel: 'model -> 'subModel` to obtain the sub-model 
+- `getSubModel: 'model -> 'subModel` to obtain the sub-model
 - `toBindingModel: ('model * 'subModel) -> 'bindingModel` to transform the default binding model to whatever you want
 - `toMsg: 'bindingMsg -> 'msg` to wrap the message used in the sub-model bindings in a parent message
 - `bindings: unit -> Binding<'bindingModel, 'bindingMsg> list`, the bindings for the sub-model
@@ -749,7 +749,7 @@ type ChildMsg =
 
 type ParentModel =
   { Child: ChildModel }
-  
+
 type ParentMsg =
   | ChildMsg of ChildMsg
 ```
