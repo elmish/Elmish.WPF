@@ -649,14 +649,14 @@ type Get<'t>(nameChain: string) =
           | ValueNone -> ValueNone |> Ok // deselecting successful
           | ValueSome (id, mVm) ->
               match mVm with
-              | Some vm -> (id, vm) |> ValueSome |> Ok // selecting successful
+              | Some vm -> vm |> ValueSome |> Ok // selecting successful
               | None -> // selecting failed
                   { NameChain = nameChain
                     SubModelSeqBindingName = b.SubModelSeqBindingName
                     Id = id.ToString() }
                   |> GetError.SubModelSelectedItem
                   |> Error
-        |> Result.bind (ValueOption.map snd >> ValueOption.toNull >> Result.mapError GetError.ToNullError)
+        |> Result.bind (ValueOption.toNull >> Result.mapError GetError.ToNullError)
 
   member this.Recursive<'model, 'msg>
       (model: 'model,
