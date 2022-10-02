@@ -57,7 +57,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
 
   let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
-    let bindingDict = Dictionary<string, VmBinding<'model, 'msg>>(bindings.Length)
+    let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let getFunctionsForSubModelSelectedItem name =
       bindingDict
       |> Dictionary.tryFind name
@@ -119,6 +119,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
               match e with
               | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
               | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {BindingName}", d.NameChain, d.SubModelSeqBindingName, d.Id, binder.Name)
+              | GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull nonNullTypeName) -> log.LogError("[{BindingNameChain}] TryGetMember FAILED: Binding {BindingName} is null, but type {Type} is non-nullable", nameChain, binder.Name, nonNullTypeName)
               false
         with e ->
           log.LogError(e, "[{BindingNameChain}] TryGetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)

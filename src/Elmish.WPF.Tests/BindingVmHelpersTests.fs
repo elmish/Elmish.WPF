@@ -23,7 +23,6 @@ module Get =
 
       let binding =
         BindingData.OneWay.id
-        |> BindingData.mapModel box
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(expectedModel, ignore, (fun () -> expectedModel), binding)
@@ -54,8 +53,6 @@ module Set =
       let dispatch msg = model.Value <- msg
       let binding =
         BindingData.TwoWay.id
-        |> BindingData.mapModel box
-        |> BindingData.mapMsg unbox
       
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
@@ -86,8 +83,6 @@ module Update =
       let dispatch msg = failwith $"Should not dispatch message {msg}"
       let binding =
         BindingData.TwoWay.id
-        |> BindingData.mapModel box
-        |> BindingData.mapMsg unbox
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(initialModel, dispatch, (fun () -> model.Value), binding)
