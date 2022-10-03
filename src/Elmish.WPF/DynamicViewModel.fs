@@ -38,8 +38,8 @@ type internal ViewModelHelper<'model, 'msg> =
   { GetSender: unit -> obj
     LoggingArgs: LoggingViewModelArgs
     Model: 'model
-    Bindings: IReadOnlyDictionary<string, VmBinding<'model, 'msg, obj>>
-    ValidationErrors: IReadOnlyDictionary<string, string list ref>
+    Bindings: Map<string, VmBinding<'model, 'msg, obj>>
+    ValidationErrors: Map<string, string list ref>
     PropertyChanged: Event<PropertyChangedEventHandler, PropertyChangedEventArgs>
     ErrorsChanged: DelegateEvent<EventHandler<DataErrorsChangedEventArgs>> }
 
@@ -67,7 +67,7 @@ type internal ViewModelHelper<'model, 'msg> =
 
 module internal ViewModelHelper =
 
-  let create getSender args bindings validationErrors ={
+  let create getSender args bindings validationErrors = {
     GetSender = getSender
     LoggingArgs = args.loggingArgs
     Model = args.initialModel
@@ -95,7 +95,7 @@ module internal ViewModelHelper =
     let raiseErrorsChanged name =
       log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
       helper.ErrorsChanged.Trigger([| helper.GetSender (); box <| DataErrorsChangedEventArgs name |])
-    
+
     eventsToRaise
     |> List.iter (function
       | ErrorsChanged name -> raiseErrorsChanged name
@@ -153,8 +153,8 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
           do validationDict.Add(b.Name, errorList)
           return ()
         } |> Option.defaultValue ()
-    (bindingDict    :> IReadOnlyDictionary<_,_>,
-     validationDict :> IReadOnlyDictionary<_,_>)
+    (bindingDict    |> Seq.map (|KeyValue|) |> Map.ofSeq,
+     validationDict |> Seq.map (|KeyValue|) |> Map.ofSeq)
 
   let mutable helper =
     ViewModelHelper.create
