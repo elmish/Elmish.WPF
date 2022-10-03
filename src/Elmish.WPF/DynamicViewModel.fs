@@ -230,7 +230,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
 
 open System.Runtime.CompilerServices
 
-type [<AllowNullLiteral>] internal ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model, 'msg>)
+type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model, 'msg>)
   as this =
 
   let mutable setBindings = Map.empty<String, VmBinding<'model, 'msg, obj>>
