@@ -70,6 +70,16 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
                     None
         | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
                   None
+    let initializeBindingWithValidation binding =
+      option {
+        let! vmBinding =
+          Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem)
+            .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
+        do bindingDict.Add(binding.Name, vmBinding)
+        let! errorList = FirstValidationErrors().Recursive(vmBinding)
+        do validationDict.Add(binding.Name, errorList)
+        return ()
+      } |> Option.defaultValue ()
     let sortedBindings =
       bindings
       |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
@@ -77,15 +87,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        option {
-          let! binding =
-            Initialize(loggingArgs, b.Name, getFunctionsForSubModelSelectedItem)
-              .Recursive(initialModel, dispatch, (fun () -> currentModel), b.Data)
-          do bindingDict.Add(b.Name, binding)
-          let! errorList = FirstValidationErrors().Recursive(binding)
-          do validationDict.Add(b.Name, errorList)
-          return ()
-        } |> Option.defaultValue ()
+        initializeBindingWithValidation b
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
