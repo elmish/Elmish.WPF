@@ -39,7 +39,8 @@ Thanks to JetBrains for sponsoring Elmish.WPF with [OSS licenses](https://www.je
 Recommended resources
 ---------------------
 
-* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex bindings and optimizations.
+* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex optimizations.
+* The [Elmish.WPF binding reference](https://github.com/elmish/Elmish.WPF/blob/master/REFERENCE.md) explains Elmish.WPF's bindings and library functions for modifying bindings.
 * The [Elmish docs site](https://elmish.github.io/elmish) also explains the general MVU architecture and principles.
 * The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
 * Blog posts:
