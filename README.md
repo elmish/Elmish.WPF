@@ -39,7 +39,8 @@ Thanks to JetBrains for sponsoring Elmish.WPF with [OSS licenses](https://www.je
 Recommended resources
 ---------------------
 
-* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex bindings and optimizations.
+* The [Elmish.WPF tutorial](https://github.com/elmish/Elmish.WPF/blob/master/TUTORIAL.md) explains how to use Elmish.WPF, starting with general Elmish/MVU concepts and ending with complex optimizations.
+* The [Elmish.WPF binding reference](https://github.com/elmish/Elmish.WPF/blob/master/REFERENCE.md) explains Elmish.WPF's bindings and library functions for modifying bindings.
 * The [Elmish docs site](https://elmish.github.io/elmish) also explains the general MVU architecture and principles.
 * The [Elmish.WPF samples](https://github.com/elmish/Elmish.WPF/tree/master/src/Samples) provide many concrete usage examples.
 * Blog posts:
@@ -60,12 +61,12 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```fsproj
    <Project Sdk="Microsoft.NET.Sdk">
-     
+
      <PropertyGroup>
        <TargetFramework>net5.0-windows</TargetFramework>  <!-- Or another target framework -->
        <UseWpf>true</UseWpf>
      </PropertyGroup>
-     
+
      <!-- other stuff -->
    ```
 
@@ -83,7 +84,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    type Model =
      { Count: int
        StepSize: int }
-   
+
    let init () =
      { Count = 0
        StepSize = 1 }
@@ -114,7 +115,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```F#
    open Elmish.WPF
-   
+
    let bindings () =
      [
        "CounterValue" |> Binding.oneWay (fun m -> m.Count)
@@ -132,7 +133,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    ```F#
    open Elmish.WPF
-   
+
    let main window =
      Program.mkSimpleWpf init update bindings
      |> Program.runElmishLoop window
@@ -155,13 +156,13 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      {
        this.Activated += StartElmish;
      }
-   
+
      private void StartElmish(object sender, EventArgs e)
      {
        this.Activated -= StartElmish;
        Program.main(MainWindow);
      }
-   
+
    }
    ```
 
