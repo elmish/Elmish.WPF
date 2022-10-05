@@ -23,6 +23,7 @@ Table of contents
   + [Other bindings](#other-bindings)
     - [`subModelSelectedItem`](#submodelselecteditem)
     - [`oneWaySeq`](#onewayseq)
+* [Modifying bindings](#modifying-bindings)
   + [Lazy bindings](#lazy-bindings)
   + [Mapping bindings](#mapping-bindings)
     - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
@@ -383,6 +384,9 @@ The `oneWaySeq` binding has the following parameters:
 If the values are not simple (e.g. not strings or numbers), then you can instead use `subModelSeq` to set up separate bindings for each item. And if the values are not distinct (i.e., can not be uniquely identified in the collection), then Elmish.WPF won’t be able to track which items are moved, and you can’t use this optimization.
 
 Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite is not true.) The `oneWaySeq` binding is slightly simpler than `subModelSeq` if the elements are simple values that can be bound to directly.
+
+Modifying bindings
+----------------
 
 ## Lazy bindings
 
