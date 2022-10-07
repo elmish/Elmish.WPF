@@ -25,6 +25,8 @@ Table of contents
     - [`oneWaySeq`](#onewayseq)
 * [Modifying bindings](#modifying-bindings)
   + [Lazy bindings](#lazy-bindings)
+  + [Lazy updating](#lazy-updating)
+  + [Caching](#caching)
   + [Mapping bindings](#mapping-bindings)
     - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
     - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
@@ -390,11 +392,15 @@ Modifying bindings
 
 ### Lazy bindings
 
-You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`. The difference between these and their non-lazy counterparts is that they have two extra parameters: `equals` and `map `.
+You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map `.
 
-The optimization is done at two levels. The first optimization is for the update process. As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Then, `equals` is used to compare the output of `get` with the previous output of `get`. If `equals` returns `true`, the rest of the update process is skipped entirely. If `equals` returns `false`, the output of `get` is passed to `map`, which may be expensive, and then the binding is updated normally.
+As with the non-lazy bindings, the initial get function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of get passed to map, which may be expensive.
 
-The second optimization is when the UI retrieves the value. The output of `map` is cached, so if the UI attempts to retrieve a value multiple times, `map` is still only called once. Contrast this the non-lazy bindings, where `get` is called each time the value is retrieved by the UI.
+### Lazy updating
+
+For performance optimization, `Binding.addLazy` allows you to add an `equals` parameter to update the viewmodel only when necessary.
+
+`equals` is used to compare the current model with the previous. If equals returns true, the rest of the update process is skipped entirely. If equals returns false, the binding is updated normally.
 
 Elmish.WPF provides two helpers you can often use as the `equals` parameter: `refEq` and `elmEq`.
 
@@ -402,6 +408,12 @@ Elmish.WPF provides two helpers you can often use as the `equals` parameter: `re
 - `elmEq` is a good choice if `get` returns multiple items from the model wrapped inline in a tuple or record. It will compare each member of the `get` return value separately (i.e. each record field, or each tuple item). Reference-typed members will be compared using reference equality, and string members and value-typed members will be compared using structural equality.
 
 You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want structural comparison (note the caveat above however), you can pass `(=)`.
+
+### Caching
+
+For performance optimization, `Binding.addCaching` caches viewmodel values.
+
+Cached bindings store values retrieved using `get`, so if the view tries to get a value that has not yet been updated, the binding will return the previous value rather than calling `get` again. Non-cached bindings call `get` every time.
 
 ### Mapping bindings
 
