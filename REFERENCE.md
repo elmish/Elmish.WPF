@@ -403,7 +403,7 @@ Elmish.WPF provides two helpers you can often use as the `equals` parameter: `re
 
 You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want structural comparison (note the caveat above however), you can pass `(=)`.
 
-### Mapping Bindings
+### Mapping bindings
 
 Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapMsgWithModel`.
 
