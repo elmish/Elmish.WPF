@@ -46,7 +46,7 @@ The Elmish.WPF bindings can be categorized into the following types:
 
 Additionally, there is a section explaining how most dispatching bindings allow you to wrap the dispatcher to support debouncing/throttling etc.
 
-## One-way bindings
+### One-way bindings
 
 *Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
@@ -66,11 +66,11 @@ In XAML, the binding can look like this:
 
 A one-way binding simply accepts a function `get: 'model -> 'a` that retrieves the value to be displayed.
 
-### Binding to option-wrapped values
+#### Binding to option-wrapped values
 
 In F#, it’s common to model missing values using the `Option` type. However, WPF uses `null` and doesn’t know how to handle the F# `Option` type. You could simply convert from `Option` to `null` (or `Nullable<_>`) in the `get` function using `Option.toObj` (or `Option.toNullable`), but this is such a common scenario that Elmish.WPF has a variant of the one-way binding called `oneWayOpt` with this behavior built-in. The `oneWayOpt` binding accepts a function `get: 'model -> 'a option`. If it returns `None`, the UI will receive `null`. If it returns `Some`, the UI will receive the inner value.
 
-## Two-way bindings
+### Two-way bindings
 
 *Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
@@ -109,11 +109,11 @@ It’s common for the `set` function to rely only on the value to be set, not on
 )
 ```
 
-### Binding to option-wrapped values
+#### Binding to option-wrapped values
 
 Just like one-way bindings, there is a variant of the two-way binding for `option`-wrapped values. The `option` wrapping is used in both `get` and `set`. Elmish.WPF will convert both ways between a possibly `null` raw value and an `option`-wrapped value.
 
-### Using validation with two-way bindings
+#### Using validation with two-way bindings
 
 *Relevant sample: Validation - ([XAML views](src/Samples/Validation) and [F# core](src/Samples/Validation.Core))*
 
@@ -123,7 +123,7 @@ Keep in mind that by default, WPF controls do not display errors. To display err
 
 There are also variants of the two-way validating bindings for option-wrapped values.
 
-## Command bindings
+### Command bindings
 
 *Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
@@ -149,7 +149,7 @@ For convenience, if you don’t need the model, there is also an overload that d
 "Increment" |> Binding.cmd Increment
 ```
 
-### Conditional commands (where you control `CanExecute`)
+#### Conditional commands (where you control `CanExecute`)
 
 *Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
@@ -170,7 +170,7 @@ There are several ways to indicate that a command can‘t execute. The `cmdIf` b
 - `exec: 'model -> Result<'msg, _>`, where the command is disabled if `exec` returns `Error`
 - `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to dispatch)
 
-### Using the `CommandParameter`
+#### Using the `CommandParameter`
 
 *Relevant sample: UiBoundCmdParam - ([XAML views](src/Samples/UiBoundCmdParam) and [F# core](src/Samples/UiBoundCmdParam.Core))*
 
@@ -178,7 +178,7 @@ There may be times you need to use the XAML `CommandParameter` property. You the
 
 There is also `cmdParamIf` which combines `cmdParam` and `cmdIf`, allowing you to override the command’s `CanExecute`.
 
-## Sub-model bindings
+### Sub-model bindings
 
 *Relevant sample: SubModel - ([XAML views](src/Samples/SubModel) and [F# core](src/Samples/SubModel.Core))*
 
@@ -188,7 +188,7 @@ Perhaps the most compelling use-case for sub-models is when binding the `ItemsSo
 
 The `subModel` binding has three overloads, increasing in complexity depending on how much you need to customize the sub-bindings.
 
-### Level 1: No separate message type or customization of model for sub-bindings
+#### Level 1: No separate message type or customization of model for sub-bindings
 
 This is sufficient for many purposes. The overload accepts two parameters:
 
@@ -213,7 +213,7 @@ As you can see, inside the sub-bindings (which could be extracted to their own `
 
 Note also that the sub-bindings still use the top-level message type. There is no separate child message type for the sub-model; `IncrementCounter` is a case of the parent message type. This is also a good default for the reasons described in the earlier “child components and scaling” section.
 
-### Level 2: Separate message type but no customization of model for sub-bindings
+#### Level 2: Separate message type but no customization of model for sub-bindings
 
 This overload is just like the first one except it has an additional parameter to transform the message type:
 
@@ -238,7 +238,7 @@ Here,  `Increment` is a case of the child message type, and `CounterMsg` is a pa
 
 If you had passed `id` as the `toMsg` parameter, you would have the same behavior as the previous simpler overload with no `toMsg`.
 
-### Level 3: Separate message type and arbitrary customization of model for sub-bindings
+#### Level 3: Separate message type and arbitrary customization of model for sub-bindings
 
 This is the most complex one, and is required for the following cases:
 
@@ -294,7 +294,7 @@ Recursive bindings are demonstrated in the `SubModelSeq` sample.
 
 You now have the power to create child components. Use it with great care; as mentioned in the earlier “child components and scaling” section, such separation will often do more harm than good.
 
-### Optional and “sticky” sub-model bindings
+#### Optional and “sticky” sub-model bindings
 
 *Relevant sample: SubModelOpt - ([XAML views](src/Samples/SubModelOpt) and [F# core](src/Samples/SubModelOpt.Core))*
 
@@ -302,7 +302,7 @@ You can also use the `subModelOpt` binding. The signature is the same as the var
 
 Additionally, these bindings have an optional `sticky: bool` parameter. If `true`, Elmish.WPF will “remember” and return the most recent non-null sub-model when the `getSubModel` returns `None`. This can be useful for example when you want to animate away the UI for the sub-component when it’s set to `None`. If you do not use `sticky`, the UI will be cleared at the start of the animation, which may look weird.
 
-## Sub-model window bindings
+### Sub-model window bindings
 
 *Relevant sample: NewWindow - ([XAML views](src/Samples/NewWindow) and [F# core](src/Samples/NewWindow.Core))*
 
@@ -332,7 +332,7 @@ The second optional parameter is `?isModal: bool`. This specifies whether the wi
 
 Again, check out the `NewWindow` sample to see `subModelWin` in action.
 
-## Sub-model sequence bindings
+### Sub-model sequence bindings
 
 *Relevant sample: SubModelSeq - ([XAML views](src/Samples/SubModelSeq) and [F# core](src/Samples/SubModelSeq.Core))*
 
@@ -342,11 +342,11 @@ The `toMsg` parameter in the “level 2” and “level 3” overloads has the s
 
 Finally, in the “level 3” overload that allows you to transform the model used for the bindings, the `getId` parameter has signature `'bindingModel -> 'id` (instead of `'subModel -> 'id` for the two simpler overloads).
 
-## Other bindings
+### Other bindings
 
 There are two special bindings not yet covered.
 
-### `subModelSelectedItem`
+#### `subModelSelectedItem`
 
 *Relevant sample: SubModelSelectedItem - ([XAML views](src/Samples/SubModelSelectedItem) and [F# core](src/Samples/SubModelSelectedItem.Core))*
 
@@ -367,7 +367,7 @@ You bind the `SelectedItem` of a control to the `subModelSelectedItem` binding. 
 - When the UI retrieves the selected item, Elmish.WPF gets the ID using `get`, looks up the correct view-model in the `subModelSeq` binding identified by `subModelSeqBindingName`, and returns that view-model to the UI.
 - When the UI sets the selected item (which it sets to an Elmish.WPF view-model), Elmish.WPF calls `set` with the ID of the sub-model corresponding to that view-model.
 
-### `oneWaySeq`
+#### `oneWaySeq`
 
 *Relevant sample: OneWaySeq - ([XAML views](src/Samples/OneWaySeq) and [F# core](src/Samples/OneWaySeq.Core))*
 
@@ -388,7 +388,7 @@ Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite 
 Modifying bindings
 ----------------
 
-## Lazy bindings
+### Lazy bindings
 
 *Note: Lazy bindings may get a complete overhaul soon; see [#143](https://github.com/elmish/Elmish.WPF/issues/143).*
 
@@ -405,11 +405,11 @@ Elmish.WPF provides two helpers you can often use as the `equals` parameter: `re
 
 You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want structural comparison (note the caveat above however), you can pass `(=)`.
 
-## Mapping Bindings
+### Mapping Bindings
 
 Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapMsgWithModel`.
 
-### Example use of `mapModel` and `mapMsg`
+#### Example use of `mapModel` and `mapMsg`
 
 Here is a simple example that uses these model and message types.
 ```F#
@@ -450,11 +450,11 @@ let parentBindings () : Binding<ParentModel, ParentMsg> list =
   |> Bindings.mapMsg ChildMsg
 ```
 
-### Benefit for design-time view models
+#### Benefit for design-time view models
 
 With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.  The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.
 
-### Theory behind `mapModel` and `mapMsg`
+#### Theory behind `mapModel` and `mapMsg`
 
 A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a profunctor, which means that
 - it is a contravariant functor in `'model` with `mapModel` as the corresponding mapping function for this functor and
