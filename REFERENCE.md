@@ -386,7 +386,7 @@ If the values are not simple (e.g. not strings or numbers), then you can instead
 Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite is not true.) The `oneWaySeq` binding is slightly simpler than `subModelSeq` if the elements are simple values that can be bound to directly.
 
 Modifying bindings
-----------------
+------------------
 
 ### Lazy bindings
 
