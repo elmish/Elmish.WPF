@@ -390,8 +390,6 @@ Modifying bindings
 
 ### Lazy bindings
 
-*Note: Lazy bindings may get a complete overhaul soon; see [#143](https://github.com/elmish/Elmish.WPF/issues/143).*
-
 You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`. The difference between these and their non-lazy counterparts is that they have two extra parameters: `equals` and `map `.
 
 The optimization is done at two levels. The first optimization is for the update process. As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Then, `equals` is used to compare the output of `get` with the previous output of `get`. If `equals` returns `true`, the rest of the update process is skipped entirely. If `equals` returns `false`, the output of `get` is passed to `map`, which may be expensive, and then the binding is updated normally.
