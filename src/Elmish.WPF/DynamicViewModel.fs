@@ -58,6 +58,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
   let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
+    let validationDict = Dictionary<string, string list ref>()
     let getFunctionsForSubModelSelectedItem name =
       bindingDict
       |> Dictionary.tryFind name
@@ -81,13 +82,10 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
             Initialize(loggingArgs, b.Name, getFunctionsForSubModelSelectedItem)
               .Recursive(initialModel, dispatch, (fun () -> currentModel), b.Data)
           do bindingDict.Add(b.Name, binding)
+          let! errorList = FirstValidationErrors().Recursive(binding)
+          do validationDict.Add(b.Name, errorList)
           return ()
         } |> Option.defaultValue ()
-    let validationDict = Dictionary<string, string list ref>()
-    bindingDict
-    |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (FirstValidationErrors().Recursive) >> PairOption.sequence)
-    |> SeqOption.somes
-    |> Seq.iter validationDict.Add
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
