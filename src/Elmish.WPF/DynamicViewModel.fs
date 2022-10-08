@@ -76,10 +76,13 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        Initialize(loggingArgs, b.Name, getFunctionsForSubModelSelectedItem)
-          .Recursive(initialModel, dispatch, (fun () -> currentModel), b.Data)
-        |> Option.iter (fun binding ->
-          bindingDict.Add(b.Name, binding))
+        option {
+          let! binding =
+            Initialize(loggingArgs, b.Name, getFunctionsForSubModelSelectedItem)
+              .Recursive(initialModel, dispatch, (fun () -> currentModel), b.Data)
+          do bindingDict.Add(b.Name, binding)
+          return ()
+        } |> Option.defaultValue ()
     let validationDict = Dictionary<string, string list ref>()
     bindingDict
     |> Seq.map (Pair.ofKvp >> Pair.mapAll Some (FirstValidationErrors().Recursive) >> PairOption.sequence)
