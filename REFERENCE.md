@@ -76,7 +76,7 @@ In F#, it’s common to model missing values using the `Option` type. However, W
 
 *Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
 
-Two-way bindings are commonly used for any kind of input (textboxes, checkboxes, sliders, etc.). The two-way bindings accept two functions: A function `get: 'model -> 'a` just like the one-way binding, and a function `set: 'a -> 'model -> 'msg ` that accepts the UI value to be set and the current model, and returns the message to be dispatched.
+Two-way bindings are commonly used for any kind of input (textboxes, checkboxes, sliders, etc.). The two-way bindings accept two functions: A function `get: 'model -> 'a` just like the one-way binding, and a function `set: 'a -> 'model -> 'msg` that accepts the UI value to be set and the current model, and returns the message to be dispatched.
 
 In the counter example above, the two-way binding to the slider value may look like this:
 
@@ -143,7 +143,7 @@ The corresponding Elmish.WPF binding that dispatches `Msg.Increment` when the co
 "Increment" |> Binding.cmd (fun m -> Increment)
 ```
 
-The binding accepts a single function `exec: 'model -> 'msg ` that accepts the current model and returns the message to be dispatched. Elmish.WPF will convert the message to an `ICommand` that dispatches the message when the command is invoked.
+The binding accepts a single function `exec: 'model -> 'msg` that accepts the current model and returns the message to be dispatched. Elmish.WPF will convert the message to an `ICommand` that dispatches the message when the command is invoked.
 
 For convenience, if you don’t need the model, there is also an overload that directly accepts the message (instead of a model-accepting function). The above can therefore be written like this:
 
@@ -389,7 +389,7 @@ Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite 
 
 ### Lazy bindings
 
-You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map `.
+You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map`.
 
 As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of `get` passed to `map`, which may be expensive.
 
