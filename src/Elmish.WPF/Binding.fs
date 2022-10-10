@@ -61,7 +61,7 @@ module Binding =
     |> mapData (addLazy equals)
 
   /// <summary>
-  ///   Atlers the message stream via the given function.
+  ///   Alters the message stream via the given function.
   ///   Ideally suited for use with Reactive Extensions.
   ///   <code>
   ///     open FSharp.Control.Reactive
