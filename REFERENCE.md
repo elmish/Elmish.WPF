@@ -391,7 +391,7 @@ Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite 
 
 You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map `.
 
-As with the non-lazy bindings, the initial get function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of get passed to map, which may be expensive.
+As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of `get` passed to `map`, which may be expensive.
 
 Modifying bindings
 ------------------
