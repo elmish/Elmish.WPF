@@ -55,25 +55,26 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
     errorsChanged.Trigger([| box this; box <| DataErrorsChangedEventArgs name |])
 
+  let getFunctionsForSubModelSelectedItem initializedBindings (name: string) =
+    initializedBindings
+    |> IReadOnlyDictionary.tryFind name
+    |> function
+      | Some b ->
+        match FuncsFromSubModelSeqKeyed().Recursive(b) with
+        | Some x -> Some x
+        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
+                  None
+      | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
+                None
+
   let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let validationDict = Dictionary<string, string list ref>()
-    let getFunctionsForSubModelSelectedItem name =
-      bindingDict
-      |> Dictionary.tryFind name
-      |> function
-        | Some b ->
-          match FuncsFromSubModelSeqKeyed().Recursive(b) with
-          | Some x -> Some x
-          | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
-                    None
-        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
-                  None
     let initializeBindingWithValidation binding =
       option {
         let! vmBinding =
-          Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem)
+          Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem bindingDict)
             .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
         FirstValidationErrors().Recursive(vmBinding)
         |> Option.iter (fun errorList ->
