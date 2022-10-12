@@ -71,16 +71,9 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let validationDict = Dictionary<string, string list ref>()
-    let initializeBindingWithValidation binding =
-      option {
-        let! vmBinding =
-          Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem bindingDict)
-            .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
-        FirstValidationErrors().Recursive(vmBinding)
-        |> Option.iter (fun errorList ->
-          validationDict.Add(binding.Name, errorList))
-        return vmBinding
-      }
+    let initializeBinding binding =
+      Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem bindingDict)
+        .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
     let sortedBindings =
       bindings
       |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
@@ -89,8 +82,11 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
         option {
-          let! vmBinding = initializeBindingWithValidation b
+          let! vmBinding = initializeBinding b
           do bindingDict.Add(b.Name, vmBinding)
+          do FirstValidationErrors().Recursive(vmBinding)
+             |> Option.iter (fun errorList ->
+               validationDict.Add(b.Name, errorList))
           return ()
         } |> Option.defaultValue ()
     (bindingDict    :> IReadOnlyDictionary<_,_>,
