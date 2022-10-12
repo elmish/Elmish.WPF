@@ -88,7 +88,7 @@ module WpfProgram =
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
-          vm.UpdateModel model
+          IViewModel.updateModel (vm, model)
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
