@@ -85,9 +85,8 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         option {
           let! vmBinding = initializeBinding bindingDict b
           do bindingDict.Add(b.Name, vmBinding)
-          do FirstValidationErrors().Recursive(vmBinding)
-             |> Option.iter (fun errorList ->
-               validationDict.Add(b.Name, errorList))
+          let! errorList = FirstValidationErrors().Recursive(vmBinding)
+          do validationDict.Add(b.Name, errorList)
           return ()
         } |> Option.defaultValue ()
     (bindingDict    :> IReadOnlyDictionary<_,_>,
