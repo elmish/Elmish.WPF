@@ -75,11 +75,11 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         let! vmBinding =
           Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem)
             .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
-        do bindingDict.Add(binding.Name, vmBinding)
-        let! errorList = FirstValidationErrors().Recursive(vmBinding)
-        do validationDict.Add(binding.Name, errorList)
-        return ()
-      } |> Option.defaultValue ()
+        FirstValidationErrors().Recursive(vmBinding)
+        |> Option.iter (fun errorList ->
+          validationDict.Add(binding.Name, errorList))
+        return vmBinding
+      }
     let sortedBindings =
       bindings
       |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
@@ -87,7 +87,11 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       if bindingDict.ContainsKey b.Name then
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
-        initializeBindingWithValidation b
+        option {
+          let! vmBinding = initializeBindingWithValidation b
+          do bindingDict.Add(b.Name, vmBinding)
+          return ()
+        } |> Option.defaultValue ()
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
