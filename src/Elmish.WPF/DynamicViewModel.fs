@@ -67,13 +67,14 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
                 None
 
+  let initializeBinding initializedBindings binding =
+    Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem initializedBindings)
+      .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
+
   let (bindings, validationErrors) =
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let validationDict = Dictionary<string, string list ref>()
-    let initializeBinding binding =
-      Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem bindingDict)
-        .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
     let sortedBindings =
       bindings
       |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
@@ -82,7 +83,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         log.LogError("Binding name {BindingName} is duplicated. Only the first occurrence will be used.", b.Name)
       else
         option {
-          let! vmBinding = initializeBinding b
+          let! vmBinding = initializeBinding bindingDict b
           do bindingDict.Add(b.Name, vmBinding)
           do FirstValidationErrors().Recursive(vmBinding)
              |> Option.iter (fun errorList ->
