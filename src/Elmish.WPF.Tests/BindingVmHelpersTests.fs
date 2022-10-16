@@ -15,6 +15,20 @@ let name = "name"
 let noGetSelectedItemCall _ = failwith "Should not call get selected item"
 
 
+module Initialize =
+
+  [<Fact>]
+  let ``Initialize doesn't call getCurrentModel`` () =
+    let binding =
+      BindingData.OneWay.id<string, string>
+      |> BindingData.addValidation List.singleton
+
+    let vmBinding =
+      Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
+        .Recursive("", ignore, (fun _ -> failwith "Should not call getCurrentModel on initialize"), binding)
+
+    test <@ vmBinding.IsSome @>
+
 module Get =
 
   let check<'a when 'a : equality> (g: Gen<'a>) =
