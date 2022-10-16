@@ -130,21 +130,24 @@ type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'v
 type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>
     Dispatch: 'msg -> unit
-    Vms: CollectionTarget<'vm, 'vmCollection> }
+    Vms: CollectionTarget<'vm, 'vmCollection>
+  }
 
   member b.FromId(id: 'id) =
     b.Vms.Enumerate ()
     |> Seq.tryFind (fun vm -> vm |> b.SubModelSeqKeyedData.VmToId |> (=) id)
 
-type SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> =
-  { FromId: 'id -> 'vm option
-    VmToId: 'vm -> 'id }
+type SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> = {
+  FromId: 'id -> 'vm option
+  VmToId: 'vm -> 'id
+}
 
 type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'id> =
   { Get: 'model -> 'id voption
     Set: 'id voption -> 'model -> unit
     SubModelSeqBindingName: string
-    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id> }
+    SelectedItemBinding: SelectedItemBinding<'bindingModel, 'bindingMsg, 'vm, 'id>
+  }
 
   member b.TypedGet(model: 'model) =
     b.Get model |> ValueOption.map (fun selectedId -> selectedId, b.SelectedItemBinding.FromId selectedId)
@@ -319,7 +322,11 @@ type Initialize<'t>
           d.GetModel initialModel
           |> ValueOption.map (fun m -> ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs)
           |> ValueOption.map d.CreateViewModel
-          |> (fun vm -> let mutable vm = vm in { SubModelData = d; Dispatch = dispatch; GetVm = (fun () -> vm); SetVm = fun nvm -> vm <- nvm })
+          |> (fun vm -> let mutable vm = vm in { SubModelData = d
+                                                 Dispatch = dispatch
+                                                 GetVm = (fun () -> vm)
+                                                 SetVm = fun nvm -> vm <- nvm
+                                               })
           |> SubModel
           |> Some
       | SubModelWinData d ->
@@ -333,7 +340,8 @@ type Initialize<'t>
                 WinRef = WeakReference<_>(null)
                 PreventClose = ref true
                 GetVmWinState = fun () -> vmWinState
-                SetVmWinState = fun vmState -> vmWinState <- vmState }
+                SetVmWinState = fun vmState -> vmWinState <- vmState
+              }
           | WindowState.Hidden m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
@@ -348,7 +356,8 @@ type Initialize<'t>
                 WinRef = winRef
                 PreventClose = preventClose
                 GetVmWinState = fun () -> vmWinState
-                SetVmWinState = fun vm -> vmWinState <- vm }
+                SetVmWinState = fun vm -> vmWinState <- vm
+              }
           | WindowState.Visible m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
               let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
@@ -363,7 +372,8 @@ type Initialize<'t>
                 WinRef = winRef
                 PreventClose = preventClose
                 GetVmWinState = fun () -> vmWinState
-                SetVmWinState = fun vm -> vmWinState <- vm  }
+                SetVmWinState = fun vm -> vmWinState <- vm
+              }
           |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
@@ -379,7 +389,8 @@ type Initialize<'t>
             |> d.CreateCollection
           { SubModelSeqUnkeyedData = d
             Dispatch = dispatch
-            Vms = vms }
+            Vms = vms
+          }
           |> SubModelSeqUnkeyed
           |> Some
       | SubModelSeqKeyedData d ->
@@ -395,7 +406,8 @@ type Initialize<'t>
             |> d.CreateCollection
           { SubModelSeqKeyedData = d
             Dispatch = dispatch
-            Vms = vms }
+            Vms = vms
+          }
           |> SubModelSeqKeyed
           |> Some
       | SubModelSelectedItemData d ->
