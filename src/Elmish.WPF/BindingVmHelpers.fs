@@ -110,6 +110,7 @@ type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   Dispatch: 'msg -> unit
   GetVm: unit -> 'vm voption
   SetVm: 'vm voption -> unit
+  GetCurrentModel: unit -> 'model
 }
 
 type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
@@ -119,18 +120,21 @@ type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   PreventClose: bool ref
   GetVmWinState: unit -> WindowState<'vm>
   SetVmWinState: WindowState<'vm> -> unit
+  GetCurrentModel: unit -> 'model
 }
 
 type SubModelSeqUnkeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> = {
   SubModelSeqUnkeyedData: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>
   Dispatch: 'msg -> unit
   Vms: CollectionTarget<'vm, 'vmCollection>
+  GetCurrentModel: unit -> 'model
 }
 
 type SubModelSeqKeyedBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality> =
   { SubModelSeqKeyedData: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>
     Dispatch: 'msg -> unit
     Vms: CollectionTarget<'vm, 'vmCollection>
+    GetCurrentModel: unit -> 'model
   }
 
   member b.FromId(id: 'id) =
@@ -326,6 +330,7 @@ type Initialize<'t>
                                                  Dispatch = dispatch
                                                  GetVm = (fun () -> vm)
                                                  SetVm = fun nvm -> vm <- nvm
+                                                 GetCurrentModel = getCurrentModel
                                                })
           |> SubModel
           |> Some
@@ -341,6 +346,7 @@ type Initialize<'t>
                 PreventClose = ref true
                 GetVmWinState = fun () -> vmWinState
                 SetVmWinState = fun vmState -> vmWinState <- vmState
+                GetCurrentModel = getCurrentModel
               }
           | WindowState.Hidden m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
@@ -357,6 +363,7 @@ type Initialize<'t>
                 PreventClose = preventClose
                 GetVmWinState = fun () -> vmWinState
                 SetVmWinState = fun vm -> vmWinState <- vm
+                GetCurrentModel = getCurrentModel
               }
           | WindowState.Visible m ->
               let chain = LoggingViewModelArgs.getNameChainFor nameChain name
@@ -373,6 +380,7 @@ type Initialize<'t>
                 PreventClose = preventClose
                 GetVmWinState = fun () -> vmWinState
                 SetVmWinState = fun vm -> vmWinState <- vm
+                GetCurrentModel = getCurrentModel
               }
           |> SubModelWin
           |> Some
@@ -390,6 +398,7 @@ type Initialize<'t>
           { SubModelSeqUnkeyedData = d
             Dispatch = dispatch
             Vms = vms
+            GetCurrentModel = getCurrentModel
           }
           |> SubModelSeqUnkeyed
           |> Some
@@ -407,6 +416,7 @@ type Initialize<'t>
           { SubModelSeqKeyedData = d
             Dispatch = dispatch
             Vms = vms
+            GetCurrentModel = getCurrentModel
           }
           |> SubModelSeqKeyed
           |> Some
@@ -470,8 +480,7 @@ type Update<'t>
     loggingArgs
 
   member _.Base<'model, 'msg>
-      (getCurrentModel: unit -> 'model,
-       newModel: 'model,
+      (newModel: 'model,
        binding: BaseVmBinding<'model, 'msg, 't>) =
     match binding with
       | OneWay _
@@ -490,7 +499,7 @@ type Update<'t>
             b.SetVm ValueNone
             [ PropertyChanged name ]
         | ValueNone, ValueSome m ->
-            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+            let toMsg = fun msg -> d.ToMsg (b.GetCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create m (toMsg >> b.Dispatch) chain loggingArgs
             b.SetVm (ValueSome <| d.CreateViewModel(args))
@@ -539,7 +548,7 @@ type Update<'t>
             Helpers2.showNewWindow b.WinRef d.GetWindow d.IsModal d.OnCloseRequested b.PreventClose vm
 
           let newVm model =
-            let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+            let toMsg = fun msg -> d.ToMsg (b.GetCurrentModel ()) msg
             let chain = LoggingViewModelArgs.getNameChainFor nameChain name
             let args = ViewModelArgs.create model (toMsg >> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
@@ -569,20 +578,20 @@ type Update<'t>
           | WindowState.Closed, WindowState.Hidden m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating hidden window", winPropChain)
-              showNew vm Visibility.Hidden getCurrentModel b.Dispatch
+              showNew vm Visibility.Hidden b.GetCurrentModel b.Dispatch
               b.SetVmWinState (WindowState.Hidden vm)
               [ PropertyChanged name ]
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
-              showNew vm Visibility.Visible getCurrentModel b.Dispatch
+              showNew vm Visibility.Visible b.GetCurrentModel b.Dispatch
               b.SetVmWinState (WindowState.Visible vm)
               [ PropertyChanged name ]
       | SubModelSeqUnkeyed b ->
           let d = b.SubModelSeqUnkeyedData
           let create m idx =
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
-            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (idx, msg) |> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (b.GetCurrentModel ()) (idx, msg) |> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
           let update vm m = d.UpdateViewModel (vm, m)
           Merge.unkeyed create update b.Vms (d.GetModels newModel)
@@ -591,7 +600,7 @@ type Update<'t>
           let d = b.SubModelSeqKeyedData
           let create m id =
             let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (id |> string)
-            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (getCurrentModel ()) (id, msg) |> b.Dispatch) chain loggingArgs
+            let args = ViewModelArgs.create m (fun msg -> d.ToMsg (b.GetCurrentModel ()) (id, msg) |> b.Dispatch) chain loggingArgs
             d.CreateViewModel args
           let update vm m = d.UpdateViewModel (vm, m)
           let newSubModels = newModel |> d.GetSubModels |> Seq.toArray
@@ -606,21 +615,20 @@ type Update<'t>
           []
 
   member this.Recursive<'model, 'msg>
-      (currentModel: 'model voption,
-       getCurrentModel: unit -> 'model,
+      (currentModel: 'model,
        newModel: 'model,
        binding: VmBinding<'model, 'msg, 't>)
       : UpdateData list =
     match binding with
-      | BaseVmBinding b -> this.Base(getCurrentModel, newModel, b)
+      | BaseVmBinding b -> this.Base(newModel, b)
       | Cached b ->
-          let updates = this.Recursive(currentModel, getCurrentModel, newModel, b.Binding)
+          let updates = this.Recursive(currentModel, newModel, b.Binding)
           updates
           |> List.filter UpdateData.isPropertyChanged
           |> List.iter (fun _ -> b.SetCache None)
           updates
       | Validatation b ->
-          let updates = this.Recursive(currentModel, getCurrentModel, newModel, b.Binding)
+          let updates = this.Recursive(currentModel, newModel, b.Binding)
           let newErrors = b.Validate newModel
           if b.Errors.Value <> newErrors then
             b.Errors.Value <- newErrors
@@ -628,14 +636,14 @@ type Update<'t>
           else
             updates
       | Lazy b ->
-          let currentModel' = currentModel |> ValueOption.defaultWith getCurrentModel |> b.Get
+          let currentModel' = currentModel |> b.Get
           let newModel' = newModel |> b.Get
           if b.Equals currentModel' newModel' then
             []
           else
-            this.Recursive(ValueSome currentModel', getCurrentModel >> b.Get, newModel', b.Binding)
+            this.Recursive(currentModel', newModel', b.Binding)
       | AlterMsgStream b ->
-          this.Recursive(currentModel |> ValueOption.map b.Get, getCurrentModel >> b.Get, b.Get newModel, b.Binding)
+          this.Recursive(currentModel |> b.Get, b.Get newModel, b.Binding)
 
 
 type Get<'t>(nameChain: string) =

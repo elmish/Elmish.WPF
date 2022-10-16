@@ -104,7 +104,7 @@ module Update =
 
       let updateResult =
         Update(LoggingViewModelArgs.none, name)
-          .Recursive(ValueSome initialModel, (fun () -> model.Value), newModel, vmBinding)
+          .Recursive(initialModel, newModel, vmBinding)
 
       test <@ updateResult |> List.length = 1 @>
     }
