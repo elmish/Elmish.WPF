@@ -438,7 +438,7 @@ type Initialize<'t>
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
           let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
-          return b.AddValidation (getCurrentModel ()) d.Validate
+          return b.AddValidation initialModel d.Validate
       | LazyData d ->
           let initialModel' : obj = d.Get initialModel
           let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
