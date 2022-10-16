@@ -98,7 +98,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
   member internal _.UpdateModel (newModel: 'model) : unit =
     let eventsToRaise =
       bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(loggingArgs, name).Recursive(ValueNone, (fun () -> currentModel), newModel, binding))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(loggingArgs, name).Recursive(currentModel, newModel, binding))
       |> Seq.toList
     currentModel <- newModel
     eventsToRaise
