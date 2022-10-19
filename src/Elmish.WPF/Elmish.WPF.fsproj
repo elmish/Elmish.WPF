@@ -36,6 +36,9 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Elmish.WPF.Tests</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Elmish.WPF.Benchmarks</_Parameter1>
+    </AssemblyAttribute>
     <Compile Include="InternalUtils.fs" />
     <Compile Include="Merge.fs" />
     <Compile Include="Command.fs" />

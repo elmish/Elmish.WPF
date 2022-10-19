@@ -40,6 +40,8 @@ paket-files/
 
 deploy/
 
+BenchmarkDotNet.Artifacts/
+
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
