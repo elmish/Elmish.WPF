@@ -23,7 +23,7 @@ type public BenchmarkDynamicViewModel() =
     model <- 0
     while model < x.UpdateCount do
       model <- model + 1
-      vm.UpdateModel(model)
+      IViewModel.updateModel (vm, model)
 
     vm :> obj
 

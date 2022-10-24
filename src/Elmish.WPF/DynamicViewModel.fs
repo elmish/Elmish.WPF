@@ -26,6 +26,14 @@ module internal Helpers =
     member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
       fun a b -> this.Recursive(a.Data) - this.Recursive(b.Data)
 
+type [<AllowNullLiteral>] IViewModel<'model, 'msg> =
+  abstract member CurrentModel: 'model
+  abstract member UpdateModel: 'model -> unit
+
+module internal IViewModel =
+  let currentModel (vm: #IViewModel<'model, 'msg>) = vm.CurrentModel
+  let updateModel (vm: #IViewModel<'model, 'msg>, m: 'model) = vm.UpdateModel(m)
+
 type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
         bindings: Binding<'model, 'msg> list)
@@ -92,20 +100,21 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
+     
+  interface IViewModel<'model, 'msg> with
+    member _.CurrentModel : 'model = currentModel
 
-  member internal _.CurrentModel : 'model = currentModel
-
-  member internal _.UpdateModel (newModel: 'model) : unit =
-    let eventsToRaise =
-      bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(loggingArgs, name).Recursive(currentModel, newModel, binding))
-      |> Seq.toList
-    currentModel <- newModel
-    eventsToRaise
-    |> List.iter (function
-      | ErrorsChanged name -> raiseErrorsChanged name
-      | PropertyChanged name -> raisePropertyChanged name
-      | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
+    member _.UpdateModel (newModel: 'model) : unit =
+      let eventsToRaise =
+        bindings
+        |> Seq.collect (fun (Kvp (name, binding)) -> Update(loggingArgs, name).Recursive(currentModel, newModel, binding))
+        |> Seq.toList
+      currentModel <- newModel
+      eventsToRaise
+      |> List.iter (function
+        | ErrorsChanged name -> raiseErrorsChanged name
+        | PropertyChanged name -> raisePropertyChanged name
+        | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
 
   override _.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)

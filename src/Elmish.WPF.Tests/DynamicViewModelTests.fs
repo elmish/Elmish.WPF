@@ -49,6 +49,8 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   new(model, binding) = TestVm(model, [binding])
 
+  member _.UpdateModel(m) = IViewModel.updateModel(this, m)
+
   member private __.Dispatch x =
     dispatchMsgs.Add x
 
@@ -1080,11 +1082,11 @@ module SubModel =
       let binding = subModel name getModel toMsg [] sticky
       let vm = TestVm(m1, binding)
 
-      test <@ (vm.Get name : DynamicViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
+      test <@ (vm.Get name : IViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
 
       vm.UpdateModel m2
 
-      test <@ (vm.Get name : DynamicViewModel<int, obj>).CurrentModel = (getModel m2).Value @>
+      test <@ (vm.Get name : IViewModel<int, obj>).CurrentModel = (getModel m2).Value @>
     }
 
 
@@ -1124,18 +1126,18 @@ module SubModel =
       let binding = subModel name getModel toMsg [] sticky
       let vm = TestVm(m1, binding)
 
-      test <@ (vm.Get name : DynamicViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
+      test <@ (vm.Get name : IViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
 
       vm.UpdateModel m2
 
       if sticky then
-        test <@ (vm.Get name : DynamicViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
+        test <@ (vm.Get name : IViewModel<int, obj>).CurrentModel = (getModel m1).Value @>
       else
         test <@ vm.Get name |> isNull @>
 
       vm.UpdateModel m3
 
-      test <@ (vm.Get name : DynamicViewModel<int, obj>).CurrentModel = (getModel m3).Value @>
+      test <@ (vm.Get name : IViewModel<int, obj>).CurrentModel = (getModel m3).Value @>
     }
 
 
@@ -1240,7 +1242,7 @@ module SubModelSeq =
     let actual =
       vm.Get name
       |> unbox<ObservableCollection<DynamicViewModel<Guid, obj>>>
-      |> Seq.map (fun vm -> vm.CurrentModel)
+      |> Seq.map IViewModel.currentModel
       |> Seq.toList
     test <@ expected = actual @>
 
@@ -1387,7 +1389,7 @@ module SubModelSelectedItem =
       | ValueNone ->
           test <@ vm.Get selectedItemName = null @>
       | ValueSome sm ->
-          test <@ (vm.Get selectedItemName |> unbox<DynamicViewModel<Guid, unit>>) |> Option.ofObj |> Option.map (fun vm -> vm.CurrentModel)
+          test <@ (vm.Get selectedItemName |> unbox<IViewModel<Guid, unit>>) |> Option.ofObj |> Option.map (fun vm -> vm.CurrentModel)
                    = (m |> getModels |> List.tryFind (fun x -> getId x = getId sm))
                @>
     }
@@ -1421,7 +1423,7 @@ module SubModelSelectedItem =
         selectedSubModel |> ValueOption.bind (fun sm ->
           vm.Get subModelSeqName
           |> unbox<ObservableCollection<DynamicViewModel<Guid, int voption>>>
-          |> Seq.tryFind (fun vm -> vm.CurrentModel |> getId = getId sm)
+          |> Seq.tryFind (fun vm -> vm |> IViewModel.currentModel |> getId = getId sm)
           |> ValueOption.ofOption
         )
         |> ValueOption.toObj
