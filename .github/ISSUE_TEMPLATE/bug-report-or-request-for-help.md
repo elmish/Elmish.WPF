@@ -23,7 +23,7 @@ Steps to reproduce the behavior:
 Describe what you expected or wanted to happen.
 
 **Actual behavior**
-Describe what actually happens.  Consider including a screen recording of the actual behavior via a GIF.
+Describe what actually happens.  Consider including a screen recording of the actual behavior via a GIF.  [ShareX](https://getsharex.com/) is one program that can capture a screen recroding and save it to a GIF.
 
 **Additional Information**
 Elmish.WPF version: ???
