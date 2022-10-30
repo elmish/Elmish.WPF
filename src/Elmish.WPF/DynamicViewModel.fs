@@ -77,6 +77,9 @@ module internal ViewModelHelper =
     ErrorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
   }
 
+  let empty getSender args =
+    create getSender args Map.empty Map.empty
+
   let getEventsToRaise newModel helper =
     helper.Bindings
       |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(helper.Model, newModel, binding))
@@ -214,6 +217,105 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     log.LogTrace("[{BindingNameChain}] GetDynamicMemberNames", nameChain)
     bindings.Keys
 
+
+  interface INotifyPropertyChanged with
+    [<CLIEvent>]
+    member _.PropertyChanged = (helper :> INotifyPropertyChanged).PropertyChanged
+
+  interface INotifyDataErrorInfo with
+    [<CLIEvent>]
+    member _.ErrorsChanged = (helper :> INotifyDataErrorInfo).ErrorsChanged
+    member _.HasErrors = (helper :> INotifyDataErrorInfo).HasErrors
+    member _.GetErrors name = (helper :> INotifyDataErrorInfo).GetErrors name
+
+open System.Runtime.CompilerServices
+
+type [<AllowNullLiteral>] internal ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model, 'msg>)
+  as this =
+
+  let mutable setBindings = Map.empty<String, VmBinding<'model, 'msg, obj>>
+
+  let mutable helper = ViewModelHelper.empty (fun () -> this) args
+
+  let { loggingArgs = loggingArgs
+        initialModel = initialModel
+        dispatch = dispatch } = args
+  let { log = log; nameChain = nameChain } = loggingArgs
+
+  let initializeBinding initializedBindings binding =
+    Initialize(loggingArgs, binding.Name, ViewModelHelper.getFunctionsForSubModelSelectedItem loggingArgs initializedBindings)
+      .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
+
+  member _.Get<'a> ([<CallerMemberName>] ?memberName: string) =
+    fun (binding: string -> Binding<'model, 'msg>) ->
+      let result =
+        option {
+          let! name = memberName
+          let! vmBinding = option {
+            match helper.Bindings.TryGetValue name with
+            | true, value ->
+              return value
+            | false, _ ->
+              let binding = binding name
+              let! vmBinding = initializeBinding helper.Bindings binding
+              let newBindings = helper.Bindings.Add (name, vmBinding)
+              let newValidationErrors =
+                FirstValidationErrors().Recursive(vmBinding)
+                |> Option.map (fun errorList -> helper.ValidationErrors.Add (name, errorList))
+                |> Option.defaultValue helper.ValidationErrors
+              helper <-
+                { helper with
+                    Bindings = newBindings
+                    ValidationErrors = newValidationErrors }
+              return vmBinding
+          }
+          return Get(nameChain).Recursive(helper.Model, vmBinding)
+        }
+      match result with
+      | None ->
+        log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} could not be constructed", nameChain, memberName)
+        failwithf $"[%s{nameChain}] Get FAILED: Binding {memberName} could not be constructed"
+      | Some (Error e) ->
+        match e with
+        | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is read-only", nameChain, memberName)
+        | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] Get FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {BindingName}", d.NameChain, d.SubModelSeqBindingName, d.Id, memberName)
+        | GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull nonNullTypeName) -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is null, but type {Type} is non-nullable", nameChain, memberName, nonNullTypeName)
+        failwithf $"[%s{nameChain}] Get FAILED: Binding {memberName} returned an error {e}"
+      | Some (Ok r) -> r |> unbox<'a>
+
+  member _.Set<'a> (value: 'a, [<CallerMemberName>] ?memberName: string) =
+    fun (binding: string -> Binding<'model, 'msg>) ->
+      try
+        let success =
+          option {
+            let! name = memberName
+            let! vmBinding = option {
+              match setBindings.TryGetValue name with
+              | true, value ->
+                return value
+              | false, _ ->
+                let binding = binding name
+                let! vmBinding = initializeBinding helper.Bindings binding
+                setBindings <- setBindings.Add (name, vmBinding)
+                return vmBinding
+            }
+            return Set(box value).Recursive(helper.Model, vmBinding)
+          }
+        if success = Some false then
+          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} is read-only", nameChain, memberName)
+        else if success = None then
+          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} could not be constructed", nameChain, memberName)
+      with e ->
+        log.LogError(e, "[{BindingNameChain}] Set FAILED: Exception thrown while processing binding {BindingName}", nameChain, memberName)
+        reraise ()
+
+  interface IViewModel<'model, 'msg> with
+    member _.CurrentModel = helper.Model
+
+    member _.UpdateModel(newModel: 'model) =
+      let eventsToRaise = ViewModelHelper.getEventsToRaise newModel helper
+      helper <- { helper with Model = newModel }
+      ViewModelHelper.raiseEvents eventsToRaise helper
 
   interface INotifyPropertyChanged with
     [<CLIEvent>]
