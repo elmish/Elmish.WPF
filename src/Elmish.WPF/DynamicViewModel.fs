@@ -102,6 +102,19 @@ module internal ViewModelHelper =
       | PropertyChanged name -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
 
+  let getFunctionsForSubModelSelectedItem loggingArgs initializedBindings (name: string) =
+    let log = loggingArgs.log
+    initializedBindings
+    |> IReadOnlyDictionary.tryFind name
+    |> function
+      | Some b ->
+        match FuncsFromSubModelSeqKeyed().Recursive(b) with
+        | Some x -> Some x
+        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
+                  None
+      | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
+                None
+
 type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
         bindings: Binding<'model, 'msg> list)
@@ -118,20 +131,8 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       } = loggingArgs
 
   let (bindings, validationErrors) =
-    let getFunctionsForSubModelSelectedItem initializedBindings (name: string) =
-      initializedBindings
-      |> IReadOnlyDictionary.tryFind name
-      |> function
-        | Some b ->
-          match FuncsFromSubModelSeqKeyed().Recursive(b) with
-          | Some x -> Some x
-          | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
-                    None
-        | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but no binding was found with that name", name)
-                  None
-
     let initializeBinding initializedBindings binding =
-      Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem initializedBindings)
+      Initialize(loggingArgs, binding.Name, ViewModelHelper.getFunctionsForSubModelSelectedItem loggingArgs initializedBindings)
         .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
 
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
