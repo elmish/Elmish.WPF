@@ -76,8 +76,8 @@ type internal TestVm<'model, 'msg, 'B1>(model, binding: string -> Binding<'model
   member this.TrackCecTriggersForGetProperty () =
     (this.GetProperty |> unbox<ICommand>).CanExecuteChanged.Add
       (fun _ ->
-      cecTriggers.AddOrUpdate(this.GetPropertyName, 1, (fun _ count -> count + 1)) |> ignore
-    )
+        cecTriggers.AddOrUpdate(this.GetPropertyName, 1, (fun _ count -> count + 1)) |> ignore
+      )
 
 
 
@@ -200,3 +200,148 @@ module OneWay =
       vm.UpdateModel (m + 1)
       test <@ vm.GetProperty = returnEven m (m + 1) @>
     }
+
+module OneWayLazy =
+
+
+  [<Fact>]
+  let ``when retrieved initially, should return the value returned by map`` () =
+    Property.check <| property {
+      let! m = GenX.auto<int>
+
+      let get = string<int>
+      let equals = (=)
+      let map = String.length
+
+      let binding = oneWayLazy get equals map
+      let vm = TestVm(m, binding)
+
+      test <@ vm.GetProperty = (m |> get |> map) @>
+  }
+
+
+  [<Fact>]
+  let ``when retrieved after update and equals returns false, should return the value returned by map`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get = string<int>
+      let equals _ _ = false
+      let map = String.length
+
+      let binding = oneWayLazy get equals map
+      let vm = TestVm(m1, binding)
+      vm.UpdateModel m2
+
+      test <@ vm.GetProperty = (m2 |> get |> map) @>
+  }
+
+
+  [<Fact>]
+  let ``when retrieved after update and equals returns true, should return the previous value returned by map`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get = string<int>
+      let equals _ _ = true
+      let map = String.length
+
+      let binding = oneWayLazy get equals map
+      let vm = TestVm(m1, binding)
+      let _ = vm.GetProperty  // populate cache
+      vm.UpdateModel m2
+
+      test <@ vm.GetProperty = (m1 |> get |> map) @>
+  }
+
+
+  [<Fact>]
+  let ``when retrieved, updated, and retrieved again, should call map once after the update iff equals returns false`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+      let! eq = Gen.bool
+
+      let get = string
+      let equals _ _ = eq
+      let map = InvokeTester String.length
+
+      let binding = oneWayLazy get equals map.Fn
+      let vm = TestVm(m1, binding)
+      
+      let _ = vm.GetProperty
+      vm.UpdateModel m2
+      map.Reset ()
+      let _ = vm.GetProperty
+
+      test <@ map.Count = if eq then 0 else 1 @>
+  }
+
+
+  [<Fact>]
+  let ``map should never be called during model update`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get = string
+      let equals = (=)
+      let map = InvokeTester String.length
+
+      let binding = oneWayLazy get equals map.Fn
+      let vm = TestVm(m1, binding)
+      let _ = vm.GetProperty
+
+      test <@ map.Count = 1 @>
+
+      vm.UpdateModel m2
+
+      test <@ map.Count = 1 @>
+  }
+
+
+  [<Fact>]
+  let ``when retrieved several times between updates, map is called at most once`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get = string
+      let equals = (=)
+      let map = InvokeTester String.length
+
+      let binding = oneWayLazy get equals map.Fn
+      let vm = TestVm(m1, binding)
+      
+      let _ = vm.GetProperty
+      let _ = vm.GetProperty
+      test <@ map.Count <= 1 @>
+
+      map.Reset ()
+      vm.UpdateModel m2
+      let _ = vm.GetProperty
+      let _ = vm.GetProperty
+      test <@ map.Count <= 1 @>
+    }
+
+
+  [<Fact>]
+  let ``when model is updated, should trigger PC once iff equals is false`` () =
+    Property.check <| property {
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+      let! eq = Gen.bool
+
+      let get = string
+      let equals _ _ = eq
+      let map = String.length
+
+      let binding = oneWayLazy get equals map
+      let vm = TestVm(m1, binding)
+      let _ = vm.GetProperty
+      vm.UpdateModel m2
+
+      test <@ vm.NumPcTriggersFor vm.GetPropertyName = if not eq then 1 else 0 @>
+  }
