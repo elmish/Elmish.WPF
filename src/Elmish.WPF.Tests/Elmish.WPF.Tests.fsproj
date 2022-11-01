@@ -18,6 +18,7 @@
     <Compile Include="MergeTests.fs" />
     <Compile Include="BindingVmHelpersTests.fs" />
     <Compile Include="DynamicViewModelTests.fs" />
+    <Compile Include="StaticViewModelTests.fs" />
     <Compile Include="BindingTests.fs" />
     <Compile Include="UtilsTests.fs" />
   </ItemGroup>
