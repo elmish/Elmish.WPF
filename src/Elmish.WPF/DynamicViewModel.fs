@@ -77,7 +77,12 @@ module internal ViewModelHelper =
     ErrorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
   }
 
-  let updateModel newModel helper =
+  let getEventsToRaise newModel helper =
+    helper.Bindings
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(helper.Model, newModel, binding))
+      |> Seq.toList
+
+  let raiseEvents eventsToRaise helper =
     let {
       log = log
       nameChain = nameChain } = helper.LoggingArgs
@@ -90,18 +95,12 @@ module internal ViewModelHelper =
     let raiseErrorsChanged name =
       log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
       helper.ErrorsChanged.Trigger([| helper.GetSender (); box <| DataErrorsChangedEventArgs name |])
-
-    let eventsToRaise =
-      helper.Bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(helper.Model, newModel, binding))
-      |> Seq.toList
+    
     eventsToRaise
     |> List.iter (function
       | ErrorsChanged name -> raiseErrorsChanged name
       | PropertyChanged name -> raisePropertyChanged name
       | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
-
-    { helper with Model = newModel }
 
 type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       ( args: ViewModelArgs<'model, 'msg>,
@@ -168,7 +167,9 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     member _.CurrentModel : 'model = helper.Model
 
     member _.UpdateModel (newModel: 'model) : unit =
-      helper <- ViewModelHelper.updateModel newModel helper
+      let eventsToRaise = ViewModelHelper.getEventsToRaise newModel helper
+      helper <- { helper with Model = newModel }
+      ViewModelHelper.raiseEvents eventsToRaise helper
 
   override _.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
