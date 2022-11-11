@@ -222,6 +222,30 @@ module OneWay =
       test <@ vm.Get name = returnEven m (m + 1) @>
     }
 
+  [<Fact>]
+  let ``when model updated, event is not called before view model property is updated`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int> |> GenX.notEqualTo m1
+
+      let get = string<int>
+
+      let binding = oneWay get name
+      let vm = TestVm(m1, binding)
+      let mutable eventFired = false
+
+      (vm :> INotifyPropertyChanged).PropertyChanged.Add (fun e ->
+        test <@ e.PropertyName = name @>
+        test <@ vm.Get name = get m2 @>
+        eventFired <- true
+      )
+
+      vm.UpdateModel m2
+
+      test <@ eventFired @>
+  }
+
 
 
 module OneWayLazy =
