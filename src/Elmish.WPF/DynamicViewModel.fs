@@ -37,7 +37,6 @@ module internal IViewModel =
 type internal ViewModelHelper<'model, 'msg> =
   { GetSender: unit -> obj
     LoggingArgs: LoggingViewModelArgs
-    Model: 'model
     Bindings: IReadOnlyDictionary<string, VmBinding<'model, 'msg, obj>>
     ValidationErrors: IReadOnlyDictionary<string, string list ref>
     PropertyChanged: Event<PropertyChangedEventHandler, PropertyChangedEventArgs>
@@ -70,16 +69,15 @@ module internal ViewModelHelper =
   let create getSender args bindings validationErrors ={
     GetSender = getSender
     LoggingArgs = args.loggingArgs
-    Model = args.initialModel
     ValidationErrors = validationErrors
     Bindings = bindings
     PropertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
     ErrorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
   }
 
-  let getEventsToRaise newModel helper =
+  let getEventsToRaise oldModel newModel helper =
     helper.Bindings
-      |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(helper.Model, newModel, binding))
+      |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(oldModel, newModel, binding))
       |> Seq.toList
 
   let raiseEvents eventsToRaise helper =
@@ -117,6 +115,8 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         nameChain = nameChain
       } = loggingArgs
 
+  let mutable currentModel = args.initialModel
+
   let (bindings, validationErrors) =
     let getFunctionsForSubModelSelectedItem initializedBindings (name: string) =
       initializedBindings
@@ -132,7 +132,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
 
     let initializeBinding initializedBindings binding =
       Initialize(loggingArgs, binding.Name, getFunctionsForSubModelSelectedItem initializedBindings)
-        .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
+        .Recursive(initialModel, dispatch, (fun () -> currentModel), binding.Data)
 
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
 
@@ -164,11 +164,12 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
       validationErrors
 
   interface IViewModel<'model, 'msg> with
-    member _.CurrentModel : 'model = helper.Model
+    member _.CurrentModel : 'model = currentModel
 
     member _.UpdateModel (newModel: 'model) : unit =
-      let eventsToRaise = ViewModelHelper.getEventsToRaise newModel helper
-      helper <- { helper with Model = newModel }
+      let oldModel = currentModel
+      currentModel <- newModel
+      let eventsToRaise = ViewModelHelper.getEventsToRaise oldModel newModel helper
       ViewModelHelper.raiseEvents eventsToRaise helper
 
   override _.TryGetMember (binder, result) =
@@ -179,7 +180,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          match Get(nameChain).Recursive(helper.Model, binding) with
+          match Get(nameChain).Recursive(currentModel, binding) with
           | Ok v ->
               result <- v
               true
@@ -201,7 +202,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
         false
     | true, binding ->
         try
-          let success = Set(value).Recursive(helper.Model, binding)
+          let success = Set(value).Recursive(currentModel, binding)
           if not success then
             log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
           success
