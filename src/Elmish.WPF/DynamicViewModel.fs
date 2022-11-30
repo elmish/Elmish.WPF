@@ -75,12 +75,12 @@ module internal ViewModelHelper =
     ErrorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>()
   }
 
-  let getEventsToRaise oldModel newModel helper =
+  let getEventsToRaise helper oldModel newModel =
     helper.Bindings
       |> Seq.collect (fun (Kvp (name, binding)) -> Update(helper.LoggingArgs, name).Recursive(oldModel, newModel, binding))
       |> Seq.toList
 
-  let raiseEvents eventsToRaise helper =
+  let raiseEvents helper eventsToRaise =
     let {
       log = log
       nameChain = nameChain } = helper.LoggingArgs
@@ -169,8 +169,8 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     member _.UpdateModel (newModel: 'model) : unit =
       let oldModel = currentModel
       currentModel <- newModel
-      let eventsToRaise = ViewModelHelper.getEventsToRaise oldModel newModel helper
-      ViewModelHelper.raiseEvents eventsToRaise helper
+      ViewModelHelper.getEventsToRaise helper oldModel newModel
+      |> ViewModelHelper.raiseEvents helper
 
   override _.TryGetMember (binder, result) =
     log.LogTrace("[{BindingNameChain}] TryGetMember {BindingName}", nameChain, binder.Name)
