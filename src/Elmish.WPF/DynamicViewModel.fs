@@ -156,7 +156,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     (bindingDict    :> IReadOnlyDictionary<_,_>,
      validationDict :> IReadOnlyDictionary<_,_>)
 
-  let mutable helper =
+  let helper =
     ViewModelHelper.create
       (fun () -> this)
       args
