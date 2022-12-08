@@ -3,6 +3,8 @@
 open System.Windows
 
 open Elmish
+open System.Windows.Input
+open System.Collections.ObjectModel
 
 
 module Binding =
@@ -90,7 +92,46 @@ module Binding =
   let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a, 't>) : Binding<'model, 'b, 't> =
     binding
     |> mapData (alterMsgStream alteration)
+    
 
+  module OneWayT =
+
+    /// Elemental instance of a one-way binding.
+    let id<'a, 'msg> : string -> Binding<'a, 'msg, 'a> =
+      OneWay.id
+      |> createBindingT
+
+  module OneWayToSourceT =
+
+    /// Elemental instance of a one-way-to-source binding.
+    let id<'model, 'a> : string -> Binding<'model, 'a, 'a> =
+      OneWayToSource.id
+      |> createBindingT
+      
+  module CmdT =
+
+    let internal createWithParam exec canExec autoRequery =
+      Cmd.createWithParam exec canExec autoRequery
+      |> createBindingT
+
+    let internal create exec canExec =
+      createWithParam
+        (fun _ -> exec)
+        (fun _ -> canExec)
+        false
+      >> addLazy (fun m1 m2 -> canExec m1 = canExec m2)
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that depends only on the model (not the
+    ///   <c>CommandParameter</c>) and can always execute.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    let cmd
+        (exec: 'model -> 'msg)
+        : string -> Binding<'model, 'msg, ICommand> =
+      create
+        (exec >> ValueSome)
+        (fun _ -> true)
 
   module OneWay =
 
@@ -260,37 +301,37 @@ module Binding =
 
     let opt
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
-      : (string -> Binding<'bindingModel voption, 'msg>)
+      : (string -> Binding<'bindingModel voption, 'msg, #IViewModel<'bindingModel, 'msg>>)
       =
       SubModel.create createVm IViewModel.updateModel
-      |> createBinding
+      |> createBindingT
 
     let req
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
-      : (string -> Binding<'bindingModel, 'msg>)
+      : (string -> Binding<'bindingModel, 'msg, #IViewModel<'bindingModel, 'msg>>)
       =
       SubModel.create createVm IViewModel.updateModel
-      |> createBinding
+      |> createBindingT
       >> mapModel ValueSome
 
   module SubModelSeqUnkeyedT =
 
     let id
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
-      : (string -> Binding<'bindingModelCollection, int * 'msg>)
+      : (string -> Binding<'bindingModelCollection, int * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
       =
       SubModelSeqUnkeyed.create createVm IViewModel.updateModel
-      |> createBinding
+      |> createBindingT
 
   module SubModelSeqKeyedT =
 
     let id
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       (getId: 'bindingModel -> 'id)
-      : (string -> Binding<'bindingModelCollection, 'id * 'msg>)
+      : (string -> Binding<'bindingModelCollection, 'id * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
       =
       SubModelSeqKeyed.create createVm IViewModel.updateModel getId (IViewModel.currentModel >> getId)
-      |> createBinding
+      |> createBindingT
 
   module SubModelWinT =
 
@@ -299,7 +340,7 @@ module Binding =
       (createVM: ViewModelArgs<'bindingModel, 'bindingMsg> -> #IViewModel<'bindingModel, 'bindingMsg>)
       getWindow isModal onCloseRequested =
       SubModelWin.create getState createVM IViewModel.updateModel Func2.id2 getWindow isModal onCloseRequested
-      |> createBinding
+      |> createBindingT
 
 
   module SelectedIndex =
