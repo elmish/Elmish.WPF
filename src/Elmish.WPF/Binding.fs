@@ -19,23 +19,23 @@ module Binding =
   let unboxT (binding: Binding<'b, 'msg>): Binding<'b, 'msg, 't> = BindingData.unboxT |> mapData <| binding
 
   /// Maps the model of a binding via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = f |> mapModel |> mapData <| binding
+  let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg, 't>) = f |> mapModel |> mapData <| binding
 
   /// Maps the message of a binding with access to the model via a covariant mapping.
-  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsgWithModel |> mapData <| binding
+  let mapMsgWithModel (f: 'a -> 'model -> 'b) (binding: Binding<'model, 'a, 't>) = f |> mapMsgWithModel |> mapData <| binding
 
   /// Maps the message of a binding via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a>) = f |> mapMsg |> mapData <| binding
+  let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a, 't>) = f |> mapMsg |> mapData <| binding
 
   /// Sets the message of a binding with access to the model.
-  let setMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a>) = f |> setMsgWithModel |> mapData <| binding
+  let setMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a, 't>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Sets the message of a binding.
-  let setMsg (msg: 'b) (binding: Binding<'model, 'a>) = msg |> setMsg |> mapData <| binding
+  let setMsg (msg: 'b) (binding: Binding<'model, 'a, 't>) = msg |> setMsg |> mapData <| binding
 
 
   /// Restricts the binding to models that satisfy the predicate after some model satisfies the predicate.
-  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg>) = predicate |> addSticky |> mapData <| binding
+  let addSticky (predicate: 'model -> bool) (binding: Binding<'model, 'msg, 't>) = predicate |> addSticky |> mapData <| binding
 
   /// <summary>
   ///   Adds caching to the given binding.  The cache holds a single value and
@@ -43,7 +43,7 @@ module Binding =
   ///   <c>PropertyChanged</c> event.
   /// </summary>
   /// <param name="binding">The binding to which caching is added.</param>
-  let addCaching (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addCaching (binding: Binding<'model, 'msg, 't>) : Binding<'model, 'msg, 't> =
     binding
     |> mapData addCaching
 
@@ -52,7 +52,7 @@ module Binding =
   /// </summary>
   /// <param name="validate">Returns the errors associated with the given model.</param>
   /// <param name="binding">The binding to which validation is added.</param>
-  let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addValidation (validate: 'model -> string list) (binding: Binding<'model, 'msg, 't>) : Binding<'model, 'msg, 't> =
     binding
     |> mapData (addValidation validate)
 
@@ -62,7 +62,7 @@ module Binding =
   /// </summary>
   /// <param name="equals">Updating skipped when this function returns <c>true</c>.</param>
   /// <param name="binding">The binding to which the laziness is added.</param>
-  let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg>) : Binding<'model, 'msg> =
+  let addLazy (equals: 'model -> 'model -> bool) (binding: Binding<'model, 'msg, 't>) : Binding<'model, 'msg, 't> =
     binding
     |> mapData (addLazy equals)
 
@@ -87,7 +87,7 @@ module Binding =
   /// </summary>
   /// <param name="alteration">The function that can alter the message stream.</param>
   /// <param name="binding">The binding of the altered message stream.</param>
-  let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a>) : Binding<'model, 'b> =
+  let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a, 't>) : Binding<'model, 'b, 't> =
     binding
     |> mapData (alterMsgStream alteration)
 
