@@ -9,10 +9,12 @@ open Microsoft.Extensions.Logging
 open BindingVmHelpers
 
 /// Represents all necessary data used to create a binding.
-type Binding<'model, 'msg> =
+type Binding<'model, 'msg, 't> =
   internal
     { Name: string
-      Data: BindingData<'model, 'msg, obj> }
+      Data: BindingData<'model, 'msg, 't> }
+
+type Binding<'model, 'msg> = Binding<'model, 'msg, obj>
 
 
 [<AutoOpen>]
@@ -21,6 +23,10 @@ module internal Helpers =
   let createBinding data name =
     { Name = name
       Data = data |> BindingData.boxT }
+
+  let createBindingT data name =
+    { Name = name
+      Data = data }
 
   type SubModelSelectedItemLast with
     member this.CompareBindings() : Binding<'model, 'msg> -> Binding<'model, 'msg> -> int =
