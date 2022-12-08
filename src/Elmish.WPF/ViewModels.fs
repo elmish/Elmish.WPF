@@ -117,7 +117,7 @@ module internal ViewModelHelper =
     |> IReadOnlyDictionary.tryFind name
     |> function
       | Some b ->
-        match FuncsFromSubModelSeqKeyed().Recursive(b) with
+        match FuncsFromSubModelSeqKeyed().Recursive(b |> MapOutputType.unboxVm) with
         | Some x -> Some x
         | None -> log.LogError("SubModelSelectedItem binding referenced binding {SubModelSeqBindingName} but it is not a SubModelSeq binding", name)
                   None
@@ -253,18 +253,18 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
       .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
 
   member _.Get<'a> ([<CallerMemberName>] ?memberName: string) =
-    fun (binding: string -> Binding<'model, 'msg>) ->
+    fun (binding: string -> Binding<'model, 'msg, 'a>) ->
       let result =
         option {
           let! name = memberName
           let! vmBinding = option {
             match helper.Bindings.TryGetValue name with
             | true, value ->
-              return value
+              return value |> MapOutputType.unboxVm
             | false, _ ->
               let binding = binding name
-              let! vmBinding = initializeBinding helper.Bindings binding
-              let newBindings = helper.Bindings.Add (name, vmBinding)
+              let! vmBinding = binding |> initializeBinding helper.Bindings
+              let newBindings = helper.Bindings.Add (name, vmBinding |> MapOutputType.boxVm)
               let newValidationErrors =
                 FirstValidationErrors().Recursive(vmBinding)
                 |> Option.map (fun errorList -> helper.ValidationErrors.Add (name, errorList))
@@ -287,10 +287,10 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
         | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] Get FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {BindingName}", d.NameChain, d.SubModelSeqBindingName, d.Id, memberName)
         | GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull nonNullTypeName) -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is null, but type {Type} is non-nullable", nameChain, memberName, nonNullTypeName)
         failwithf $"[%s{nameChain}] Get FAILED: Binding {memberName} returned an error {e}"
-      | Some (Ok r) -> r |> unbox<'a>
+      | Some (Ok r) -> r
 
   member _.Set<'a> (value: 'a, [<CallerMemberName>] ?memberName: string) =
-    fun (binding: string -> Binding<'model, 'msg>) ->
+    fun (binding: string -> Binding<'model, 'msg, 'a>) ->
       try
         let success =
           option {
@@ -298,14 +298,14 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
             let! vmBinding = option {
               match setBindings.TryGetValue name with
               | true, value ->
-                return value
+                return value |> MapOutputType.unboxVm
               | false, _ ->
                 let binding = binding name
                 let! vmBinding = initializeBinding helper.Bindings binding
-                setBindings <- setBindings.Add (name, vmBinding)
+                setBindings <- setBindings.Add (name, vmBinding |> MapOutputType.boxVm)
                 return vmBinding
             }
-            return Set(box value).Recursive(helper.Model, vmBinding)
+            return Set(value).Recursive(helper.Model, vmBinding)
           }
         if success = Some false then
           log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} is read-only", nameChain, memberName)
