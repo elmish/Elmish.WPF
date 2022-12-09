@@ -40,6 +40,14 @@ module WpfProgram =
       PerformanceLogThreshold = 1 }
     |> mapVm box unbox
 
+  let private createWithVm (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) program =
+    { ElmishProgram = program
+      CreateViewModel = createVm
+      UpdateViewModel = IViewModel.updateModel
+      LoggerFactory = NullLoggerFactory.Instance
+      ErrorHandler = fun _ _ -> ()
+      PerformanceLogThreshold = 1 }
+
 
   /// Creates a WpfProgram that does not use commands.
   let mkSimple
@@ -57,6 +65,23 @@ module WpfProgram =
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkProgram init update (fun _ _ -> ())
     |> createWithBindings bindings
+
+  /// Creates a WpfProgram that does not use commands.
+  let mkSimpleT
+      (init: unit -> 'model)
+      (update: 'msg  -> 'model -> 'model)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+    Program.mkSimple init update (fun _ _ -> ())
+    |> createWithVm createVm
+
+
+  /// Creates a WpfProgram that uses commands
+  let mkProgramT
+      (init: unit -> 'model * Cmd<'msg>)
+      (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+    Program.mkProgram init update (fun _ _ -> ())
+    |> createWithVm createVm
 
 
   /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
@@ -171,6 +196,25 @@ module WpfProgram =
       (init >> convert)
       (fun msg model -> update msg model |> convert)
       bindings
+
+
+  /// Same as mkProgram2, except that init and update don't return Cmd<'msg>
+  /// directly, but instead return a CmdMsg discriminated union that is converted
+  /// to Cmd<'msg> using toCmd. This means that the init and update functions
+  /// return only data, and thus are easier to unit test. The CmdMsg pattern is
+  /// general; this is just a trivial convenience function that automatically
+  /// converts CmdMsg to Cmd<'msg> for you in init and update.
+  let mkProgramWithCmdMsgT
+      (init: unit -> 'model * 'cmdMsg list)
+      (update: 'msg -> 'model -> 'model * 'cmdMsg list)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>)
+      (toCmd: 'cmdMsg -> Cmd<'msg>) =
+    let convert (model, cmdMsgs) =
+      model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
+    mkProgramT
+      (init >> convert)
+      (fun msg model -> update msg model |> convert)
+      createVm
 
 
   /// Uses the specified ILoggerFactory for logging.
