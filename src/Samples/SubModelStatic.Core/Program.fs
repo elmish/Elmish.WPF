@@ -37,12 +37,12 @@ type [<AllowNullLiteral>] CounterViewModel (args) =
   new() = CounterViewModel(Counter.init |> ViewModelArgs.simple)
 
   member _.StepSize
-    with get() = base.Get<int> () (Binding.OneWay.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.StepSize))
-    and set v = base.Set<int>(v) (Binding.OneWayToSource.id >> Binding.mapMsg Counter.Msg.SetStepSize)
-  member _.CounterValue = base.Get<int> () (Binding.OneWay.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
-  member _.Increment = base.Get () (Binding.cmd Counter.Increment)
-  member _.Decrement = base.Get () (Binding.cmd Counter.Decrement)
-  member _.Reset = base.Get () (Binding.cmdIf (Counter.Reset, Counter.canReset))
+    with get() = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.StepSize))
+    and set(v) = base.Set(v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
+  member _.CounterValue = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
+  member _.Increment = base.Get() (Binding.cmd Counter.Increment)
+  member _.Decrement = base.Get() (Binding.cmd Counter.Decrement)
+  member _.Reset = base.Get() (Binding.cmdIf (Counter.Reset, Counter.canReset))
 
 
 module Clock =
@@ -78,11 +78,11 @@ type [<AllowNullLiteral>] ClockViewModel (args) =
   
   new() = ClockViewModel(Clock.init () |> ViewModelArgs.simple)
 
-  member _.Time = base.Get<DateTime> () (Binding.OneWay.id >> Binding.addLazy (=) >> Binding.mapModel Clock.getTime)
-  member _.IsLocal = base.Get<bool> () (Binding.OneWay.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.TimeType = Clock.Local))
-  member _.SetLocal = base.Get () (Binding.cmd (Clock.SetTimeType Clock.Local))
-  member _.IsUtc = base.Get<bool> () (Binding.OneWay.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.TimeType = Clock.Utc))
-  member _.SetUtc = base.Get () (Binding.cmd (Clock.SetTimeType Clock.Utc))
+  member _.Time = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel Clock.getTime)
+  member _.IsLocal = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.TimeType = Clock.Local))
+  member _.SetLocal = base.Get() (Binding.cmd (Clock.SetTimeType Clock.Local))
+  member _.IsUtc = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.TimeType = Clock.Utc))
+  member _.SetUtc = base.Get() (Binding.cmd (Clock.SetTimeType Clock.Utc))
 
 
 module CounterWithClock =
@@ -115,8 +115,8 @@ type [<AllowNullLiteral>] CounterWithClockViewModel (args) =
   
   new() = CounterWithClockViewModel(CounterWithClock.init () |> ViewModelArgs.simple)
 
-  member _.Counter = base.Get<CounterViewModel> () (Binding.SubModelT.req CounterViewModel >> Binding.mapModel CounterWithClock.ModelM.Counter.get >> Binding.mapMsg CounterWithClock.CounterMsg)
-  member _.Clock = base.Get<ClockViewModel> () (Binding.SubModelT.req ClockViewModel >> Binding.mapModel CounterWithClock.ModelM.Clock.get >> Binding.mapMsg CounterWithClock.ClockMsg)
+  member _.Counter = base.Get() (Binding.SubModelT.req CounterViewModel >> Binding.mapModel CounterWithClock.ModelM.Counter.get >> Binding.mapMsg CounterWithClock.CounterMsg)
+  member _.Clock = base.Get() (Binding.SubModelT.req ClockViewModel >> Binding.mapModel CounterWithClock.ModelM.Clock.get >> Binding.mapMsg CounterWithClock.ClockMsg)
 
 
 module App2 =
@@ -151,8 +151,8 @@ type [<AllowNullLiteral>] AppViewModel (args) =
   
   new() = AppViewModel(App2.init () |> ViewModelArgs.simple)
 
-  member _.ClockCounter1 = base.Get<CounterWithClockViewModel> () (Binding.SubModelT.req CounterWithClockViewModel >> Binding.mapModel App2.ModelM.ClockCounter1.get >> Binding.mapMsg App2.ClockCounter1Msg)
-  member _.ClockCounter2 = base.Get<CounterWithClockViewModel> () (Binding.SubModelT.req CounterWithClockViewModel >> Binding.mapModel App2.ModelM.ClockCounter2.get >> Binding.mapMsg App2.ClockCounter2Msg)
+  member _.ClockCounter1 = base.Get() (Binding.SubModelT.req CounterWithClockViewModel >> Binding.mapModel App2.ModelM.ClockCounter1.get >> Binding.mapMsg App2.ClockCounter1Msg)
+  member _.ClockCounter2 = base.Get() (Binding.SubModelT.req CounterWithClockViewModel >> Binding.mapModel App2.ModelM.ClockCounter2.get >> Binding.mapMsg App2.ClockCounter2Msg)
 
 module Program =
 
@@ -179,7 +179,7 @@ module Program =
         .WriteTo.Console()
         .CreateLogger()
 
-    WpfProgram.mkSimple App2.init App2.update (fun () -> [ "Main" |> Binding.SubModelT.req AppViewModel ])
+    WpfProgram.mkSimple App2.init App2.update (fun () -> [ "Main" |> Binding.SubModelT.req AppViewModel |> Binding.boxT ])
     |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window
