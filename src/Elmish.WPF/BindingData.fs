@@ -245,6 +245,7 @@ module BindingData =
         }
 
   let boxT b = MapT.recursiveCase box unbox b
+  let unboxT b = MapT.recursiveCase unbox box b
 
   let mapModel f =
     let binaryHelper binary x m = binary x (f m)
