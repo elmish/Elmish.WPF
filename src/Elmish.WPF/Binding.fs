@@ -12,6 +12,12 @@ module Binding =
     { Name = binding.Name
       Data = binding.Data |> f }
 
+  /// Boxes the output parameter
+  let boxT (binding: Binding<'b, 'msg, 't>) = BindingData.boxT |> mapData <| binding
+
+  /// Unboxes the output parameter
+  let unboxT (binding: Binding<'b, 'msg>): Binding<'b, 'msg, 't> = BindingData.unboxT |> mapData <| binding
+
   /// Maps the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg>) = f |> mapModel |> mapData <| binding
 
