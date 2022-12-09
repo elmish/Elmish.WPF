@@ -110,28 +110,72 @@ module Binding =
       
   module CmdT =
 
-    let internal createWithParam exec canExec autoRequery =
-      Cmd.createWithParam exec canExec autoRequery
+    /// <summary>
+    ///   Elemental instance of a <c>Command</c> binding.
+    ///   Creates a <c>Command</c> binding that only passes the <c>CommandParameter</c>)
+    /// </summary>
+    /// <param name="uiBoundCmdParam">
+    ///   If <c>true</c>, <c>CanExecuteChanged</c> will trigger every time WPF's
+    ///   <c>CommandManager</c>
+    ///   detects UI changes that could potentially influence the command's
+    ///   ability to execute. This will likely lead to many more triggers than
+    ///   necessary, but is needed if you have bound the <c>CommandParameter</c>
+    ///   to another UI property.
+    /// </param>
+    /// <param name="canExec">Indicates whether the command can execute.</param>
+    let id<'model> uiBoundCmdParam canExec
+        : string -> Binding<'model, obj, ICommand> =
+      Cmd.createWithParam
+        (fun p _ -> ValueSome p)
+        canExec
+        uiBoundCmdParam
       |> createBindingT
-
-    let internal create exec canExec =
-      createWithParam
-        (fun _ -> exec)
-        (fun _ -> canExec)
-        false
-      >> addLazy (fun m1 m2 -> canExec m1 = canExec m2)
 
     /// <summary>
     ///   Creates a <c>Command</c> binding that depends only on the model (not the
-    ///   <c>CommandParameter</c>) and can always execute.
+    ///   <c>CommandParameter</c>).
     /// </summary>
+    /// <param name="canExec">Indicates whether the command can execute.</param>
     /// <param name="exec">Returns the message to dispatch.</param>
-    let cmd
+    let model
+        canExec
         (exec: 'model -> 'msg)
         : string -> Binding<'model, 'msg, ICommand> =
-      create
-        (exec >> ValueSome)
-        (fun _ -> true)
+      id false (fun _ m -> m |> canExec)
+      >> mapMsgWithModel (fun _ y -> y |> exec)
+      >> addLazy (fun m1 m2 -> canExec m1 = canExec m2)
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that dispatches the specified message.
+    /// </summary>
+    /// <param name="canExec">Indicates whether the command can execute.</param>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    let set
+        canExec
+        (msg: 'msg)
+        : string -> Binding<'model, 'msg, ICommand> =
+      id false (fun _ m -> m |> canExec)
+      >> setMsg msg
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that depends only on the model (not the
+    ///   <c>CommandParameter</c>) and always executes.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    let modelAlways
+        (exec: 'model -> 'msg)
+        : string -> Binding<'model, 'msg, ICommand> =
+      model (fun _ -> true) exec
+
+    /// <summary>
+    ///   Creates a <c>Command</c> binding that dispatches the specified message
+    ///   and always executes.
+    /// </summary>
+    /// <param name="exec">Returns the message to dispatch.</param>
+    let setAlways
+        (msg: 'msg)
+        : string -> Binding<'model, 'msg, ICommand> =
+      set (fun _ -> true) msg
 
   module OneWay =
 
