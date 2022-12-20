@@ -135,6 +135,13 @@ module ValueOption =
       testNullForNonNullable<int> ()
       testNullForNonNullable<bool> ()
 
+    type Foo = { Foo: unit }
+    type Bar = Bar of unit
+
+    [<Fact>]
+    let ``toNull does not throw NullReferenceException given reference type`` () =
+      ValueOption.toNull<Foo> ValueNone |> ignore
+      ValueOption.toNull<Bar> ValueNone |> ignore
 
   module ofNull =
 
