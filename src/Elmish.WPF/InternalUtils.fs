@@ -14,7 +14,7 @@ let ignore2 _ _ = ()
 let (|Kvp|) (kvp: KeyValuePair<_,_>) =
   Kvp (kvp.Key, kvp.Value)
 
-  
+
 [<Struct>]
 type OptionalBuilder =
   member _.Bind(ma, f) =
@@ -23,7 +23,7 @@ type OptionalBuilder =
     Some a
   member _.ReturnFrom(ma) =
     ma
-    
+
 let option = OptionalBuilder()
 
 
@@ -81,7 +81,7 @@ module ValueOption =
     | ValueSome x -> Ok x
     | ValueNone ->
       if box Unchecked.defaultof<'a> = null then
-        null |> unbox<'a> |> Ok
+        Unchecked.defaultof<'a> |> Ok
       else
         typeof<'a>.Name |> ToNullError.ValueCannotBeNull |> Error
 
