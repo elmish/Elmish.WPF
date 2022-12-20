@@ -131,13 +131,13 @@ module ValueOption =
       test <@ expected = ValueOption.toNull<'a> ValueNone @>
 
     [<Fact>]
-    let ``toNull returns ValueConnotBeNull Error when given ValueNone for nonnullable type`` () =
+    let ``toNull returns ValueCannotBeNull Error when given ValueNone for non-nullable type`` () =
       testNullForNonNullable<int> ()
       testNullForNonNullable<bool> ()
 
 
   module ofNull =
-  
+
     let testNull<'a when 'a : equality> () =
       let input = Unchecked.defaultof<'a>
       test <@ ValueNone = ValueOption.ofNull input @>
