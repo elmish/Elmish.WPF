@@ -80,8 +80,9 @@ module ValueOption =
   let toNull<'a> = function
     | ValueSome x -> Ok x
     | ValueNone ->
-      if box Unchecked.defaultof<'a> = null then
-        Unchecked.defaultof<'a> |> Ok
+      let default' = Unchecked.defaultof<'a>
+      if box default' = null then
+        default' |> Ok
       else
         typeof<'a>.Name |> ToNullError.ValueCannotBeNull |> Error
 
