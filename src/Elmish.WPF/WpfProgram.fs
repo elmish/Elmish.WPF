@@ -206,7 +206,7 @@ module WpfProgram =
        *)
       fun msg -> elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
 
-    let logMsgAndModel (msg: 'msg) (model: 'model) =
+    let logMsgAndModel (msg: 'msg) (model: 'model) _ =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
 
     let errorHandler (msg: string, ex: exn) =
@@ -217,8 +217,7 @@ module WpfProgram =
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
     |> Program.withErrorHandler errorHandler
     |> Program.withSetState setUiState
-    |> Program.withSyncDispatch cmdDispatch
-    |> Program.run
+    |> Program.runWithDispatch cmdDispatch ()
 
 
   /// Instantiates Application and sets its MainWindow if it is not already

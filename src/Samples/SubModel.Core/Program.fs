@@ -150,18 +150,23 @@ let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init (
 let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
 
 
-let timerTick dispatch =
-  let timer = new System.Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ ->
-    let clockMsg =
-      DateTimeOffset.Now
-      |> Clock.Tick
-      |> CounterWithClock.ClockMsg
-    dispatch <| App.ClockCounter1Msg clockMsg
-    dispatch <| App.ClockCounter2Msg clockMsg
-  )
-  timer.Start()
+let subscriptions (model: App.Model) : Sub<App.Msg> =
+  let timerTickSub dispatch =
+    let timer = new System.Timers.Timer(1000.)
+    let disp = timer.Elapsed.Subscribe(fun _ ->
+      let clockMsg =
+        DateTimeOffset.Now
+        |> Clock.Tick
+        |> CounterWithClock.ClockMsg
+      dispatch <| App.ClockCounter1Msg clockMsg
+      dispatch <| App.ClockCounter2Msg clockMsg
+    )
+    timer.Start()
+    disp
 
+  [
+    [ nameof timerTickSub ], timerTickSub
+  ]
 
 let main window =
 
@@ -174,6 +179,6 @@ let main window =
       .CreateLogger()
 
   WpfProgram.mkSimple App.init App.update App.bindings
-  |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+  |> WpfProgram.withSubscription subscriptions
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.startElmishLoop window

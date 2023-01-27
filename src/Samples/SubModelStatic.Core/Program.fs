@@ -156,17 +156,23 @@ type [<AllowNullLiteral>] AppViewModel (args) =
 
 module Program =
 
-  let timerTick dispatch =
-    let timer = new System.Timers.Timer(1000.)
-    timer.Elapsed.Add (fun _ ->
-      let clockMsg =
-        DateTimeOffset.Now
-        |> Clock.Tick
-        |> CounterWithClock.ClockMsg
-      dispatch <| App2.ClockCounter1Msg clockMsg
-      dispatch <| App2.ClockCounter2Msg clockMsg
-    )
-    timer.Start()
+  let subscriptions (model: App2.Model) : Sub<App2.Msg> =
+    let timerTickSub dispatch =
+      let timer = new System.Timers.Timer(1000.)
+      let disposable = timer.Elapsed.Subscribe (fun _ ->
+        let clockMsg =
+          DateTimeOffset.Now
+          |> Clock.Tick
+          |> CounterWithClock.ClockMsg
+        dispatch <| App2.ClockCounter1Msg clockMsg
+        dispatch <| App2.ClockCounter2Msg clockMsg
+      )
+      timer.Start()
+      disposable
+
+    [
+      [ nameof timerTickSub ], timerTickSub
+    ]
 
 
   let main window =
@@ -180,6 +186,6 @@ module Program =
         .CreateLogger()
 
     WpfProgram.mkSimpleT App2.init App2.update AppViewModel
-    |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+    |> WpfProgram.withSubscription subscriptions
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window

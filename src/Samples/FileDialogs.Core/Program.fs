@@ -84,11 +84,16 @@ let bindings () : Binding<Model, Msg> list = [
 let designVm = ViewModel.designInstance (init () |> fst) (bindings ())
 
 
-let timerTick dispatch =
-  let timer = new Timers.Timer(1000.)
-  timer.Elapsed.Add (fun _ -> dispatch (SetTime DateTimeOffset.Now))
-  timer.Start()
+let subscriptions (model: Model) : Sub<Msg> =
+  let timerTickSub dispatch =
+    let timer = new Timers.Timer(1000.)
+    let disp = timer.Elapsed.Subscribe(fun _ -> dispatch (SetTime DateTimeOffset.Now))
+    timer.Start()
+    disp
 
+  [
+    [ nameof timerTickSub ], timerTickSub
+  ]
 
 let main window =
 
@@ -100,7 +105,8 @@ let main window =
       .WriteTo.Console()
       .CreateLogger()
 
+
   WpfProgram.mkProgram init update bindings
-  |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+  |> WpfProgram.withSubscription subscriptions
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.startElmishLoop window
