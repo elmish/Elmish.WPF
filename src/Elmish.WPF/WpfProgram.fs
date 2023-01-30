@@ -139,7 +139,7 @@ module WpfProgram =
                   dispatch msg
                   threader <- Threaded_NoUIDispatch
 
-                elmishDispatcher.InvokeAsync(synchronizedUiDispatch, Threading.DispatcherPriority.Input) |> ignore
+                elmishDispatcher.InvokeAsync(synchronizedUiDispatch) |> ignore
                 uiWaiter.Task.Result()
               | Threaded_PendingUIDispatch uiWaiter
               | Threaded_UIDispatch uiWaiter ->
