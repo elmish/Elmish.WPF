@@ -358,6 +358,14 @@ module Binding =
       |> createBindingT
       >> mapModel ValueSome
 
+    let seq
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #seq<#IViewModel<'bindingModel, 'msg>>)
+      : (string -> Binding<'bindingModel, 'msg, #seq<#IViewModel<'bindingModel, 'msg>>>)
+      =
+      SubModel.create createVm (fun (vms, m) -> vms |> Seq.map (fun vm -> vm, m) |> Seq.iter IViewModel.updateModel)
+      |> createBindingT
+      >> mapModel ValueSome
+
   module SubModelSeqUnkeyedT =
 
     let id
