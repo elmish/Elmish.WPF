@@ -50,8 +50,8 @@ module Form2 =
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Input1" |> Binding.twoWay ((fun m -> m.Text1), SetText1)
-    "Input2" |> Binding.twoWay ((fun m -> m.Text2), SetText2)
+    "Text1" |> Binding.twoWay ((fun m -> m.Text1), SetText1)
+    "Text2" |> Binding.twoWay ((fun m -> m.Text2), SetText2)
     "Submit" |> Binding.cmd Submit
   ]
 
