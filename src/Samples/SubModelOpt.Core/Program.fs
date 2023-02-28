@@ -31,8 +31,8 @@ module Form1 =
 module Form2 =
 
   type Model =
-    { Input1: string
-      Input2: string }
+    { Text1: string
+      Text2: string }
 
   type Msg =
     | Text1Input of string
@@ -40,18 +40,18 @@ module Form2 =
     | Submit
 
   let init =
-    { Input1 = ""
-      Input2 = "" }
+    { Text1 = ""
+      Text2 = "" }
 
   let update msg m =
     match msg with
-    | Text1Input s -> { m with Input1 = s }
-    | Text2Input s -> { m with Input2 = s }
+    | Text1Input s -> { m with Text1 = s }
+    | Text2Input s -> { m with Text2 = s }
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Input1" |> Binding.twoWay ((fun m -> m.Input1), Text1Input)
-    "Input2" |> Binding.twoWay ((fun m -> m.Input2), Text2Input)
+    "Input1" |> Binding.twoWay ((fun m -> m.Text1), Text1Input)
+    "Input2" |> Binding.twoWay ((fun m -> m.Text2), Text2Input)
     "Submit" |> Binding.cmd Submit
   ]
 
