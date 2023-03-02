@@ -11,7 +11,7 @@ module Form1 =
     { Text: string }
 
   type Msg =
-    | TextInput of string
+    | SetText of string
     | Submit
 
   let init =
@@ -19,11 +19,11 @@ module Form1 =
 
   let update msg m =
     match msg with
-    | TextInput s -> { m with Text = s }
+    | SetText s -> { m with Text = s }
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Text" |> Binding.twoWay ((fun m -> m.Text), TextInput)
+    "Text" |> Binding.twoWay ((fun m -> m.Text), SetText)
     "Submit" |> Binding.cmd Submit
   ]
 
@@ -31,27 +31,27 @@ module Form1 =
 module Form2 =
 
   type Model =
-    { Input1: string
-      Input2: string }
+    { Text1: string
+      Text2: string }
 
   type Msg =
-    | Text1Input of string
-    | Text2Input of string
+    | SetText1 of string
+    | SetText2 of string
     | Submit
 
   let init =
-    { Input1 = ""
-      Input2 = "" }
+    { Text1 = ""
+      Text2 = "" }
 
   let update msg m =
     match msg with
-    | Text1Input s -> { m with Input1 = s }
-    | Text2Input s -> { m with Input2 = s }
+    | SetText1 s -> { m with Text1 = s }
+    | SetText2 s -> { m with Text2 = s }
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
-    "Input1" |> Binding.twoWay ((fun m -> m.Input1), Text1Input)
-    "Input2" |> Binding.twoWay ((fun m -> m.Input2), Text2Input)
+    "Text1" |> Binding.twoWay ((fun m -> m.Text1), SetText1)
+    "Text2" |> Binding.twoWay ((fun m -> m.Text2), SetText2)
     "Submit" |> Binding.cmd Submit
   ]
 
