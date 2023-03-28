@@ -129,7 +129,7 @@ module Helpers =
        AutoRequery = autoRequery }
      |> CmdData
      |> BaseBindingData
-     |> createBinding) name
+     |> Binding.createBinding) name
 
 
   let internal subModel
