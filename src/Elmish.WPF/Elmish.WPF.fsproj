@@ -47,7 +47,7 @@
     <Compile Include="ViewModelArgs.fs" />
     <Compile Include="BindingData.fs" />
     <Compile Include="BindingVmHelpers.fs" />
-    <Compile Include="DynamicViewModel.fs" />
+    <Compile Include="ViewModels.fs" />
     <Compile Include="Binding.fs" />
     <Compile Include="ViewModelModule.fs" />
     <Compile Include="WpfProgram.fs" />

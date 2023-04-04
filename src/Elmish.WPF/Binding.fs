@@ -254,6 +254,51 @@ module Binding =
       vopt bindings
       >> mapModel ValueSome
 
+  module SubModelT =
+
+    let opt
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
+      : (string -> Binding<'bindingModel voption, 'msg>)
+      =
+      SubModel.create createVm IViewModel.updateModel
+      |> createBinding
+
+    let req
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
+      : (string -> Binding<'bindingModel, 'msg>)
+      =
+      SubModel.create createVm IViewModel.updateModel
+      |> createBinding
+      >> mapModel ValueSome
+
+  module SubModelSeqUnkeyedT =
+
+    let id
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
+      : (string -> Binding<'bindingModelCollection, int * 'msg>)
+      =
+      SubModelSeqUnkeyed.create createVm IViewModel.updateModel
+      |> createBinding
+
+  module SubModelSeqKeyedT =
+
+    let id
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
+      (getId: 'bindingModel -> 'id)
+      : (string -> Binding<'bindingModelCollection, 'id * 'msg>)
+      =
+      SubModelSeqKeyed.create createVm IViewModel.updateModel getId (IViewModel.currentModel >> getId)
+      |> createBinding
+
+  module SubModelWinT =
+
+    let id
+      (getState: 'model -> WindowState<'bindingModel>)
+      (createVM: ViewModelArgs<'bindingModel, 'bindingMsg> -> #IViewModel<'bindingModel, 'bindingMsg>)
+      getWindow isModal onCloseRequested =
+      SubModelWin.create getState createVM IViewModel.updateModel Func2.id2 getWindow isModal onCloseRequested
+      |> createBinding
+
 
   module SelectedIndex =
     /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
