@@ -16,7 +16,7 @@ open Elmish.WPF
 
 
 type internal TestVm<'model, 'msg, 'B1>(model, binding: string -> Binding<'model,'msg>) as this =
-  inherit ViewModelBase<'model, 'msg>({ initialModel = model; dispatch = this.Dispatch; loggingArgs = LoggingViewModelArgs.none })
+  inherit ViewModelBase<'model, 'msg>({ initialModel = model; dispatch = (fun x -> this.Dispatch x); loggingArgs = LoggingViewModelArgs.none })
 
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
