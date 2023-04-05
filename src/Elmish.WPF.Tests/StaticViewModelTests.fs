@@ -37,7 +37,7 @@ type internal TestVm<'model, 'msg, 'B1>(model, binding: string -> Binding<'model
   member _.UpdateModel(m) = IViewModel.updateModel(this, m)
 
   member x.GetPropertyName = nameof(x.GetProperty)
-  member _.GetProperty = base.Get<'B1>() binding
+  member _.GetProperty = base.Get<'B1>() (binding >> Binding.unboxT)
 
   member private __.Dispatch x =
     dispatchMsgs.Add x
