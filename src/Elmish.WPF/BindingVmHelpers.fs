@@ -264,7 +264,7 @@ module internal MapOutputType =
         Vms = b.Vms |> CollectionTarget.mapCollection fOut
         GetCurrentModel = b.GetCurrentModel }
     | SubModelSeqKeyed b -> SubModelSeqKeyed {
-        SubModelSeqKeyedData = { 
+        SubModelSeqKeyedData = {
           GetSubModels = b.SubModelSeqKeyedData.GetSubModels
           CreateViewModel = b.SubModelSeqKeyedData.CreateViewModel
           CreateCollection = b.SubModelSeqKeyedData.CreateCollection >> CollectionTarget.mapCollection fOut
@@ -283,31 +283,31 @@ module internal MapOutputType =
           VmToId = fIn >> b.SelectedItemBinding.VmToId
           FromId = b.SelectedItemBinding.FromId >> Option.map fOut } }
 
-  let rec private recursivecase<'model, 'msg, 'a, 'b> (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: VmBinding<'model, 'msg, 'a>) : VmBinding<'model, 'msg, 'b> =
+  let rec private recursiveCase<'model, 'msg, 'a, 'b> (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: VmBinding<'model, 'msg, 'a>) : VmBinding<'model, 'msg, 'b> =
     match data with
     | BaseVmBinding b -> baseCase fOut fIn b |> BaseVmBinding
     | Cached b -> Cached {
-        Binding = recursivecase fOut fIn b.Binding
+        Binding = recursiveCase fOut fIn b.Binding
         GetCache = b.GetCache >> Option.map fOut
         SetCache = Option.map fIn >> b.SetCache
       }
     | AlterMsgStream b -> AlterMsgStream {
-        Binding = recursivecase fOut fIn b.Binding
+        Binding = recursiveCase fOut fIn b.Binding
         Get = b.Get
       }
     | Lazy b -> Lazy {
         Get = b.Get
-        Binding = recursivecase fOut fIn b.Binding
+        Binding = recursiveCase fOut fIn b.Binding
         Equals = b.Equals
       }
     | Validatation b -> Validatation {
-        Binding = recursivecase fOut fIn b.Binding
+        Binding = recursiveCase fOut fIn b.Binding
         Errors = b.Errors
         Validate = b.Validate
       }
 
-  let boxVm b = recursivecase box unbox b
-  let unboxVm b = recursivecase unbox box b
+  let boxVm b = recursiveCase box unbox b
+  let unboxVm b = recursiveCase unbox box b
 
 type SubModelSelectedItemLast() =
 
