@@ -15,6 +15,7 @@
       <TextBlock Text="{Binding Pings, StringFormat='Seconds Since Startup: {0}'}" />
       <TextBox Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" Height="80" />
       <Button Click="Button_Click" Content="Freeze UI 5 seconds"/>
+      <Button Click="Button2_Click" Content="Append number of seconds in 5 seconds"/>
     </StackPanel>
   </Grid>
 </Window>
