@@ -126,8 +126,8 @@ module WpfProgram =
     let setUiState model _syncDispatch =
       match viewModel with
       | None ->
-          let uiDispatch msg =
-            let threadCheckedUiDispatch () =
+          let dispatchFromViewModel msg =
+            if element.Dispatcher = Threading.Dispatcher.CurrentDispatcher then
               match threader with
               | SingleThreaded -> dispatch msg
               | Threaded_NoUIDispatch ->
@@ -144,10 +144,11 @@ module WpfProgram =
               | Threaded_PendingUIDispatch uiWaiter
               | Threaded_UIDispatch uiWaiter ->
                 uiWaiter.SetException(exn())
-            element.Dispatcher.Invoke threadCheckedUiDispatch
+            else
+              elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
           let args =
             { initialModel = model
-              dispatch = uiDispatch
+              dispatch = dispatchFromViewModel
               loggingArgs =
                 { performanceLogThresholdMs = program.PerformanceLogThreshold
                   nameChain = "main"
