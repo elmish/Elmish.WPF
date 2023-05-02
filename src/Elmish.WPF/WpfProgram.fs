@@ -174,7 +174,7 @@ module WpfProgram =
        * This avoids race conditions like those that can occur when shutting down.
        * https://github.com/elmish/Elmish.WPF/issues/353
        *)
-      fun msg -> elmishDispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
+      fun msg -> elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
 
     let logMsgAndModel (msg: 'msg) (model: 'model) =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
