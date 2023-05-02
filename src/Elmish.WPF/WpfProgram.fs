@@ -6,24 +6,44 @@ open Microsoft.Extensions.Logging.Abstractions
 open Elmish
 
 
-type WpfProgram<'model, 'msg> =
+type WpfProgram<'model, 'msg, 'viewModel> =
   internal {
     ElmishProgram: Program<unit, 'model, 'msg, unit>
-    Bindings: Binding<'model, 'msg> list
+    CreateViewModel: ViewModelArgs<'model,'msg> -> 'viewModel
+    UpdateViewModel: 'viewModel * 'model -> unit
     LoggerFactory: ILoggerFactory
     ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
 
+type WpfProgram<'model, 'msg> = WpfProgram<'model, 'msg, obj>
+
 
 [<RequireQualifiedAccess>]
 module WpfProgram =
 
+  let private mapVm fOut fIn (p: WpfProgram<'model, 'msg, 'viewModel0>) : WpfProgram<'model, 'msg, 'viewModel1> =
+    { ElmishProgram = p.ElmishProgram
+      CreateViewModel = p.CreateViewModel >> fOut
+      UpdateViewModel = (fun (vm, m) -> p.UpdateViewModel(fIn vm, m))
+      LoggerFactory = p.LoggerFactory
+      ErrorHandler = p.ErrorHandler
+      PerformanceLogThreshold = p.PerformanceLogThreshold }
 
-  let private create getBindings program =
+  let private createWithBindings (getBindings: unit -> Binding<'model,'msg> list) program =
     { ElmishProgram = program
-      Bindings = getBindings ()
+      CreateViewModel = fun args -> DynamicViewModel<'model,'msg>(args, getBindings ())
+      UpdateViewModel = IViewModel.updateModel
+      LoggerFactory = NullLoggerFactory.Instance
+      ErrorHandler = fun _ _ -> ()
+      PerformanceLogThreshold = 1 }
+    |> mapVm box unbox
+
+  let private createWithVm (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) program =
+    { ElmishProgram = program
+      CreateViewModel = createVm
+      UpdateViewModel = IViewModel.updateModel
       LoggerFactory = NullLoggerFactory.Instance
       ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
@@ -35,7 +55,7 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkSimple init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
 
 
   /// Creates a WpfProgram that uses commands
@@ -44,7 +64,24 @@ module WpfProgram =
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
       (bindings: unit -> Binding<'model, 'msg> list) =
     Program.mkProgram init update (fun _ _ -> ())
-    |> create bindings
+    |> createWithBindings bindings
+
+  /// Creates a WpfProgram that does not use commands.
+  let mkSimpleT
+      (init: unit -> 'model)
+      (update: 'msg  -> 'model -> 'model)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+    Program.mkSimple init update (fun _ _ -> ())
+    |> createWithVm createVm
+
+
+  /// Creates a WpfProgram that uses commands
+  let mkProgramT
+      (init: unit -> 'model * Cmd<'msg>)
+      (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+    Program.mkProgram init update (fun _ _ -> ())
+    |> createWithVm createVm
 
 
   /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
@@ -52,7 +89,7 @@ module WpfProgram =
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
   let startElmishLoop
       (element: FrameworkElement)
-      (program: WpfProgram<'model, 'msg>) =
+      (program: WpfProgram<'model, 'msg, 'viewModel>) =
     let mutable viewModel = None
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
@@ -84,11 +121,11 @@ module WpfProgram =
                   nameChain = "main"
                   log = bindingsLogger
                   logPerformance = performanceLogger } }
-          let vm = DynamicViewModel<'model, 'msg>(args, program.Bindings)
+          let vm = program.CreateViewModel args
           element.DataContext <- vm
           viewModel <- Some vm
       | Some vm ->
-          IViewModel.updateModel (vm, model)
+          program.UpdateViewModel (vm, model)
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
@@ -159,6 +196,25 @@ module WpfProgram =
       (init >> convert)
       (fun msg model -> update msg model |> convert)
       bindings
+
+
+  /// Same as mkProgram2, except that init and update don't return Cmd<'msg>
+  /// directly, but instead return a CmdMsg discriminated union that is converted
+  /// to Cmd<'msg> using toCmd. This means that the init and update functions
+  /// return only data, and thus are easier to unit test. The CmdMsg pattern is
+  /// general; this is just a trivial convenience function that automatically
+  /// converts CmdMsg to Cmd<'msg> for you in init and update.
+  let mkProgramWithCmdMsgT
+      (init: unit -> 'model * 'cmdMsg list)
+      (update: 'msg -> 'model -> 'model * 'cmdMsg list)
+      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>)
+      (toCmd: 'cmdMsg -> Cmd<'msg>) =
+    let convert (model, cmdMsgs) =
+      model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
+    mkProgramT
+      (init >> convert)
+      (fun msg model -> update msg model |> convert)
+      createVm
 
 
   /// Uses the specified ILoggerFactory for logging.

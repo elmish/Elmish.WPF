@@ -179,7 +179,7 @@ module Program =
         .WriteTo.Console()
         .CreateLogger()
 
-    WpfProgram.mkSimple App2.init App2.update (fun () -> [ "Main" |> Binding.SubModelT.req AppViewModel |> Binding.boxT ])
+    WpfProgram.mkSimpleT App2.init App2.update AppViewModel
     |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window
