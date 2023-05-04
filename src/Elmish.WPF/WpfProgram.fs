@@ -125,9 +125,9 @@ module WpfProgram =
     // Always must be synchronized with elmishDispatcher (or UI thread in single-threaded case)
     let setUiState model _syncDispatch =
       match viewModel with
-      | None ->
+      | None -> // no view model yet, so create one
           let dispatchFromViewModel msg =
-            if element.Dispatcher = Threading.Dispatcher.CurrentDispatcher then
+            if element.Dispatcher = Threading.Dispatcher.CurrentDispatcher then // if the message is from the UI thread
               match threader with
               | SingleThreaded -> dispatch msg
               | Threaded_NoUIDispatch ->
@@ -140,12 +140,13 @@ module WpfProgram =
                   threader <- Threaded_NoUIDispatch
 
                 elmishDispatcher.InvokeAsync(synchronizedUiDispatch) |> ignore
-                uiWaiter.Task.Result()
+                let continuationOnUIThread = uiWaiter.Task.Result
+                continuationOnUIThread()
               | Threaded_PendingUIDispatch uiWaiter
               | Threaded_UIDispatch uiWaiter ->
-                uiWaiter.SetException(exn())
-            else
-              elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
+                uiWaiter.SetException(exn("Error in core Elmish.WPF threading code. Invalid state reached!"))
+            else // message is not from the UI thread
+              elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore // handle as a command message
           let args =
             { initialModel = model
               dispatch = dispatchFromViewModel
@@ -159,11 +160,11 @@ module WpfProgram =
           viewModel <- Some vm
       | Some vm ->
           match threader with
-          | Threaded_UIDispatch uiWaiter -> // Give the function back to the uiDispatch function to execute
-            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model))
+          | Threaded_UIDispatch uiWaiter ->
+            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model)) // execute `UpdateViewModel` on UI thread
           | Threaded_PendingUIDispatch _ ->
             () // Skip updating the UI if we aren't at the update that does the UI yet, but have one pending
-          | Threaded_NoUIDispatch -> // If there are no pending updates from uiDispatch, schedule update normally
+          | Threaded_NoUIDispatch -> // If there are no pending updates from dispatchFromViewModel, schedule update normally
             element.Dispatcher.InvokeAsync(fun () -> program.UpdateViewModel (vm, model)) |> ignore
           | SingleThreaded -> // If we aren't using different threads, always process normally
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
