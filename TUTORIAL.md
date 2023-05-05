@@ -342,3 +342,5 @@ Additional resources
 The [Elmish.WPF readme](https://github.com/elmish/Elmish.WPF/blob/master/README.md) contains
   - a “getting started” section that will get you quickly up and running
   - a FAQ with miscellaneous useful information
+
+The [Elmish.WPF reference](https://github.com/elmish/Elmish.WPF/blob/master/REFERENCE.md)
