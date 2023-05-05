@@ -1,3 +1,11 @@
+#### 4.0.0-beta-46
+* Added `ViewModelBase` which allows view models to be defined as static types with real properties rather than unnamed dynamic types with stringly named properties.
+* Added `Binding.SubModelT`, `Binding.SubModelSeqUnkeyedT`, `Binding.SubModelSeqKeyedT` and `Binding.SubModelWinT` modules for creating these static types as sub models.
+* Replaced internal usage of refs in dynamic view model with get/set functions to allow for matting of the type.
+* Added some internal types to support `ViewModelBase`.
+* Improved documentation.
+* Added a `SubModelStatic` sample project using above feature.
+
 #### 4.0.0-beta-45
 * Improved performance of Lazy effect by reducing calls to later model mappings
 * Removed `SourceOrTarget` and `DuplicateIdException` from public API (added in `4.0.0-beta-42`)
