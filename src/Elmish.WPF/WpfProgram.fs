@@ -83,10 +83,38 @@ module WpfProgram =
     Program.mkProgram init update (fun _ _ -> ())
     |> createWithVm createVm
 
+  [<Struct>]
+  type ElmishThreaderBehavior =
+  | SingleThreaded
+  | Threaded_NoUIDispatch
+  | Threaded_PendingUIDispatch of pending: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
+  | Threaded_UIDispatch of active: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
 
-  /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
+  /// <summary>Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
   /// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
+  ///
+  /// If you execute this from a thread other than the thread owning element.Dispatcher (UI Thread),
+  /// Elmish.WPF will use that background thread to run updates rather than the main UI thread.</summary>
+  /// <remarks>Example multithreaded use:
+  /// <code><![CDATA[
+  /// let elmishThread =
+  ///   Thread(
+  ///     ThreadStart(fun () ->
+  ///       WpfProgram.startElmishLoop window program
+  ///       Dispatcher.Run()))
+  /// elmishThread.Name <- "ElmishDispatchThread"
+  /// elmishThread.Run()
+  ///
+  /// mainWindow.Show()
+  /// let result = Application.Current.Run mainWindow
+  ///
+  /// Threading.Dispatcher.FromThread(elmishThread).InvokeShutdown()
+  /// elmishThread.Join()
+  /// ]]></code></remarks>
+  /// <param name="element"></param>
+  /// <param name="program"></param>
+  /// <returns></returns>
   let startElmishLoop
       (element: FrameworkElement)
       (program: WpfProgram<'model, 'msg, 'viewModel>) =
@@ -109,23 +137,65 @@ module WpfProgram =
      *)
     let mutable dispatch = Unchecked.defaultof<Dispatch<'msg>>
 
-    let setState model _ =
+    let elmishDispatcher = Threading.Dispatcher.CurrentDispatcher
+    let mutable threader =
+      if element.Dispatcher = elmishDispatcher then
+        SingleThreaded
+      else
+        Threaded_NoUIDispatch
+
+    // Dispatch that comes in from a view model message (setter or WPF ICommand). These may come from UI thread, so must be streated specially
+    let dispatchFromViewModel msg =
+      if element.Dispatcher = Threading.Dispatcher.CurrentDispatcher then // if the message is from the UI thread
+        match threader with
+        | SingleThreaded -> dispatch msg // Dispatch directly if `elmishDispatcher` is the same as the UI thread
+        | Threaded_NoUIDispatch -> // If `elmishDispatcher` is different, invoke dispatch on it then wait around for it to finish executing, then execute the continuation on the current (UI) thread
+          let uiWaiter = System.Threading.Tasks.TaskCompletionSource<unit -> unit>()
+          threader <- Threaded_PendingUIDispatch uiWaiter
+
+          // This should always leave `threader` in the `Threaded_NoUIDispatch` state before leaving this thread invocation
+          let synchronizedUiDispatch () =
+            threader <- Threaded_UIDispatch uiWaiter
+            dispatch msg
+            threader <- Threaded_NoUIDispatch
+
+          elmishDispatcher.InvokeAsync(synchronizedUiDispatch) |> ignore
+          // Wait on `elmishDispatcher` to get to this invocation and collect result
+          let continuationOnUIThread = uiWaiter.Task.Result
+          // Result is the `program.UpdateViewModel` call, so execute here on the UI thread
+          continuationOnUIThread()
+        | Threaded_PendingUIDispatch uiWaiter
+        | Threaded_UIDispatch uiWaiter ->
+          uiWaiter.SetException(exn("Error in core Elmish.WPF threading code. Invalid state reached!"))
+      else // message is not from the UI thread
+        elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore // handle as a command message
+
+    // Core Elmish calls this from `dispatch`, which means this is always called from `elmishDispatcher`
+    // (which is UI thread in single-threaded case)
+    let setUiState model _syncDispatch =
       match viewModel with
-      | None ->
-          let uiDispatch msg = element.Dispatcher.Invoke(fun () -> dispatch msg)
+      | None -> // no view model yet, so create one
           let args =
             { initialModel = model
-              dispatch = uiDispatch
+              dispatch = dispatchFromViewModel
               loggingArgs =
                 { performanceLogThresholdMs = program.PerformanceLogThreshold
                   nameChain = "main"
                   log = bindingsLogger
                   logPerformance = performanceLogger } }
           let vm = program.CreateViewModel args
-          element.DataContext <- vm
+          element.Dispatcher.Invoke(fun () -> element.DataContext <- vm)
           viewModel <- Some vm
-      | Some vm ->
-          program.UpdateViewModel (vm, model)
+      | Some vm -> // view model exists, so update
+          match threader with
+          | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
+            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model)) // execute `UpdateViewModel` on UI thread
+          | Threaded_PendingUIDispatch _ -> // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
+            () // Skip updating the UI since the screen is frozen anyways, and `program.UpdateViewModel` is fully transitive
+          | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
+            element.Dispatcher.InvokeAsync(fun () -> program.UpdateViewModel (vm, model)) |> ignore // Schedule update normally
+          | SingleThreaded -> // If we aren't using different threads, always process normally
+            element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
       dispatch <- innerDispatch
@@ -134,7 +204,7 @@ module WpfProgram =
        * This avoids race conditions like those that can occur when shutting down.
        * https://github.com/elmish/Elmish.WPF/issues/353
        *)
-      fun msg -> element.Dispatcher.InvokeAsync(fun () -> innerDispatch msg) |> ignore
+      fun msg -> elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
 
     let logMsgAndModel (msg: 'msg) (model: 'model) =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
@@ -146,7 +216,7 @@ module WpfProgram =
     program.ElmishProgram
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
     |> Program.withErrorHandler errorHandler
-    |> Program.withSetState setState
+    |> Program.withSetState setUiState
     |> Program.withSyncDispatch cmdDispatch
     |> Program.run
 
