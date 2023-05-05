@@ -90,9 +90,31 @@ module WpfProgram =
   | Threaded_PendingUIDispatch of pending: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
   | Threaded_UIDispatch of active: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
 
-  /// Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
+  /// <summary>Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
   /// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
+  ///
+  /// If you execute this from a thread other than the thread owning element.Dispatcher (UI Thread),
+  /// Elmish.WPF will use that background thread to run updates rather than the main UI thread.</summary>
+  /// <remarks>Example multithreaded use:
+  /// <code><![CDATA[
+  /// let elmishThread =
+  ///   Thread(
+  ///     ThreadStart(fun () ->
+  ///       WpfProgram.startElmishLoop window program
+  ///       Dispatcher.Run()))
+  /// elmishThread.Name <- "ElmishDispatchThread"
+  /// elmishThread.Run()
+  ///
+  /// mainWindow.Show()
+  /// let result = Application.Current.Run mainWindow
+  ///
+  /// Threading.Dispatcher.FromThread(elmishThread).InvokeShutdown()
+  /// elmishThread.Join()
+  /// ]]></code></remarks>
+  /// <param name="element"></param>
+  /// <param name="program"></param>
+  /// <returns></returns>
   let startElmishLoop
       (element: FrameworkElement)
       (program: WpfProgram<'model, 'msg, 'viewModel>) =
