@@ -1,3 +1,7 @@
+#### 4.0.0-beta-48
+* Added ability to run elmish update loop on a background thread rather than only on the main UI thread.
+* Added a `Threading` sample project demonstrating above feature.
+
 #### 4.0.0-beta-47
 * Improved `ViewModelBase` to infer view model property types from the Model getter rather than needing to be explicitly specified.
 * Added `'t` type parameter to `Binding<'model, 'msg, 't>` everywhere to support above feature. `Binding<'model, 'msg>` is defined as `Binding<'model, 'msg, obj>` for full backwards compatibility.
