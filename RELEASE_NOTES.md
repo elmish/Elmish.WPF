@@ -1,3 +1,13 @@
+#### 4.0.0-beta-47
+* Improved `ViewModelBase` to infer view model property types from the Model getter rather than needing to be explicitly specified.
+* Added `'t` type parameter to `Binding<'model, 'msg, 't>` everywhere to support above feature. `Binding<'model, 'msg>` is defined as `Binding<'model, 'msg, obj>` for full backwards compatibility.
+* Added `Binding.boxT` and `Binding.unboxT` to support moving back and forth between the two.
+* Added `Binding.OneWayT`, `Binding.OneWayToSourceT` and `Binding.CmdT` modules for creating strongly typed primitives for the top feature.
+* Added types internally to carry everything through (mostly provably) correctly.
+* Added `'viewModel` type parameter to `WpfProgram<'model, 'msg, 'viewModel>` to support using a static view model at the top level. `WpfProgram<'model, 'msg>` is defined as `WpfProgram<'model, 'msg, obj>` for full backwards compatibility. Also made `WpfProgram` core type more generic, replacing the list of bindings with equivalent but more flexible `CreateViewModel` and `UpdateViewModel` functions.
+* Added `WpfProgram.mkSimpleT`, `WpfProgram.mkProgramT` and `WpfProgram.mkProgramWithCmdMsgT` for making programs that use static view models as the top-level data context.
+* Modified `SubModelStatic` sample project to use new static view model features.
+
 #### 4.0.0-beta-46
 * Added `ViewModelBase` which allows view models to be defined as static types with real properties rather than unnamed dynamic types with stringly named properties.
 * Added `Binding.SubModelT`, `Binding.SubModelSeqUnkeyedT`, `Binding.SubModelSeqKeyedT` and `Binding.SubModelWinT` modules for creating these static types as sub models.
