@@ -1,3 +1,6 @@
+#### 4.0.0-beta-49
+* Added `Binding.SubModelT.seq` that allows a `seq` of static sub models that are all properly updated when there is a dispatch.
+
 #### 4.0.0-beta-48
 * Added ability to run elmish update loop on a background thread rather than only on the main UI thread.
 * Added a `Threading` sample project demonstrating above feature.
