@@ -92,7 +92,7 @@ module Binding =
   let alterMsgStream (alteration: ('b -> unit) -> 'a -> unit) (binding: Binding<'model, 'a, 't>) : Binding<'model, 'b, 't> =
     binding
     |> mapData (alterMsgStream alteration)
-    
+
 
   module OneWayT =
 
@@ -107,7 +107,7 @@ module Binding =
     let id<'model, 'a> : string -> Binding<'model, 'a, 'a> =
       OneWayToSource.id
       |> createBindingT
-      
+
   module CmdT =
 
     /// <summary>
@@ -149,7 +149,7 @@ module Binding =
     ///   Creates a <c>Command</c> binding that dispatches the specified message.
     /// </summary>
     /// <param name="canExec">Indicates whether the command can execute.</param>
-    /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="msg">The message to dispatch.</param>
     let set
         canExec
         (msg: 'msg)
@@ -171,7 +171,7 @@ module Binding =
     ///   Creates a <c>Command</c> binding that dispatches the specified message
     ///   and always executes.
     /// </summary>
-    /// <param name="exec">Returns the message to dispatch.</param>
+    /// <param name="msg">The message to dispatch.</param>
     let setAlways
         (msg: 'msg)
         : string -> Binding<'model, 'msg, ICommand> =
