@@ -305,9 +305,10 @@ module WpfProgram =
     { program with ErrorHandler = onError }
 
 
-  /// Subscribe to an external source of events. The subscribe function is called once,
-  /// with the initial model, but can dispatch messages at any time.
-  let withSubscription subscribe program =
+  /// Subscribe to external source of events, overrides existing subscription.
+  /// Return the subscriptions that should be active based on the current model.
+  /// Subscriptions will be started or stopped automatically to match.
+  let withSubscription (subscribe: 'model -> Sub<'msg>) program =
     { program with ElmishProgram = program.ElmishProgram |> Program.withSubscription subscribe }
 
 
