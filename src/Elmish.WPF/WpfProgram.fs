@@ -315,3 +315,34 @@ module WpfProgram =
   /// milliseconds. The default is 1ms.
   let withPerformanceLogThreshold threshold program =
     { program with PerformanceLogThreshold = threshold }
+
+
+[<RequireQualifiedAccess>]
+module Subscribe =
+
+  let ofEffect dispose (effect: Effect<'msg>) : Subscribe<'msg> =
+    fun dispatch ->
+      effect dispatch
+      { new System.IDisposable with member _.Dispose() = dispose () }
+
+
+[<RequireQualifiedAccess>]
+module Sub =
+  /// Subscribe to an external source of events. The subscribe function is called once,
+  /// with the initial model, but can dispatch messages at any time.
+  [<System.Obsolete("Migrate your v3 subscriptions to the new subscriptions with lifetimes and dispose")>]
+  let fromV3Subscription (idPrefix: string) (v3Subscription: 'model -> Cmd<'msg>) : 'model -> Sub<'msg> =
+    let mutable memoizedSub : Sub<'msg> voption = ValueNone
+
+    fun model ->
+      match memoizedSub with
+      | ValueNone ->
+        let sub =
+          v3Subscription model
+          |> List.map (Subscribe.ofEffect id)
+          |> List.indexed
+          |> List.map (fun (i, subscribe) ->
+            [ idPrefix; string i ], subscribe)
+        memoizedSub <- ValueSome sub
+        sub
+      | ValueSome sub -> sub
