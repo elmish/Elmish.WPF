@@ -1,4 +1,5 @@
 namespace Elmish.WPF.Samples.SubModelStatic
+#nowarn "44"
 
 open System
 open Serilog
@@ -156,23 +157,17 @@ type [<AllowNullLiteral>] AppViewModel (args) =
 
 module Program =
 
-  let subscriptions (model: App2.Model) : Sub<App2.Msg> =
-    let timerTickSub dispatch =
-      let timer = new System.Timers.Timer(1000.)
-      let disposable = timer.Elapsed.Subscribe (fun _ ->
-        let clockMsg =
-          DateTimeOffset.Now
-          |> Clock.Tick
-          |> CounterWithClock.ClockMsg
-        dispatch <| App2.ClockCounter1Msg clockMsg
-        dispatch <| App2.ClockCounter2Msg clockMsg
-      )
-      timer.Start()
-      disposable
-
-    [
-      [ nameof timerTickSub ], timerTickSub
-    ]
+  let timerTick dispatch =
+    let timer = new System.Timers.Timer(1000.)
+    timer.Elapsed.Add (fun _ ->
+      let clockMsg =
+        DateTimeOffset.Now
+        |> Clock.Tick
+        |> CounterWithClock.ClockMsg
+      dispatch <| App2.ClockCounter1Msg clockMsg
+      dispatch <| App2.ClockCounter2Msg clockMsg
+    )
+    timer.Start()
 
 
   let main window =
@@ -186,6 +181,6 @@ module Program =
         .CreateLogger()
 
     WpfProgram.mkSimpleT App2.init App2.update AppViewModel
-    |> WpfProgram.withSubscription subscriptions
+    |> WpfProgram.withSubscription (Sub.fromV3Subscription "sub" (fun _ -> Cmd.ofEffect timerTick))
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window
