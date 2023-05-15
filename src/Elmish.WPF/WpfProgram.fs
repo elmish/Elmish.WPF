@@ -336,6 +336,7 @@ module WpfProgram =
 [<RequireQualifiedAccess>]
 module Subscribe =
 
+  /// Converts an effect to a Subscribe with a given dispose (on stop) method.
   let ofEffect dispose (effect: Effect<'msg>) : Subscribe<'msg> =
     fun dispatch ->
       effect dispatch
