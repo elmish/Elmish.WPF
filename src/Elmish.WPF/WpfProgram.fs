@@ -323,6 +323,16 @@ module WpfProgram =
     { program with PerformanceLogThreshold = threshold }
 
 
+  /// Exit criteria and the handler, overrides existing.
+  let withTermination predicate terminate program =
+      { program with ElmishProgram = program.ElmishProgram |> Program.withTermination predicate terminate }
+
+
+  /// Map existing criteria and the handler.
+  let mapTermination map program =
+      { program with ElmishProgram = program.ElmishProgram |> Program.mapTermination map }
+
+
 [<RequireQualifiedAccess>]
 module Subscribe =
 
