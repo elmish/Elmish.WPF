@@ -153,6 +153,20 @@ let bindings () : Binding<Model, Msg> list = [
 ]
 ```
 
+Alternatively, the counter app can use statically-typed view models:
+
+```f#
+type CounterViewModel(args) =
+  inherit ViewModelBase<Model, Msg>(args)
+
+  member _.CounterValue = base.Get() (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.Count))
+  member _.Increment = base.Get() (Binding.CmdT.setAlways Counter.Increment)
+  member _.Decrement = base.Get() (Binding.CmdT.setAlways Counter.Decrement)
+  member _.StepSize
+    with get() = base.Get() (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.StepSize))
+    and set(v) = base.Set(v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
+```
+
 The actual bindings will be explained in detail later, but explained simply, the code above will create a view-model with:
 
 - an `int` get-only property `CounterValue` returning `model.Count`
@@ -160,6 +174,8 @@ The actual bindings will be explained in detail later, but explained simply, the
 - a `float` get-set property `StepSize` returning `model.StepSize` and which, when set, dispatches the `SetStepSize` message with the number
 
 Another important difference between normal MVU `view` functions and Elmish.WPF’s `update`  function is that `view` is called every time the model has been updated, whereas `bindings` is only called once, when the “view model” is initialized. After that, it is the functions used in the bindings themselves that are called when the model is updated. Therefore, `bindings` do not accept a `model` or `dispatch` parameter. The `model` is instead passed separately in each binding, and the `dispatch` isn’t visible at all; you simply specify the message to be dispatched, and Elmish.WPF will take care of dispatching the message.
+
+In the statically-typed version, the bindings for individual properties work in exactly the same way as above, with a few exceptions. The `model` and `dispatch` parameters are passed in the default `CounterViewModel(args)` constructor through the `args` parameter, but this is immediately passed into the `inherit ViewModelBase<Model, Msg>(args)` line to surface up through the `base.Get()` and `base.Set(v)` helpers in exactly the same way as above. Also there is no `twoWay` with properties, as they must be defined separately.
 
 ### Commands (and subscriptions)
 
