@@ -70,7 +70,7 @@ module WpfProgram =
   let mkSimpleT
       (init: unit -> 'model)
       (update: 'msg  -> 'model -> 'model)
-      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel) =
     Program.mkSimple init update (fun _ _ -> ())
     |> createWithVm createVm
 
@@ -79,7 +79,7 @@ module WpfProgram =
   let mkProgramT
       (init: unit -> 'model * Cmd<'msg>)
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
-      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) =
+      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel) =
     Program.mkProgram init update (fun _ _ -> ())
     |> createWithVm createVm
 
@@ -268,7 +268,7 @@ module WpfProgram =
       bindings
 
 
-  /// Same as mkProgram2, except that init and update don't return Cmd<'msg>
+  /// Same as mkProgramT, except that init and update don't return Cmd<'msg>
   /// directly, but instead return a CmdMsg discriminated union that is converted
   /// to Cmd<'msg> using toCmd. This means that the init and update functions
   /// return only data, and thus are easier to unit test. The CmdMsg pattern is
@@ -277,7 +277,7 @@ module WpfProgram =
   let mkProgramWithCmdMsgT
       (init: unit -> 'model * 'cmdMsg list)
       (update: 'msg -> 'model -> 'model * 'cmdMsg list)
-      (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>)
+      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel)
       (toCmd: 'cmdMsg -> Cmd<'msg>) =
     let convert (model, cmdMsgs) =
       model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
