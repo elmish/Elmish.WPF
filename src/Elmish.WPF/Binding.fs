@@ -341,8 +341,14 @@ module Binding =
       vopt bindings
       >> mapModel ValueSome
 
+  /// <summary>
+  ///   The strongly-typed counterpart of module <c>SubModel</c>.
+  ///   For creating bindings to child view models that have their own bindings.
+  ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  /// </summary>
   module SubModelT =
 
+    /// Exposes an optional view model member for binding.
     let opt
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       : (string -> Binding<'bindingModel voption, 'msg, #IViewModel<'bindingModel, 'msg>>)
@@ -350,6 +356,7 @@ module Binding =
       SubModel.create createVm IViewModel.updateModel
       |> createBindingT
 
+    /// Exposes a non-optional view model member for binding.
     let req
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       : (string -> Binding<'bindingModel, 'msg, #IViewModel<'bindingModel, 'msg>>)
@@ -358,6 +365,11 @@ module Binding =
       |> createBindingT
       >> mapModel ValueSome
 
+    /// <summary>
+    ///   Exposes a <c>'a seq</c> (<c>IEnumerable&lt;'a&gt;</c>) view model member for binding.
+    ///   Used rarely; usually, you want to expose an <c>ObservableCollection&lt;'a&gt;</c>
+    ///   using <c>SubModelSeqKeyedT</c> or <c>SubModelSeqUnkeyedT</c>.
+    /// </summary>
     let seq
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #seq<#IViewModel<'bindingModel, 'msg>>)
       : (string -> Binding<'bindingModel, 'msg, #seq<#IViewModel<'bindingModel, 'msg>>>)
@@ -366,8 +378,22 @@ module Binding =
       |> createBindingT
       >> mapModel ValueSome
 
+  /// <summary>
+  ///   The strongly-typed counterpart of <c>Binding.subModelSeq</c> without parameter <c>getId</c>.
+  ///   Exposes an <c>ObservableCollection</c> of child view models for binding.
+  ///   Identifies elements by index;
+  ///   if possible, use <c>SubModelSeqKeyedT</c> (which uses parameter <c>getId</c>) instead.
+  ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  /// </summary>
   module SubModelSeqUnkeyedT =
 
+    /// <summary>
+    ///   Creates an elemental <c>SubModelSeqUnkeyedT</c> binding.
+    /// </summary>
+    /// <param name="createVm">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to create a child view model.
+    /// </param>
     let id
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       : (string -> Binding<'bindingModelCollection, int * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
@@ -375,8 +401,25 @@ module Binding =
       SubModelSeqUnkeyed.create createVm IViewModel.updateModel
       |> createBindingT
 
+  /// <summary>
+  ///   The strongly-typed counterpart of <c>Binding.subModelSeq</c> with parameter <c>getId</c>.
+  ///   Exposes an <c>ObservableCollection</c> of child view models for binding.
+  ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  /// </summary>
   module SubModelSeqKeyedT =
 
+    /// <summary>
+    ///   Creates an elemental <c>SubModelSeqUnkeyedT</c> binding.
+    /// </summary>
+    /// <param name="createVm">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to create a child view model.
+    /// </param>
+    /// <param name="getId">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to get a key used to identify that element.
+    ///   Should not return duplicate keys for different elements.
+    /// </param>
     let id
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       (getId: 'bindingModel -> 'id)
@@ -385,8 +428,48 @@ module Binding =
       SubModelSeqKeyed.create createVm IViewModel.updateModel getId (IViewModel.currentModel >> getId)
       |> createBindingT
 
+  /// <summary>
+  ///   The strongly-typed counterpart of <c>Binding.subModelWin</c>.
+  ///   Like <see cref="SubModelT.opt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (either in code
+  ///   or in XAML).
+  /// </summary>
   module SubModelWinT =
 
+    /// <summary>
+    ///   Creates an elemental <c>SubModelWinT</c> binding.
+    ///   Like <see cref="SubModelT.opt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/hide/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (either in code
+    ///   or in XAML).
+    ///   The window can only be closed/hidden by changing the return value of
+    ///   <paramref name="getState" />, and cannot be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it
+    ///   or displaying relevant feedback to the user).
+    /// </summary>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="createVM">Returns the view model for the window.</param>
+    /// <param name="getWindow">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="isModal">
+    ///   Specifies whether the window will be shown modally (using
+    ///   <c>Window.ShowDialog</c>, blocking the rest of the app) or non-modally (using
+    ///   <c>Window.Show</c>).
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
     let id
       (getState: 'model -> WindowState<'bindingModel>)
       (createVM: ViewModelArgs<'bindingModel, 'bindingMsg> -> #IViewModel<'bindingModel, 'bindingMsg>)
