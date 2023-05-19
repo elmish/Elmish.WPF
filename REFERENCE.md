@@ -30,6 +30,13 @@ Table of contents
   + [Mapping bindings](#mapping-bindings)
     - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
     - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
+* [Statically-typed view models](#statically-typed-view-models)
+  + [Inherit from `ViewModelBase<'model, 'msg>`](#inherit-from-viewmodelbasemodel-msg)
+  + [Typed Bindings](#typed-bindings)
+    - [Typed One-way Bindings](#typed-one-way-bindings)
+    - [Typed SubModel Bindings](#typed-submodel-bindings)
+    - [Typed WpfProgram Bindings](#typed-wpfprogram-bindings)
+    - [Mixing and matching bindings](#mixing-and-matching-bindings)
 
 
 The Elmish.WPF bindings
@@ -469,3 +476,60 @@ With such duplicate mapping code extracted, it is easier to create a design-time
 A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a profunctor, which means that
 - it is a contravariant functor in `'model` with `mapModel` as the corresponding mapping function for this functor and
 - it is a covariant functor in `'msg` with `mapMsg` as the corresponding mapping function for this functor.
+
+Statically-Typed View Models
+----------------------------
+
+### Inherit from `ViewModelBase<'model, 'msg>`
+
+If you want full design-time support for your view models, consider defining your view models as a class rather than as a list of bindings. This will give you lots of quality-of-life improvements when working in the XAML, such as type checking for errors, auto-completion, and static types to mention in `DataTemplate.DataType` and similar properties for template matching.
+
+```F#
+type [<AllowNullLiteral>] CounterViewModel (args) =
+  inherit ViewModelBase<Counter.Model, Counter.Msg>(args)
+
+  new() = CounterViewModel(Counter.init |> ViewModelArgs.simple)
+
+  member _.StepSize
+    with get() = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.StepSize))
+    and set(v) = base.Set(v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
+  member _.CounterValue = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
+  member _.Increment = base.Get() (Binding.CmdT.setAlways Counter.Increment)
+  member _.Decrement = base.Get() (Binding.CmdT.setAlways Counter.Decrement)
+  member _.Reset = base.Get() (Binding.CmdT.set Counter.canReset Counter.Reset)
+```
+
+### Typed Bindings
+
+When creating a list of bindings, the output type of each property must be boxed (to `obj`) in order to insert them into the same list. With individually declared bindings on a class member, this restriction is lifted. Therefore we have a set of bindings (denoted with the `T` suffix on the function or the containing module) that do not box the output type.
+
+#### Typed One-way Bindings
+
+These bindings work very similarly to their non-`T` counterparts, except they make exclusive use of the composable api.
+
+- `Binding.OneWayT.id`
+- `Binding.OneWayToSource.id`
+- `Binding.CmdT.setAlways`
+
+#### Typed SubModel Bindings
+
+You can create strongly-typed SubModels in much the same way as you can create normal SubModels - simply replace the `Binding<'model, 'msg> list` with the constructor for a type that implements `ViewModelBase<'model, 'msg>(args)` and takes in that `args` parameter, and use one of the following functions to create the binding:
+
+- `Binding.SubModelT.req`
+- `Binding.SubModelSeqUnkeyedT.id`
+- `Binding.SubModelSeqKeyedT.id`
+- `Binding.SubModelWinT.id`
+
+#### Typed WpfProgram Bindings
+
+Something very similar to the above transformation can also be accomplished at the top level by using one of the following `T` functions to create the program:
+
+- `WpfProgram.mkSimpleT`
+- `WpfProgram.mkProgramT`
+- `WpfProgram.mkProgramWithCmdMsgT`
+
+#### Mixing and matching bindings
+
+When migrating to a statically-typed view model, you can use all of the existing bindings as-is, with the exception of two-way bindings (must be split up into `OneWay` and `OneWayToSource` bindings). These will type as `obj` until you upgrade them to the equivalent `T` bindings.
+
+When intruducing a statically-typed view model as a submodel to a binding defined by the boxed binding list, simply use one of the new [Typed SubModel Bindings](#typed-submodel-bindings) and then call `Binding.boxT` to map the output type. (e.g., `"TypedSubModel" |> Binding.SubModelT.req TypedSubModel >> Binding.boxT`).

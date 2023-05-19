@@ -129,6 +129,23 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
 
    The strings identify the binding names to be used in the XAML views. The Binding module has many functions to create various types of bindings.
 
+
+   Alternatively, use statically-typed view models in order to get better IDE support in the XAML.
+
+   ```f#
+   open Elmish.WPF
+
+   type CounterViewModel(args) =
+     inherit ViewModelBase<Model, Msg>(args)
+
+     member _.CounterValue = base.Get() (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.Count))
+     member _.Increment = base.Get() (Binding.CmdT.setAlways Counter.Increment)
+     member _.Decrement = base.Get() (Binding.CmdT.setAlways Counter.Decrement)
+     member _.StepSize
+       with get() = base.Get() (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.StepSize))
+       and set(v) = base.Set(v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
+   ```
+
 7. Create a function that accepts the app’s main window (to be created) and configures and starts the Elmish loop for the window with your `init`, `update` and `bindings`:
 
    ```F#
