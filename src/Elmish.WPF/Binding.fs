@@ -14,7 +14,9 @@ module Binding =
     { Name = binding.Name
       Data = binding.Data |> f }
 
-  /// Boxes the output parameter
+  /// Boxes the output parameter.
+  /// Allows using a strongly-typed submodel binding (from a module ending in "T")
+  /// in a binding list (rather than in a view model class member as normal).
   let boxT (binding: Binding<'b, 'msg, 't>) = BindingData.boxT |> mapData <| binding
 
   /// Unboxes the output parameter
