@@ -31,8 +31,12 @@ Table of contents
     - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
     - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
 * [Statically-typed view models](#statically-typed-view-models)
-  + [Inherit from `ViewModelBase<'model, 'msg>`]()
-  + [Typed Bindings]()
+  + [Inherit from `ViewModelBase<'model, 'msg>`](#inherit-from-viewmodelbasemodel-msg)
+  + [Typed Bindings](#typed-bindings)
+    - [Typed One-way Bindings](#typed-one-way-bindings)
+    - [Typed SubModel Bindings](#typed-submodel-bindings)
+    - [Typed WpfProgram Bindings](#typed-wpfprogram-bindings)
+    - [Mixing and matching bindings](#mixing-and-matching-bindings)
 
 
 The Elmish.WPF bindings
@@ -473,7 +477,7 @@ A binding in Elmish.WPF is represented by an instance of type `Binding<'model, '
 - it is a contravariant functor in `'model` with `mapModel` as the corresponding mapping function for this functor and
 - it is a covariant functor in `'msg` with `mapMsg` as the corresponding mapping function for this functor.
 
-Statically-typed View Models
+Statically-Typed View Models
 ----------------------------
 
 ### Inherit from `ViewModelBase<'model, 'msg>`
@@ -518,7 +522,7 @@ You can create strongly-typed SubModels in much the same way as you can create n
 
 #### Typed WpfProgram Bindings
 
-Something very similar to the above transformation can also be accomplished at the type level by using one of the following `T` functions to create the program:
+Something very similar to the above transformation can also be accomplished at the top level by using one of the following `T` functions to create the program:
 
 - `WpfProgram.mkSimpleT`
 - `WpfProgram.mkProgramT`
@@ -526,6 +530,6 @@ Something very similar to the above transformation can also be accomplished at t
 
 #### Mixing and matching bindings
 
-When migrating to a statically-typed view model, you can use all of the existing bindings as-is, with the exception of two-way bindings (must be split up into `OneWay` and `OneWayToSource` bindings).
+When migrating to a statically-typed view model, you can use all of the existing bindings as-is, with the exception of two-way bindings (must be split up into `OneWay` and `OneWayToSource` bindings). These will type as `obj` until you upgrade them to the equivalent `T` bindings.
 
-When intruducing a statically-typed view model as a submodel to a binding defined by the boxed binding list, simply use one of the new [Typed SubModel Bindings]() and then call `Binding.boxT` to map the output type. (eg, `"TypedSubModel" |> Binding.SubModelT.req TypedSubModel >> Binding.boxT`)
+When intruducing a statically-typed view model as a submodel to a binding defined by the boxed binding list, simply use one of the new [Typed SubModel Bindings](#typed-submodel-bindings) and then call `Binding.boxT` to map the output type. (e.g., `"TypedSubModel" |> Binding.SubModelT.req TypedSubModel >> Binding.boxT`).
