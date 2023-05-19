@@ -1,3 +1,11 @@
+#### 4.0.0-beta-50
+* Upgraded to Elmish v4
+  * **BREAKING:** Changed syntax of `WpfProgram.withSubscription` to now take named list of `Subscribe<'msg> = Dispatch<'msg> -> IDisposable` (note the `IDisposable` return). This function now gets called every time `'model` updates (previously it was only called on startup). This allows starting and stopping of subscriptions from this function by the given string list identifier.
+  * **BREAKING:** Changed `Sub<'msg>` to `Effect<'msg>` everywhere (`Effect<'msg> = Dispatch<'msg> -> unit`, see difference with `Subscribe<'msg>` above). Also renames helper functions. This does _not_ break `Cmd<'msg>`s that didn't name the `Sub<'msg>` type (or helpers).
+  * Added `WpfProgram.withTermination` to allow conditional exit of the elmish loop on a specific `'msg`, as well as specify a side effect on exit.
+* Added more documentation throughout the helpers.
+* Updated some of the sample projects for clarity.
+
 #### 4.0.0-beta-49
 * Added `Binding.SubModelT.seq` that allows a `seq` of static sub models that are all properly updated when there is a dispatch.
 
