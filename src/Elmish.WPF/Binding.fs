@@ -347,6 +347,7 @@ module Binding =
   ///   The strongly-typed counterpart of module <c>SubModel</c>.
   ///   For creating bindings to child view models that have their own bindings.
   ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  ///   Can be used in binding lists if boxed using <see cref="boxT" />.
   /// </summary>
   module SubModelT =
 
@@ -386,6 +387,7 @@ module Binding =
   ///   Identifies elements by index;
   ///   if possible, use <c>SubModelSeqKeyedT</c> (which uses parameter <c>getId</c>) instead.
   ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  ///   Can be used in binding lists if boxed using <see cref="boxT" />.
   /// </summary>
   module SubModelSeqUnkeyedT =
 
@@ -407,6 +409,7 @@ module Binding =
   ///   The strongly-typed counterpart of <c>Binding.subModelSeq</c> with parameter <c>getId</c>.
   ///   Exposes an <c>ObservableCollection</c> of child view models for binding.
   ///   Typically bound from WPF using <c>DataContext</c> and <c>Binding</c>.
+  ///   Can be used in binding lists if boxed using <see cref="boxT" />.
   /// </summary>
   module SubModelSeqKeyedT =
 
@@ -438,6 +441,8 @@ module Binding =
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (either in code
   ///   or in XAML).
+  ///
+  ///   Can be used in binding lists if boxed using <see cref="boxT" />.
   /// </summary>
   module SubModelWinT =
 
