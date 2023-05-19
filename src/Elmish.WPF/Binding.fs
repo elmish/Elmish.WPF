@@ -96,6 +96,9 @@ module Binding =
     |> mapData (alterMsgStream alteration)
 
 
+  /// <summary>
+  ///   Strongly-typed bindings that update the view from the model.
+  /// </summary>
   module OneWayT =
 
     /// Elemental instance of a one-way binding.
@@ -103,6 +106,9 @@ module Binding =
       OneWay.id
       |> createBindingT
 
+  /// <summary>
+  ///   Strongly-typed bindings that update the model from the view.
+  /// </summary>
   module OneWayToSourceT =
 
     /// Elemental instance of a one-way-to-source binding.
@@ -110,6 +116,9 @@ module Binding =
       OneWayToSource.id
       |> createBindingT
 
+  /// <summary>
+  ///   Strongly-typed bindings that dispatch messages from the view.
+  /// </summary>
   module CmdT =
 
     /// <summary>
