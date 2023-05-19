@@ -206,7 +206,7 @@ module WpfProgram =
        *)
       fun msg -> elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
 
-    let logMsgAndModel (msg: 'msg) (model: 'model) =
+    let logMsgAndModel (msg: 'msg) (model: 'model) _ =
       updateLogger.LogTrace("New message: {Message}\nUpdated state:\n{Model}", msg, model)
 
     let errorHandler (msg: string, ex: exn) =
@@ -217,8 +217,7 @@ module WpfProgram =
     |> if updateLogger.IsEnabled LogLevel.Trace then Program.withTrace logMsgAndModel else id
     |> Program.withErrorHandler errorHandler
     |> Program.withSetState setUiState
-    |> Program.withSyncDispatch cmdDispatch
-    |> Program.run
+    |> Program.runWithDispatch cmdDispatch ()
 
 
   /// Instantiates Application and sets its MainWindow if it is not already
@@ -306,13 +305,61 @@ module WpfProgram =
     { program with ErrorHandler = onError }
 
 
-  /// Subscribe to an external source of events. The subscribe function is called once,
-  /// with the initial model, but can dispatch messages at any time.
-  let withSubscription subscribe program =
+  /// Subscribe to external source of events, overrides existing subscription.
+  /// Return the subscriptions that should be active based on the current model.
+  /// Subscriptions will be started or stopped automatically to match.
+  let withSubscription (subscribe: 'model -> Sub<'msg>) program =
     { program with ElmishProgram = program.ElmishProgram |> Program.withSubscription subscribe }
+
+
+  /// Map existing subscription to external source of events.
+  let mapSubscription map program =
+      { program with ElmishProgram = program.ElmishProgram |> Program.mapSubscription map }
 
 
   /// Only logs binding performance for calls taking longer than the specified number of
   /// milliseconds. The default is 1ms.
   let withPerformanceLogThreshold threshold program =
     { program with PerformanceLogThreshold = threshold }
+
+
+  /// Exit criteria and the handler, overrides existing.
+  let withTermination predicate terminate program =
+      { program with ElmishProgram = program.ElmishProgram |> Program.withTermination predicate terminate }
+
+
+  /// Map existing criteria and the handler.
+  let mapTermination map program =
+      { program with ElmishProgram = program.ElmishProgram |> Program.mapTermination map }
+
+
+[<RequireQualifiedAccess>]
+module Subscribe =
+
+  /// Converts an effect to a Subscribe with a given dispose (on stop) method.
+  let ofEffect dispose (effect: Effect<'msg>) : Subscribe<'msg> =
+    fun dispatch ->
+      effect dispatch
+      { new System.IDisposable with member _.Dispose() = dispose () }
+
+
+[<RequireQualifiedAccess>]
+module Sub =
+  /// Subscribe to an external source of events. The subscribe function is called once,
+  /// with the initial model, but can dispatch messages at any time.
+  [<System.Obsolete("Migrate your v3 subscriptions to the new subscriptions with lifetimes and dispose")>]
+  let fromV3Subscription (idPrefix: string) (v3Subscription: 'model -> Cmd<'msg>) : 'model -> Sub<'msg> =
+    let mutable memoizedSub : Sub<'msg> voption = ValueNone
+
+    fun model ->
+      match memoizedSub with
+      | ValueNone ->
+        let sub =
+          v3Subscription model
+          |> List.map (Subscribe.ofEffect id)
+          |> List.indexed
+          |> List.map (fun (i, subscribe) ->
+            [ idPrefix; string i ], subscribe)
+        memoizedSub <- ValueSome sub
+        sub
+      | ValueSome sub -> sub

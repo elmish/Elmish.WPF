@@ -1,4 +1,5 @@
 namespace Elmish.WPF.Samples.SubModelStatic
+#nowarn "44"
 
 open System
 open Serilog
@@ -180,6 +181,6 @@ module Program =
         .CreateLogger()
 
     WpfProgram.mkSimpleT App2.init App2.update AppViewModel
-    |> WpfProgram.withSubscription (fun _ -> Cmd.ofSub timerTick)
+    |> WpfProgram.withSubscription (Sub.fromV3Subscription "sub" (fun _ -> Cmd.ofEffect timerTick))
     |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
     |> WpfProgram.startElmishLoop window
