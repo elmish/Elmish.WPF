@@ -6,18 +6,22 @@ open Serilog.Extensions.Logging
 open Elmish
 open Elmish.WPF
 
+
 module Core =
+
 
   type Model =
     { CurrentTime: DateTimeOffset
       Text: string
       StatusMsg: string }
 
+
   type CmdMsg =
     | Save of string
     | Load
 
-  let init (): Model * CmdMsg list =
+
+  let init () =
     { CurrentTime = DateTimeOffset.Now
       Text = ""
       StatusMsg = "" },
@@ -35,7 +39,8 @@ module Core =
     | SaveFailed of exn
     | LoadFailed of exn
 
-  let update (msg: Msg) (m: Model): Model * CmdMsg list =
+
+  let update msg m =
     match msg with
     | SetTime t -> { m with CurrentTime = t }, []
     | SetText s -> { m with Text = s}, []
@@ -48,12 +53,15 @@ module Core =
     | SaveFailed ex -> { m with StatusMsg = sprintf "Saving failed with exception %s: %s" (ex.GetType().Name) ex.Message }, []
     | LoadFailed ex -> { m with StatusMsg = sprintf "Loading failed with exception %s: %s" (ex.GetType().Name) ex.Message }, []
 
+
+
 module Platform =
 
   open System.IO
   open Core
 
-  let bindings (): Binding<Model, Msg> list = [
+
+  let bindings () : Binding<Model, Msg> list = [
     "CurrentTime" |> Binding.oneWay (fun m -> m.CurrentTime)
     "Text" |> Binding.twoWay ((fun m -> m.Text), SetText)
     "StatusMsg" |> Binding.twoWay ((fun m -> m.StatusMsg), SetText)
@@ -61,7 +69,8 @@ module Platform =
     "Load" |> Binding.cmd RequestLoad
   ]
 
-  let save (text: string): Async<Msg> =
+
+  let save text =
     async {
       let dlg = Microsoft.Win32.SaveFileDialog ()
       dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
@@ -72,7 +81,8 @@ module Platform =
       else return SaveCanceled
     }
 
-  let load (): Async<Msg> =
+
+  let load () =
     async {
       let dlg = Microsoft.Win32.OpenFileDialog ()
       dlg.Filter <- "Text file (*.txt)|*.txt|Markdown file (*.md)|*.md"
@@ -84,17 +94,21 @@ module Platform =
       else return LoadCanceled
     }
 
-  let toCmd (cmdMsg: CmdMsg): Cmd<Msg> =
-    match cmdMsg with
+
+  let toCmd = function
     | Save text -> Cmd.OfAsync.either save text id SaveFailed
     | Load -> Cmd.OfAsync.either load () id LoadFailed
+
+
 
 open Core
 open Platform
 
+
 let designVm = ViewModel.designInstance (init () |> fst) (bindings ())
 
-let subscriptions (_model: Model) : Sub<Msg> =
+
+let subscriptions _model =
   let timerTickSub (dispatch: Msg -> unit): IDisposable =
     let timer = new Timers.Timer(1000.)
     let disp = timer.Elapsed.Subscribe(fun _ -> dispatch (SetTime DateTimeOffset.Now))
@@ -106,7 +120,8 @@ let subscriptions (_model: Model) : Sub<Msg> =
   ]
 
 
-let main (window: System.Windows.Window): unit =
+let main window =
+
   let logger =
     LoggerConfiguration()
       .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
