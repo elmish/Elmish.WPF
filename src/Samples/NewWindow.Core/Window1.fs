@@ -4,10 +4,10 @@ open Elmish.WPF
 
 
 module Window1 =
-  let init : string = ""
+  let init = ""
 
-  let bindings unit : Binding<'b,'b> list = [
+  let bindings () = [
     "Input" |> Binding.twoWay (id, id)
   ]
 
-let designVm : obj = ViewModel.designInstance Window1.init (Window1.bindings ())
+let designVm = ViewModel.designInstance Window1.init (Window1.bindings ())
