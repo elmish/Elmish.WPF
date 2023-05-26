@@ -28,38 +28,37 @@ type Window2OutMsg =
 
 module Window2 =
   module Input =
-    let get (m: Window2) : string = m.Input
-    let set (v: string) (m: Window2) : Window2 = { m with Input = v }
+    let get m = m.Input
+    let set v m = { m with Input = v }
   module IsChecked =
-    let get (m: Window2) : bool = m.IsChecked
-    let set (v: bool) (m:Window2) : Window2 = { m with IsChecked = v }
+    let get m = m.IsChecked
+    let set v m = { m with IsChecked = v }
   module ConfirmState =
-    let set (v: ConfirmState option) (m: Window2) : Window2 = { m with ConfirmState = v }
+    let set v m = { m with ConfirmState = v }
 
-  let init : Window2 =
+  let init =
     { Input = ""
       IsChecked = false
       ConfirmState = None }
 
-  let update (msg: Window2Msg) : (Window2 -> Window2) =
-    match msg with
+  let update = function
     | SetInput s -> s |> Input.set
     | SetChecked b -> b |> IsChecked.set
     | Submit -> ConfirmState.Submit |> Some |> ConfirmState.set
     | Cancel -> ConfirmState.Cancel |> Some |> ConfirmState.set
     | Close  -> ConfirmState.Close  |> Some |> ConfirmState.set
 
-  let private confirmStateVisibilityBinding (confirmState: ConfirmState) : (string -> Binding<Window2,'a>) =
+  let private confirmStateVisibilityBinding confirmState =
     fun m -> m.ConfirmState = Some confirmState
     >> Bool.toVisibilityCollapsed
     |> Binding.oneWay
 
-  let private confirmStateToMsg (confirmState: ConfirmState) (msg: 'a) (m: Window2) : InOut<'a,Window2OutMsg> =
+  let private confirmStateToMsg confirmState msg m =
     if m.ConfirmState = Some confirmState
     then InOut.Out Window2OutMsg.Close
     else InOut.In msg
 
-  let bindings unit : Binding<Window2,InOut<Window2Msg,Window2OutMsg>,obj> list =
+  let bindings () =
     let inBindings =
       [ "Input" |> Binding.twoWay (Input.get, SetInput)
         "IsChecked" |> Binding.twoWay (IsChecked.get, SetChecked)
@@ -73,4 +72,4 @@ module Window2 =
         "Close"  |> Binding.cmd (confirmStateToMsg ConfirmState.Close  Close) ]
     inBindings @ inOutBindings
 
-let designVm : obj = ViewModel.designInstance Window2.init (Window2.bindings ())
+let designVm = ViewModel.designInstance Window2.init (Window2.bindings ())

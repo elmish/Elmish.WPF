@@ -11,8 +11,7 @@ let map get set f a =
 [<RequireQualifiedAccess>]
 module Bool =
   open System.Windows
-  let toVisibilityCollapsed (b: bool) : Visibility =
-    match b with
+  let toVisibilityCollapsed = function
     | true  -> Visibility.Visible
     | false -> Visibility.Collapsed
 
@@ -28,7 +27,6 @@ module InOutModule =
   [<RequireQualifiedAccess>]
   module InOut =
 
-    let cata (f: 'a -> 'b) (g: 'a0 -> 'b) (inOut: InOut<'a,'a0>) : 'b =
-      match inOut with
+    let cata f g = function
       | InOut.In  msg -> msg |> f
       | InOut.Out msg -> msg |> g
