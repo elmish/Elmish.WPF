@@ -12,8 +12,7 @@ type internal LoggingViewModelArgs =
 
 module internal LoggingViewModelArgs =
 
-  let getNameChainFor nameChain name =
-    sprintf "%s.%s" nameChain name
+  let getNameChainFor nameChain name = sprintf "%s.%s" nameChain name
 
   let getNameChainForItem nameChain collectionBindingName itemId =
     sprintf "%s.%s.%s" nameChain collectionBindingName itemId
@@ -48,5 +47,6 @@ module ViewModelArgs =
     { initialModel = initialModel
       dispatch = dispatch
       loggingArgs = LoggingViewModelArgs.none }
-  
-  let simple initialModel = createWithoutLogging initialModel ignore
+
+  let simple initialModel =
+    createWithoutLogging initialModel ignore

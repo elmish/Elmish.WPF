@@ -41,31 +41,36 @@ let update msg m =
   | LostFocus1 -> { m with Msg1 = "Not focused" }
   | LostFocus2 -> { m with Msg2 = "Not focused" }
   | ToggleVisibility ->
-    if m.Visibility = Visibility.Visible
-    then { m with Visibility = Visibility.Hidden; ButtonText = hiddenButtonText }
-    else { m with Visibility = Visibility.Visible; ButtonText = visibleButtonText }
+    if m.Visibility = Visibility.Visible then
+      { m with
+          Visibility = Visibility.Hidden
+          ButtonText = hiddenButtonText }
+    else
+      { m with
+          Visibility = Visibility.Visible
+          ButtonText = visibleButtonText }
   | NewMousePosition p -> { m with MousePosition = p }
 
 
 let paramToNewMousePositionMsg (p: obj) =
   let args = p :?> MouseEventArgs
-  let e = args.OriginalSource :?> UIElement;
+  let e = args.OriginalSource :?> UIElement
   let point = args.GetPosition e
   NewMousePosition { X = int point.X; Y = int point.Y }
 
-let bindings () : Binding<Model, Msg> list = [
-  "Msg1" |> Binding.oneWay (fun m -> m.Msg1)
-  "Msg2" |> Binding.oneWay (fun m -> m.Msg2)
-  "GotFocus1" |> Binding.cmd GotFocus1
-  "GotFocus2" |> Binding.cmd GotFocus2
-  "LostFocus1" |> Binding.cmd LostFocus1
-  "LostFocus2" |> Binding.cmd LostFocus2
-  "ToggleVisibility" |> Binding.cmd ToggleVisibility
-  "ButtonText" |> Binding.oneWay (fun m -> m.ButtonText)
-  "TextBoxVisibility" |> Binding.oneWay (fun m -> m.Visibility)
-  "MouseMoveCommand" |> Binding.cmdParam paramToNewMousePositionMsg
-  "MousePosition" |> Binding.oneWay (fun m -> sprintf "%dx%d" m.MousePosition.X m.MousePosition.Y)
-]
+let bindings () : Binding<Model, Msg> list =
+  [ "Msg1" |> Binding.oneWay (fun m -> m.Msg1)
+    "Msg2" |> Binding.oneWay (fun m -> m.Msg2)
+    "GotFocus1" |> Binding.cmd GotFocus1
+    "GotFocus2" |> Binding.cmd GotFocus2
+    "LostFocus1" |> Binding.cmd LostFocus1
+    "LostFocus2" |> Binding.cmd LostFocus2
+    "ToggleVisibility" |> Binding.cmd ToggleVisibility
+    "ButtonText" |> Binding.oneWay (fun m -> m.ButtonText)
+    "TextBoxVisibility" |> Binding.oneWay (fun m -> m.Visibility)
+    "MouseMoveCommand" |> Binding.cmdParam paramToNewMousePositionMsg
+    "MousePosition"
+    |> Binding.oneWay (fun m -> sprintf "%dx%d" m.MousePosition.X m.MousePosition.Y) ]
 
 let designVm = ViewModel.designInstance (init ()) (bindings ())
 

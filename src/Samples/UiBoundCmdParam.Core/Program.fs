@@ -10,7 +10,7 @@ type Model =
     EnabledMaxLimit: int }
 
 let init () =
-  { Numbers = [0 .. 10]
+  { Numbers = [ 0..10 ]
     EnabledMaxLimit = 5 }
 
 type Msg =
@@ -22,14 +22,15 @@ let update msg m =
   | SetLimit x -> { m with EnabledMaxLimit = x }
   | Command -> m
 
-let bindings () : Binding<Model, Msg> list = [
-  "Numbers" |> Binding.oneWay(fun m -> m.Numbers)
-  "Limit" |> Binding.twoWay((fun m -> float m.EnabledMaxLimit), int >> SetLimit)
-  "Command" |> Binding.cmdParamIf(
-    (fun p m -> Command),
-    (fun (p: obj) m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
-    true)
-]
+let bindings () : Binding<Model, Msg> list =
+  [ "Numbers" |> Binding.oneWay (fun m -> m.Numbers)
+    "Limit" |> Binding.twoWay ((fun m -> float m.EnabledMaxLimit), int >> SetLimit)
+    "Command"
+    |> Binding.cmdParamIf (
+      (fun p m -> Command),
+      (fun (p: obj) m -> not (isNull p) && p :?> int <= m.EnabledMaxLimit),
+      true
+    ) ]
 
 let designVm = ViewModel.designInstance (init ()) (bindings ())
 

@@ -10,8 +10,7 @@ open Elmish.WPF
 open Selection
 
 
-type Screen =
-  SelectionScreen
+type Screen = SelectionScreen
 
 type Model =
   { VisibleScreen: Screen option
@@ -26,6 +25,7 @@ module Program =
   module VisibleScreen =
     let get m = m.VisibleScreen
     let set v m = { m with VisibleScreen = v }
+
   module Selection =
     open Selection
     let get m = m.Selection
@@ -37,22 +37,24 @@ module Program =
     { VisibleScreen = None
       Selection = Selection.init }
 
-  let update = function
+  let update =
+    function
     | SetVisibleScreen s -> s |> VisibleScreen.set
     | SelectionMsg msg -> msg |> Selection.update
 
-  let boolToVis = function
-    | true  -> Visibility.Visible
+  let boolToVis =
+    function
+    | true -> Visibility.Visible
     | false -> Visibility.Collapsed
 
-  let bindings () = [
-    "Selection"
+  let bindings () =
+    [ "Selection"
       |> Binding.SubModel.required Selection.bindings
       |> Binding.mapModel Selection.get
       |> Binding.mapMsg SelectionMsg
-    "ShowSelection" |> Binding.cmd (SelectionScreen |> Some |> SetVisibleScreen)
-    "SelectionVisibility" |> Binding.oneWay (VisibleScreen.get >> (=) (Some SelectionScreen) >> boolToVis)
-  ]
+      "ShowSelection" |> Binding.cmd (SelectionScreen |> Some |> SetVisibleScreen)
+      "SelectionVisibility"
+      |> Binding.oneWay (VisibleScreen.get >> (=) (Some SelectionScreen) >> boolToVis) ]
 
 
 let main window =

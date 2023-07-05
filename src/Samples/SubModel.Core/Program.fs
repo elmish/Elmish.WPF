@@ -8,9 +8,7 @@ open Elmish.WPF
 
 module Counter =
 
-  type Model =
-    { Count: int
-      StepSize: int }
+  type Model = { Count: int; StepSize: int }
 
   type Msg =
     | Increment
@@ -18,9 +16,7 @@ module Counter =
     | SetStepSize of int
     | Reset
 
-  let init =
-    { Count = 0
-      StepSize = 1 }
+  let init = { Count = 0; StepSize = 1 }
 
   let canReset = (<>) init
 
@@ -31,15 +27,12 @@ module Counter =
     | SetStepSize x -> { m with StepSize = x }
     | Reset -> init
 
-  let bindings () : Binding<Model, Msg> list = [
-    "CounterValue" |> Binding.oneWay (fun m -> m.Count)
-    "Increment" |> Binding.cmd Increment
-    "Decrement" |> Binding.cmd Decrement
-    "StepSize" |> Binding.twoWay(
-      (fun m -> float m.StepSize),
-      int >> SetStepSize)
-    "Reset" |> Binding.cmdIf(Reset, canReset)
-  ]
+  let bindings () : Binding<Model, Msg> list =
+    [ "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+      "Increment" |> Binding.cmd Increment
+      "Decrement" |> Binding.cmd Decrement
+      "StepSize" |> Binding.twoWay ((fun m -> float m.StepSize), int >> SetStepSize)
+      "Reset" |> Binding.cmdIf (Reset, canReset) ]
 
 
 module Clock =
@@ -70,13 +63,12 @@ module Clock =
     | Tick t -> { m with Time = t }
     | SetTimeType t -> { m with TimeType = t }
 
-  let bindings () : Binding<Model, Msg> list = [
-    "Time" |> Binding.oneWay getTime
-    "IsLocal" |> Binding.oneWay (fun m -> m.TimeType = Local)
-    "SetLocal" |> Binding.cmd (SetTimeType Local)
-    "IsUtc" |> Binding.oneWay (fun m -> m.TimeType = Utc)
-    "SetUtc" |> Binding.cmd (SetTimeType Utc)
-  ]
+  let bindings () : Binding<Model, Msg> list =
+    [ "Time" |> Binding.oneWay getTime
+      "IsLocal" |> Binding.oneWay (fun m -> m.TimeType = Local)
+      "SetLocal" |> Binding.cmd (SetTimeType Local)
+      "IsUtc" |> Binding.oneWay (fun m -> m.TimeType = Utc)
+      "SetUtc" |> Binding.cmd (SetTimeType Utc) ]
 
 
 module CounterWithClock =
@@ -95,19 +87,22 @@ module CounterWithClock =
 
   let update msg m =
     match msg with
-    | CounterMsg msg -> { m with Counter = Counter.update msg m.Counter }
-    | ClockMsg msg -> { m with Clock = Clock.update msg m.Clock }
+    | CounterMsg msg ->
+      { m with
+          Counter = Counter.update msg m.Counter }
+    | ClockMsg msg ->
+      { m with
+          Clock = Clock.update msg m.Clock }
 
-  let bindings () : Binding<Model, Msg> list = [
-    "Counter"
+  let bindings () : Binding<Model, Msg> list =
+    [ "Counter"
       |> Binding.SubModel.required Counter.bindings
       |> Binding.mapModel (fun m -> m.Counter)
       |> Binding.mapMsg CounterMsg
-    "Clock"
+      "Clock"
       |> Binding.SubModel.required Clock.bindings
       |> Binding.mapModel (fun m -> m.Clock)
-      |> Binding.mapMsg ClockMsg
-  ]
+      |> Binding.mapMsg ClockMsg ]
 
 
 module App =
@@ -127,46 +122,47 @@ module App =
   let update msg m =
     match msg with
     | ClockCounter1Msg msg ->
-        { m with ClockCounter1 = CounterWithClock.update msg m.ClockCounter1 }
+      { m with
+          ClockCounter1 = CounterWithClock.update msg m.ClockCounter1 }
     | ClockCounter2Msg msg ->
-        { m with ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
+      { m with
+          ClockCounter2 = CounterWithClock.update msg m.ClockCounter2 }
 
-  let bindings () : Binding<Model, Msg> list = [
-    "ClockCounter1"
+  let bindings () : Binding<Model, Msg> list =
+    [ "ClockCounter1"
       |> Binding.SubModel.required CounterWithClock.bindings
       |> Binding.mapModel (fun m -> m.ClockCounter1)
       |> Binding.mapMsg ClockCounter1Msg
 
-    "ClockCounter2"
+      "ClockCounter2"
       |> Binding.SubModel.required CounterWithClock.bindings
       |> Binding.mapModel (fun m -> m.ClockCounter2)
-      |> Binding.mapMsg ClockCounter2Msg
-  ]
+      |> Binding.mapMsg ClockCounter2Msg ]
 
 
 let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
 let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
-let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+
+let counterWithClockDesignVm =
+  ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+
 let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
 
 
 let subscriptions (model: App.Model) : Sub<App.Msg> =
   let timerTickSub dispatch =
     let timer = new System.Timers.Timer(1000.)
-    let disp = timer.Elapsed.Subscribe(fun _ ->
-      let clockMsg =
-        DateTimeOffset.Now
-        |> Clock.Tick
-        |> CounterWithClock.ClockMsg
-      dispatch <| App.ClockCounter1Msg clockMsg
-      dispatch <| App.ClockCounter2Msg clockMsg
-    )
+
+    let disp =
+      timer.Elapsed.Subscribe(fun _ ->
+        let clockMsg = DateTimeOffset.Now |> Clock.Tick |> CounterWithClock.ClockMsg
+        dispatch <| App.ClockCounter1Msg clockMsg
+        dispatch <| App.ClockCounter2Msg clockMsg)
+
     timer.Start()
     disp
 
-  [
-    [ nameof timerTickSub ], timerTickSub
-  ]
+  [ [ nameof timerTickSub ], timerTickSub ]
 
 let main window =
 

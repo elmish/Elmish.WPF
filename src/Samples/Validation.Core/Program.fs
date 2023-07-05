@@ -11,13 +11,17 @@ module Result =
 
   module Error =
 
-    let toList = function
+    let toList =
+      function
       | Ok _ -> []
       | Error e -> [ e ]
 
 
 let requireNotEmpty s =
-  if String.IsNullOrEmpty s then Error "This field is required" else Ok s
+  if String.IsNullOrEmpty s then
+    Error "This field is required"
+  else
+    Ok s
 
 let parseInt (s: string) =
   match Int32.TryParse s with
@@ -28,20 +32,16 @@ let requireExactly y x =
   if x = y then Ok x else Error <| sprintf "Please enter %A" y
 
 let validateInt42 =
-  requireNotEmpty
-  >> Result.bind parseInt
-  >> Result.bind (requireExactly 42)
+  requireNotEmpty >> Result.bind parseInt >> Result.bind (requireExactly 42)
 
 
 let validatePassword (s: string) =
-  [
-    if s.All(fun c -> Char.IsDigit c |> not) then
+  [ if s.All(fun c -> Char.IsDigit c |> not) then
       "Must contain a digit"
     if s.All(fun c -> Char.IsLower c |> not) then
       "Must contain a lowercase letter"
     if s.All(fun c -> Char.IsUpper c |> not) then
-      "Must contain an uppercase letter"
-  ]
+      "Must contain an uppercase letter" ]
 
 
 type Model =
@@ -60,10 +60,12 @@ type Msg =
   | Submit
 
 let increaseUpdateCount m =
-  { m with UpdateCount = m.UpdateCount + 1 }
+  { m with
+      UpdateCount = m.UpdateCount + 1 }
 
 let update msg m =
   let m = increaseUpdateCount m
+
   match msg with
   | NewValue x -> { m with Value = x }
   | NewPassword x -> { m with Password = x }
@@ -75,20 +77,25 @@ let errorOnEven m =
   else
     []
 
-let bindings () : Binding<Model, Msg> list = [
-  "UpdateCount"
-    |> Binding.oneWay(fun m -> m.UpdateCount)
+let bindings () : Binding<Model, Msg> list =
+  [ "UpdateCount"
+    |> Binding.oneWay (fun m -> m.UpdateCount)
     |> Binding.addValidation errorOnEven
-  "Value"
-    |> Binding.twoWay((fun m -> m.Value), NewValue)
-    |> Binding.addValidation(fun m ->  m.Value |> validateInt42 |> Result.Error.toList)
-  "Password"
-    |> Binding.twoWay((fun m -> m.Password), NewPassword)
-    |> Binding.addValidation(fun m -> m.Password |> validatePassword)
-  "Submit" |> Binding.cmdIf(
-    (fun _ -> Submit),
-    (fun m -> (match validateInt42 m.Value with Ok _ -> true | Error _ -> false) && (validatePassword m.Password |> List.isEmpty)))
-]
+    "Value"
+    |> Binding.twoWay ((fun m -> m.Value), NewValue)
+    |> Binding.addValidation (fun m -> m.Value |> validateInt42 |> Result.Error.toList)
+    "Password"
+    |> Binding.twoWay ((fun m -> m.Password), NewPassword)
+    |> Binding.addValidation (fun m -> m.Password |> validatePassword)
+    "Submit"
+    |> Binding.cmdIf (
+      (fun _ -> Submit),
+      (fun m ->
+        (match validateInt42 m.Value with
+         | Ok _ -> true
+         | Error _ -> false)
+        && (validatePassword m.Password |> List.isEmpty))
+    ) ]
 
 let designVm = ViewModel.designInstance (init ()) (bindings ())
 

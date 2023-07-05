@@ -10,16 +10,13 @@ open Elmish.WPF
 
 
 
-type Model =
-  { Pings: int
-    Message: string }
+type Model = { Pings: int; Message: string }
 
 type Msg =
   | IncrementPings
   | UpdateMessage of string
 
-type Cmd =
-  | DelayThenIncrementPings
+type Cmd = | DelayThenIncrementPings
 
 
 module Program =
@@ -32,25 +29,24 @@ module Program =
     let get m = m.Message
     let set v m = { m with Message = v }
 
-  let init =
-    { Pings = 0; Message = "" }, [ DelayThenIncrementPings ]
+  let init = { Pings = 0; Message = "" }, [ DelayThenIncrementPings ]
 
   let update msg m =
     match msg with
     | IncrementPings -> m |> Pings.map ((+) 1), [ DelayThenIncrementPings ]
-    | UpdateMessage message -> m |> Message.set message, [ ]
+    | UpdateMessage message -> m |> Message.set message, []
 
-  let bindings () = [
-    "Pings" |> Binding.oneWay Pings.get
-    "Message" |> Binding.twoWay (Message.get, UpdateMessage)
-  ]
+  let bindings () =
+    [ "Pings" |> Binding.oneWay Pings.get
+      "Message" |> Binding.twoWay (Message.get, UpdateMessage) ]
 
   let toCmd =
     function
     | DelayThenIncrementPings ->
       Elmish.Cmd.OfAsyncImmediate.perform (fun () -> Async.Sleep 1000) () (fun () -> IncrementPings)
 
-let designVm =  ViewModel.designInstance { Pings = 2; Message = "Hello" } (Program.bindings ())
+let designVm =
+  ViewModel.designInstance { Pings = 2; Message = "Hello" } (Program.bindings ())
 
 let main window =
 
@@ -70,7 +66,9 @@ let main window =
     Thread(
       ThreadStart(fun () ->
         WpfProgram.startElmishLoop window program
-        Dispatcher.Run()))
+        Dispatcher.Run())
+    )
+
   elmishThread.Name <- "ElmishDispatchThread"
   elmishThread.Start()
 

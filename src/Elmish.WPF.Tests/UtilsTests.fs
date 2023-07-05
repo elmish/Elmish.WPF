@@ -12,7 +12,8 @@ module refEq =
 
   [<Fact>]
   let ``returns true if the arguments are referentially equal`` () =
-    Property.check <| property {
+    Property.check
+    <| property {
       let! x = GenX.auto<int * string>
       let y = x
       test <@ refEq x y = true @>
@@ -21,7 +22,8 @@ module refEq =
 
   [<Fact>]
   let ``returns true if the arguments are not referentially equal`` () =
-    Property.check <| property {
+    Property.check
+    <| property {
       let! x = GenX.auto<int * string>
       let! y = GenX.auto<int * string>
       test <@ refEq x y = false @>
@@ -42,7 +44,8 @@ module elmEq =
     let ``returns false if any non-string reference type member is not referentially equal`` () =
       PropertyConfig.defaultConfig
       |> PropertyConfig.withTests 1000<tests>
-      |> Property.checkWith <| property {
+      |> Property.checkWith
+      <| property {
         let! x1 = GenX.auto<int>
         let! y1 = GenX.auto<int>
         let! x2 = GenX.auto<string>
@@ -54,10 +57,13 @@ module elmEq =
 
 
     [<Fact>]
-    let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal`` () =
+    let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal``
+      ()
+      =
       PropertyConfig.defaultConfig
       |> PropertyConfig.withTests 1000<tests>
-      |> Property.checkWith <| property {
+      |> Property.checkWith
+      <| property {
         let! x1 = GenX.auto<int>
         let! y1 = GenX.auto<int>
         let! x2 = GenX.auto<string>
@@ -78,7 +84,8 @@ module elmEq =
     let ``returns false if any non-string reference type member is not referentially equal`` () =
       PropertyConfig.defaultConfig
       |> PropertyConfig.withTests 1000<tests>
-      |> Property.checkWith <| property {
+      |> Property.checkWith
+      <| property {
         let! t1 = GenX.auto<TestValues>
         let! t2 = GenX.auto<TestValues>
         test <@ elmEq t1 t2 = false @>
@@ -86,10 +93,13 @@ module elmEq =
 
 
     [<Fact>]
-    let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal`` () =
+    let ``returns false if all non-string reference type members are referentially equal and all string and value type members are structurally equal``
+      ()
+      =
       PropertyConfig.defaultConfig
       |> PropertyConfig.withTests 1000<tests>
-      |> Property.checkWith <| property {
+      |> Property.checkWith
+      <| property {
         let! t1 = GenX.auto<TestValues>
         let! t2 = GenX.auto<TestValues>
         let t2 = { t2 with t = t1.t }
@@ -104,7 +114,8 @@ module ValueOption =
   module toNull =
 
     let testNonNull (ga: Gen<'a>) =
-      Property.check <| property {
+      Property.check
+      <| property {
         let! expected = ga
         test <@ Ok expected = (expected |> ValueSome |> ValueOption.toNull) @>
       }
@@ -116,7 +127,7 @@ module ValueOption =
       testNonNull GenX.auto<int>
       testNonNull GenX.auto<bool>
 
-    let testNullForNullable<'a when 'a : equality> () =
+    let testNullForNullable<'a when 'a: equality> () =
       test <@ Ok Unchecked.defaultof<'a> = ValueOption.toNull<'a> ValueNone @>
 
     [<Fact>]
@@ -126,7 +137,7 @@ module ValueOption =
       testNullForNullable<Nullable<int>> ()
       testNullForNullable<Nullable<bool>> ()
 
-    let testNullForNonNullable<'a when 'a : equality> () =
+    let testNullForNonNullable<'a when 'a: equality> () =
       let expected = typeof<'a>.Name |> ValueOption.ToNullError.ValueCannotBeNull |> Error
       test <@ expected = ValueOption.toNull<'a> ValueNone @>
 
@@ -145,7 +156,7 @@ module ValueOption =
 
   module ofNull =
 
-    let testNull<'a when 'a : equality> () =
+    let testNull<'a when 'a: equality> () =
       let input = Unchecked.defaultof<'a>
       test <@ ValueNone = ValueOption.ofNull input @>
 
@@ -156,7 +167,8 @@ module ValueOption =
       testNull<Nullable<int>> ()
 
     let testNonNull (ga: Gen<'a>) =
-      Property.check <| property {
+      Property.check
+      <| property {
         let! input = ga
         test <@ ValueSome input = ValueOption.ofNull input @>
       }

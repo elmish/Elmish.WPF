@@ -17,15 +17,18 @@ type internal Command(execute, canExecute) =
   // which is achieved by this mutable let-binding.
   // Can test this via the UiBoundCmdParam sample.
   let mutable _handler = Unchecked.defaultof<EventHandler>
-  member this.AddRequeryHandler () =
+
+  member this.AddRequeryHandler() =
     let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
     CommandManager.RequerySuggested.AddHandler handler
     _handler <- handler
 
-  member this.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(this, EventArgs.Empty)
+  member this.RaiseCanExecuteChanged() =
+    canExecuteChanged.Trigger(this, EventArgs.Empty)
 
   interface ICommand with
     [<CLIEvent>]
     member _.CanExecuteChanged = canExecuteChanged.Publish
+
     member _.CanExecute p = canExecute p
     member _.Execute p = execute p

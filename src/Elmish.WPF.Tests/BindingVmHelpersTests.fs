@@ -12,7 +12,9 @@ open Elmish.WPF.BindingVmHelpers
 
 
 let name = "name"
-let noGetSelectedItemCall _ = failwith "Should not call get selected item"
+
+let noGetSelectedItemCall _ =
+  failwith "Should not call get selected item"
 
 
 module Initialize =
@@ -31,12 +33,13 @@ module Initialize =
 
 module Get =
 
-  let check<'a when 'a : equality> (g: Gen<'a>) =
-    Property.check <| property {
+  let check<'a when 'a: equality> (g: Gen<'a>) =
+    Property.check
+    <| property {
       let! expectedModel = g
 
-      let binding =
-        BindingData.OneWay.id
+      let binding = BindingData.OneWay.id
+
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(expectedModel, ignore, (fun () -> expectedModel), binding)
@@ -58,7 +61,8 @@ module Get =
 
   [<Fact>]
   let ``should return error on bad typing`` () =
-    let binding = Binding.SubModel.opt (fun () -> []) >> Binding.mapModel (fun () -> None) <| ""
+    let binding =
+      Binding.SubModel.opt (fun () -> []) >> Binding.mapModel (fun () -> None) <| ""
 
     let dispatch msg =
       failwith $"Should not dispatch, got {msg}"
@@ -70,22 +74,27 @@ module Get =
 
     let vmBinding2 = vmBinding |> MapOutputType.unboxVm
 
-    let getResult: Result<int, GetError> =  Get("Nothing").Recursive((), vmBinding2)
+    let getResult: Result<int, GetError> = Get("Nothing").Recursive((), vmBinding2)
 
-    test <@ match getResult with | Error (GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull _)) -> true | _ -> false @>
+    test
+      <@
+        match getResult with
+        | Error(GetError.ToNullError(ValueOption.ToNullError.ValueCannotBeNull _)) -> true
+        | _ -> false
+      @>
 
 module Set =
 
-  let check<'a when 'a : equality> (g: Gen<'a>) =
-    Property.check <| property {
+  let check<'a when 'a: equality> (g: Gen<'a>) =
+    Property.check
+    <| property {
       let! initialModel = g
       let! newModel = g |> GenX.notEqualTo initialModel
 
       let model = ref initialModel
       let dispatch msg = model.Value <- msg
-      let binding =
-        BindingData.TwoWay.id
-      
+      let binding = BindingData.TwoWay.id
+
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(initialModel, dispatch, (fun () -> model.Value), binding)
@@ -106,15 +115,19 @@ module Set =
 
 module Update =
 
-  let check<'a when 'a : equality> (g: Gen<'a>) =
-    Property.check <| property {
+  let check<'a when 'a: equality> (g: Gen<'a>) =
+    Property.check
+    <| property {
       let! initialModel = g
       let! newModel = g |> GenX.notEqualTo initialModel
 
       let model = ref initialModel
-      let dispatch msg = failwith $"Should not dispatch message {msg}"
-      let binding =
-        BindingData.TwoWay.id
+
+      let dispatch msg =
+        failwith $"Should not dispatch message {msg}"
+
+      let binding = BindingData.TwoWay.id
+
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(initialModel, dispatch, (fun () -> model.Value), binding)

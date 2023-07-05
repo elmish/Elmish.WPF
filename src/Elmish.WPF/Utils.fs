@@ -16,13 +16,13 @@ open System.Reflection
 let buildUntypedGetter (propertyInfo: PropertyInfo) : obj -> obj =
   let method = propertyInfo.GetMethod
   let objExpr = Expression.Parameter(typeof<obj>, "o")
+
   let expr =
     Expression.Lambda<Func<obj, obj>>(
-      Expression.Convert(
-        Expression.Call(
-          Expression.Convert(objExpr, method.DeclaringType), method),
-          typeof<obj>),
-      objExpr)
+      Expression.Convert(Expression.Call(Expression.Convert(objExpr, method.DeclaringType), method), typeof<obj>),
+      objExpr
+    )
+
   let action = expr.Compile()
   fun target -> action.Invoke(target)
 
@@ -32,13 +32,15 @@ type private ElmEq<'a>() =
   static let gettersAndEq =
     typeof<'a>.GetProperties()
     |> Array.map (fun pi ->
-        let getter = buildUntypedGetter pi
-        let eq =
-          if pi.PropertyType.IsValueType || pi.PropertyType = typeof<string>
-          then (fun (a, b) -> a = b)
-          else obj.ReferenceEquals
-        getter, eq
-    )
+      let getter = buildUntypedGetter pi
+
+      let eq =
+        if pi.PropertyType.IsValueType || pi.PropertyType = typeof<string> then
+          (fun (a, b) -> a = b)
+        else
+          obj.ReferenceEquals
+
+      getter, eq)
 
   static member Eq x1 x2 =
     gettersAndEq |> Array.forall (fun (get, eq) -> eq (get (box x1), get (box x2)))
@@ -52,5 +54,4 @@ type private ElmEq<'a>() =
 /// normally immutable. For a direct reference equality check (not memberwise),
 /// see refEq (which should be used when passing a single non-string reference
 /// type from the model).
-let elmEq<'a> : 'a -> 'a -> bool =
-  ElmEq<'a>.Eq
+let elmEq<'a> : 'a -> 'a -> bool = ElmEq<'a>.Eq

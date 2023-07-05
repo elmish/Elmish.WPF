@@ -11,18 +11,14 @@ let ignore2 _ _ = ()
 
 /// Deconstructs a KeyValuePair into a tuple.
 [<DebuggerStepThrough>]
-let (|Kvp|) (kvp: KeyValuePair<_,_>) =
-  Kvp (kvp.Key, kvp.Value)
+let (|Kvp|) (kvp: KeyValuePair<_, _>) = Kvp(kvp.Key, kvp.Value)
 
 
 [<Struct>]
 type OptionalBuilder =
-  member _.Bind(ma, f) =
-    ma |> Option.bind f
-  member _.Return(a) =
-    Some a
-  member _.ReturnFrom(ma) =
-    ma
+  member _.Bind(ma, f) = ma |> Option.bind f
+  member _.Return(a) = Some a
+  member _.ReturnFrom(ma) = ma
 
 let option = OptionalBuilder()
 
@@ -30,21 +26,21 @@ let option = OptionalBuilder()
 [<RequireQualifiedAccess>]
 module Kvp =
 
-  let key (kvp: KeyValuePair<_,_>) =
-    kvp.Key
+  let key (kvp: KeyValuePair<_, _>) = kvp.Key
 
-  let value (kvp: KeyValuePair<_,_>) =
-    kvp.Value
+  let value (kvp: KeyValuePair<_, _>) = kvp.Value
 
 
 [<RequireQualifiedAccess>]
 module Result =
 
-  let isOk = function
+  let isOk =
+    function
     | Ok _ -> true
     | Error _ -> false
 
-  let iter f = function
+  let iter f =
+    function
     | Ok x -> f x
     | Error _ -> ()
 
@@ -52,35 +48,40 @@ module Result =
 [<RequireQualifiedAccess>]
 module ValueOption =
 
-  let ofOption = function
+  let ofOption =
+    function
     | Some x -> ValueSome x
     | None -> ValueNone
 
-  let toOption = function
+  let toOption =
+    function
     | ValueSome x -> Some x
     | ValueNone -> None
 
-  let ofError = function
+  let ofError =
+    function
     | Ok _ -> ValueNone
     | Error x -> ValueSome x
 
-  let ofOk = function
+  let ofOk =
+    function
     | Ok x -> ValueSome x
     | Error _ -> ValueNone
 
   [<RequireQualifiedAccess>]
-  type ToNullError =
-    | ValueCannotBeNull of string
+  type ToNullError = ValueCannotBeNull of string
 
   let ofNull<'a> (x: 'a) =
     match box x with
     | null -> ValueNone
     | _ -> ValueSome x
 
-  let toNull<'a> = function
+  let toNull<'a> =
+    function
     | ValueSome x -> Ok x
     | ValueNone ->
       let default' = Unchecked.defaultof<'a>
+
       if box default' = null then
         default' |> Ok
       else
@@ -90,8 +91,7 @@ module ValueOption =
 [<RequireQualifiedAccess>]
 module ByRefPair =
 
-  let toOption (b, a) =
-    if b then Some a else None
+  let toOption (b, a) = if b then Some a else None
 
 
 [<RequireQualifiedAccess>]
@@ -111,8 +111,7 @@ module IReadOnlyDictionary =
 [<RequireQualifiedAccess>]
 module Option =
 
-  let fromBool a b =
-    if b then Some a else None
+  let fromBool a b = if b then Some a else None
 
 
 [<RequireQualifiedAccess>]
@@ -124,7 +123,7 @@ module SeqOption =
 [<RequireQualifiedAccess>]
 module Pair =
 
-  let ofKvp (kvp: KeyValuePair<_,_>) = (kvp.Key, kvp.Value)
+  let ofKvp (kvp: KeyValuePair<_, _>) = (kvp.Key, kvp.Value)
 
   let mapAll f g (a, c) = (f a, g c)
 
@@ -134,8 +133,9 @@ module Pair =
 [<RequireQualifiedAccess>]
 module PairOption =
 
-  let sequence = function
-    | Some a, Some b -> Some (a, b)
+  let sequence =
+    function
+    | Some a, Some b -> Some(a, b)
     | _ -> None
 
 
