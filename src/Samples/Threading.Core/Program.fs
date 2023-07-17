@@ -45,8 +45,7 @@ module Program =
     | DelayThenIncrementPings ->
       Elmish.Cmd.OfAsyncImmediate.perform (fun () -> Async.Sleep 1000) () (fun () -> IncrementPings)
 
-let designVm =
-  ViewModel.designInstance { Pings = 2; Message = "Hello" } (Program.bindings ())
+let designVm = ViewModel.designInstance { Pings = 2; Message = "Hello" } (Program.bindings ())
 
 let main window =
 

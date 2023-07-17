@@ -265,8 +265,7 @@ module WpfProgram =
     (bindings: unit -> Binding<'model, 'msg> list)
     (toCmd: 'cmdMsg -> Cmd<'msg>)
     =
-    let convert (model, cmdMsgs) =
-      model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
+    let convert (model, cmdMsgs) = model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
 
     mkProgram (init >> convert) (fun msg model -> update msg model |> convert) bindings
 
@@ -283,8 +282,7 @@ module WpfProgram =
     (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel)
     (toCmd: 'cmdMsg -> Cmd<'msg>)
     =
-    let convert (model, cmdMsgs) =
-      model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
+    let convert (model, cmdMsgs) = model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
 
     mkProgramT (init >> convert) (fun msg model -> update msg model |> convert) createVm
 

@@ -401,8 +401,7 @@ module BindingData =
 
   let addCaching b = b |> CachingData
 
-  let addValidation validate b =
-    { BindingData = b; Validate = validate } |> ValidationData
+  let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
 
   let addLazy (equals: 'model -> 'model -> bool) b =
     { BindingData = b |> mapModel unbox |> mapMsg box
@@ -445,17 +444,14 @@ module BindingData =
 
   module ValueOption =
 
-    let box ma =
-      ma |> ValueOption.map box |> ValueOption.toObj
+    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
 
-    let unbox obj =
-      obj |> ValueOption.ofObj |> ValueOption.map unbox
+    let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
 
 
   module OneWay =
 
-    let id<'a, 'msg> : BindingData<'a, 'msg, 'a> =
-      { Get = id } |> OneWayData |> BaseBindingData
+    let id<'a, 'msg> : BindingData<'a, 'msg, 'a> = { Get = id } |> OneWayData |> BaseBindingData
 
     let private mapFunctions mGet (d: OneWayData<'model, 'a>) = { d with Get = mGet d.Get }
 
@@ -502,14 +498,12 @@ module BindingData =
           GetId = mGetId d.GetId
           ItemEquals = mItemEquals d.ItemEquals }
 
-    let measureFunctions mGet mGetId mItemEquals =
-      mapFunctions (mGet "get") (mGetId "getId") (mItemEquals "itemEquals")
+    let measureFunctions mGet mGetId mItemEquals = mapFunctions (mGet "get") (mGetId "getId") (mItemEquals "itemEquals")
 
 
   module TwoWay =
 
-    let id<'a> : BindingData<'a, 'a, 'a> =
-      { TwoWayData.Get = id; Set = Func2.id1 } |> TwoWayData |> BaseBindingData
+    let id<'a> : BindingData<'a, 'a, 'a> = { TwoWayData.Get = id; Set = Func2.id1 } |> TwoWayData |> BaseBindingData
 
     let private mapFunctions mGet mSet (d: TwoWayData<'model, 'msg, 'a>) =
       { d with
@@ -533,8 +527,7 @@ module BindingData =
           Exec = mExec d.Exec
           CanExec = mCanExec d.CanExec }
 
-    let measureFunctions mExec mCanExec =
-      mapFunctions (mExec "exec") (mCanExec "canExec")
+    let measureFunctions mExec mCanExec = mapFunctions (mExec "exec") (mCanExec "canExec")
 
 
   module SubModelSelectedItem =
@@ -683,8 +676,7 @@ module BindingData =
         UpdateViewModel = fun (vm, m) -> d.UpdateViewModel(inMapBindingViewModel vm, inMapBindingModel m)
         ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg)) }
 
-    let boxMinorTypes d =
-      d |> mapMinorTypes box box box unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
     let create createViewModel updateViewModel =
       { GetModels = (fun x -> upcast x)
@@ -741,8 +733,7 @@ module BindingData =
         BmToId = inMapBindingModel >> d.BmToId >> outMapId
         VmToId = fun vm -> vm |> inMapBindingViewModel |> d.VmToId |> outMapId }
 
-    let boxMinorTypes d =
-      d |> mapMinorTypes box box box box unbox unbox unbox unbox
+    let boxMinorTypes d = d |> mapMinorTypes box box box box unbox unbox unbox unbox
 
     let create createViewModel updateViewModel bmToId vmToId =
       { GetSubModels = (fun x -> upcast x)
@@ -789,5 +780,4 @@ module BindingData =
           Set = mSet d.Set
           Equals = mEquals d.Equals }
 
-    let measureFunctions mGet mSet mEquals =
-      mapFunctions (mGet "get") (mSet "set") (mEquals "equals")
+    let measureFunctions mGet mSet mEquals = mapFunctions (mGet "get") (mSet "set") (mEquals "equals")

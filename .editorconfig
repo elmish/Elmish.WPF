@@ -5,3 +5,18 @@ insert_final_newline = false
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
+
+##### F# files #####
+[*.{fs,fsi,fsx}]
+
+# Fantomas settings
+max_line_length = 120 # default
+# Max width of binding name plus binding definition, not including keywords
+# Set to large value and let max_line_length split lines when necessary
+fsharp_max_value_binding_width = 120
+# Max width of function binding value, not including keywords and binding name
+# Set to large value and let max_line_length split lines when necessary
+fsharp_max_function_binding_width = 120
+# Max width of series of dot-expression
+# Set to large value and let max_line_length split lines when necessary
+fsharp_max_dot_get_expression_width = 120

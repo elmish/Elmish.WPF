@@ -42,8 +42,7 @@ type private ElmEq<'a>() =
 
       getter, eq)
 
-  static member Eq x1 x2 =
-    gettersAndEq |> Array.forall (fun (get, eq) -> eq (get (box x1), get (box x2)))
+  static member Eq x1 x2 = gettersAndEq |> Array.forall (fun (get, eq) -> eq (get (box x1), get (box x2)))
 
 
 /// Memberwise equality where value-typed members and string members are

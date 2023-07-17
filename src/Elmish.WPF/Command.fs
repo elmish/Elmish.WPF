@@ -23,8 +23,7 @@ type internal Command(execute, canExecute) =
     CommandManager.RequerySuggested.AddHandler handler
     _handler <- handler
 
-  member this.RaiseCanExecuteChanged() =
-    canExecuteChanged.Trigger(this, EventArgs.Empty)
+  member this.RaiseCanExecuteChanged() = canExecuteChanged.Trigger(this, EventArgs.Empty)
 
   interface ICommand with
     [<CLIEvent>]

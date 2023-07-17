@@ -26,8 +26,7 @@ type internal TestVm<'model, 'msg, 'B1>(model, binding: string -> Binding<'model
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
 
-  let ccTriggers =
-    ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
+  let ccTriggers = ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
 
   let cecTriggers = ConcurrentDictionary<string, int>()
   let dispatchMsgs = ResizeArray<'msg>()
@@ -51,15 +50,13 @@ type internal TestVm<'model, 'msg, 'B1>(model, binding: string -> Binding<'model
 
   member __.NumEcTriggersFor propName = ecTriggers.TryGetValue propName |> snd
 
-  member __.NumCcTriggersFor propName =
-    ccTriggers.GetOrAdd(propName, []).Length
+  member __.NumCcTriggersFor propName = ccTriggers.GetOrAdd(propName, []).Length
 
   member __.NumCecTriggersFor propName = cecTriggers.TryGetValue propName |> snd
 
   member __.Dispatches = dispatchMsgs |> Seq.toList
 
-  member __.CcTriggersFor propName =
-    ccTriggers.TryGetValue propName |> snd |> Seq.toList
+  member __.CcTriggersFor propName = ccTriggers.TryGetValue propName |> snd |> Seq.toList
 
   /// Starts tracking CollectionChanged triggers for the specified prop.
   /// Will cause the property to be retrieved.

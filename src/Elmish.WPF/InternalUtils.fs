@@ -97,15 +97,13 @@ module ByRefPair =
 [<RequireQualifiedAccess>]
 module Dictionary =
 
-  let tryFind key (d: Dictionary<_, _>) =
-    key |> d.TryGetValue |> ByRefPair.toOption
+  let tryFind key (d: Dictionary<_, _>) = key |> d.TryGetValue |> ByRefPair.toOption
 
 
 [<RequireQualifiedAccess>]
 module IReadOnlyDictionary =
 
-  let tryFind key (d: IReadOnlyDictionary<_, _>) =
-    key |> d.TryGetValue |> ByRefPair.toOption
+  let tryFind key (d: IReadOnlyDictionary<_, _>) = key |> d.TryGetValue |> ByRefPair.toOption
 
 
 [<RequireQualifiedAccess>]

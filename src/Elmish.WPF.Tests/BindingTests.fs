@@ -10,11 +10,9 @@ open Elmish.WPF
 [<AutoOpen>]
 module internal Helpers =
 
-  let fail _ =
-    failwith "Placeholder function was invoked"
+  let fail _ = failwith "Placeholder function was invoked"
 
-  let fail2 _ _ =
-    failwith "Placeholder function was invoked"
+  let fail2 _ _ = failwith "Placeholder function was invoked"
 
   let rec getBaseBindingData =
     function
@@ -258,8 +256,7 @@ module oneWaySeqLazy =
 
       let itemEquals: int -> int -> bool = (=)
 
-      let d =
-        Binding.oneWaySeqLazy (fail, fail2, fail, itemEquals, fail) |> getOneWaySeqData
+      let d = Binding.oneWaySeqLazy (fail, fail2, fail, itemEquals, fail) |> getOneWaySeqData
 
       test <@ d.ItemEquals (box x) (box y) = itemEquals x y @>
     }
@@ -1980,8 +1977,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m =
-          (p :?> string).Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let exec (p: obj) m = (p :?> string).Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
 
         let d = Binding.cmdParamIf (exec) |> getCmdData
 
@@ -2061,8 +2057,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) m =
-          (p :?> string).Length + m |> Some |> Option.filter (fun x -> x > 0)
+        let exec (p: obj) m = (p :?> string).Length + m |> Some |> Option.filter (fun x -> x > 0)
 
         let d = Binding.cmdParamIf (exec) |> getCmdData
 
@@ -2289,8 +2284,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) =
-          (p :?> string).Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let exec (p: obj) = (p :?> string).Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
 
         let d = Binding.cmdParamIf (exec) |> getCmdData
 
@@ -2370,8 +2364,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: obj) =
-          (p :?> string).Length |> Some |> Option.filter (fun x -> x > 0)
+        let exec (p: obj) = (p :?> string).Length |> Some |> Option.filter (fun x -> x > 0)
 
         let d = Binding.cmdParamIf (exec) |> getCmdData
 
@@ -2614,8 +2607,7 @@ module subModel =
         let getSubModel = string<int>
         let toBindingModel (m: int, s: string) = m + s.Length
 
-        let d =
-          Binding.subModel (getSubModel, toBindingModel, fail, fail) |> getSubModelData
+        let d = Binding.subModel (getSubModel, toBindingModel, fail, fail) |> getSubModelData
 
         test <@ d.GetModel x = ((x, getSubModel x) |> toBindingModel |> box |> ValueSome) @>
       }
@@ -2630,8 +2622,7 @@ module subModel =
 
         let toMsg = string<int>
 
-        let d =
-          Binding.subModel ((fun _ -> 0), (fun _ -> 0), toMsg, fail) |> getSubModelData
+        let d = Binding.subModel ((fun _ -> 0), (fun _ -> 0), toMsg, fail) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
       }
@@ -2743,8 +2734,7 @@ module subModelOpt =
       <| property {
         let! bindingName = GenX.auto<string>
 
-        let binding =
-          bindingName |> Binding.subModelOpt ((fail: _ -> _ voption), fail, fail)
+        let binding = bindingName |> Binding.subModelOpt ((fail: _ -> _ voption), fail, fail)
 
         test <@ binding.Name = bindingName @>
       }
@@ -2845,8 +2835,7 @@ module subModelOpt =
       <| property {
         let! bindingName = GenX.auto<string>
 
-        let binding =
-          bindingName |> Binding.subModelOpt ((fail: _ -> _ voption), fail, fail, fail)
+        let binding = bindingName |> Binding.subModelOpt ((fail: _ -> _ voption), fail, fail, fail)
 
         test <@ binding.Name = bindingName @>
       }
@@ -2860,8 +2849,7 @@ module subModelOpt =
         let getSubModel = string >> ValueSome
         let toBindingModel (m: int, s: string) = m + s.Length
 
-        let d =
-          Binding.subModelOpt (getSubModel, toBindingModel, fail, fail) |> getSubModelData
+        let d = Binding.subModelOpt (getSubModel, toBindingModel, fail, fail) |> getSubModelData
 
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> toBindingModel |> box |> ValueSome) @>
       }
@@ -2905,8 +2893,7 @@ module subModelOpt =
       <| property {
         let! bindingName = GenX.auto<string>
 
-        let binding =
-          bindingName |> Binding.subModelOpt ((fail: _ -> _ option), fail, fail, fail)
+        let binding = bindingName |> Binding.subModelOpt ((fail: _ -> _ option), fail, fail, fail)
 
         test <@ binding.Name = bindingName @>
       }
@@ -2920,8 +2907,7 @@ module subModelOpt =
         let getSubModel = string >> Some
         let toBindingModel (m: int, s: string) = m + s.Length
 
-        let d =
-          Binding.subModelOpt (getSubModel, toBindingModel, fail, fail) |> getSubModelData
+        let d = Binding.subModelOpt (getSubModel, toBindingModel, fail, fail) |> getSubModelData
 
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> toBindingModel |> box |> ValueSome) @>
       }
@@ -3016,8 +3002,7 @@ module subModelSeqKeyed =
         let! m = GenX.auto<string>
         let getSubModels: string -> char list = Seq.toList
 
-        let d =
-          Binding.subModelSeq (getSubModels, fail, fail, fail) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeq (getSubModels, fail, fail, fail) |> getSubModelSeqKeyedData
 
         test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
@@ -3031,8 +3016,7 @@ module subModelSeqKeyed =
         let getSubModels: string -> char list = Seq.toList
         let getId: char -> string = string
 
-        let d =
-          Binding.subModelSeq (getSubModels, getId, fail, fail) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeq (getSubModels, getId, fail, fail) |> getSubModelSeqKeyedData
 
         test
           <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map getId) @>
@@ -3112,8 +3096,7 @@ module subModelSelectedItem =
       <| property {
         let! bindingName = GenX.auto<string>
 
-        let binding =
-          bindingName |> Binding.subModelSelectedItem ("", (fail: _ -> _ voption), fail2)
+        let binding = bindingName |> Binding.subModelSelectedItem ("", (fail: _ -> _ voption), fail2)
 
         test <@ binding.Name = bindingName @>
       }
@@ -3140,8 +3123,7 @@ module subModelSelectedItem =
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
 
-        let get (x: int) =
-          if useNone then ValueNone else x |> string |> ValueSome
+        let get (x: int) = if useNone then ValueNone else x |> string |> ValueSome
 
         let d = Binding.subModelSelectedItem ("", get, fail2) |> getSubModelSelectedItemData
         test <@ d.Get x |> ValueOption.map unbox<string> = get x @>
@@ -3156,8 +3138,7 @@ module subModelSelectedItem =
         let! p = GenX.auto<string voption>
         let get _ = ValueNone
 
-        let set (p: string voption) m =
-          p |> ValueOption.map (fun p -> p.Length + m |> string)
+        let set (p: string voption) m = p |> ValueOption.map (fun p -> p.Length + m |> string)
 
         let d = Binding.subModelSelectedItem ("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> ValueOption.map box) m = set p m @>
@@ -3173,8 +3154,7 @@ module subModelSelectedItem =
       <| property {
         let! bindingName = GenX.auto<string>
 
-        let binding =
-          bindingName |> Binding.subModelSelectedItem ("", (fail: _ -> _ option), fail2)
+        let binding = bindingName |> Binding.subModelSelectedItem ("", (fail: _ -> _ option), fail2)
 
         test <@ binding.Name = bindingName @>
       }
@@ -3201,8 +3181,7 @@ module subModelSelectedItem =
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
 
-        let get (x: int) =
-          if useNone then None else x |> string |> Some
+        let get (x: int) = if useNone then None else x |> string |> Some
 
         let d = Binding.subModelSelectedItem ("", get, fail2) |> getSubModelSelectedItemData
         test <@ d.Get x |> ValueOption.map unbox = (get x |> ValueOption.ofOption) @>
@@ -3217,8 +3196,7 @@ module subModelSelectedItem =
         let! p = GenX.auto<string option>
         let get _ = None
 
-        let set (p: string option) m =
-          p |> Option.map (fun p -> p.Length + m |> string)
+        let set (p: string option) m = p |> Option.map (fun p -> p.Length + m |> string)
 
         let d = Binding.subModelSelectedItem ("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> Option.map box |> ValueOption.ofOption) m = set p m @>
@@ -3263,8 +3241,7 @@ module subModelSelectedItem =
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
 
-        let get (x: int) =
-          if useNone then ValueNone else x |> string |> ValueSome
+        let get (x: int) = if useNone then ValueNone else x |> string |> ValueSome
 
         let d =
           Binding.subModelSelectedItem ("", get, (fail: _ -> obj))
@@ -3282,8 +3259,7 @@ module subModelSelectedItem =
         let! p = GenX.auto<string voption>
         let get _ = ValueNone
 
-        let set (p: string voption) =
-          p |> ValueOption.map (fun p -> p.Length |> string)
+        let set (p: string voption) = p |> ValueOption.map (fun p -> p.Length |> string)
 
         let d = Binding.subModelSelectedItem ("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> ValueOption.map box) m = set p @>
@@ -3328,8 +3304,7 @@ module subModelSelectedItem =
         let! x = GenX.auto<int>
         let! useNone = Gen.bool
 
-        let get (x: int) =
-          if useNone then None else x |> string |> Some
+        let get (x: int) = if useNone then None else x |> string |> Some
 
         let d =
           Binding.subModelSelectedItem ("", get, (fail: _ -> obj))
@@ -3347,8 +3322,7 @@ module subModelSelectedItem =
         let! p = GenX.auto<string option>
         let get _ = None
 
-        let set (p: string option) =
-          p |> Option.map (fun p -> p.Length |> string)
+        let set (p: string option) = p |> Option.map (fun p -> p.Length |> string)
 
         let d = Binding.subModelSelectedItem ("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> Option.map box |> ValueOption.ofOption) m = set p @>
@@ -3385,8 +3359,7 @@ module sorting =
               SubModelSeqBindingName = s } ]
         |> List.map BaseBindingData
 
-      let sorted =
-        data |> List.sortWith (SubModelSelectedItemLast().CompareBindingDatas())
+      let sorted = data |> List.sortWith (SubModelSelectedItemLast().CompareBindingDatas())
 
       match sorted with
       | [ _; BaseBindingData(SubModelSelectedItemData _); BaseBindingData(SubModelSelectedItemData _) ] -> ()

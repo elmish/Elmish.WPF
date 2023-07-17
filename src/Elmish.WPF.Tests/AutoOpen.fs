@@ -71,8 +71,6 @@ module List =
       | a when a = j -> i
       | a -> a)
 
-  let insert i a ma =
-    (ma |> List.take i) @ [ a ] @ (ma |> List.skip i)
+  let insert i a ma = (ma |> List.take i) @ [ a ] @ (ma |> List.skip i)
 
-  let replace i a ma =
-    (ma |> List.take i) @ [ a ] @ (ma |> List.skip (i + 1))
+  let replace i a ma = (ma |> List.take i) @ [ a ] @ (ma |> List.skip (i + 1))

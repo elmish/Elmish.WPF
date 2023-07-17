@@ -38,8 +38,7 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
   let pcTriggers = ConcurrentDictionary<string, int>()
   let ecTriggers = ConcurrentDictionary<string, int>()
 
-  let ccTriggers =
-    ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
+  let ccTriggers = ConcurrentDictionary<string, NotifyCollectionChangedEventArgs list>()
 
   let cecTriggers = ConcurrentDictionary<string, int>()
   let dispatchMsgs = ResizeArray<'msg>()
@@ -62,15 +61,13 @@ type internal TestVm<'model, 'msg>(model, bindings) as this =
 
   member __.NumEcTriggersFor propName = ecTriggers.TryGetValue propName |> snd
 
-  member __.NumCcTriggersFor propName =
-    ccTriggers.GetOrAdd(propName, []).Length
+  member __.NumCcTriggersFor propName = ccTriggers.GetOrAdd(propName, []).Length
 
   member __.NumCecTriggersFor propName = cecTriggers.TryGetValue propName |> snd
 
   member __.Dispatches = dispatchMsgs |> Seq.toList
 
-  member __.CcTriggersFor propName =
-    ccTriggers.TryGetValue propName |> snd |> Seq.toList
+  member __.CcTriggersFor propName = ccTriggers.TryGetValue propName |> snd |> Seq.toList
 
   /// Starts tracking CollectionChanged triggers for the specified prop.
   /// Will cause the property to be retrieved.
@@ -866,8 +863,7 @@ module TwoWayValidate =
       let get _ = ()
       let set _ _ = ()
 
-      let validate m =
-        if m < 0 then ValueSome(string m) else ValueNone
+      let validate m = if m < 0 then ValueSome(string m) else ValueNone
 
       let binding = twoWayValidate name get set validate
       let vm = TestVm(m1, binding)
@@ -947,8 +943,7 @@ module TwoWayValidate =
       let get _ = ()
       let set _ _ = ()
 
-      let validate m =
-        if m = m1 then ValueSome(string<int> m) else ValueNone
+      let validate m = if m = m1 then ValueSome(string<int> m) else ValueNone
 
       let binding = twoWayValidate name get set validate
       let vm = TestVm(m1, binding)
@@ -976,8 +971,7 @@ module Cmd =
       let! m = GenX.auto<int>
       let! p = GenX.auto<obj> |> GenX.withNull
 
-      let exec m =
-        if m < 0 then ValueNone else ValueSome(string m)
+      let exec m = if m < 0 then ValueNone else ValueSome(string m)
 
       let canExec m = m < 0
 
@@ -1000,8 +994,7 @@ module Cmd =
       let! m = GenX.auto<int>
       let! p = GenX.auto<obj> |> GenX.withNull
 
-      let exec m =
-        if m < 0 then ValueNone else ValueSome(string m)
+      let exec m = if m < 0 then ValueNone else ValueSome(string m)
 
       let canExec m = m < 0
 
@@ -1020,8 +1013,7 @@ module Cmd =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let exec m =
-        if m < 0 then ValueNone else ValueSome(string m)
+      let exec m = if m < 0 then ValueNone else ValueSome(string m)
 
       let canExec m = m < 0
 
@@ -1043,8 +1035,7 @@ module Cmd =
       let! m1 = GenX.auto<int>
       let! m2 = GenX.auto<int>
 
-      let exec m =
-        if m < 0 then ValueNone else ValueSome(string m)
+      let exec m = if m < 0 then ValueNone else ValueSome(string m)
 
       let canExec m = m < 0
 
@@ -1262,8 +1253,7 @@ module SubModel =
       let! m2 = GenX.auto<byte * int> |> GenX.notEqualTo m1
       let! sticky = Gen.bool
 
-      let getModel (m: byte * int) =
-        if snd m < 0 then ValueNone else (snd m) / 2 |> ValueSome
+      let getModel (m: byte * int) = if snd m < 0 then ValueNone else (snd m) / 2 |> ValueSome
 
       let toMsg _ = ()
 
@@ -1518,15 +1508,13 @@ module SubModelSelectedItem =
       let getId: Guid -> string = string
       let toMsg = snd
 
-      let get _ =
-        selectedSubModel |> ValueOption.map getId
+      let get _ = selectedSubModel |> ValueOption.map getId
 
       let set _ _ = ()
 
       let subModelSeqBinding = subModelSeq subModelSeqName getModels getId toMsg []
 
-      let selectedItemBinding =
-        subModelSelectedItem selectedItemName subModelSeqName get set
+      let selectedItemBinding = subModelSelectedItem selectedItemName subModelSeqName get set
 
       let vm = TestVm(m, [ subModelSeqBinding; selectedItemBinding ])
 
@@ -1559,16 +1547,13 @@ module SubModelSelectedItem =
       let getId: Guid -> string = string
       let toMsg = snd
 
-      let get _ =
-        selectedSubModel |> ValueOption.map getId
+      let get _ = selectedSubModel |> ValueOption.map getId
 
-      let set (p: string voption) (m: int * Guid list) =
-        p |> ValueOption.map (String.length >> (+) (fst m))
+      let set (p: string voption) (m: int * Guid list) = p |> ValueOption.map (String.length >> (+) (fst m))
 
       let subModelSeqBinding = subModelSeq subModelSeqName getModels getId toMsg []
 
-      let selectedItemBinding =
-        subModelSelectedItem selectedItemName subModelSeqName get set
+      let selectedItemBinding = subModelSelectedItem selectedItemName subModelSeqName get set
 
       let vm = TestVm(m, [ subModelSeqBinding; selectedItemBinding ])
 
@@ -1607,8 +1592,7 @@ module SubModelSelectedItem =
 
                 member _.IsEnabled _ = true
 
-                member _.Log(_, _, state, ex, formatter) =
-                  error <- formatter.Invoke(state, ex) |> Some } }
+                member _.Log(_, _, state, ex, formatter) = error <- formatter.Invoke(state, ex) |> Some } }
 
     let viewModelArgs = ViewModelArgs.create 0.0 ignore "main" loggingArgs
     let vm = DynamicViewModel(viewModelArgs, bindings)
@@ -1669,8 +1653,7 @@ module CacheEffect =
     let newModel = 1
     let mapping = InvokeTester(fun x -> x)
 
-    let binding =
-      name |> Binding.TwoWay.id |> Binding.mapModel mapping.Fn |> Binding.addCaching
+    let binding = name |> Binding.TwoWay.id |> Binding.mapModel mapping.Fn |> Binding.addCaching
 
     let vm = TestVm(initialModel, binding)
 

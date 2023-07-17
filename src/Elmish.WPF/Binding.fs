@@ -20,8 +20,7 @@ module Binding =
   let boxT (binding: Binding<'b, 'msg, 't>) = BindingData.boxT |> mapData <| binding
 
   /// Unboxes the output parameter
-  let unboxT (binding: Binding<'b, 'msg>) : Binding<'b, 'msg, 't> =
-    BindingData.unboxT |> mapData <| binding
+  let unboxT (binding: Binding<'b, 'msg>) : Binding<'b, 'msg, 't> = BindingData.unboxT |> mapData <| binding
 
   /// Maps the model of a binding via a contravariant mapping.
   let mapModel (f: 'a -> 'b) (binding: Binding<'b, 'msg, 't>) = f |> mapModel |> mapData <| binding
@@ -34,8 +33,7 @@ module Binding =
   let mapMsg (f: 'a -> 'b) (binding: Binding<'model, 'a, 't>) = f |> mapMsg |> mapData <| binding
 
   /// Sets the message of a binding with access to the model.
-  let setMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a, 't>) =
-    f |> setMsgWithModel |> mapData <| binding
+  let setMsgWithModel (f: 'model -> 'b) (binding: Binding<'model, 'a, 't>) = f |> setMsgWithModel |> mapData <| binding
 
   /// Sets the message of a binding.
   let setMsg (msg: 'b) (binding: Binding<'model, 'a, 't>) = msg |> setMsg |> mapData <| binding
@@ -112,8 +110,7 @@ module Binding =
   module OneWayToSourceT =
 
     /// Elemental instance of a one-way-to-source binding.
-    let id<'model, 'a> : string -> Binding<'model, 'a, 'a> =
-      OneWayToSource.id |> createBindingT
+    let id<'model, 'a> : string -> Binding<'model, 'a, 'a> = OneWayToSource.id |> createBindingT
 
   /// <summary>
   ///   Strongly-typed bindings that dispatch messages from the view.
@@ -178,33 +175,28 @@ module Binding =
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a, 'msg> : string -> Binding<'a option, 'msg> =
-      id<obj, 'msg> >> mapModel Option.box
+    let opt<'a, 'msg> : string -> Binding<'a option, 'msg> = id<obj, 'msg> >> mapModel Option.box
 
     /// Creates a one-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg> =
-      id<obj, 'msg> >> mapModel ValueOption.box
+    let vopt<'a, 'msg> : string -> Binding<'a voption, 'msg> = id<obj, 'msg> >> mapModel ValueOption.box
 
 
   module OneWayToSource =
 
     /// Elemental instance of a one-way-to-source binding.
-    let id<'model, 'a> : string -> Binding<'model, 'a> =
-      OneWayToSource.id |> createBinding
+    let id<'model, 'a> : string -> Binding<'model, 'a> = OneWayToSource.id |> createBinding
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let vopt<'model, 'a> : string -> Binding<'model, 'a voption> =
-      id<'model, obj> >> mapMsg ValueOption.unbox
+    let vopt<'model, 'a> : string -> Binding<'model, 'a voption> = id<'model, obj> >> mapMsg ValueOption.unbox
 
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'model, 'a> : string -> Binding<'model, 'a option> =
-      id<'model, obj> >> mapMsg Option.unbox
+    let opt<'model, 'a> : string -> Binding<'model, 'a option> = id<'model, obj> >> mapMsg Option.unbox
 
 
   module TwoWay =
@@ -221,8 +213,7 @@ module Binding =
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
-    let opt<'a> : string -> Binding<'a option, 'a option> =
-      id<obj> >> mapModel Option.box >> mapMsg Option.unbox
+    let opt<'a> : string -> Binding<'a option, 'a option> = id<obj> >> mapModel Option.box >> mapMsg Option.unbox
 
 
   module SubModelSelectedItem =
@@ -480,16 +471,14 @@ module Binding =
 module Bindings =
 
   /// Maps the model of a list of bindings via a contravariant mapping.
-  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) =
-    f |> Binding.mapModel |> List.map <| bindings
+  let mapModel (f: 'a -> 'b) (bindings: Binding<'b, 'msg> list) = f |> Binding.mapModel |> List.map <| bindings
 
   /// Maps the message of a list of bindings with access to the model via a covariant mapping.
   let mapMsgWithModel (f: 'a -> 'model -> 'b) (bindings: Binding<'model, 'a> list) =
     f |> Binding.mapMsgWithModel |> List.map <| bindings
 
   /// Maps the message of a list of bindings via a covariant mapping.
-  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) =
-    f |> Binding.mapMsg |> List.map <| bindings
+  let mapMsg (f: 'a -> 'b) (bindings: Binding<'model, 'a> list) = f |> Binding.mapMsg |> List.map <| bindings
 
 
 [<AbstractClass; Sealed>]

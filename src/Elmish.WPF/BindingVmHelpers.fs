@@ -403,11 +403,9 @@ type Initialize<'t>
         nameChain = nameChain } =
     loggingArgs
 
-  let measure x =
-    x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
+  let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
 
-  let measure2 x =
-    x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
+  let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
 
   member _.Base<'model, 'msg>
     (
@@ -440,8 +438,7 @@ type Initialize<'t>
     | CmdData d ->
       let d = d |> BindingData.Cmd.measureFunctions measure2 measure2
 
-      let execute param =
-        d.Exec param (getCurrentModel ()) |> ValueOption.iter dispatch
+      let execute param = d.Exec param (getCurrentModel ()) |> ValueOption.iter dispatch
 
       let canExecute param = d.CanExec param (getCurrentModel ())
       let cmd = Command(execute, canExecute)
@@ -542,8 +539,7 @@ type Initialize<'t>
       |> SubModelWin
       |> Some
     | SubModelSeqUnkeyedData d ->
-      let d =
-        d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
+      let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
 
       let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
 
@@ -553,8 +549,7 @@ type Initialize<'t>
         |> Seq.map (fun (idx, m) ->
           let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
 
-          let args =
-            ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+          let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
 
           d.CreateViewModel args)
         |> d.CreateCollection
@@ -578,8 +573,7 @@ type Initialize<'t>
           let mId = d.BmToId m
           let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
 
-          let args =
-            ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
+          let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
 
           d.CreateViewModel args)
         |> d.CreateCollection

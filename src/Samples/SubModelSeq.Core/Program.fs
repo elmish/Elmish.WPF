@@ -27,8 +27,7 @@ module FuncOption =
 
   let map (f: 'b -> 'c) (mb: 'a -> 'b option) = mb >> Option.map f
 
-  let bind (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a =
-    mb a |> Option.bind (fun b -> Some(f b a))
+  let bind (f: 'b -> 'a -> 'c) (mb: 'a -> 'b option) a = mb a |> Option.bind (fun b -> Some(f b a))
 
 
 let map get set f a = a |> get |> f |> Func.flip set a
@@ -175,8 +174,7 @@ module App =
   let getSomeGlobalState m = m.SomeGlobalState
   let setSomeGlobalState v m = { m with SomeGlobalState = v }
 
-  let mapSomeGlobalState f =
-    f |> map getSomeGlobalState setSomeGlobalState
+  let mapSomeGlobalState f = f |> map getSomeGlobalState setSomeGlobalState
 
   let getDummyRoot m = m.DummyRoot
   let setDummyRoot v m = { m with DummyRoot = v }
@@ -186,8 +184,7 @@ module App =
     { Id = Guid.NewGuid()
       Value = Counter.init }
 
-  let createNewLeaf () =
-    createNewIdentifiableCounter () |> RoseTree.createLeaf
+  let createNewLeaf () = createNewIdentifiableCounter () |> RoseTree.createLeaf
 
   let init () =
     let dummyRootData = createNewIdentifiableCounter () // Placeholder data to satisfy type system. User never sees this.

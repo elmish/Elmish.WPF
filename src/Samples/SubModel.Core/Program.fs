@@ -143,8 +143,7 @@ module App =
 let counterDesignVm = ViewModel.designInstance Counter.init (Counter.bindings ())
 let clockDesignVm = ViewModel.designInstance (Clock.init ()) (Clock.bindings ())
 
-let counterWithClockDesignVm =
-  ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
+let counterWithClockDesignVm = ViewModel.designInstance (CounterWithClock.init ()) (CounterWithClock.bindings ())
 
 let mainDesignVm = ViewModel.designInstance (App.init ()) (App.bindings ())
 

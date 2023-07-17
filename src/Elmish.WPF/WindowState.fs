@@ -15,21 +15,17 @@ module WindowState =
     | WindowState.Hidden a -> a |> f
     | WindowState.Visible a -> a |> g
 
-  let map f =
-    cata WindowState.Closed (f >> WindowState.Hidden) (f >> WindowState.Visible)
+  let map f = cata WindowState.Closed (f >> WindowState.Hidden) (f >> WindowState.Visible)
 
   let set a = map (fun _ -> a)
 
-  let toHidden a =
-    cata (WindowState.Hidden a) WindowState.Hidden WindowState.Hidden
+  let toHidden a = cata (WindowState.Hidden a) WindowState.Hidden WindowState.Hidden
 
-  let toVisible a =
-    cata (WindowState.Visible a) WindowState.Visible WindowState.Visible
+  let toVisible a = cata (WindowState.Visible a) WindowState.Visible WindowState.Visible
 
   let toOption state = state |> cata None Some Some
 
-  let toVOption state =
-    state |> cata ValueNone ValueSome ValueSome
+  let toVOption state = state |> cata ValueNone ValueSome ValueSome
 
   /// Converts None to WindowState.Closed, and Some(x) to
   /// WindowState.Visible(x).

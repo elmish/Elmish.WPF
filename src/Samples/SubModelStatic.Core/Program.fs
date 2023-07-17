@@ -44,8 +44,7 @@ type CounterViewModel(args) =
          >> Binding.mapModel (fun m -> m.StepSize))
     and set (v) = base.Set (v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
 
-  member _.CounterValue =
-    base.Get () (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
+  member _.CounterValue = base.Get () (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
 
   member _.Increment = base.Get () (Binding.CmdT.setAlways Counter.Increment)
   member _.Decrement = base.Get () (Binding.CmdT.setAlways Counter.Decrement)
@@ -86,8 +85,7 @@ type ClockViewModel(args) =
 
   new() = ClockViewModel(Clock.init () |> ViewModelArgs.simple)
 
-  member _.Time =
-    base.Get () (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel Clock.getTime)
+  member _.Time = base.Get () (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel Clock.getTime)
 
   member _.IsLocal =
     base.Get
@@ -96,8 +94,7 @@ type ClockViewModel(args) =
        >> Binding.addLazy (=)
        >> Binding.mapModel (fun m -> m.TimeType = Clock.Local))
 
-  member _.SetLocal =
-    base.Get () (Binding.CmdT.setAlways (Clock.SetTimeType Clock.Local))
+  member _.SetLocal = base.Get () (Binding.CmdT.setAlways (Clock.SetTimeType Clock.Local))
 
   member _.IsUtc =
     base.Get

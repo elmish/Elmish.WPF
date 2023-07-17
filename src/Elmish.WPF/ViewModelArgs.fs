@@ -48,5 +48,4 @@ module ViewModelArgs =
       dispatch = dispatch
       loggingArgs = LoggingViewModelArgs.none }
 
-  let simple initialModel =
-    createWithoutLogging initialModel ignore
+  let simple initialModel = createWithoutLogging initialModel ignore

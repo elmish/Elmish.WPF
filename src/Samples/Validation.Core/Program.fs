@@ -28,11 +28,9 @@ let parseInt (s: string) =
   | true, i -> Ok i
   | false, _ -> Error "Please enter a valid integer"
 
-let requireExactly y x =
-  if x = y then Ok x else Error <| sprintf "Please enter %A" y
+let requireExactly y x = if x = y then Ok x else Error <| sprintf "Please enter %A" y
 
-let validateInt42 =
-  requireNotEmpty >> Result.bind parseInt >> Result.bind (requireExactly 42)
+let validateInt42 = requireNotEmpty >> Result.bind parseInt >> Result.bind (requireExactly 42)
 
 
 let validatePassword (s: string) =

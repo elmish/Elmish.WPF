@@ -85,8 +85,7 @@ module internal ViewModelHelper =
       PropertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
       ErrorsChanged = DelegateEvent<EventHandler<DataErrorsChangedEventArgs>>() }
 
-  let empty getSender args =
-    create getSender args Map.empty Map.empty
+  let empty getSender args = create getSender args Map.empty Map.empty
 
   let getEventsToRaise newModel helper =
     helper.Bindings
@@ -163,8 +162,7 @@ type internal DynamicViewModel<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, 
     let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
     let validationDict = Dictionary<string, string list ref>()
 
-    let sortedBindings =
-      bindings |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
+    let sortedBindings = bindings |> List.sortWith (SubModelSelectedItemLast().CompareBindings())
 
     for b in sortedBindings do
       if bindingDict.ContainsKey b.Name then
@@ -181,8 +179,7 @@ type internal DynamicViewModel<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, 
 
     (bindingDict |> Seq.map (|KeyValue|) |> Map.ofSeq, validationDict |> Seq.map (|KeyValue|) |> Map.ofSeq)
 
-  let mutable helper =
-    ViewModelHelper.create (fun () -> this) args bindings validationErrors
+  let mutable helper = ViewModelHelper.create (fun () -> this) args bindings validationErrors
 
   interface IViewModel<'model, 'msg> with
     member _.CurrentModel: 'model = helper.Model
@@ -294,8 +291,7 @@ type internal DynamicViewModel<'model, 'msg>(args: ViewModelArgs<'model, 'msg>, 
 
     member _.HasErrors = (helper :> INotifyDataErrorInfo).HasErrors
 
-    member _.GetErrors name =
-      (helper :> INotifyDataErrorInfo).GetErrors name
+    member _.GetErrors name = (helper :> INotifyDataErrorInfo).GetErrors name
 
 open System.Runtime.CompilerServices
 
@@ -441,5 +437,4 @@ type ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model, 'msg>) as this =
 
     member _.HasErrors = (helper :> INotifyDataErrorInfo).HasErrors
 
-    member _.GetErrors name =
-      (helper :> INotifyDataErrorInfo).GetErrors name
+    member _.GetErrors name = (helper :> INotifyDataErrorInfo).GetErrors name

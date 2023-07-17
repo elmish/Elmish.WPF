@@ -13,8 +13,7 @@ open Elmish.WPF.BindingVmHelpers
 
 let name = "name"
 
-let noGetSelectedItemCall _ =
-  failwith "Should not call get selected item"
+let noGetSelectedItemCall _ = failwith "Should not call get selected item"
 
 
 module Initialize =
@@ -61,11 +60,9 @@ module Get =
 
   [<Fact>]
   let ``should return error on bad typing`` () =
-    let binding =
-      Binding.SubModel.opt (fun () -> []) >> Binding.mapModel (fun () -> None) <| ""
+    let binding = Binding.SubModel.opt (fun () -> []) >> Binding.mapModel (fun () -> None) <| ""
 
-    let dispatch msg =
-      failwith $"Should not dispatch, got {msg}"
+    let dispatch msg = failwith $"Should not dispatch, got {msg}"
 
     let vmBinding =
       Initialize(LoggingViewModelArgs.none, "Nothing", (fun _ -> failwith "Should not call get selected item"))
@@ -123,8 +120,7 @@ module Update =
 
       let model = ref initialModel
 
-      let dispatch msg =
-        failwith $"Should not dispatch message {msg}"
+      let dispatch msg = failwith $"Should not dispatch message {msg}"
 
       let binding = BindingData.TwoWay.id
 
@@ -133,9 +129,7 @@ module Update =
           .Recursive(initialModel, dispatch, (fun () -> model.Value), binding)
           .Value
 
-      let updateResult =
-        Update(LoggingViewModelArgs.none, name)
-          .Recursive(initialModel, newModel, vmBinding)
+      let updateResult = Update(LoggingViewModelArgs.none, name).Recursive(initialModel, newModel, vmBinding)
 
       test <@ updateResult |> List.length = 1 @>
     }
