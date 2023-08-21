@@ -163,16 +163,18 @@ module WpfProgram =
           | MultiThreaded _ ->
             let executeJob () =
               match threader with
-              | MultiThreaded (Some job) ->
+              | MultiThreaded (Some job) -> // Execute current job, not job that was originally scheduled
                 job()
                 threader <- MultiThreaded None
-              | _ ->
+              | MultiThreaded None -> // If another executor beat us to the job, do nothing
                 bindingsLogger.LogDebug("Job was empty - No update done.")
+              | SingleThreaded ->
+                bindingsLogger.LogError("Error in core Elmish.WPF code - impossible state reached.")
             let scheduleJob () =
-              threader <- MultiThreaded (Some (fun () -> program.UpdateViewModel(vm, model)))
-              element.Dispatcher.InvokeAsync(executeJob, Threading.DispatcherPriority.Background) |> ignore // Schedule update normally
+              threader <- MultiThreaded (Some (fun () -> program.UpdateViewModel(vm, model))) // Update current job so it preempts any pending jobs
+              element.Dispatcher.InvokeAsync(executeJob, Threading.DispatcherPriority.Background) |> ignore // Execute update at low priority
 
-            element.Dispatcher.InvokeAsync(scheduleJob, Threading.DispatcherPriority.Normal) |> ignore
+            element.Dispatcher.InvokeAsync(scheduleJob, Threading.DispatcherPriority.Normal) |> ignore // Schedule update at normal priority
           | SingleThreaded -> // If we aren't using different threads, always process normally
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
