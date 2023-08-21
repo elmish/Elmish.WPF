@@ -254,9 +254,9 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
 
   member _.Get<'a> ([<CallerMemberName>] ?memberName: string) =
     fun (binding: string -> Binding<'model, 'msg, 'a>) ->
+      let name = memberName |> Option.defaultValue "<unset memberName>"
       let result =
         option {
-          let! name = memberName
           let! vmBinding = option {
             match helper.Bindings.TryGetValue name with
             | true, value ->
@@ -279,22 +279,22 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
         }
       match result with
       | None ->
-        log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} could not be constructed", nameChain, memberName)
-        failwithf $"[%s{nameChain}] Get FAILED: Binding {memberName} could not be constructed"
+        log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} could not be constructed", nameChain, name)
+        failwithf $"[%s{nameChain}] Get FAILED: Binding {name} could not be constructed"
       | Some (Error e) ->
         match e with
-        | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is read-only", nameChain, memberName)
-        | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] Get FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {BindingName}", d.NameChain, d.SubModelSeqBindingName, d.Id, memberName)
-        | GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull nonNullTypeName) -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is null, but type {Type} is non-nullable", nameChain, memberName, nonNullTypeName)
-        failwithf $"[%s{nameChain}] Get FAILED: Binding {memberName} returned an error {e}"
+        | GetError.OneWayToSource -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is set-only", nameChain, name)
+        | GetError.SubModelSelectedItem d -> log.LogError("[{BindingNameChain}] Get FAILED: Failed to find an element of the SubModelSeq binding {SubModelSeqBindingName} with ID {ID} in the getter for the binding {BindingName}", d.NameChain, d.SubModelSeqBindingName, d.Id, name)
+        | GetError.ToNullError (ValueOption.ToNullError.ValueCannotBeNull nonNullTypeName) -> log.LogError("[{BindingNameChain}] Get FAILED: Binding {BindingName} is null, but type {Type} is non-nullable", nameChain, name, nonNullTypeName)
+        failwithf $"[%s{nameChain}] Get FAILED: Binding {name} returned an error {e}"
       | Some (Ok r) -> r
 
   member _.Set<'a> (value: 'a, [<CallerMemberName>] ?memberName: string) =
     fun (binding: string -> Binding<'model, 'msg, 'a>) ->
+      let name = memberName |> Option.defaultValue "<unset memberName>"
       try
         let success =
           option {
-            let! name = memberName
             let! vmBinding = option {
               match setBindings.TryGetValue name with
               | true, value ->
@@ -308,11 +308,11 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
             return Set(value).Recursive(helper.Model, vmBinding)
           }
         if success = Some false then
-          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} is read-only", nameChain, memberName)
+          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} is read-only", nameChain, name)
         else if success = None then
-          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} could not be constructed", nameChain, memberName)
+          log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} could not be constructed", nameChain, name)
       with e ->
-        log.LogError(e, "[{BindingNameChain}] Set FAILED: Exception thrown while processing binding {BindingName}", nameChain, memberName)
+        log.LogError(e, "[{BindingNameChain}] Set FAILED: Exception thrown while processing binding {BindingName}", nameChain, name)
         reraise ()
 
   interface IViewModel<'model, 'msg> with
