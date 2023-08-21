@@ -86,9 +86,7 @@ module WpfProgram =
   [<Struct>]
   type ElmishThreaderBehavior =
   | SingleThreaded
-  | Threaded_NoUIDispatch
-  | Threaded_PendingUIDispatch of pending: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
-  | Threaded_UIDispatch of active: System.Threading.Tasks.TaskCompletionSource<unit -> unit>
+  | MultiThreaded of nextJob: (unit -> unit) option
 
   /// <summary>Starts an Elmish dispatch loop, setting the bindings as the DataContext for the
   /// specified FrameworkElement. Non-blocking. If you have an explicit entry point where
@@ -142,33 +140,7 @@ module WpfProgram =
       if element.Dispatcher = elmishDispatcher then
         SingleThreaded
       else
-        Threaded_NoUIDispatch
-
-    // Dispatch that comes in from a view model message (setter or WPF ICommand). These may come from UI thread, so must be streated specially
-    let dispatchFromViewModel msg =
-      if element.Dispatcher = Threading.Dispatcher.CurrentDispatcher then // if the message is from the UI thread
-        match threader with
-        | SingleThreaded -> dispatch msg // Dispatch directly if `elmishDispatcher` is the same as the UI thread
-        | Threaded_NoUIDispatch -> // If `elmishDispatcher` is different, invoke dispatch on it then wait around for it to finish executing, then execute the continuation on the current (UI) thread
-          let uiWaiter = System.Threading.Tasks.TaskCompletionSource<unit -> unit>()
-          threader <- Threaded_PendingUIDispatch uiWaiter
-
-          // This should always leave `threader` in the `Threaded_NoUIDispatch` state before leaving this thread invocation
-          let synchronizedUiDispatch () =
-            threader <- Threaded_UIDispatch uiWaiter
-            dispatch msg
-            threader <- Threaded_NoUIDispatch
-
-          elmishDispatcher.InvokeAsync(synchronizedUiDispatch) |> ignore
-          // Wait on `elmishDispatcher` to get to this invocation and collect result
-          let continuationOnUIThread = uiWaiter.Task.Result
-          // Result is the `program.UpdateViewModel` call, so execute here on the UI thread
-          continuationOnUIThread()
-        | Threaded_PendingUIDispatch uiWaiter
-        | Threaded_UIDispatch uiWaiter ->
-          uiWaiter.SetException(exn("Error in core Elmish.WPF threading code. Invalid state reached!"))
-      else // message is not from the UI thread
-        elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore // handle as a command message
+        MultiThreaded None
 
     // Core Elmish calls this from `dispatch`, which means this is always called from `elmishDispatcher`
     // (which is UI thread in single-threaded case)
@@ -177,7 +149,7 @@ module WpfProgram =
       | None -> // no view model yet, so create one
           let args =
             { initialModel = model
-              dispatch = dispatchFromViewModel
+              dispatch = fun msg -> elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore
               loggingArgs =
                 { performanceLogThresholdMs = program.PerformanceLogThreshold
                   nameChain = "main"
@@ -188,12 +160,19 @@ module WpfProgram =
           viewModel <- Some vm
       | Some vm -> // view model exists, so update
           match threader with
-          | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
-            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model)) // execute `UpdateViewModel` on UI thread
-          | Threaded_PendingUIDispatch _ -> // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
-            () // Skip updating the UI since the screen is frozen anyways, and `program.UpdateViewModel` is fully transitive
-          | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
-            element.Dispatcher.InvokeAsync(fun () -> program.UpdateViewModel (vm, model)) |> ignore // Schedule update normally
+          | MultiThreaded _ ->
+            let executeJob () =
+              match threader with
+              | MultiThreaded (Some job) ->
+                job()
+                threader <- MultiThreaded None
+              | _ ->
+                bindingsLogger.LogDebug("Job was empty - No update done.")
+            let scheduleJob () =
+              threader <- MultiThreaded (Some (fun () -> program.UpdateViewModel(vm, model)))
+              element.Dispatcher.InvokeAsync(executeJob, Threading.DispatcherPriority.Background) |> ignore // Schedule update normally
+
+            element.Dispatcher.InvokeAsync(scheduleJob, Threading.DispatcherPriority.Normal) |> ignore
           | SingleThreaded -> // If we aren't using different threads, always process normally
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
