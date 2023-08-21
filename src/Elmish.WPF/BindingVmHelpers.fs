@@ -89,6 +89,8 @@ module Helpers2 =
 
 type OneWayBinding<'model, 'a> = {
   OneWayData: OneWayData<'model, 'a>
+  GetPending: unit -> 'a voption
+  SetPending: 'a voption -> unit
 }
 
 type OneWayToSourceBinding<'model, 'a> = {
@@ -103,6 +105,8 @@ type OneWaySeqBinding<'model, 'a, 'aCollection, 'id when 'id : equality> = {
 type TwoWayBinding<'model, 'a> = {
   Get: 'model -> 'a
   Set: 'a -> 'model -> unit
+  GetPending: unit -> 'a voption
+  SetPending: 'a voption -> unit
 }
 
 type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
@@ -217,10 +221,15 @@ and VmBinding<'model, 'msg, 't> =
 module internal MapOutputType =
   let private baseCase (fOut: 'a -> 'b) (fIn: 'b -> 'a) (data: BaseVmBinding<'model, 'msg, 'a>) : BaseVmBinding<'model, 'msg, 'b> =
     match data with
-    | OneWay b -> OneWay { OneWayData = { Get = b.OneWayData.Get >> fOut } }
+    | OneWay b -> OneWay { OneWayData = { Get = b.OneWayData.Get >> fOut }
+                           GetPending = b.GetPending >> ValueOption.map fOut
+                           SetPending = ValueOption.map fIn >> b.SetPending }
     | OneWayToSource b -> OneWayToSource { Set = fIn >> b.Set }
     | Cmd b -> Cmd b
-    | TwoWay b -> TwoWay { Get = b.Get >> fOut; Set = fIn >> b.Set }
+    | TwoWay b -> TwoWay { Get = b.Get >> fOut
+                           Set = fIn >> b.Set
+                           GetPending = b.GetPending >> ValueOption.map fOut
+                           SetPending = ValueOption.map fIn >> b.SetPending }
     | OneWaySeq b -> OneWaySeq {
         OneWaySeqData = {
           Get = b.OneWaySeqData.Get
@@ -384,7 +393,10 @@ type Initialize<'t>
       : BaseVmBinding<'model, 'msg, 't> option =
     match binding with
       | OneWayData d ->
-          { OneWayData = d |> BindingData.OneWay.measureFunctions measure }
+          let mutable pending = ValueNone
+          { OneWayData = d |> BindingData.OneWay.measureFunctions measure
+            GetPending = fun () -> pending
+            SetPending = (fun v -> pending <- v) }
           |> OneWay
           |> Some
       | OneWayToSourceData d ->
@@ -399,8 +411,11 @@ type Initialize<'t>
           |> Some
       | TwoWayData d ->
           let d = d |> BindingData.TwoWay.measureFunctions measure measure
+          let mutable pending = ValueNone
           { Get = d.Get
-            Set = fun obj m -> d.Set obj m |> dispatch }
+            Set = fun obj m -> d.Set obj m |> dispatch
+            GetPending = fun () -> pending
+            SetPending = (fun v -> pending <- v) }
           |> TwoWay
           |> Some
       | CmdData d ->
@@ -565,7 +580,7 @@ type Initialize<'t>
 
 
 /// Updates the binding and returns a list indicating what events to raise for this binding
-type Update<'t>
+type Update<'t when 't : equality>
     (loggingArgs: LoggingViewModelArgs,
      name: string) =
 
@@ -577,8 +592,14 @@ type Update<'t>
       (newModel: 'model,
        binding: BaseVmBinding<'model, 'msg, 't>) =
     match binding with
-      | OneWay _
-      | TwoWay _
+      | OneWay b ->
+        let pending = b.GetPending()
+        b.SetPending ValueNone
+        if pending.IsSome && pending = ValueSome (b.OneWayData.Get newModel) then [] else [ PropertyChanged name ]
+      | TwoWay b ->
+        let pending = b.GetPending()
+        b.SetPending ValueNone
+        if pending.IsSome && pending = ValueSome (b.Get newModel) then [] else [ PropertyChanged name ]
       | SubModelSelectedItem _ -> [ PropertyChanged name ]
       | OneWayToSource _ -> []
       | OneWaySeq b ->
@@ -744,8 +765,18 @@ type Get<'t>(nameChain: string) =
 
   member _.Base (model: 'model, binding: BaseVmBinding<'model, 'msg, 't>) =
     match binding with
-    | OneWay { OneWayData = d } -> d.Get model |> Ok
-    | TwoWay b -> b.Get model |> Ok
+    | OneWay b ->
+      let pending = b.GetPending()
+      if pending.IsSome then
+        pending.Value |> Ok
+      else
+        b.OneWayData.Get model |> Ok
+    | TwoWay b ->
+      let pending = b.GetPending()
+      if pending.IsSome then
+        pending.Value |> Ok
+      else
+        b.Get model |> Ok
     | OneWayToSource _ -> GetError.OneWayToSource |> Error
     | OneWaySeq { Values = vals } -> vals.GetCollection () |> Ok
     | Cmd cmd -> cmd |> unbox |> Ok
@@ -796,6 +827,7 @@ type Set<'t>(value: 't) =
     match binding with
     | TwoWay b ->
         b.Set value model
+        b.SetPending (ValueSome value)
         true
     | OneWayToSource b ->
         b.Set value model
@@ -803,7 +835,9 @@ type Set<'t>(value: 't) =
     | SubModelSelectedItem b ->
         b.TypedSet(model, ValueOption.ofNull value)
         true
-    | OneWay _
+    | OneWay b ->
+        b.SetPending (ValueSome value)
+        false
     | OneWaySeq _
     | Cmd _
     | SubModel _

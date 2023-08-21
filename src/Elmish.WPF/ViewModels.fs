@@ -214,6 +214,7 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
           let success = Set(value).Recursive(helper.Model, binding)
           if not success then
             log.LogError("[{BindingNameChain}] TrySetMember FAILED: Binding {BindingName} is read-only", nameChain, binder.Name)
+          ViewModelHelper.raiseEvents [UpdateData.PropertyChanged binder.Name] helper
           success
         with e ->
           log.LogError(e, "[{BindingNameChain}] TrySetMember FAILED: Exception thrown while processing binding {BindingName}", nameChain, binder.Name)
@@ -295,6 +296,12 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
       try
         let success =
           option {
+            let _ = match helper.Bindings.TryGetValue (name) with
+                    | true, getBinding ->
+                      Set(value).Recursive(helper.Model, getBinding |> MapOutputType.unboxVm)
+                    | false, _ ->
+                      false
+              
             let! vmBinding = option {
               match setBindings.TryGetValue name with
               | true, value ->
@@ -311,6 +318,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
           log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} is read-only", nameChain, name)
         else if success = None then
           log.LogError("[{BindingNameChain}] Set FAILED: Binding {BindingName} could not be constructed", nameChain, name)
+        else
+          ViewModelHelper.raiseEvents [UpdateData.PropertyChanged name] helper
       with e ->
         log.LogError(e, "[{BindingNameChain}] Set FAILED: Exception thrown while processing binding {BindingName}", nameChain, name)
         reraise ()
