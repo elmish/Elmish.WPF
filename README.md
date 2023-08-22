@@ -152,7 +152,7 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    open Elmish.WPF
 
    let main window =
-     Program.mkSimpleWpf init update bindings
+     Program.mkSimple init update bindings
      |> Program.runElmishLoop window
    ```
 
