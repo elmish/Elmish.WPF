@@ -156,6 +156,16 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
      |> Program.runElmishLoop window
    ```
 
+   Alternatively, use a statically-typed view model at the top level.
+
+   ```F#
+   open Elmish.WPF
+
+   let main window =
+     Program.mkSimpleT init update CounterViewModel
+     |> Program.runElmishLoop window
+   ```
+
    In the code above, `Program.runElmishLoop` will set the window’s `DataContext` to the specified bindings and start the Elmish dispatch loop for the window.
 
 8. Create a WPF app project (using the Visual Studio template called `WPF App (.NET)`). This will be your entry point and contain the XAML views. Add a reference to the F# project, and make the following changes in the `csproj` file:
@@ -275,6 +285,29 @@ Then use the following attributes wherever you need a design-time VM:
 ```
 
 When targeting legacy .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
+
+If you are using static view models, make sure that the View Model type is in a namespace and add a default constructor that passes a model into `ViewModelArgs.simple`:
+
+```F#
+namespace ViewModels
+
+type [<AllowNullLiteral>] AppViewModel (args) =
+  inherit ViewModelBase<AppModel, AppMsg>(args)
+  
+  new() = AppViewModel(App.init () |> ViewModelArgs.simple)
+```
+
+Then use the following attributes just like you would in a normal C# MVVM project:
+
+```XAML
+<Window
+    ...
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:ViewModels.SubModelStatic;assembly=MyAssembly"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:AppViewModel, IsDesignTimeCreatable=True}">
+```
 
 ##### .NET Core 3 workaround
 
