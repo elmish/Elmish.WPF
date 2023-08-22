@@ -12,7 +12,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <DebugType>Embedded</DebugType>
     <EmbedAllSources>True</EmbedAllSources>
-    <Authors>jsacks, cmeeren, TysonMN</Authors>
+    <Authors>jsacks, cmeeren, TysonMN, jmarner</Authors>
     <Description>F# bindings for using Elmish in WPF</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>
