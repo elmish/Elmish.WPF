@@ -172,6 +172,7 @@ module WpfProgram =
 
     // Core Elmish calls this from `dispatch`, which means this is always called from `elmishDispatcher`
     // (which is UI thread in single-threaded case)
+    let mutable pendingModel = ValueNone
     let setUiState model _syncDispatch =
       match viewModel with
       | None -> // no view model yet, so create one
@@ -189,11 +190,23 @@ module WpfProgram =
       | Some vm -> // view model exists, so update
           match threader with
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
-            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model)) // execute `UpdateViewModel` on UI thread
+            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model); pendingModel <- ValueNone) // execute `UpdateViewModel` on UI thread
           | Threaded_PendingUIDispatch _ -> // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
             () // Skip updating the UI since the screen is frozen anyways, and `program.UpdateViewModel` is fully transitive
           | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
-            element.Dispatcher.InvokeAsync(fun () -> program.UpdateViewModel (vm, model)) |> ignore // Schedule update normally
+            let scheduleJob () =
+              pendingModel <- ValueSome model
+
+            let executeJob () =
+              match pendingModel with
+              | ValueSome m ->
+                program.UpdateViewModel (vm, m)
+                pendingModel <- ValueNone
+              | ValueNone ->
+                bindingsLogger.LogDebug("Job was empty - No update done.")
+
+            element.Dispatcher.InvokeAsync(scheduleJob, Threading.DispatcherPriority.Normal) |> ignore // Schedule update
+            element.Dispatcher.InvokeAsync(executeJob, Threading.DispatcherPriority.Background) |> ignore // Execute Update
           | SingleThreaded -> // If we aren't using different threads, always process normally
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
