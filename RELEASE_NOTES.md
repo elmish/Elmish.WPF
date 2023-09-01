@@ -1,7 +1,3 @@
-#### 4.0.0-beta-51
-* Allow skipping intermediate updates when they pile up on UI Thread.
-* Notify Property Changed directly on Set rather than waiting around for the next update. Set value is now cached until the next time update/dispatch is called.
-
 #### 4.0.0-beta-50
 * Upgraded to Elmish v4
   * **BREAKING:** Changed syntax of `WpfProgram.withSubscription` to now take named list of `Subscribe<'msg> = Dispatch<'msg> -> IDisposable` (note the `IDisposable` return). This function now gets called every time `'model` updates (previously it was only called on startup). This allows starting and stopping of subscriptions from this function by the given string list identifier.
