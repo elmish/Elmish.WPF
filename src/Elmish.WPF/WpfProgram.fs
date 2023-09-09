@@ -173,7 +173,10 @@ module WpfProgram =
     // Core Elmish calls this from `dispatch`, which means this is always called from `elmishDispatcher`
     // (which is UI thread in single-threaded case)
     let mutable pendingModel = ValueNone
+    let mutable ct = 0
     let setUiState model _syncDispatch =
+      let i = ct
+      ct <- ct + 1
       let scheduleJobThreadPriority = Threading.DispatcherPriority.Send
       let executeJobThreadPriority = Threading.DispatcherPriority.Background
 
@@ -194,18 +197,23 @@ module WpfProgram =
           match threader with
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
             uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model); pendingModel <- ValueNone) // execute `UpdateViewModel` on UI thread
+            updateLogger.LogDebug("SetUIState {i} UIDISPATCH", i);
           | Threaded_PendingUIDispatch _ // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
           | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
+            updateLogger.LogDebug("SetUIState {i} NOUIDISPATCH {threader}", i, threader);
+
             let scheduleJob () =
               pendingModel <- ValueSome model
+              updateLogger.LogDebug("Scheduled new job {i}", i)
 
             let executeJob () =
               match pendingModel with
               | ValueSome m ->
                 program.UpdateViewModel (vm, m)
                 pendingModel <- ValueNone
+                updateLogger.LogDebug("Job was full - Update done {i}", i)
               | ValueNone ->
-                bindingsLogger.LogDebug("Job was empty - No update done.")
+                updateLogger.LogDebug("Job was empty - No update done {i}", i)
 
             element.Dispatcher.InvokeAsync(scheduleJob, scheduleJobThreadPriority) |> ignore // Schedule update
             element.Dispatcher.InvokeAsync(executeJob, executeJobThreadPriority) |> ignore // Execute Update
