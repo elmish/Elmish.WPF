@@ -5,6 +5,12 @@
 #### 4.0.0-beta-52
 * Fixed a bug in the threaded dispatch case that could result in an out-of-date model being updated.
 * Skip intermediate updates to view model when they queue up in the threaded case.
+* Reverted the following change from beta-51 because Set caching is problematic:
+  * Notify Property Changed directly on Set rather than waiting around for the next update. Set value is now cached until the next time update/dispatch is called.
+
+#### 4.0.0-beta-51
+* Allow skipping intermediate updates when they pile up on UI Thread.
+* Notify Property Changed directly on Set rather than waiting around for the next update. Set value is now cached until the next time update/dispatch is called.
 
 #### 4.0.0-beta-50
 * Upgraded to Elmish v4
