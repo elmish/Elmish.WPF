@@ -194,8 +194,7 @@ module WpfProgram =
           match threader with
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
             uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model); pendingModel <- ValueNone) // execute `UpdateViewModel` on UI thread
-          | Threaded_PendingUIDispatch _ -> // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
-            () // Skip updating the UI since the screen is frozen anyways, and `program.UpdateViewModel` is fully transitive
+          | Threaded_PendingUIDispatch _ // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
           | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
             let scheduleJob () =
               pendingModel <- ValueSome model
