@@ -196,8 +196,13 @@ module WpfProgram =
       | Some vm -> // view model exists, so update
           match threader with
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
-            uiWaiter.SetResult(fun () -> program.UpdateViewModel (vm, model); pendingModel <- ValueNone) // execute `UpdateViewModel` on UI thread
             updateLogger.LogDebug("SetUIState {i} UIDISPATCH", i);
+
+            let executeJobImmediately () =
+              program.UpdateViewModel (vm, model)
+              updateLogger.LogDebug("Update done from main thread {i}", i)
+
+            uiWaiter.SetResult(executeJobImmediately) // execute `UpdateViewModel` on UI thread
           | Threaded_PendingUIDispatch _ // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
           | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
             updateLogger.LogDebug("SetUIState {i} NOUIDISPATCH {threader}", i, threader);
