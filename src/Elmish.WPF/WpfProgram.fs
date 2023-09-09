@@ -198,10 +198,15 @@ module WpfProgram =
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
             updateLogger.LogDebug("SetUIState {i} UIDISPATCH", i);
 
+            let unscheduleJob () =
+              pendingModel <- ValueNone
+              updateLogger.LogDebug("Unscheduled job already completed from main thread {i}", i)
+
             let executeJobImmediately () =
               program.UpdateViewModel (vm, model)
               updateLogger.LogDebug("Update done from main thread {i}", i)
 
+            element.Dispatcher.InvokeAsync(unscheduleJob, scheduleJobThreadPriority) |> ignore // Unschedule update (already done)
             uiWaiter.SetResult(executeJobImmediately) // execute `UpdateViewModel` on UI thread
           | Threaded_PendingUIDispatch _ // We are in a non-UI dispatch that updated the model before the UI got its update in, but after the user interacted
           | Threaded_NoUIDispatch -> // We are in a non-UI dispatch with no pending user interactions known
