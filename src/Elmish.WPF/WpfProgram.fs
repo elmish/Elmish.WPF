@@ -174,6 +174,9 @@ module WpfProgram =
     // (which is UI thread in single-threaded case)
     let mutable pendingModel = ValueNone
     let setUiState model _syncDispatch =
+      let scheduleJobThreadPriority = Threading.DispatcherPriority.Send
+      let executeJobThreadPriority = Threading.DispatcherPriority.Background
+
       match viewModel with
       | None -> // no view model yet, so create one
           let args =
@@ -205,8 +208,8 @@ module WpfProgram =
               | ValueNone ->
                 bindingsLogger.LogDebug("Job was empty - No update done.")
 
-            element.Dispatcher.InvokeAsync(scheduleJob, Threading.DispatcherPriority.Normal) |> ignore // Schedule update
-            element.Dispatcher.InvokeAsync(executeJob, Threading.DispatcherPriority.Background) |> ignore // Execute Update
+            element.Dispatcher.InvokeAsync(scheduleJob, scheduleJobThreadPriority) |> ignore // Schedule update
+            element.Dispatcher.InvokeAsync(executeJob, executeJobThreadPriority) |> ignore // Execute Update
           | SingleThreaded -> // If we aren't using different threads, always process normally
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
