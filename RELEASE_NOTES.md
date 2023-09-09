@@ -1,3 +1,7 @@
+#### 4.0.0-beta-53
+* Corrected the threaded dispatch case when an immediate UI update was needed. Done by adding an unschedule `Dispatcher` job at the same priority as the other scheduler jobs, which will force it to run in the correct order before any of the execute update jobs arrive to the queue, thus preventing any of the old scheduler jobs from getting executed _after_ this immediate UI update.
+* Added debug logging with counters to represent the increasing sequence of `setUiState` being called and scheduled on other threads (to ensure proper ordering).
+
 #### 4.0.0-beta-52
 * Fixed a bug in the threaded dispatch case that could result in an out-of-date model being updated.
 * Skip intermediate updates to view model when they queue up in the threaded case.
