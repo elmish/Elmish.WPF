@@ -640,20 +640,24 @@ module BindingData =
     let private mapFunctions
         mGetModel
         mGetBindings
+        mUpdateViewModel
         mToMsg
         (d: SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>)
         : SubModelData<'model,'msg,'bindingModel,'bindingMsg,'vm> =
       { d with GetModel = mGetModel d.GetModel
                CreateViewModel = mGetBindings d.CreateViewModel
+               UpdateViewModel = mUpdateViewModel d.UpdateViewModel
                ToMsg = mToMsg d.ToMsg }
 
     let measureFunctions
         mGetModel
         mGetBindings
+        mUpdateViewModel
         mToMsg =
       mapFunctions
         (mGetModel "getSubModel") // sic: "getModel" would be following the pattern
         (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mUpdateViewModel "updateViewModel")
         (mToMsg "toMsg")
 
 
@@ -691,12 +695,14 @@ module BindingData =
     let private mapFunctions
         mGetState
         mGetBindings
+        mUpdateViewModel
         mToMsg
         mGetWindow
         mOnCloseRequested
         (d: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) =
       { d with GetState = mGetState d.GetState
                CreateViewModel = mGetBindings d.CreateViewModel
+               UpdateViewModel = mUpdateViewModel d.UpdateViewModel
                ToMsg = mToMsg d.ToMsg
                GetWindow = mGetWindow d.GetWindow
                OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
@@ -704,10 +710,12 @@ module BindingData =
     let measureFunctions
         mGetState
         mGetBindings
+        mUpdateViewModel
         mToMsg =
       mapFunctions
         (mGetState "getState")
         (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mUpdateViewModel "updateViewModel")
         (mToMsg "toMsg")
         id // sic: could measure GetWindow
         id // sic: could measure OnCloseRequested
@@ -745,19 +753,27 @@ module BindingData =
     let private mapFunctions
         mGetModels
         mGetBindings
+        mCreateCollection
+        mUpdateViewModel
         mToMsg
         (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>) =
       { d with GetModels = mGetModels d.GetModels
                CreateViewModel = mGetBindings d.CreateViewModel
+               CreateCollection = mCreateCollection d.CreateCollection
+               UpdateViewModel = mUpdateViewModel d.UpdateViewModel
                ToMsg = mToMsg d.ToMsg }
 
     let measureFunctions
         mGetModels
         mGetBindings
+        mCreateCollection
+        mUpdateViewModel
         mToMsg =
       mapFunctions
         (mGetModels "getSubModels") // sic: "getModels" would follow the pattern
         (mGetBindings "bindings") // sic: "getBindings" would follow the pattern
+        (mCreateCollection "createCollection")
+        (mUpdateViewModel "updateViewModel")
         (mToMsg "toMsg")
 
 
@@ -799,24 +815,36 @@ module BindingData =
       let private mapFunctions
           mGetSubModels
           mGetBindings
+          mCreateCollection
+          mUpdateViewModel
           mToMsg
           mGetId
+          mGetVmId
           (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>) =
         { d with GetSubModels = mGetSubModels d.GetSubModels
                  CreateViewModel = mGetBindings d.CreateViewModel
+                 CreateCollection = mCreateCollection d.CreateCollection
+                 UpdateViewModel = mUpdateViewModel d.UpdateViewModel
                  ToMsg = mToMsg d.ToMsg
-                 BmToId = mGetId d.BmToId }
+                 BmToId = mGetId d.BmToId
+                 VmToId = mGetVmId d.VmToId }
 
       let measureFunctions
           mGetSubModels
           mGetBindings
+          mCreateCollection
+          mUpdateViewModel
           mToMsg
-          mGetId =
+          mGetId
+          mGetVmId =
         mapFunctions
           (mGetSubModels "getSubModels")
           (mGetBindings "getBindings")
+          (mCreateCollection "createCollection")
+          (mUpdateViewModel "updateViewModel")
           (mToMsg "toMsg")
           (mGetId "getId")
+          (mGetVmId "getVmId")
 
 
   module Validation =

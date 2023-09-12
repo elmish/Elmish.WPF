@@ -70,21 +70,21 @@ module Helpers2 =
         win.Visibility <- initialVisibility
     ) |> ignore
 
-  let measure (logPerformance: ILogger) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (callName: string) f =
-    if not <| logPerformance.IsEnabled(LogLevel.Trace) then f
+  let measure (logPerformance: ILogger) (logLevel: LogLevel) (performanceLogThresholdMs: int) (name: string) (nameChain: string) (callName: string) f =
+    if not <| logPerformance.IsEnabled(logLevel) then f
     else
       fun a ->
         let sw = System.Diagnostics.Stopwatch.StartNew ()
         let b = f a
         sw.Stop ()
         if sw.ElapsedMilliseconds >= int64 performanceLogThresholdMs then
-          logPerformance.LogTrace("[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
+          logPerformance.Log(logLevel, "[{BindingNameChain}] {CallName} ({Elapsed}ms): {MeasureName}", nameChain, callName, sw.ElapsedMilliseconds, name)
         b
 
-  let measure2 (logPerformance: ILogger) performanceLogThresholdMs name nameChain callName f =
-    if not <| logPerformance.IsEnabled(LogLevel.Trace)
+  let measure2 (logPerformance: ILogger) (logLevel: LogLevel) performanceLogThresholdMs name nameChain callName f =
+    if not <| logPerformance.IsEnabled(logLevel)
     then f
-    else fun a -> measure logPerformance performanceLogThresholdMs name nameChain callName (f a)
+    else fun a -> measure logPerformance logLevel performanceLogThresholdMs name nameChain callName (f a)
 
 
 type OneWayBinding<'model, 'a> = {
@@ -373,8 +373,8 @@ type Initialize<'t>
         nameChain = nameChain } =
     loggingArgs
 
-  let measure x = x |> Helpers2.measure logPerformance performanceLogThresholdMs name nameChain
-  let measure2 x = x |> Helpers2.measure2 logPerformance performanceLogThresholdMs name nameChain
+  let measure x = x |> Helpers2.measure logPerformance LogLevel.Trace performanceLogThresholdMs name nameChain
+  let measure2 x = x |> Helpers2.measure2 logPerformance LogLevel.Trace performanceLogThresholdMs name nameChain
 
   member _.Base<'model, 'msg>
       (initialModel: 'model,
@@ -414,7 +414,7 @@ type Initialize<'t>
           |> Cmd
           |> Some
       | SubModelData d ->
-          let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModel.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let chain = LoggingViewModelArgs.getNameChainFor nameChain name
           d.GetModel initialModel
@@ -429,7 +429,7 @@ type Initialize<'t>
           |> SubModel
           |> Some
       | SubModelWinData d ->
-          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           match d.GetState initialModel with
           | WindowState.Closed ->
@@ -479,7 +479,7 @@ type Initialize<'t>
           |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
-          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetModels initialModel
@@ -497,7 +497,7 @@ type Initialize<'t>
           |> SubModelSeqUnkeyed
           |> Some
       | SubModelSeqKeyedData d ->
-          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
+          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure measure measure2 measure measure
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetSubModels initialModel
