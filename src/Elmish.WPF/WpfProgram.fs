@@ -124,6 +124,10 @@ module WpfProgram =
     let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
     let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
 
+    let measure callName f = BindingVmHelpers.Helpers2.measure performanceLogger LogLevel.Debug program.PerformanceLogThreshold "" "main" callName f
+
+    let program = { program with UpdateViewModel = measure "updateViewModel" program.UpdateViewModel }
+
     (*
      * Capture the dispatch function before wrapping it with Dispatcher.InvokeAsync
      * so that the UI can synchronously dispatch messages.
@@ -231,6 +235,7 @@ module WpfProgram =
             element.Dispatcher.Invoke(fun () -> program.UpdateViewModel (vm, model))
 
     let cmdDispatch (innerDispatch: Dispatch<'msg>) : Dispatch<'msg> =
+      let innerDispatch = measure "dispatch" innerDispatch
       dispatch <- innerDispatch
       (*
        * Have commands asynchronously dispatch messages.
