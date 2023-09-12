@@ -414,7 +414,7 @@ type Initialize<'t>
           |> Cmd
           |> Some
       | SubModelData d ->
-          let d = d |> BindingData.SubModel.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModel.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let chain = LoggingViewModelArgs.getNameChainFor nameChain name
           d.GetModel initialModel
@@ -429,7 +429,7 @@ type Initialize<'t>
           |> SubModel
           |> Some
       | SubModelWinData d ->
-          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           match d.GetState initialModel with
           | WindowState.Closed ->
@@ -479,7 +479,7 @@ type Initialize<'t>
           |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
-          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure2
+          let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetModels initialModel
@@ -497,7 +497,7 @@ type Initialize<'t>
           |> SubModelSeqUnkeyed
           |> Some
       | SubModelSeqKeyedData d ->
-          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure2 measure
+          let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure measure measure2 measure measure
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
             d.GetSubModels initialModel
