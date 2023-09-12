@@ -3,7 +3,7 @@ WPF done the Elmish Way
 
 <img src="https://raw.githubusercontent.com/elmish/Elmish.WPF/master/logo/elmish-wpf-logo-ghreadme.png" width="300" align="right" />
 
-[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://github.com/elmish/Elmish.WPF/workflows/master/badge.svg)](https://github.com/elmish/Elmish.WPF/actions/workflows/master.yml)
+[![NuGet version](https://img.shields.io/nuget/v/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.WPF.svg)](https://www.nuget.org/packages/Elmish.WPF) [![Build status](https://github.com/elmish/Elmish.WPF/actions/workflows/continuous_integration.yml/badge.svg)](https://github.com/elmish/Elmish.WPF/actions/workflows/continuous_integration.yml)
 
 **The good parts of MVVM (the data bindings) with the simplicity and robustness of an MVU architecture for the rest of your app. Never write an overly-complex ViewModel class again!**
 
@@ -152,7 +152,17 @@ See the [SingleCounter](https://github.com/elmish/Elmish.WPF/tree/master/src/Sam
    open Elmish.WPF
 
    let main window =
-     Program.mkSimpleWpf init update bindings
+     Program.mkSimple init update bindings
+     |> Program.runElmishLoop window
+   ```
+
+   Alternatively, use a statically-typed view model at the top level.
+
+   ```F#
+   open Elmish.WPF
+
+   let main window =
+     Program.mkSimpleT init update CounterViewModel
      |> Program.runElmishLoop window
    ```
 
@@ -275,6 +285,29 @@ Then use the following attributes wherever you need a design-time VM:
 ```
 
 When targeting legacy .NET Framework, “Project code” must be enabled in the XAML designer for this to work.
+
+If you are using static view models, make sure that the View Model type is in a namespace and add a default constructor that passes a model into `ViewModelArgs.simple`:
+
+```F#
+namespace ViewModels
+
+type [<AllowNullLiteral>] AppViewModel (args) =
+  inherit ViewModelBase<AppModel, AppMsg>(args)
+  
+  new() = AppViewModel(App.init () |> ViewModelArgs.simple)
+```
+
+Then use the following attributes just like you would in a normal C# MVVM project:
+
+```XAML
+<Window
+    ...
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:ViewModels.SubModelStatic;assembly=MyAssembly"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:AppViewModel, IsDesignTimeCreatable=True}">
+```
 
 ##### .NET Core 3 workaround
 

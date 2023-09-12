@@ -12,7 +12,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <DebugType>Embedded</DebugType>
     <EmbedAllSources>True</EmbedAllSources>
-    <Authors>jsacks, cmeeren, TysonMN</Authors>
+    <Authors>jsacks, cmeeren, TysonMN, jmarner</Authors>
     <Description>F# bindings for using Elmish in WPF</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/elmish/Elmish.WPF</PackageProjectUrl>
@@ -20,6 +20,7 @@
     <PackageIcon>elmish-wpf-logo-128x128.png</PackageIcon>
     <Version>4.0.0-beta-53</Version>
     <PackageReleaseNotes>https://github.com/elmish/Elmish.WPF/blob/master/RELEASE_NOTES.md</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
@@ -29,6 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md" Link="README.md" Pack="True" PackagePath="/" />
     <None Include="elmish-wpf-logo-128x128.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
