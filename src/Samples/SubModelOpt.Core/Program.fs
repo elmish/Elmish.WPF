@@ -19,7 +19,7 @@ module Form1 =
 
   let update msg m =
     match msg with
-    | SetText s -> { m with Text = s }
+    | SetText s -> { Text = s }
     | Submit -> m  // handled by parent
 
   let bindings () : Binding<Model, Msg> list = [
@@ -76,17 +76,17 @@ module App =
 
   let update msg m =
     match msg with
-    | ShowForm1 -> { m with Dialog = Some <| Form1 Form1.init }
-    | ShowForm2 -> { m with Dialog = Some <| Form2 Form2.init }
-    | Form1Msg Form1.Submit -> { m with Dialog = None }
+    | ShowForm1 -> { Dialog = Some <| Form1 Form1.init }
+    | ShowForm2 -> { Dialog = Some <| Form2 Form2.init }
+    | Form1Msg Form1.Submit -> { Dialog = None }
     | Form1Msg msg' ->
         match m.Dialog with
-        | Some (Form1 m') -> { m with Dialog = Form1.update msg' m' |> Form1 |> Some }
+        | Some (Form1 m') -> { Dialog = Form1.update msg' m' |> Form1 |> Some }
         | _ -> m
-    | Form2Msg Form2.Submit -> { m with Dialog = None }
+    | Form2Msg Form2.Submit -> { Dialog = None }
     | Form2Msg msg' ->
         match m.Dialog with
-        | Some (Form2 m') -> { m with Dialog = Form2.update msg' m' |> Form2 |> Some }
+        | Some (Form2 m') -> { Dialog = Form2.update msg' m' |> Form2 |> Some }
         | _ -> m
 
   let bindings () : Binding<Model, Msg> list = [
