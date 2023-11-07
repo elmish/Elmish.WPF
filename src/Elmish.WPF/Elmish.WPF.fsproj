@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-windows;netcoreapp3.1;net480</TargetFrameworks>
+    <TargetFrameworks>net8.0-windows;net6.0-windows;net480</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
