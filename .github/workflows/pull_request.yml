@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-
+  
     runs-on: windows-latest
 
     steps:
@@ -21,6 +21,12 @@ jobs:
         dotnet-version: |
           3.1.x
           6.0.x
+          
+    - name: Restore Fantomas
+      run: dotnet tool restore
+
+    - name: Format
+      run: dotnet fantomas src --check
 
     - name: Restore
       run: dotnet restore src/Elmish.WPF.sln
