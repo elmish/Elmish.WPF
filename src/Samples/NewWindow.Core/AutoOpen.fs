@@ -4,15 +4,16 @@ module AutoOpen
 
 let flip f b a = f a b
 
-let map get set f a =
-  a |> get |> f |> flip set a
+let map get set f a = a |> get |> f |> flip set a
 
 
 [<RequireQualifiedAccess>]
 module Bool =
   open System.Windows
-  let toVisibilityCollapsed = function
-    | true  -> Visibility.Visible
+
+  let toVisibilityCollapsed =
+    function
+    | true -> Visibility.Visible
     | false -> Visibility.Collapsed
 
 
@@ -27,6 +28,7 @@ module InOutModule =
   [<RequireQualifiedAccess>]
   module InOut =
 
-    let cata f g = function
-      | InOut.In  msg -> msg |> f
+    let cata f g =
+      function
+      | InOut.In msg -> msg |> f
       | InOut.Out msg -> msg |> g

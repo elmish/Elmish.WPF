@@ -3,15 +3,15 @@
 open Elmish.WPF
 
 
-type Tree<'a> =
-  { Data: 'a
-    Children: Tree<'a> list }
+type Tree<'a> = { Data: 'a; Children: Tree<'a> list }
 
 module Tree =
   let create a ma = { Data = a; Children = ma }
   let createLeaf a = create a []
+
   module Data =
     let get m = m.Data
+
   module Children =
     let get m = m.Children
 
@@ -31,42 +31,45 @@ module Selection =
   module SelectedIndex =
     let get m = m.SelectedIndex
     let set v m = { m with SelectedIndex = v }
+
   module SelectedIndexData =
     let get m = m.SelectedIndexData
+
   module SelectedValue =
     let get m = m.SelectedValue
     let set v m = { m with SelectedValue = v }
+
   module SelectedValueData =
     let get m = m.SelectedValueData
 
   let init =
     { SelectedIndex = None
-      SelectedIndexData = ["A"; "B"]
+      SelectedIndexData = [ "A"; "B" ]
       SelectedValue = None
       SelectedValueData =
         [ Tree.create "A" [ Tree.createLeaf "Aa"; Tree.createLeaf "Ab" ]
           Tree.create "B" [ Tree.createLeaf "Ba"; Tree.createLeaf "Bb" ] ] }
 
-  let update = function
+  let update =
+    function
     | SetSelectedIndex x -> x |> SelectedIndex.set
     | SetSelectedValue x -> x |> SelectedValue.set
 
-  let rec recursiveSelectedValueBindings () = [
-    "Data" |> Binding.oneWay Tree.Data.get
-    "SelectedValueChildren"
+  let rec recursiveSelectedValueBindings () =
+    [ "Data" |> Binding.oneWay Tree.Data.get
+      "SelectedValueChildren"
       |> Binding.subModelSeq recursiveSelectedValueBindings
       |> Binding.mapModel (Tree.Children.get >> List.toSeq)
-      |> Binding.mapMsg snd
-  ]
+      |> Binding.mapMsg snd ]
 
-  let bindings () = [
-    "SelectedIndex" |> Binding.selectedIndex (SelectedIndex.get, SetSelectedIndex)
-    "DeselectIndex" |> Binding.cmdIf (SelectedIndex.get >> Option.map (fun _ -> SetSelectedIndex None))
-    "SelectedIndexData" |> Binding.oneWay SelectedIndexData.get
+  let bindings () =
+    [ "SelectedIndex" |> Binding.selectedIndex (SelectedIndex.get, SetSelectedIndex)
+      "DeselectIndex"
+      |> Binding.cmdIf (SelectedIndex.get >> Option.map (fun _ -> SetSelectedIndex None))
+      "SelectedIndexData" |> Binding.oneWay SelectedIndexData.get
 
-    "SelectedValue" |> Binding.twoWayOpt (SelectedValue.get, SetSelectedValue)
-    "SelectedValueData"
+      "SelectedValue" |> Binding.twoWayOpt (SelectedValue.get, SetSelectedValue)
+      "SelectedValueData"
       |> Binding.subModelSeq recursiveSelectedValueBindings
       |> Binding.mapModel (SelectedValueData.get >> List.toSeq)
-      |> Binding.mapMsg snd
-  ]
+      |> Binding.mapMsg snd ]

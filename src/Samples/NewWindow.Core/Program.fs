@@ -19,7 +19,9 @@ let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>
       .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
+
   let createWindow1 () = createWindow1.Invoke()
+
   let createWindow2 () =
     let window = createWindow2.Invoke()
     window.Owner <- mainWindow
@@ -27,6 +29,7 @@ let main mainWindow (createWindow1: Func<#Window>) (createWindow2: Func<#Window>
 
   let init () = App.init
   let bindings = App.bindings createWindow1 createWindow2
+
   WpfProgram.mkSimple init App.update bindings
   |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
   |> WpfProgram.startElmishLoop mainWindow
