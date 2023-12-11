@@ -23,7 +23,7 @@ jobs:
           6.0.x
           
     - name: Restore Fantomas
-      run: dotnet -d tool restore --tool-manifest ${{ github.workspace }}/dotnet-tools.json
+      run: dotnet -d tool restore --tool-manifest ${{ github.workspace }}/.config/dotnet-tools.json
 
     - name: Format
       run: dotnet fantomas src --check
