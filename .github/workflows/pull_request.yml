@@ -21,6 +21,12 @@ jobs:
         dotnet-version: |
           3.1.x
           6.0.x
+          
+    - name: Restore Fantomas
+      run: dotnet -d tool restore --tool-manifest ${{ github.workspace }}/.config/dotnet-tools.json
+
+    - name: Format
+      run: dotnet fantomas src --check
 
     - name: Restore
       run: dotnet restore src/Elmish.WPF.sln
