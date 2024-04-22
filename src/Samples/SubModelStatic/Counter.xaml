@@ -6,12 +6,37 @@
              xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelStatic;assembly=SubModelStatic.Core"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:CounterViewModel, IsDesignTimeCreatable=True}">
-  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top">
-    <TextBlock Text="{Binding CounterValue, StringFormat='Counter value: {0}'}" Width="110" Margin="0,5,10,5" />
-    <Button Command="{Binding Decrement}" Content="-" Margin="0,5,10,5" Width="30" />
-    <Button Command="{Binding Increment}" Content="+" Margin="0,5,10,5" Width="30" />
-    <TextBlock Text="{Binding StepSize, StringFormat='Step size: {0}'}" Width="70" Margin="0,5,10,5" />
-    <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
-    <Button Command="{Binding Reset}" Content="Reset" Margin="0,5,10,5" Width="50" />
-  </StackPanel>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top">
+      <TextBlock Text="{Binding CounterValue, StringFormat='Counter value: {0}'}" Width="110" Margin="0,5,10,5" />
+      <Button Command="{Binding Decrement}" Content="-" Margin="0,5,10,5" Width="30" />
+      <Button Command="{Binding Increment}" Content="+" Margin="0,5,10,5" Width="30" />
+      <TextBlock Text="{Binding StepSize, StringFormat='Step size: {0}'}" Width="70" Margin="0,5,10,5" />
+      <Slider Value="{Binding StepSize}" TickFrequency="1" Maximum="10" Minimum="1" IsSnapToTickEnabled="True" Width="100" Margin="0,5,10,5" />
+      <Button Command="{Binding Reset}" Content="Reset" Margin="0,5,10,5" Width="50" />
+    </StackPanel>
+    <DockPanel Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+      <TextBlock DockPanel.Dock="Left" Margin="0,5,10,5">History:</TextBlock>
+      <TextBlock Margin="2,5,2,5">
+        <Run Text="{Binding CounterValue, Mode=OneWay, StringFormat='({0},'}" />
+        <Run Text="{Binding History.Count, Mode=OneWay, StringFormat='{}{0})'}" />
+      </TextBlock>
+      <ItemsControl ItemsSource="{Binding History}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding}" TextDecorations="Strikethrough" Margin="2,5,2,5" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </DockPanel>
+  </Grid>
 </UserControl>

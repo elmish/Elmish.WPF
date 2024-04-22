@@ -11,7 +11,8 @@ module Counter =
 
   type Model =
     { Count: int
-      StepSize: int }
+      StepSize: int
+      History: (int * int) list }
 
   type Msg =
     | Increment
@@ -21,14 +22,15 @@ module Counter =
 
   let init =
     { Count = 0
-      StepSize = 1 }
+      StepSize = 1
+      History = [] }
 
   let canReset = (<>) init
 
   let update msg m =
     match msg with
-    | Increment -> { m with Count = m.Count + m.StepSize }
-    | Decrement -> { m with Count = m.Count - m.StepSize }
+    | Increment -> { m with Count = m.Count + m.StepSize; History = (m.Count, m.History.Length) :: m.History }
+    | Decrement -> { m with Count = m.Count - m.StepSize; History = (m.Count, m.History.Length) :: m.History }
     | SetStepSize x -> { m with StepSize = x }
     | Reset -> init
 
@@ -41,7 +43,7 @@ type [<AllowNullLiteral>] CounterViewModel (args) =
     >> Binding.mapModel (fun (m: Counter.Model) -> m.StepSize)
     >> Binding.mapMsg Counter.Msg.SetStepSize
 
-  new() = CounterViewModel(Counter.init |> ViewModelArgs.simple)
+  new() = CounterViewModel({ Counter.init with History = [ (3,1); (0,0) ] } |> ViewModelArgs.simple)
 
   member _.StepSize
     with get() = base.Get() stepSizeBinding
@@ -50,6 +52,7 @@ type [<AllowNullLiteral>] CounterViewModel (args) =
   member _.Increment = base.Get() (Binding.CmdT.setAlways Counter.Increment)
   member _.Decrement = base.Get() (Binding.CmdT.setAlways Counter.Decrement)
   member _.Reset = base.Get() (Binding.CmdT.set Counter.canReset Counter.Reset)
+  member _.History = base.Get() (Binding.OneWaySeqT.id (=) snd >> Binding.mapModel (fun m -> m.History))
 
 
 module Clock =
