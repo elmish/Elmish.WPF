@@ -35,11 +35,17 @@ module Counter =
 type [<AllowNullLiteral>] CounterViewModel (args) =
   inherit ViewModelBase<Counter.Model, Counter.Msg>(args)
 
+  let stepSizeBinding =
+    Binding.TwoWayT.id
+    >> Binding.addLazy (=)
+    >> Binding.mapModel (fun (m: Counter.Model) -> m.StepSize)
+    >> Binding.mapMsg Counter.Msg.SetStepSize
+
   new() = CounterViewModel(Counter.init |> ViewModelArgs.simple)
 
   member _.StepSize
-    with get() = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.StepSize))
-    and set(v) = base.Set(v) (Binding.OneWayToSourceT.id >> Binding.mapMsg Counter.Msg.SetStepSize)
+    with get() = base.Get() stepSizeBinding
+    and set(v) = base.Set(v) stepSizeBinding
   member _.CounterValue = base.Get() (Binding.OneWayT.id >> Binding.addLazy (=) >> Binding.mapModel (fun m -> m.Count))
   member _.Increment = base.Get() (Binding.CmdT.setAlways Counter.Increment)
   member _.Decrement = base.Get() (Binding.CmdT.setAlways Counter.Decrement)

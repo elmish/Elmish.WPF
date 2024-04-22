@@ -117,6 +117,16 @@ module Binding =
       |> createBindingT
 
   /// <summary>
+  ///   Strongly-typed bindings that update both ways
+  /// </summary>
+  module TwoWayT =
+
+    /// Elemental instance of a two-way binding.
+    let id<'a> : string -> Binding<'a, 'a, 'a> =
+      TwoWay.id
+      |> createBindingT
+
+  /// <summary>
   ///   Strongly-typed bindings that dispatch messages from the view.
   /// </summary>
   module CmdT =
