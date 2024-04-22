@@ -116,6 +116,13 @@ module Binding =
       OneWayToSource.id
       |> createBindingT
 
+
+  module OneWaySeqT =
+
+    let id itemEquals (getId: 'a -> 'id) : string -> Binding<_, 'msg, _> =
+      OneWaySeq.create itemEquals getId
+      |> createBindingT
+
   /// <summary>
   ///   Strongly-typed bindings that update both ways
   /// </summary>
