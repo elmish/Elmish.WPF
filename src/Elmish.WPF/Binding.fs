@@ -116,13 +116,6 @@ module Binding =
       OneWayToSource.id
       |> createBindingT
 
-
-  module OneWaySeqT =
-
-    let id itemEquals (getId: 'a -> 'id) : string -> Binding<_, 'msg, _> =
-      OneWaySeq.create itemEquals getId
-      |> createBindingT
-
   /// <summary>
   ///   Strongly-typed bindings that update both ways
   /// </summary>
@@ -131,6 +124,22 @@ module Binding =
     /// Elemental instance of a two-way binding.
     let id<'a> : string -> Binding<'a, 'a, 'a> =
       TwoWay.id
+      |> createBindingT
+      
+  /// <summary>
+  ///   The strongly-typed counterpart of <c>Binding.oneWaySeq</c> with parameter <c>getId</c>.
+  ///   Exposes an <c>ObservableCollection</c> of child items for binding.
+  ///   Allows a more efficient update than would be possible without using ids.
+  /// </summary>
+  module OneWaySeqT =
+
+    /// <summary>
+    /// Elemental instance of a OneWaySeqT binding
+    /// </summary>
+    /// <param name="itemEquals">Defines whether an item is "equal" and needs to be updated if the ids are the same</param>
+    /// <param name="getId">Unique identifier for each item in the list (for efficient updates).</param>
+    let id itemEquals (getId: 'a -> 'id) : string -> Binding<_, 'msg, _> =
+      OneWaySeq.create itemEquals getId
       |> createBindingT
 
   /// <summary>
