@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModelStatic"
         xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelStatic;assembly=SubModelStatic.Core"
         Title="Sub-model"
-        Height="270"
+        Height="300"
         Width="500"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
