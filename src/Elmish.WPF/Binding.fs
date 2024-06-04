@@ -359,7 +359,7 @@ module Binding =
       TwoWay.id
       |> createBinding
 
-    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
     let vopt<'a> : string -> Binding<'a voption, 'a voption> =
@@ -367,7 +367,7 @@ module Binding =
       >> mapModel ValueOption.box
       >> mapMsg ValueOption.unbox
 
-    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
     let opt<'a> : string -> Binding<'a option, 'a option> =
