@@ -1,3 +1,9 @@
+#### 4.0.0-beta-55
+* Add TwoWayT bindings for workflows that reuse bindings.
+* Add OneWayToSeqT bindings.
+* Add vopt and opt bindings for OneWayT, OneWayToSourceT, and TwoWayT bindings.
+* Add .NET 8 target and remove .NET Core 3.1 support
+
 #### 4.0.0-beta-54
 * Added the Readme file to the generated nuspec file so that it shows up on nuget.org.
 * Added some debug logs to the performance logger at the top level.
