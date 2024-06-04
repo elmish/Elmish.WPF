@@ -106,6 +106,36 @@ module Binding =
       OneWay.id
       |> createBindingT
 
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let opt x : Binding<'a option, 'msg, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapModel Option.toNullable
+
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let vopt x : Binding<'a voption, 'msg, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapModel ValueOption.toNullable
+
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let optobj<'a, 'msg when 'a : null> : string -> Binding<'a option, 'msg, 'a> =
+      id<'a, 'msg>
+      >> mapModel Option.toObj
+
+    /// Creates a one-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let voptobj<'a, 'msg when 'a : null> : string -> Binding<'a voption, 'msg, 'a> =
+      id<'a, 'msg>
+      >> mapModel ValueOption.toObj
+
   /// <summary>
   ///   Strongly-typed bindings that update the model from the view.
   /// </summary>
@@ -116,6 +146,36 @@ module Binding =
       OneWayToSource.id
       |> createBindingT
 
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let optobj<'a, 'model when 'a : null> : string -> Binding<'model, 'a option, 'a> =
+      id<'model, 'a>
+      >> mapMsg Option.ofObj
+
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let voptobj<'a, 'model when 'a : null> : string -> Binding<'model, 'a voption, 'a> =
+      id<'model, 'a>
+      >> mapMsg ValueOption.ofObj
+
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let opt x : Binding<'model, 'a option, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapMsg Option.ofNullable
+      
+    /// Creates a one-way-to-source binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let vopt x : Binding<'model, 'a voption, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapMsg ValueOption.ofNullable
+
   /// <summary>
   ///   Strongly-typed bindings that update both ways
   /// </summary>
@@ -125,6 +185,40 @@ module Binding =
     let id<'a> : string -> Binding<'a, 'a, 'a> =
       TwoWay.id
       |> createBindingT
+
+    /// Creates a two-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let opt x : Binding<'a option, 'a option, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapMsg Option.ofNullable
+      |> mapModel Option.toNullable
+
+    /// Creates a two-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let vopt x : Binding<'a voption, 'a voption, System.Nullable<'a>> =
+      x
+      |> id
+      |> mapMsg ValueOption.ofNullable
+      |> mapModel ValueOption.toNullable
+
+    /// Creates a two-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let optobj<'a when 'a : null> : string -> Binding<'a option, 'a option, 'a> =
+      id<'a>
+      >> mapModel Option.toObj
+      >> mapMsg Option.ofObj
+
+    /// Creates a two-way binding to an optional value. The binding
+    /// automatically converts between a missing value in the model and
+    /// a <c>null</c> value in the view.
+    let voptobj<'a when 'a : null> : string -> Binding<'a voption, 'a voption, 'a> =
+      id<'a>
+      >> mapMsg ValueOption.ofObj
+      >> mapModel ValueOption.toObj
       
   /// <summary>
   ///   The strongly-typed counterpart of <c>Binding.oneWaySeq</c> with parameter <c>getId</c>.
