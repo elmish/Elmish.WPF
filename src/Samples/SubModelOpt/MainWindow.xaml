@@ -1,50 +1,61 @@
-﻿<Window x:Class="Elmish.WPF.Samples.SubModelOpt.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelOpt;assembly=SubModelOpt.Core"
-        xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModelOpt"
-        Title="Sub-model"
-        Height="350"
-        Width="500"
-        WindowStartupLocation="CenterScreen"
-        mc:Ignorable="d"
-        d:DataContext="{x:Static vm:Program.mainDesignVm}">
-  <Window.Resources>
-    <ResourceDictionary>
-      <BooleanToVisibilityConverter x:Key="VisibilityConverter" />
-    </ResourceDictionary>
-  </Window.Resources>
-  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-    <StackPanel Margin="0,15,0,0">
-      <Button Command="{Binding ShowForm1}" Content="Show form 1" Width="200" Margin="0,5,0,5" />
-      <Button Command="{Binding ShowForm2}" Content="Show form 2" Width="200" Margin="0,5,0,5" />
-    </StackPanel>
-    <Rectangle
-        Fill="Black"
-        Opacity="0.6"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}" />
-    <Border
-        BorderBrush="Black"
-        BorderThickness="2"
-        Width="350"
-        Height="200"
-        Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}">
-      <StackPanel Background="White">
-        <local:Form1
-            DataContext="{Binding Form1}"
-            d:DataContext="{Binding DataContext.Form1, RelativeSource={RelativeSource AncestorType=StackPanel}}"
-            Visibility="{Binding DataContext.Form1Visible,
-                         RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter}}" />
-        <local:Form2
-            DataContext="{Binding Form2}"
-            d:DataContext="{Binding DataContext.Form2, RelativeSource={RelativeSource AncestorType=StackPanel}}"
-            Visibility="{Binding DataContext.Form2Visible,
-                         RelativeSource={RelativeSource AncestorType=StackPanel},
-                         Converter={StaticResource VisibilityConverter}}" />
-      </StackPanel>
-    </Border>
-  </Grid>
+﻿<Window
+    x:Class="Elmish.WPF.Samples.SubModelOpt.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Elmish.WPF.Samples.SubModelOpt"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:Program;assembly=SubModelOpt.Core"
+    Title="Sub-model"
+    Width="500"
+    Height="350"
+    d:DataContext="{d:DesignInstance Type=vm:App_ViewModel,
+                                     IsDesignTimeCreatable=True}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ResourceDictionary>
+            <BooleanToVisibilityConverter
+                x:Key="VisibilityConverter" />
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch">
+        <StackPanel
+            Margin="0,15,0,0">
+            <Button
+                Width="200"
+                Margin="0,5,0,5"
+                Command="{Binding ShowForm1}"
+                Content="Show form 1" />
+            <Button
+                Width="200"
+                Margin="0,5,0,5"
+                Command="{Binding ShowForm2}"
+                Content="Show form 2" />
+        </StackPanel>
+        <Rectangle
+            Fill="Black"
+            Opacity="0.6"
+            Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}" />
+        <Border
+            Width="350"
+            Height="200"
+            BorderBrush="Black"
+            BorderThickness="2"
+            Visibility="{Binding DialogVisible, Converter={StaticResource VisibilityConverter}}">
+            <StackPanel
+                Background="White">
+                <local:Form1
+                    d:DataContext="{Binding DataContext.Form1, RelativeSource={RelativeSource AncestorType=StackPanel}}"
+                    DataContext="{Binding Form1}"
+                    Visibility="{Binding DataContext.Form1Visible, RelativeSource={RelativeSource AncestorType=StackPanel}, Converter={StaticResource VisibilityConverter}}" />
+                <local:Form2
+                    d:DataContext="{Binding DataContext.Form2, RelativeSource={RelativeSource AncestorType=StackPanel}}"
+                    DataContext="{Binding Form2}"
+                    Visibility="{Binding DataContext.Form2Visible, RelativeSource={RelativeSource AncestorType=StackPanel}, Converter={StaticResource VisibilityConverter}}" />
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>
