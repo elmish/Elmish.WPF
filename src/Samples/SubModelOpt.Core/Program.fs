@@ -1,6 +1,5 @@
 ﻿namespace Program
 
-
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish.WPF
