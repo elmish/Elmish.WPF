@@ -12,7 +12,6 @@ open Elmish.WPF
     • [?] would something other than "SubModelSelectItem" be a better option for safety?
     • [?] how to better seperate *specific children fields* within dynamic bindings in "Form_VM.Components"? Just comment? Helpers?
 
-    • refactor: make FormComponent more concrete = TextBox, CheckBox, ComboBox
     • add: DataTemplateSelector
     • add: get focus after adding + selecting FormComponent (Behavior)
 
@@ -28,13 +27,13 @@ module FormComponentHelpers =
         prefix + randomNumber ()
 
 
-module FormComponentA =
+module TextBoxComponent =
 
-    type Model = { Id: Guid; Name: string }
+    type Model = { Id: Guid; Text: string }
 
     let create () =
         { Id = Guid.NewGuid()
-          Name = FormComponentHelpers.generateName "A_" }
+          Text = FormComponentHelpers.generateName "TextBox_" }
 
     let init () = create ()
 
@@ -45,17 +44,19 @@ module FormComponentA =
         | DummyMsg -> m
 
 
-module FormComponentB =
+module CheckBoxComponent =
 
-    type Model = { Id: Guid; Name: string }
+    type Model =
+        { Id: Guid
+          Label: string
+          IsChecked: bool }
 
     let create () =
         { Id = Guid.NewGuid()
-          Name = FormComponentHelpers.generateName "B_" }
+          Label = FormComponentHelpers.generateName "CheckBox_"
+          IsChecked = false }
 
-    let init () =
-        { Id = Guid.NewGuid()
-          Name = "B_" + Random().Next(10000, 100000).ToString() }
+    let init () = create ()
 
     type Msg = DummyMsg
 
@@ -64,13 +65,17 @@ module FormComponentB =
         | DummyMsg -> m
 
 
-module FormComponentC =
+module ComboBoxComponent =
 
-    type Model = { Id: Guid; Name: string }
+    type Model =
+        { Id: Guid
+          Name: string // header of GroupBox containing it
+          Items: string list }
 
     let create () =
         { Id = Guid.NewGuid()
-          Name = FormComponentHelpers.generateName "C_" }
+          Name = FormComponentHelpers.generateName "ComboBox_"
+          Items = [ "Item 1"; "Item 2"; "Item 3" ] }
 
     let init () = create ()
 
@@ -84,44 +89,41 @@ module FormComponentC =
 module Form =
 
     type Components =
-        | FormComponentA of FormComponentA.Model
-        | FormComponentB of FormComponentB.Model
-        | FormComponentC of FormComponentC.Model
-
+        | TextBox of TextBoxComponent.Model
+        | CheckBox of CheckBoxComponent.Model
+        | ComboBox of ComboBoxComponent.Model
 
     type Model =
         { Components: Components list
           SelectedComponent: Guid option
           //• SubModels
-          FormComponentA_Model: FormComponentA.Model
-          FormComponentB_Model: FormComponentB.Model
-          FormComponentC_Model: FormComponentC.Model }
-
+          TextBox_Model: TextBoxComponent.Model
+          CheckBox_Model: CheckBoxComponent.Model
+          ComboBox_Model: ComboBoxComponent.Model }
 
     let components_Mock =
         [ for _ in 1..3 do
-              yield FormComponentA(FormComponentA.create ())
-              yield FormComponentB(FormComponentB.create ())
-              yield FormComponentC(FormComponentC.create ()) ]
-
+              yield TextBox(TextBoxComponent.create ())
+              yield CheckBox(CheckBoxComponent.create ())
+              yield ComboBox(ComboBoxComponent.create ()) ]
 
     let init () =
         { Components = components_Mock
           SelectedComponent = None
           //• SubModels
-          FormComponentA_Model = FormComponentA.init ()
-          FormComponentB_Model = FormComponentB.init ()
-          FormComponentC_Model = FormComponentC.init () }
+          TextBox_Model = TextBoxComponent.init ()
+          CheckBox_Model = CheckBoxComponent.init ()
+          ComboBox_Model = ComboBoxComponent.init () }
 
     type Msg =
         | Select of Guid option
-        | AddFormComponentA
-        | AddFormComponentB
-        | AddFormComponentC
+        | AddTextBox
+        | AddCheckBox
+        | AddComboBox
         //• SubMsgs
-        | TextBoxA_Msg of FormComponentA.Msg
-        | TextBoxB_Msg of FormComponentB.Msg
-        | TextBoxC_Msg of FormComponentC.Msg
+        | TextBox_Msg of TextBoxComponent.Msg
+        | CheckBox_Msg of CheckBoxComponent.Msg
+        | ComboBoxC_Msg of ComboBoxComponent.Msg
 
     [<AutoOpen>]
     module Form =
@@ -133,94 +135,96 @@ module Form =
 
         let getComponentId component_ =
             match component_ with
-            | FormComponentA a -> a.Id
-            | FormComponentB b -> b.Id
-            | FormComponentC c -> c.Id
+            | TextBox a -> a.Id
+            | CheckBox b -> b.Id
+            | ComboBox c -> c.Id
 
         let getComponentName component_ =
             match component_ with
-            | FormComponentA a -> a.Name
-            | FormComponentB b -> b.Name
-            | FormComponentC c -> c.Name
+            | TextBox a -> a.Text
+            | CheckBox b -> b.Label
+            | ComboBox c -> c.Name
 
         let isSelected selectedId component_ =
             match selectedId, component_ with
-            | Some id, FormComponentA a -> a.Id = id
-            | Some id, FormComponentB b -> b.Id = id
-            | Some id, FormComponentC c -> c.Id = id
+            | Some id, TextBox a -> a.Id = id
+            | Some id, CheckBox b -> b.Id = id
+            | Some id, ComboBox c -> c.Id = id
             | _ -> false
 
-    let insertComponentAfterSelected selectedComponent newComponent components =
+        let insertComponentAfterSelected selectedComponent newComponent components =
 
-        // sample purpose: make explicit that a new component has been added
-        let prependNewName component_ =
-            match component_ with
-            | FormComponentA a -> FormComponentA { a with Name = "#New# " + a.Name }
-            | FormComponentB b -> FormComponentB { b with Name = "#New# " + b.Name }
-            | FormComponentC c -> FormComponentC { c with Name = "#New# " + c.Name }
+            // sample purpose: make explicit that a new component has been added
+            let prependNewName component_ =
+                match component_ with
+                | TextBox a -> TextBox { a with Text = "#New# " + a.Text }
+                | CheckBox b -> CheckBox { b with Label = "#New# " + b.Label }
+                | ComboBox c -> ComboBox { c with Name = "#New# " + c.Name }
 
-        let newComponentWithPrependedName = prependNewName newComponent
+            let newComponentWithPrependedName = prependNewName newComponent
 
-        match selectedComponent with
-        | None ->
-            // If no component is selected, append the new one to the end
-            components @ [ newComponentWithPrependedName ]
-        | Some selectedId ->
-            let rec insertAfterSelected =
-                function
-                | [] -> [ newComponentWithPrependedName ]
-                | comp :: rest when getComponentId comp = selectedId -> comp :: newComponentWithPrependedName :: rest
-                | comp :: rest -> comp :: insertAfterSelected rest
+            match selectedComponent with
+            | None ->
+                // If no component is selected, append the new one to the end
+                components @ [ newComponentWithPrependedName ]
+            | Some selectedId ->
+                let rec insertAfterSelected =
+                    function
+                    | [] -> [ newComponentWithPrependedName ]
+                    | comp :: rest when getComponentId comp = selectedId ->
+                        comp :: newComponentWithPrependedName :: rest
+                    | comp :: rest -> comp :: insertAfterSelected rest
 
-            insertAfterSelected components
+                insertAfterSelected components
 
 
     let update msg m =
         match msg with
         | Select entityId -> { m with SelectedComponent = entityId }
 
-        | AddFormComponentA ->
-            let newComponent = FormComponentA(FormComponentA.create ())
+        | AddTextBox ->
+            let newTextBox = TextBox(TextBoxComponent.create ())
 
-            let newComponentId =
-                match newComponent with
-                | FormComponentA a -> a.Id
+            let newTextBoxId =
+                match newTextBox with
+                | TextBox a -> a.Id
                 | _ -> Guid.Empty
 
             { m with
-                Components = insertComponentAfterSelected m.SelectedComponent newComponent m.Components
-                SelectedComponent = Some newComponentId }
+                Components = insertComponentAfterSelected m.SelectedComponent newTextBox m.Components
+                SelectedComponent = Some newTextBoxId }
 
-        | AddFormComponentB ->
-            let newComponent = FormComponentB(FormComponentB.create ())
+        | AddCheckBox ->
+            let newCheckBox = CheckBox(CheckBoxComponent.create ())
 
-            let newComponentId =
-                match newComponent with
-                | FormComponentB b -> b.Id
+            let newCheckBoxId =
+                match newCheckBox with
+                | CheckBox b -> b.Id
                 | _ -> Guid.Empty
 
             { m with
-                Components = insertComponentAfterSelected m.SelectedComponent newComponent m.Components
-                SelectedComponent = Some newComponentId }
+                Components = insertComponentAfterSelected m.SelectedComponent newCheckBox m.Components
+                SelectedComponent = Some newCheckBoxId }
 
-        | AddFormComponentC ->
-            let newComponent = FormComponentC(FormComponentC.create ())
+        | AddComboBox ->
+            let newComboBox = ComboBox(ComboBoxComponent.create ())
 
-            let newComponentId =
-                match newComponent with
-                | FormComponentC c -> c.Id
+            let newComboBoxId =
+                match newComboBox with
+                | ComboBox c -> c.Id
                 | _ -> Guid.Empty
 
             { m with
-                Components = insertComponentAfterSelected m.SelectedComponent newComponent m.Components
-                SelectedComponent = Some newComponentId }
+                Components = insertComponentAfterSelected m.SelectedComponent newComboBox m.Components
+                SelectedComponent = Some newComboBoxId }
 
         //• SubModels
-        | TextBoxA_Msg msg -> { m with FormComponentA_Model = FormComponentA.update msg m.FormComponentA_Model }
-        | TextBoxB_Msg msg -> { m with FormComponentB_Model = FormComponentB.update msg m.FormComponentB_Model }
-        | TextBoxC_Msg msg -> { m with FormComponentC_Model = FormComponentC.update msg m.FormComponentC_Model }
+        | TextBox_Msg msg -> { m with TextBox_Model = TextBoxComponent.update msg m.TextBox_Model }
+        | CheckBox_Msg msg -> { m with CheckBox_Model = CheckBoxComponent.update msg m.CheckBox_Model }
+        | ComboBoxC_Msg msg -> { m with ComboBox_Model = ComboBoxComponent.update msg m.ComboBox_Model }
 
 
+//# ViewModel/Bindings
 open Form.Form // ugly
 
 [<AllowNullLiteral>]
@@ -247,6 +251,7 @@ type Form_VM(args) =
                           else
                               "") ])
             ))
+
 
     // I don't like the stringly-typed nature of this binding
     member _.SelectedEntity
@@ -287,9 +292,9 @@ type Form_VM(args) =
                             match m.Components
                                   |> List.find (fun e -> getComponentId e = id)
                                 with
-                            | Form.Components.FormComponentA _ -> "Type: A"
-                            | Form.Components.FormComponentB _ -> "Type: B"
-                            | Form.Components.FormComponentC _ -> "Type: C"
+                            | Form.Components.TextBox _ -> "Type: A"
+                            | Form.Components.CheckBox _ -> "Type: B"
+                            | Form.Components.ComboBox _ -> "Type: C"
 
                         sprintf "Selected: Name = %s, Index = %d, %s" name index componentType
                     | None -> "No selection"))
@@ -297,9 +302,9 @@ type Form_VM(args) =
 
 
     //• Commands
-    member _.AddTextBoxA = base.Get () (Binding.CmdT.setAlways Form.AddFormComponentA)
-    member _.AddTextBoxB = base.Get () (Binding.CmdT.setAlways Form.AddFormComponentB)
-    member _.AddTextBoxC = base.Get () (Binding.CmdT.setAlways Form.AddFormComponentC)
+    member _.AddTextBox = base.Get () (Binding.CmdT.setAlways Form.AddTextBox)
+    member _.AddCheckBox = base.Get () (Binding.CmdT.setAlways Form.AddCheckBox)
+    member _.AddComboBox = base.Get () (Binding.CmdT.setAlways Form.AddComboBox)
 
     member _.SelectRandom =
         base.Get
@@ -308,9 +313,9 @@ type Form_VM(args) =
                 let randomEntity = m.Components.Item(Random().Next(m.Components.Length))
 
                 match randomEntity with
-                | Form.Components.FormComponentA aModel -> Some aModel.Id
-                | Form.Components.FormComponentB bModel -> Some bModel.Id
-                | Form.Components.FormComponentC cModel -> Some cModel.Id
+                | Form.Components.TextBox aModel -> Some aModel.Id
+                | Form.Components.CheckBox bModel -> Some bModel.Id
+                | Form.Components.ComboBox cModel -> Some cModel.Id
                 |> Form.Msg.Select))
 
     member _.Deselect =
