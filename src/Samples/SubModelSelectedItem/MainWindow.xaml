@@ -13,6 +13,61 @@
     SizeToContent="Height"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
+    <Window.Resources>
+        <fsWPF:GetComponentsVMToResource
+            x:Key="GetComponentsVmToResource_Converter" />
+
+        <DataTemplate
+            x:Key="TextBoxTemplate">
+            <StackPanel
+                Background="DarkGreen"
+                Orientation="Horizontal">
+                <TextBlock
+                    MinWidth="300"
+                    Text="{Binding Text}" />
+                <TextBlock
+                    FontWeight="DemiBold"
+                    Text="{Binding SelectedLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate
+            x:Key="CheckBoxTemplate">
+            <StackPanel
+                Background="DarkRed"
+                Orientation="Horizontal">
+                <!--<CheckBox
+                    Content="{Binding Label}"
+                    IsChecked="{Binding IsChecked}" />-->
+                <TextBlock
+                    FontWeight="DemiBold"
+                    Text="{Binding SelectedLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate
+            x:Key="ComboBoxTemplate">
+            <StackPanel
+                Background="DarkOrange"
+                Orientation="Horizontal">
+                <!--<TextBlock
+                    Text="{Binding Header}" />
+                <ComboBox
+                    Text="{Binding Name}" />-->
+                <TextBlock
+                    FontWeight="DemiBold"
+                    Text="{Binding}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <fsWPF:ComponentsTemplateSelector
+            x:Key="ComponentsTemplateSelector"
+            CheckBox_DT="{StaticResource CheckBoxTemplate}"
+            ComboBox_DT="{StaticResource ComboBoxTemplate}"
+            TextBox_DT="{StaticResource TextBoxTemplate}" />
+
+    </Window.Resources>
+
 
     <StackPanel
         Margin="0,15,0,0">
@@ -62,11 +117,12 @@
         </StackPanel>
 
         <ListView
-            Height="200"
+            Height="360"
             Margin="5"
             HorizontalContentAlignment="Center"
-            ItemsSource="{Binding Components}"
-            SelectedItem="{Binding SelectedEntity}">
+            d:SelectedItem="{Binding SelectedEntity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            ItemTemplateSelector="{StaticResource ComponentsTemplateSelector}"
+            ItemsSource="{Binding Components}">
             <ListView.ItemContainerStyle>
                 <Style
                     TargetType="ListViewItem">
@@ -75,18 +131,6 @@
                         Value="Stretch" />
                 </Style>
             </ListView.ItemContainerStyle>
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel
-                        HorizontalAlignment="Center"
-                        Orientation="Horizontal">
-                        <TextBlock
-                            Text="{Binding Name}" />
-                        <TextBlock
-                            Text="{Binding SelectedLabel}" />
-                    </StackPanel>
-                </DataTemplate>
-            </ListView.ItemTemplate>
         </ListView>
 
         <TextBlock

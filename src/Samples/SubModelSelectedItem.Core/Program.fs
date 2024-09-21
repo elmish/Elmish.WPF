@@ -6,13 +6,15 @@ open Serilog.Extensions.Logging
 open Elmish.WPF
 
 (*
-[toDos]
-    • *change all [dynamic bindings] to [static bindings] using an upcoming Elmish.WPF revised static bindings approach*
-    • [?] make "_VM" for each child (cleaner separation)
-    • [?] would something other than "SubModelSelectItem" be a better option for safety?
-    • [?] how to better seperate *specific children fields* within dynamic bindings in "Form_VM.Components"? Just comment? Helpers?
+[toDos] 
+    
+    ("#" = issue, "•" = task)
 
-    • add: DataTemplateSelector
+    # change all [dynamic bindings] to [static bindings] (using an upcoming Elmish.WPF revised static bindings approach?)
+    • static bindings: make ViewModels for each Component (also working Intellisense for binding submodel in Xalm)
+    • [?] would something other than "SubModelSelectItem" be a better option?
+    
+    # not working: DataTemplateSelector
     • add: get focus after adding + selecting FormComponent (Behavior)
 
     • refactor: revise all helpers in Form (some were made quick&dirty)
@@ -69,12 +71,12 @@ module ComboBoxComponent =
 
     type Model =
         { Id: Guid
-          Name: string // header of GroupBox containing it
+          Header: string // Header (of GroupBox containing it)
           Items: string list }
 
     let create () =
         { Id = Guid.NewGuid()
-          Name = FormComponentHelpers.generateName "ComboBox_"
+          Header = FormComponentHelpers.generateName "ComboBox_"
           Items = [ "Item 1"; "Item 2"; "Item 3" ] }
 
     let init () = create ()
@@ -101,6 +103,10 @@ module Form =
           CheckBox_Model: CheckBoxComponent.Model
           ComboBox_Model: ComboBoxComponent.Model }
 
+    module ModelM =
+        module TextBox =
+            let get (m: Model) = m.TextBox_Model
+
     let components_Mock =
         [ for _ in 1..3 do
               yield TextBox(TextBoxComponent.create ())
@@ -120,7 +126,7 @@ module Form =
         | AddTextBox
         | AddCheckBox
         | AddComboBox
-        //• SubMsgs
+        //• SubModels
         | TextBox_Msg of TextBoxComponent.Msg
         | CheckBox_Msg of CheckBoxComponent.Msg
         | ComboBoxC_Msg of ComboBoxComponent.Msg
@@ -143,7 +149,7 @@ module Form =
             match component_ with
             | TextBox a -> a.Text
             | CheckBox b -> b.Label
-            | ComboBox c -> c.Name
+            | ComboBox c -> c.Header
 
         let isSelected selectedId component_ =
             match selectedId, component_ with
@@ -159,7 +165,7 @@ module Form =
                 match component_ with
                 | TextBox a -> TextBox { a with Text = "#New# " + a.Text }
                 | CheckBox b -> CheckBox { b with Label = "#New# " + b.Label }
-                | ComboBox c -> ComboBox { c with Name = "#New# " + c.Name }
+                | ComboBox c -> ComboBox { c with Header = "#New# " + c.Header }
 
             let newComponentWithPrependedName = prependNewName newComponent
 
@@ -224,7 +230,7 @@ module Form =
         | ComboBoxC_Msg msg -> { m with ComboBox_Model = ComboBoxComponent.update msg m.ComboBox_Model }
 
 
-//# ViewModel/Bindings
+// ViewModel/Bindings
 open Form.Form // ugly
 
 [<AllowNullLiteral>]
@@ -233,8 +239,9 @@ type Form_VM(args) =
 
     new() = Form_VM(Form.init () |> ViewModelArgs.simple)
 
-    //• Properties
     // I *really* don't like the stringly-typed nature of this binding + no Intellisense in Xaml for submodel properties
+    //# DataTemplateSelector not working, but SelectedEntity works
+    //# as ListItem ItemSource = "Elmish.WPF.DynamicViewModel'2"
     member _.Components =
         base.Get
             ()
@@ -242,7 +249,9 @@ type Form_VM(args) =
                 (fun m -> m.Components),
                 (fun (e) -> getComponentId e),
                 (fun () ->
-                    [ "Name"
+                    [ 
+                      //• TextBox 
+                      "Text"
                       |> Binding.oneWay (fun (_, e) -> getComponentName e)
                       "SelectedLabel"
                       |> Binding.oneWay (fun (m, e) ->
@@ -250,10 +259,20 @@ type Form_VM(args) =
                               " - Selected"
                           else
                               "") ])
+
+                      //• CheckBox
+                      // (add later)
+
+                      //• ComboBox                   
             ))
 
 
-    // I don't like the stringly-typed nature of this binding
+    //# DataTemplateSelector seems to work (though I can't bind to subProperties), but SelectedEntity breaks..
+    //# as ListItem ItemSource = "ComboBox {Id = 3232 (..) Header = "ComboBox_3232" Items = ["Item 1"; "Item 2"; "Item 3"]}"
+    member _.Components2 = base.Get() (Binding.oneWaySeq (( _.Components ), (=), id))
+
+
+    // I don't like the stringly-typed nature of this binding either
     member _.SelectedEntity
         with get () =
             base.Get
@@ -318,9 +337,8 @@ type Form_VM(args) =
                 | Form.Components.ComboBox cModel -> Some cModel.Id
                 |> Form.Msg.Select))
 
-    member _.Deselect =
-        base.Get () (Binding.cmd (fun (m: Form.Model) -> Form.Msg.Select None))
-
+    member _.Deselect = base.Get() (Binding.CmdT.setAlways (Form.Msg.Select None))
+    
 
 module Program =
     let main window =
