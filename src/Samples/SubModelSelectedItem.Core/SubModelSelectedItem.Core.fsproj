@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
-    <Compile Include="FsWPF.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Serilog" Version="2.11.0" />
