@@ -1,146 +1,143 @@
 ﻿<Window
     x:Class="Elmish.WPF.Samples.SubModelSelectedItem.MainWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:fsWPF="clr-namespace:FsWPF;assembly=SubModelSelectedItem.Core"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelSelectedItem.Program;assembly=SubModelSelectedItem.Core"
-    Title="SubModelSelectedItem+StaticBindings"
-    Width="480"
-    d:DataContext="{d:DesignInstance Type=vm:Form_VM,
+    xmlns:vm="clr-namespace:Program;assembly=DTS_Simple.Core"
+    Title="MainWindow"
+    d:DataContext="{d:DesignInstance Type=vm:App_VM,
                                      IsDesignTimeCreatable=True}"
-    SizeToContent="Height"
+    SizeToContent="WidthAndHeight"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.Resources>
-        <fsWPF:GetComponentsVMToResource
-            x:Key="GetComponentsVmToResource_Converter" />
 
         <DataTemplate
-            x:Key="TextBoxTemplate">
-            <StackPanel
-                Background="DarkGreen"
-                Orientation="Horizontal">
-                <TextBlock
-                    MinWidth="300"
-                    Text="{Binding Text}" />
-                <TextBlock
-                    FontWeight="DemiBold"
-                    Text="{Binding SelectedLabel}" />
-            </StackPanel>
+            DataType="{x:Type vm:FormComponent_VM}">
+            <Border
+                HorizontalAlignment="Stretch"
+                Background="{Binding BackgroundColor}">
+                <StackPanel
+                    Orientation="Horizontal">
+                    <ContentPresenter
+                        Content="{Binding ComponentVM}" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="Bold"
+                        Foreground="GhostWhite"
+                        Text="{Binding SelectedLabel}" />
+                </StackPanel>
+            </Border>
         </DataTemplate>
 
         <DataTemplate
-            x:Key="CheckBoxTemplate">
-            <StackPanel
-                Background="DarkRed"
-                Orientation="Horizontal">
-                <!--<CheckBox
-                    Content="{Binding Label}"
-                    IsChecked="{Binding IsChecked}" />-->
-                <TextBlock
-                    FontWeight="DemiBold"
-                    Text="{Binding SelectedLabel}" />
-            </StackPanel>
+            DataType="{x:Type vm:TextBox_VM}">
+            <TextBlock
+                Padding="3"
+                Foreground="GhostWhite"
+                Text="{Binding Text}" />
         </DataTemplate>
 
         <DataTemplate
-            x:Key="ComboBoxTemplate">
-            <StackPanel
-                Background="DarkOrange"
-                Orientation="Horizontal">
-                <!--<TextBlock
-                    Text="{Binding Header}" />
+            DataType="{x:Type vm:CheckBox_VM}">
+            <CheckBox
+                Padding="3"
+                Content="{Binding Label}"
+                Foreground="GhostWhite" />
+        </DataTemplate>
+
+        <DataTemplate
+            DataType="{x:Type vm:ComboBox_VM}">
+            <GroupBox
+                Margin="5,0,0,5"
+                Padding="0"
+                Header="{Binding Header}">
+                <GroupBox.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock
+                            Padding="3"
+                            Foreground="GhostWhite"
+                            Text="{Binding}" />
+                    </DataTemplate>
+                </GroupBox.HeaderTemplate>
                 <ComboBox
-                    Text="{Binding Name}" />-->
-                <TextBlock
-                    FontWeight="DemiBold"
-                    Text="{Binding}" />
-            </StackPanel>
+                    MinWidth="140"
+                    Padding="0"
+                    ItemsSource="{Binding Items}"
+                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}" />
+            </GroupBox>
         </DataTemplate>
-
-        <fsWPF:ComponentsTemplateSelector
-            x:Key="ComponentsTemplateSelector"
-            CheckBox_DT="{StaticResource CheckBoxTemplate}"
-            ComboBox_DT="{StaticResource ComboBoxTemplate}"
-            TextBox_DT="{StaticResource TextBoxTemplate}" />
-
     </Window.Resources>
 
-
-    <StackPanel
-        Margin="0,15,0,0">
-
-        <GroupBox
-            Width="380"
-            Header="Add">
+    <Grid>
+        <StackPanel>
             <StackPanel
+                Margin="10,10,10,0"
                 HorizontalAlignment="Center"
-                Orientation="Horizontal">
-                <Button
-                    Width="100"
-                    Margin="5,5"
-                    Command="{Binding AddTextBox}">
-                    A
-                </Button>
-                <Button
-                    Width="100"
-                    Margin="5,5"
-                    Command="{Binding AddCheckBox}">
-                    B
-                </Button>
-                <Button
-                    Width="100"
-                    Margin="5,5"
-                    Command="{Binding AddComboBox}">
-                    C
-                </Button>
+                Orientation="Vertical">
+
+                <GroupBox
+                    Header="Add">
+                    <StackPanel
+                        Orientation="Horizontal">
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddTextBox}"
+                            Content="TextBox" />
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddCheckBox}"
+                            Content="CheckBox" />
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddComboBox}"
+                            Content="ComboBox" />
+                    </StackPanel>
+                </GroupBox>
+
+                <StackPanel
+                    Margin="10"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        Margin="5"
+                        Command="{Binding RemoveSelectedComponent}"
+                        Content="Remove" />
+                    <Button
+                        Margin="5"
+                        Command="{Binding ClearLog}"
+                        Content="ClearLog" />
+                </StackPanel>
             </StackPanel>
-        </GroupBox>
 
-        <StackPanel
-            HorizontalAlignment="Center"
-            Orientation="Horizontal">
-            <Button
-                Width="100"
-                Margin="5,5"
-                Command="{Binding SelectRandom}">
-                Select random
-            </Button>
-            <Button
-                Width="100"
-                Margin="5,5"
-                Command="{Binding Deselect}">
-                Deselect
-            </Button>
+            <ListView
+                Width="400"
+                Height="340"
+                Margin="10,5,10,10"
+                Background="WhiteSmoke"
+                ItemsSource="{Binding Components_VM}"
+                SelectedItem="{Binding SelectedComponent, Mode=TwoWay}">
+                <ListView.ItemContainerStyle>
+                    <Style
+                        TargetType="ListViewItem">
+                        <Setter
+                            Property="HorizontalContentAlignment"
+                            Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+            <TextBox
+                Name="ActionLog"
+                Width="500"
+                Height="300"
+                Margin="10"
+                Background="AntiqueWhite"
+                IsReadOnly="True"
+                Text="{Binding Log, Mode=OneWay}"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
         </StackPanel>
-
-        <ListView
-            Height="360"
-            Margin="5"
-            HorizontalContentAlignment="Center"
-            d:SelectedItem="{Binding SelectedEntity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-            ItemTemplateSelector="{StaticResource ComponentsTemplateSelector}"
-            ItemsSource="{Binding Components}">
-            <ListView.ItemContainerStyle>
-                <Style
-                    TargetType="ListViewItem">
-                    <Setter
-                        Property="HorizontalContentAlignment"
-                        Value="Stretch" />
-                </Style>
-            </ListView.ItemContainerStyle>
-        </ListView>
-
-        <TextBlock
-            Width="340"
-            Margin="10"
-            Padding="5"
-            Background="AntiqueWhite"
-            FontWeight="SemiBold"
-            Text="{Binding SelectedEntityLog}"
-            TextAlignment="Center" />
-
-    </StackPanel>
+    </Grid>
 </Window>
