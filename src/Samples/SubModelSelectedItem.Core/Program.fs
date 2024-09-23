@@ -168,7 +168,7 @@ module App =
         let addTextBox m =
             let newTextBox = TextBox.create ()
 
-            let updatedTextBox = { newTextBox with Text = "#New# " + newTextBox.Text }
+            let updatedTextBox = { newTextBox with Text = "###New### --- " + newTextBox.Text }
 
             let newComponent = TextBox updatedTextBox
 
@@ -196,7 +196,7 @@ module App =
         let addCheckBox m =
             let newCheckBox = CheckBox.create ()
 
-            let updatedCheckBox = { newCheckBox with Label = "#New# " + newCheckBox.Label }
+            let updatedCheckBox = { newCheckBox with Label = "###New### --- " + newCheckBox.Label }
 
             let newComponent = CheckBox updatedCheckBox
 
@@ -220,9 +220,12 @@ module App =
                 SelectedFormComponent = Some(getId newComponent)
                 Log = log }
 
-
+                 
         let addComboBox m =
             let newComboBox = ComboBox.create ()
+
+            let updateComboBox = { newComboBox with Header = "###New### --- " + newComboBox.Header }
+
             let newComponent = ComboBox newComboBox
 
             let components =
@@ -236,8 +239,8 @@ module App =
                 | None -> m.Components @ [ newComponent ]
 
             let log =
-                ("Added: " + newComboBox.Header)
-                :: ("Selected: " + newComboBox.Header)
+                ("Added: " + updateComboBox.Header)
+                :: ("Selected: " + updateComboBox.Header)
                    :: logDashedLine :: m.Log
 
             { m with

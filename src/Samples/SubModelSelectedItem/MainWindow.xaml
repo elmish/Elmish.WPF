@@ -1,10 +1,10 @@
 ﻿<Window
     x:Class="Elmish.WPF.Samples.SubModelSelectedItem.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:Program;assembly=DTS_Simple.Core"
+    xmlns:vm="clr-namespace:Program;assembly=SubModelSelectedItem.Core"
     Title="MainWindow"
     d:DataContext="{d:DesignInstance Type=vm:App_VM,
                                      IsDesignTimeCreatable=True}"
