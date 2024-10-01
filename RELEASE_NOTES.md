@@ -1,3 +1,6 @@
+#### 4.0.0-beta-56
+* Add NotifyPropertyChanged for the HasErrors property.
+
 #### 4.0.0-beta-55
 * Add TwoWayT bindings for workflows that reuse bindings.
 * Add OneWayToSeqT bindings.

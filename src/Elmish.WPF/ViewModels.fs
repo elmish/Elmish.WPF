@@ -177,8 +177,10 @@ type [<AllowNullLiteral>] internal DynamicViewModel<'model, 'msg>
     member _.CurrentModel : 'model = helper.Model
 
     member _.UpdateModel (newModel: 'model) : unit =
+      let prevHasErrors = (helper :> INotifyDataErrorInfo).HasErrors
       let eventsToRaise = ViewModelHelper.getEventsToRaise newModel helper
       helper <- { helper with Model = newModel }
+      let eventsToRaise = if prevHasErrors = (helper :> INotifyDataErrorInfo).HasErrors then eventsToRaise else (PropertyChanged "HasErrors") :: eventsToRaise
       ViewModelHelper.raiseEvents eventsToRaise helper
 
   override _.TryGetMember (binder, result) =

@@ -845,6 +845,26 @@ module TwoWayValidate =
 
 
   [<Fact>]
+  let ``when model is updated, should trigger NotifyPropertyChanged on HasErrors iff the value returned by validate changes`` () =
+    Property.check <| property {
+      let! name = GenX.auto<string>
+      let! m1 = GenX.auto<int>
+      let! m2 = GenX.auto<int>
+
+      let get _ = ()
+      let set _ _ = ()
+      let validate m = if m < 0 then ValueSome (string m) else ValueNone
+
+      let binding = twoWayValidate name get set validate
+      let vm = TestVm(m1, binding)
+
+      vm.UpdateModel m2
+
+      test <@ vm.NumPcTriggersFor "HasErrors" = if (validate m1 |> ValueOption.isNone) = (validate m2 |> ValueOption.isNone) then 0 else 1 @>
+    }
+
+
+  [<Fact>]
   let ``when validate returns ValueNone, HasErrors should return false and GetErrors should return an empty collection`` () =
     Property.check <| property {
       let! name = GenX.auto<string>
