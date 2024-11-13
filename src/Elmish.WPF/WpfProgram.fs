@@ -265,6 +265,30 @@ module WpfProgram =
       Application () |> ignore
       Application.Current.MainWindow <- window
 
+  let runElmishLoopOnBackgroundThread window program =
+    
+    let elmishThread =
+      System.Threading.Thread(
+        System.Threading.ThreadStart(fun () ->
+          startElmishLoop window program
+          System.Windows.Threading.Dispatcher.Run()))
+    elmishThread.Name <- "ElmishDispatchThread"
+    elmishThread.Start()
+
+    elmishThread
+
+  let shutdownElmishBackgroundThread thread =
+    System.Windows.Threading.Dispatcher.FromThread(thread).InvokeShutdown()
+    thread.Join()
+
+  let runWindowThreaded window program =
+    initializeApplication window
+    let elmishThread = runElmishLoopOnBackgroundThread window program
+    window.Show ()
+    let exitCode = Application.Current.Run window
+    shutdownElmishBackgroundThread elmishThread
+    exitCode
+
 
   /// Starts the Elmish and WPF dispatch loops. Will instantiate Application and set its
   /// MainWindow if it is not already running, and then run the specified window. This is a
