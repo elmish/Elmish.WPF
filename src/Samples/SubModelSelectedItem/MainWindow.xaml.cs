@@ -7,6 +7,13 @@ namespace Elmish.WPF.Samples.SubModelSelectedItem
         public MainWindow()
         {
             InitializeComponent();
+            PreviewKeyDown += (sender, e) =>
+            {
+                if (e.Key == System.Windows.Input.Key.Escape)
+                {
+                    Close();
+                }
+            };
         }
     }
 }

@@ -3,18 +3,18 @@ using System.Windows;
 
 namespace Elmish.WPF.Samples.SubModelSelectedItem
 {
-  public partial class App : Application
-  {
-    public App()
+    public partial class App : Application
     {
-      this.Activated += StartElmish;
-    }
+        public App()
+        {
+            this.Activated += StartElmish;
+        }
 
-    private void StartElmish(object sender, EventArgs e)
-    {
-      this.Activated -= StartElmish;
-      Program.main(MainWindow);
-    }
+        private void StartElmish(object sender, EventArgs e)
+        {
+            this.Activated -= StartElmish;
+            Program.Program.main(MainWindow);
+        }
 
-  }
+    }
 }

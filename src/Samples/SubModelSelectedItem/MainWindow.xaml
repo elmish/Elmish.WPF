@@ -1,29 +1,143 @@
-﻿<Window x:Class="Elmish.WPF.Samples.SubModelSelectedItem.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:Elmish.WPF.Samples.SubModelSelectedItem;assembly=SubModelSelectedItem.Core"
-        WindowStartupLocation="CenterScreen"
-        Title="SubModelSelectedItem"
-        Height="350"
-        Width="500"
-        mc:Ignorable="d"
-        d:DataContext="{x:Static vm:Program.designVm}">
-  <StackPanel Margin="0,15,0,0">
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-      <Button Command="{Binding SelectRandom}" Margin="5 5" Width="100">Select random</Button>
-      <Button Command="{Binding Deselect}" Margin="5 5" Width="100">Deselect</Button>
-    </StackPanel>
-    <ListView ItemsSource="{Binding Entities}" SelectedItem="{Binding SelectedEntity}" HorizontalContentAlignment="Center">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate>
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Text="{Binding SelectedLabel}" />
-          </StackPanel>
+﻿<Window
+    x:Class="Elmish.WPF.Samples.SubModelSelectedItem.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:Program;assembly=SubModelSelectedItem.Core"
+    Title="MainWindow"
+    d:DataContext="{d:DesignInstance Type=vm:App_VM,
+                                     IsDesignTimeCreatable=True}"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Window.Resources>
+
+        <DataTemplate
+            DataType="{x:Type vm:FormComponent_VM}">
+            <Border
+                HorizontalAlignment="Stretch"
+                Background="{Binding BackgroundColor}">
+                <StackPanel
+                    Orientation="Horizontal">
+                    <ContentPresenter
+                        Content="{Binding ComponentVM}" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="Bold"
+                        Foreground="GhostWhite"
+                        Text="{Binding SelectedLabel}" />
+                </StackPanel>
+            </Border>
         </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ListView>
-  </StackPanel>
+
+        <DataTemplate
+            DataType="{x:Type vm:TextBox_VM}">
+            <TextBlock
+                Padding="3"
+                Foreground="GhostWhite"
+                Text="{Binding Text}" />
+        </DataTemplate>
+
+        <DataTemplate
+            DataType="{x:Type vm:CheckBox_VM}">
+            <CheckBox
+                Padding="3"
+                Content="{Binding Label}"
+                Foreground="GhostWhite" />
+        </DataTemplate>
+
+        <DataTemplate
+            DataType="{x:Type vm:ComboBox_VM}">
+            <GroupBox
+                Margin="5,0,0,5"
+                Padding="0"
+                Header="{Binding Header}">
+                <GroupBox.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock
+                            Padding="3"
+                            Foreground="GhostWhite"
+                            Text="{Binding}" />
+                    </DataTemplate>
+                </GroupBox.HeaderTemplate>
+                <ComboBox
+                    MinWidth="140"
+                    Padding="0"
+                    ItemsSource="{Binding Items}"
+                    SelectedItem="{Binding SelectedItem, Mode=TwoWay}" />
+            </GroupBox>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <StackPanel>
+            <StackPanel
+                Margin="10,10,10,0"
+                HorizontalAlignment="Center"
+                Orientation="Vertical">
+
+                <GroupBox
+                    Header="Add">
+                    <StackPanel
+                        Orientation="Horizontal">
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddTextBox}"
+                            Content="TextBox" />
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddCheckBox}"
+                            Content="CheckBox" />
+                        <Button
+                            Margin="5"
+                            Command="{Binding AddComboBox}"
+                            Content="ComboBox" />
+                    </StackPanel>
+                </GroupBox>
+
+                <StackPanel
+                    Margin="10"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        Margin="5"
+                        Command="{Binding RemoveSelectedComponent}"
+                        Content="Remove" />
+                    <Button
+                        Margin="5"
+                        Command="{Binding ClearLog}"
+                        Content="ClearLog" />
+                </StackPanel>
+            </StackPanel>
+
+            <ListView
+                Width="400"
+                Height="340"
+                Margin="10,5,10,10"
+                Background="WhiteSmoke"
+                ItemsSource="{Binding Components_VM}"
+                SelectedItem="{Binding SelectedComponent, Mode=TwoWay}">
+                <ListView.ItemContainerStyle>
+                    <Style
+                        TargetType="ListViewItem">
+                        <Setter
+                            Property="HorizontalContentAlignment"
+                            Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+            <TextBox
+                Name="ActionLog"
+                Width="500"
+                Height="300"
+                Margin="10"
+                Background="AntiqueWhite"
+                IsReadOnly="True"
+                Text="{Binding Log, Mode=OneWay}"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+    </Grid>
 </Window>
