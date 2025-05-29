@@ -1,3 +1,7 @@
+
+⚠️ **Disclaimer: This library is no longer maintained or updated and is not production-ready. Support will not be provided for any questions, and pull requests are unlikely to be reviewed. Use at your own risk.**
+===
+
 WPF done the Elmish Way
 =======================
 
