@@ -5,39 +5,46 @@ Table of contents
 -----------------
 
 * [The Elmish.WPF bindings](#the-elmishwpf-bindings)
-  + [One-way bindings](#one-way-bindings)
-    - [Binding to option-wrapped values](#binding-to-option-wrapped-values)
-  + [Two-way bindings](#two-way-bindings)
-    - [Binding to option-wrapped values](#binding-to-option-wrapped-values-1)
-    - [Using validation with two-way bindings](#using-validation-with-two-way-bindings)
-  + [Command bindings](#command-bindings)
-    - [Conditional commands (where you control `CanExecute`)](#conditional-commands-where-you-control-canexecute)
-    - [Using the `CommandParameter`](#using-the-commandparameter)
-  + [Sub-model bindings](#sub-model-bindings)
-    - [Level 1: No separate message type or customization of model for sub-bindings](#level-1-no-separate-message-type-or-customization-of-model-for-sub-bindings)
-    - [Level 2: Separate message type but no customization of model for sub-bindings](#level-2-separate-message-type-but-no-customization-of-model-for-sub-bindings)
-    - [Level 3: Separate message type and arbitrary customization of model for sub-bindings](#level-3-separate-message-type-and-arbitrary-customization-of-model-for-sub-bindings)
-    - [Optional and “sticky” sub-model bindings](#optional-and-sticky-sub-model-bindings)
-  + [Sub-model window bindings](#sub-model-window-bindings)
-  + [Sub-model sequence bindings](#sub-model-sequence-bindings)
-  + [Other bindings](#other-bindings)
-    - [`subModelSelectedItem`](#submodelselecteditem)
-    - [`oneWaySeq`](#onewayseq)
-  + [Lazy bindings](#lazy-bindings)
+    + [One-way bindings](#one-way-bindings)
+        - [Binding to option-wrapped values](#binding-to-option-wrapped-values)
+    + [Two-way bindings](#two-way-bindings)
+        - [Binding to option-wrapped values](#binding-to-option-wrapped-values-1)
+        - [Using validation with two-way bindings](#using-validation-with-two-way-bindings)
+    + [Command bindings](#command-bindings)
+        - [Conditional commands (where you control `CanExecute`)](#conditional-commands-where-you-control-canexecute)
+        - [Using the `CommandParameter`](#using-the-commandparameter)
+    + [Sub-model bindings](#sub-model-bindings)
+        - [Level 1: No separate message type or customization of model for sub-bindings](#level-1-no-separate-message-type-or-customization-of-model-for-sub-bindings)
+        - [Level 2: Separate message type but no customization of model for sub-bindings](#level-2-separate-message-type-but-no-customization-of-model-for-sub-bindings)
+        - [Level 3: Separate message type and arbitrary customization of model for sub-bindings](#level-3-separate-message-type-and-arbitrary-customization-of-model-for-sub-bindings)
+        - [Optional and “sticky” sub-model bindings](#optional-and-sticky-sub-model-bindings)
+    + [Sub-model window bindings](#sub-model-window-bindings)
+    + [Sub-model sequence bindings](#sub-model-sequence-bindings)
+    + [Other bindings](#other-bindings)
+        - [`subModelSelectedItem`](#submodelselecteditem)
+        - [`oneWaySeq`](#onewayseq)
+    + [Lazy bindings](#lazy-bindings)
 * [Modifying bindings](#modifying-bindings)
-  + [Lazy updating](#lazy-updating)
-  + [Caching](#caching)
-  + [Mapping bindings](#mapping-bindings)
-    - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
-    - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
+    + [Lazy updating](#lazy-updating)
+    + [Caching](#caching)
+    + [Mapping bindings](#mapping-bindings)
+        - [Example use of `mapModel` and `mapMsg`](#example-use-of-mapModel-and-mapMsg)
+        - [Theory behind `mapModel` and `mapMsg`](#theory-behind-mapModel-and-mapMsg)
+* [Choosing Your Binding Approach](#choosing-your-binding-approach)
+    + [Dynamic Bindings vs Statically-Typed ViewModels](#dynamic-bindings-vs-statically-typed-viewmodels)
+    + [Migration Between Approaches](#migration-between-approaches)
 * [Statically-typed view models](#statically-typed-view-models)
-  + [Inherit from `ViewModelBase<'model, 'msg>`](#inherit-from-viewmodelbasemodel-msg)
-  + [Typed Bindings](#typed-bindings)
-    - [Typed One-way Bindings](#typed-one-way-bindings)
-    - [Typed SubModel Bindings](#typed-submodel-bindings)
-    - [Typed WpfProgram Bindings](#typed-wpfprogram-bindings)
-    - [Mixing and matching bindings](#mixing-and-matching-bindings)
-
+    + [Inherit from `ViewModelBase<'model, 'msg>`](#inherit-from-viewmodelbasemodel-msg)
+    + [Advantages of Statically-Typed ViewModels](#advantages-of-statically-typed-viewmodels)
+    + [Basic Typed ViewModel Structure](#basic-typed-viewmodel-structure)
+    + [Typed Bindings](#typed-bindings)
+        - [Typed One-way Bindings](#typed-one-way-bindings)
+        - [Typed TwoWay Bindings](#typed-twoway-bindings)
+        - [Typed TwoWay Bindings with Validation](#typed-twoway-bindings-with-validation)
+        - [Typed SubModel Bindings](#typed-submodel-bindings)
+        - [Typed SubModel Sequence Bindings](#typed-submodel-sequence-bindings)
+        - [Typed WpfProgram Bindings](#typed-wpfprogram-bindings)
+        - [Mixing and matching bindings](#mixing-and-matching-bindings)
 
 The Elmish.WPF bindings
 ----------------------------
@@ -45,19 +52,25 @@ The Elmish.WPF bindings
 The Elmish.WPF bindings can be categorized into the following types:
 
 - **One-way bindings**, for when you want to bind to a simple value.
-- **Two-way bindings**, for when you want to bind to a simple value as well as update this value by dispatching a message. Used for inputs, checkboxes, sliders, etc. Can optionally support validation (e.g. provide an error message using `INotifyDataErrorInfo` that can be displayed when an input is not valid).
+- **Two-way bindings**, for when you want to bind to a simple value as well as update this value by dispatching a
+  message. Used for inputs, checkboxes, sliders, etc. Can optionally support validation (e.g. provide an error message
+  using `INotifyDataErrorInfo` that can be displayed when an input is not valid).
 - **Command bindings**, for when you want a message to be dispatched when something happens (e.g. a button is clicked).
 - **Sub-model bindings**, for when you want to bind to a complex object that has its own bindings.
 - **Sub-model window bindings**, for when you want to control the opening/closing/hiding of new windows.
-- **Sub-model sequence bindings**, for when you want to bind to a collection of complex objects, each of which has its own bindings.
+- **Sub-model sequence bindings**, for when you want to bind to a collection of complex objects, each of which has its
+  own bindings.
 - **Other bindings** not fitting into the categories above
-- **Lazy bindings**, optimizations of various other bindings that allow skipping potentially expensive computations if the input is unchanged
+- **Lazy bindings**, optimizations of various other bindings that allow skipping potentially expensive computations if
+  the input is unchanged
 
-Additionally, there is a section explaining how most dispatching bindings allow you to wrap the dispatcher to support debouncing/throttling etc.
+Additionally, there is a section explaining how most dispatching bindings allow you to wrap the dispatcher to support
+debouncing/throttling etc.
 
 ### One-way bindings
 
-*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
+*Relevant sample:
+SingleCounter - ([Dynamic](src/Samples/Dynamic/SingleCounter) | [Typed](src/Samples/Typed/SingleCounter))*
 
 One-way bindings are used when you want to bind to a simple value.
 
@@ -77,13 +90,22 @@ A one-way binding simply accepts a function `get: 'model -> 'a` that retrieves t
 
 #### Binding to option-wrapped values
 
-In F#, it’s common to model missing values using the `Option` type. However, WPF uses `null` and doesn’t know how to handle the F# `Option` type. You could simply convert from `Option` to `null` (or `Nullable<_>`) in the `get` function using `Option.toObj` (or `Option.toNullable`), but this is such a common scenario that Elmish.WPF has a variant of the one-way binding called `oneWayOpt` with this behavior built-in. The `oneWayOpt` binding accepts a function `get: 'model -> 'a option`. If it returns `None`, the UI will receive `null`. If it returns `Some`, the UI will receive the inner value.
+In F#, it’s common to model missing values using the `Option` type. However, WPF uses `null` and doesn’t know how to
+handle the F# `Option` type. You could simply convert from `Option` to `null` (or `Nullable<_>`) in the `get` function
+using `Option.toObj` (or `Option.toNullable`), but this is such a common scenario that Elmish.WPF has a variant of the
+one-way binding called `oneWayOpt` with this behavior built-in. The `oneWayOpt` binding accepts a function
+`get: 'model -> 'a option`. If it returns `None`, the UI will receive `null`. If it returns `Some`, the UI will receive
+the inner value.
 
 ### Two-way bindings
 
-*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
+*Relevant sample:
+SingleCounter - ([Dynamic](src/Samples/Dynamic/SingleCounter) | [Typed](src/Samples/Typed/SingleCounter))*
 
-Two-way bindings are commonly used for any kind of input (textboxes, checkboxes, sliders, etc.). The two-way bindings accept two functions: A function `get: 'model -> 'a` just like the one-way binding, and a function `set: 'a -> 'model -> 'msg` that accepts the UI value to be set and the current model, and returns the message to be dispatched.
+Two-way bindings are commonly used for any kind of input (textboxes, checkboxes, sliders, etc.). The two-way bindings
+accept two functions: A function `get: 'model -> 'a` just like the one-way binding, and a function
+`set: 'a -> 'model -> 'msg` that accepts the UI value to be set and the current model, and returns the message to be
+dispatched.
 
 In the counter example above, the two-way binding to the slider value may look like this:
 
@@ -105,11 +127,17 @@ The corresponding XAML may look like this:
   IsSnapToTickEnabled="True" />
 ```
 
-The WPF slider’s value is a `float`, but in the model we use an `int`. Therefore the binding’s `get` function must convert the model’s integer to a float, and conversely, the binding’s “setter” must convert the UI value from a float to an int.
+The WPF slider’s value is a `float`, but in the model we use an `int`. Therefore the binding’s `get` function must
+convert the model’s integer to a float, and conversely, the binding’s “setter” must convert the UI value from a float to
+an int.
 
-You might think that the `get` function doesn’t have to cast to `float`. However, `'a` is the same in both `get` and `set`, and if you return `int` in `get`, then Elmish.WPF expects the value coming from the UI (which is `obj`) to also be `int`, and will try to unbox it to `int` when being set. Since it actually is a `float`, this will fail.
+You might think that the `get` function doesn’t have to cast to `float`. However, `'a` is the same in both `get` and
+`set`, and if you return `int` in `get`, then Elmish.WPF expects the value coming from the UI (which is `obj`) to also
+be `int`, and will try to unbox it to `int` when being set. Since it actually is a `float`, this will fail.
 
-It’s common for the `set` function to rely only on the value to be set, not on the model. Therefore, the two-way binding also has an overload where the `set` function accepts only the value, not the model. This allows a more shorthand notation:
+It’s common for the `set` function to rely only on the value to be set, not on the model. Therefore, the two-way binding
+also has an overload where the `set` function accepts only the value, not the model. This allows a more shorthand
+notation:
 
 ```f#
 "StepSize" |> Binding.twoWay(
@@ -120,39 +148,54 @@ It’s common for the `set` function to rely only on the value to be set, not on
 
 #### Binding to option-wrapped values
 
-Just like one-way bindings, there is a variant of the two-way binding for `option`-wrapped values. The `option` wrapping is used in both `get` and `set`. Elmish.WPF will convert both ways between a possibly `null` raw value and an `option`-wrapped value.
+Just like one-way bindings, there is a variant of the two-way binding for `option`-wrapped values. The `option` wrapping
+is used in both `get` and `set`. Elmish.WPF will convert both ways between a possibly `null` raw value and an `option`
+-wrapped value.
 
 #### Using validation with two-way bindings
 
-*Relevant sample: Validation - ([XAML views](src/Samples/Validation) and [F# core](src/Samples/Validation.Core))*
+*Relevant sample: Validation - ([Dynamic](src/Samples/Dynamic/Validation) | [Typed](src/Samples/Typed/Validation))*
 
-You might want to display validation errors when the input is invalid. The best way to do this in WPF is through `INotifyDataErrorInfo`. Elmish.WPF supports this directly through the `twoWayValidate` bindings. In addition to `get` and `set`, this binding also accepts a third parameter that returns the error string to be displayed. This can be returned as `string option` (where `None` indicates no error), or `Result<_, string>` (where `Ok` indicates no error; this variant might allow you to easily reuse existing validation functions you have).
+You might want to display validation errors when the input is invalid. The best way to do this in WPF is through
+`INotifyDataErrorInfo`. Elmish.WPF supports this directly through the `twoWayValidate` bindings. In addition to `get`
+and `set`, this binding also accepts a third parameter that returns the error string to be displayed. This can be
+returned as `string option` (where `None` indicates no error), or `Result<_, string>` (where `Ok` indicates no error;
+this variant might allow you to easily reuse existing validation functions you have).
 
-Keep in mind that by default, WPF controls do not display errors. To display errors, either use 3rd party controls/styles (such as [MaterialDesignInXamlToolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit)) or add your own styles (the `Validation` sample in this repo demonstrates this).
+Keep in mind that by default, WPF controls do not display errors. To display errors, either use 3rd party
+controls/styles (such
+as [MaterialDesignInXamlToolkit](https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit)) or add your own
+styles (the `Validation` sample in this repo demonstrates this).
 
 There are also variants of the two-way validating bindings for option-wrapped values.
 
 ### Command bindings
 
-*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
+*Relevant sample:
+SingleCounter - ([Dynamic](src/Samples/Dynamic/SingleCounter) | [Typed](src/Samples/Typed/SingleCounter))*
 
 Command bindings are used whenever you use `Command`/`CommandParameter` in XAML, such as for button clicks.
 
-For example, for the counter app we have been looking at, the XAML binding to execute a command when the “Increment” button is clicked might look like this:
+For example, for the counter app we have been looking at, the XAML binding to execute a command when the “Increment”
+button is clicked might look like this:
 
 ```xaml
 <Button Command="{Binding Increment}" Content="+" />
 ```
 
-The corresponding Elmish.WPF binding that dispatches `Msg.Increment` when the command is executed generally looks like this:
+The corresponding Elmish.WPF binding that dispatches `Msg.Increment` when the command is executed generally looks like
+this:
 
 ```f#
 "Increment" |> Binding.cmd (fun m -> Increment)
 ```
 
-The binding accepts a single function `exec: 'model -> 'msg` that accepts the current model and returns the message to be dispatched. Elmish.WPF will convert the message to an `ICommand` that dispatches the message when the command is invoked.
+The binding accepts a single function `exec: 'model -> 'msg` that accepts the current model and returns the message to
+be dispatched. Elmish.WPF will convert the message to an `ICommand` that dispatches the message when the command is
+invoked.
 
-For convenience, if you don’t need the model, there is also an overload that directly accepts the message (instead of a model-accepting function). The above can therefore be written like this:
+For convenience, if you don’t need the model, there is also an overload that directly accepts the message (instead of a
+model-accepting function). The above can therefore be written like this:
 
 ```f#
 "Increment" |> Binding.cmd Increment
@@ -160,11 +203,14 @@ For convenience, if you don’t need the model, there is also an overload that d
 
 #### Conditional commands (where you control `CanExecute`)
 
-*Relevant sample: SingleCounter - ([XAML views](src/Samples/SingleCounter) and [F# core](src/Samples/SingleCounter.Core))*
+*Relevant sample:
+SingleCounter - ([Dynamic](src/Samples/Dynamic/SingleCounter) | [Typed](src/Samples/Typed/SingleCounter))*
 
-A command may not always be executable. As you might know, WPF’s `ICommand` interface contains a `CanExecute` method that, if `false`, will cause WPF to disable the bound control (e.g. the button).
+A command may not always be executable. As you might know, WPF’s `ICommand` interface contains a `CanExecute` method
+that, if `false`, will cause WPF to disable the bound control (e.g. the button).
 
-In the counter example, we might want to prohibit negative numbers, disabling the `Decrement` button when the `model.Count = 0`. This can be written using `cmdIf`:
+In the counter example, we might want to prohibit negative numbers, disabling the `Decrement` button when the
+`model.Count = 0`. This can be written using `cmdIf`:
 
 ```f#
 "Decrement" |> Binding.cmdIf (
@@ -177,25 +223,34 @@ There are several ways to indicate that a command can‘t execute. The `cmdIf` b
 
 - `exec: 'model -> 'msg option`, where the command is disabled if `exec` returns `None`
 - `exec: 'model -> Result<'msg, _>`, where the command is disabled if `exec` returns `Error`
-- `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to dispatch)
+- `exec: 'model  -> 'msg * canExec: 'model -> bool` (as the example above shows), where the command is disabled if
+  `canExec` returns `false` (and as with `cmd`, there is also an overload where `exec` is simply the message to
+  dispatch)
 
 #### Using the `CommandParameter`
 
-*Relevant sample: UiBoundCmdParam - ([XAML views](src/Samples/UiBoundCmdParam) and [F# core](src/Samples/UiBoundCmdParam.Core))*
+*Relevant sample:
+UiBoundCmdParam - ([Dynamic](src/Samples/Dynamic/UiBoundCmdParam) | [Typed](src/Samples/Typed/UiBoundCmdParam))*
 
-There may be times you need to use the XAML `CommandParameter` property. You then need to use Elmish.WPF’s `cmdParam` binding, which works exactly like `cmd` but where `exec` function accepts the command parameter as its first parameter.
+There may be times you need to use the XAML `CommandParameter` property. You then need to use Elmish.WPF’s `cmdParam`
+binding, which works exactly like `cmd` but where `exec` function accepts the command parameter as its first parameter.
 
 There is also `cmdParamIf` which combines `cmdParam` and `cmdIf`, allowing you to override the command’s `CanExecute`.
 
 ### Sub-model bindings
 
-*Relevant sample: SubModel - ([XAML views](src/Samples/SubModel) and [F# core](src/Samples/SubModel.Core))*
+*Relevant sample: SubModel - ([Dynamic](src/Samples/Dynamic/SubModel) | [Typed](src/Samples/Typed/SubModelStatic))*
 
-Sub-model bindings are used when you want to bind to a complex object that has its own bindings. In MVVM, this happens when one of your view-model properties is another view model with its own properties the UI can bind to.
+Sub-model bindings are used when you want to bind to a complex object that has its own bindings. In MVVM, this happens
+when one of your view-model properties is another view model with its own properties the UI can bind to.
 
-Perhaps the most compelling use-case for sub-models is when binding the `ItemsSource` of a `ListView` or similar. Each item in the collection you bind to is a view-model with its own properties that is used when rendering each item. However, the same principles apply when there’s only a single sub-model. Collections are treated later; this section focuses on a single sub-model.
+Perhaps the most compelling use-case for sub-models is when binding the `ItemsSource` of a `ListView` or similar. Each
+item in the collection you bind to is a view-model with its own properties that is used when rendering each item.
+However, the same principles apply when there’s only a single sub-model. Collections are treated later; this section
+focuses on a single sub-model.
 
-The `subModel` binding has three overloads, increasing in complexity depending on how much you need to customize the sub-bindings.
+The `subModel` binding has three overloads, increasing in complexity depending on how much you need to customize the
+sub-bindings.
 
 #### Level 1: No separate message type or customization of model for sub-bindings
 
@@ -204,7 +259,8 @@ This is sufficient for many purposes. The overload accepts two parameters:
 - `getSubModel: 'model -> 'subModel` to obtain the sub-model
 - `bindings: unit -> Binding<'model * 'subModel, 'msg> list`, the bindings for the sub-model
 
-In other words, inside the sub-bindings, the model parameter (in each binding) is a tuple with the parent model and the sub-model.
+In other words, inside the sub-bindings, the model parameter (in each binding) is a tuple with the parent model and the
+sub-model.
 
 For example, let’s say that we have an app where a counter is a part of the app. We might do this:
 
@@ -218,9 +274,14 @@ For example, let’s say that we have an app where a counter is a part of the ap
 )
 ```
 
-As you can see, inside the sub-bindings (which could be extracted to their own `bindings` function), the model parameter is a tuple containing the parent state as well as the sub-model state. This is a good default because it’s the most general signature, allowing you access to everything from the parent as well as the sub-model you are binding to. (This is particularly important for sub-model sequence bindings, which are described later.)
+As you can see, inside the sub-bindings (which could be extracted to their own `bindings` function), the model parameter
+is a tuple containing the parent state as well as the sub-model state. This is a good default because it’s the most
+general signature, allowing you access to everything from the parent as well as the sub-model you are binding to. (This
+is particularly important for sub-model sequence bindings, which are described later.)
 
-Note also that the sub-bindings still use the top-level message type. There is no separate child message type for the sub-model; `IncrementCounter` is a case of the parent message type. This is also a good default for the reasons described in the earlier “child components and scaling” section.
+Note also that the sub-bindings still use the top-level message type. There is no separate child message type for the
+sub-model; `IncrementCounter` is a case of the parent message type. This is also a good default for the reasons
+described in the earlier “child components and scaling” section.
 
 #### Level 2: Separate message type but no customization of model for sub-bindings
 
@@ -230,7 +291,8 @@ This overload is just like the first one except it has an additional parameter t
 - `toMsg: 'subMsg -> 'msg` to wrap the child message in a parent message
 - `bindings: unit -> Binding<'model * 'subModel, 'subMsg> list`, the bindings for the sub-model
 
-This is useful if you want to use a separate message type in the sub-model bindings. For the `toMsg` parameter, you would typically pass a parent message case that wraps the child message type. For example:
+This is useful if you want to use a separate message type in the sub-model bindings. For the `toMsg` parameter, you
+would typically pass a parent message case that wraps the child message type. For example:
 
 ```f#
 "Counter" |> Binding.subModel(
@@ -243,9 +305,11 @@ This is useful if you want to use a separate message type in the sub-model bindi
 )
 ```
 
-Here,  `Increment` is a case of the child message type, and `CounterMsg` is a parent message case that wraps the counter message type.
+Here,  `Increment` is a case of the child message type, and `CounterMsg` is a parent message case that wraps the counter
+message type.
 
-If you had passed `id` as the `toMsg` parameter, you would have the same behavior as the previous simpler overload with no `toMsg`.
+If you had passed `id` as the `toMsg` parameter, you would have the same behavior as the previous simpler overload with
+no `toMsg`.
 
 #### Level 3: Separate message type and arbitrary customization of model for sub-bindings
 
@@ -256,7 +320,8 @@ This is the most complex one, and is required for the following cases:
 
 The reasons it’s required for these cases are described further below.
 
-It’s also nice to have if you simply want to “clean up” or otherwise customize the model used in the bindings (e.g. if you don’t need the parent model, only the child model).
+It’s also nice to have if you simply want to “clean up” or otherwise customize the model used in the bindings (e.g. if
+you don’t need the parent model, only the child model).
 
 Compared to the “level 2” overload, it has one additional parameter, `toBindingModel`. All the parameters are:
 
@@ -279,11 +344,16 @@ Continuing with the counter example above, it could look like this:
 )
 ```
 
-As you see, we transform the default `(parent, counter)` tuple into just the `counter`, so that the model used in the sub-bindings is only the `'subModel`. Otherwise the example is the same. If you had passed `id` to `toBindingModel` and `toMsg`, you would end up with the same behavior as the simplest variant without `toBindingModel` and `toMsg`.
+As you see, we transform the default `(parent, counter)` tuple into just the `counter`, so that the model used in the
+sub-bindings is only the `'subModel`. Otherwise the example is the same. If you had passed `id` to `toBindingModel` and
+`toMsg`, you would end up with the same behavior as the simplest variant without `toBindingModel` and `toMsg`.
 
-The model transformation allowed by this overload is required for a proper, separate “child component” with its own model/message/bindings, because the child component’s bindings would of course not know anything about any parent model. I.e., as demonstrated above, you need the model to be just `'subModel` and not `'model * 'subModel`
+The model transformation allowed by this overload is required for a proper, separate “child component” with its own
+model/message/bindings, because the child component’s bindings would of course not know anything about any parent model.
+I.e., as demonstrated above, you need the model to be just `'subModel` and not `'model * 'subModel`
 
-The model transformation is also required for recursive bindings. Imagine that a counter can contain another counter (in a `ChildCounter` property). You would define the (recursive) counter bindings as:
+The model transformation is also required for recursive bindings. Imagine that a counter can contain another counter (in
+a `ChildCounter` property). You would define the (recursive) counter bindings as:
 
 ```f#
 let rec counterBindings () : Binding<CounterModel, CounterMsg> list = [
@@ -297,25 +367,33 @@ let rec counterBindings () : Binding<CounterModel, CounterMsg> list = [
   ])
 ```
 
-If you could not transform `(parent, counter)` “back” to `counter`, you could not reuse the same bindings, and hence not create recursive bindings.
+If you could not transform `(parent, counter)` “back” to `counter`, you could not reuse the same bindings, and hence not
+create recursive bindings.
 
 Recursive bindings are demonstrated in the `SubModelSeq` sample.
 
-You now have the power to create child components. Use it with great care; as mentioned in the earlier “child components and scaling” section, such separation will often do more harm than good.
+You now have the power to create child components. Use it with great care; as mentioned in the earlier “child components
+and scaling” section, such separation will often do more harm than good.
 
 #### Optional and “sticky” sub-model bindings
 
-*Relevant sample: SubModelOpt - ([XAML views](src/Samples/SubModelOpt) and [F# core](src/Samples/SubModelOpt.Core))*
+*Relevant sample: SubModelOpt - ([Dynamic](src/Samples/Dynamic/SubModelOpt) | [Typed](src/Samples/Typed/SubModelOpt))*
 
-You can also use the `subModelOpt` binding. The signature is the same as the variants described above, except that `getSubModel` returns `'subModel option`. The UI will receive `null` when the sub-model is `None`.
+You can also use the `subModelOpt` binding. The signature is the same as the variants described above, except that
+`getSubModel` returns `'subModel option`. The UI will receive `null` when the sub-model is `None`.
 
-Additionally, these bindings have an optional `sticky: bool` parameter. If `true`, Elmish.WPF will “remember” and return the most recent non-null sub-model when the `getSubModel` returns `None`. This can be useful for example when you want to animate away the UI for the sub-component when it’s set to `None`. If you do not use `sticky`, the UI will be cleared at the start of the animation, which may look weird.
+Additionally, these bindings have an optional `sticky: bool` parameter. If `true`, Elmish.WPF will “remember” and return
+the most recent non-null sub-model when the `getSubModel` returns `None`. This can be useful for example when you want
+to animate away the UI for the sub-component when it’s set to `None`. If you do not use `sticky`, the UI will be cleared
+at the start of the animation, which may look weird.
 
 ### Sub-model window bindings
 
-*Relevant sample: NewWindow - ([XAML views](src/Samples/NewWindow) and [F# core](src/Samples/NewWindow.Core))*
+*Relevant sample: NewWindow - ([Dynamic](src/Samples/Dynamic/NewWindow) | [Typed](src/Samples/Typed/NewWindow))*
 
-The `subModelWin` binding is a variant of `subModelOpt` that allows you to control the opening/closing/hiding of new windows. It has the same overloads as `subModel` and `subModelOpt`, with two key differences: First, the sub-model is wrapped in a custom type called `WindowState` that is defined like this:
+The `subModelWin` binding is a variant of `subModelOpt` that allows you to control the opening/closing/hiding of new
+windows. It has the same overloads as `subModel` and `subModelOpt`, with two key differences: First, the sub-model is
+wrapped in a custom type called `WindowState` that is defined like this:
 
 ```f#
 [<RequireQualifiedAccess>]
@@ -325,7 +403,9 @@ type WindowState<'model> =
   | Visible of 'model
 ```
 
-By wrapping the sub-model in `WindowState.Hidden` or `WindowState.Visible` or returning `WindowState.Closed`, you control the opening, closing, showing, and hiding of a window whose `DataContext` will be automatically set to the wrapped model. Check out the `NewWindow` sample to see it in action.
+By wrapping the sub-model in `WindowState.Hidden` or `WindowState.Visible` or returning `WindowState.Closed`, you
+control the opening, closing, showing, and hiding of a window whose `DataContext` will be automatically set to the
+wrapped model. Check out the `NewWindow` sample to see it in action.
 
 Secondly, all overloads have the following parameter:
 
@@ -333,23 +413,37 @@ Secondly, all overloads have the following parameter:
 getWindow: 'model -> Dispatch<'msg> -> #Window
 ```
 
-This is what’s actually called to create the window. You have access to the current model as well as the `dispatch` in case you need to set up message-dispatching event subscriptions for the window.
+This is what’s actually called to create the window. You have access to the current model as well as the `dispatch` in
+case you need to set up message-dispatching event subscriptions for the window.
 
-Additionally, all `subModelWin` overloads have two optional parameters. The first is `?onCloseRequested: 'msg`. Returning `WindowState.Closed` is the only way to close the window. In order to support closing using external mechanisms (the Close/X button, Alt+F4, or System Menu -> Close), this parameter allows you to specify a message that will be dispatched for these events. You can then react to this message by updating your state so that the binding returns `WindowState.Closed`
+Additionally, all `subModelWin` overloads have two optional parameters. The first is `?onCloseRequested: 'msg`.
+Returning `WindowState.Closed` is the only way to close the window. In order to support closing using external
+mechanisms (the Close/X button, Alt+F4, or System Menu -> Close), this parameter allows you to specify a message that
+will be dispatched for these events. You can then react to this message by updating your state so that the binding
+returns `WindowState.Closed`
 
-The second optional parameter is `?isModal: bool`. This specifies whether the window will be shown modally (using `window.ShowDialog`, blocking the rest of the UI) or non-modally (using `window.Show`).
+The second optional parameter is `?isModal: bool`. This specifies whether the window will be shown modally (using
+`window.ShowDialog`, blocking the rest of the UI) or non-modally (using `window.Show`).
 
 Again, check out the `NewWindow` sample to see `subModelWin` in action.
 
 ### Sub-model sequence bindings
 
-*Relevant sample: SubModelSeq - ([XAML views](src/Samples/SubModelSeq) and [F# core](src/Samples/SubModelSeq.Core))*
+*Relevant sample: SubModelSeq - ([Dynamic](src/Samples/Dynamic/SubModelSeq) | [Typed](src/Samples/Typed/SubModelSeq))*
 
-If you understand `subModel`, then `subModelSeq` isn’t much more complex. It has similar overloads, but instead of returning a single sub-model, you return `#seq<'subModel>`. Furthermore, all overloads have an additional parameter `getId` (which for the “level 1” and “level 2” overloads has signature `'subModel -> 'id`) that gets a unique identifier for each model. This identifier must be unique among all sub-models in the collection, and is used to know which items to add, remove, re-order, and update.
+If you understand `subModel`, then `subModelSeq` isn’t much more complex. It has similar overloads, but instead of
+returning a single sub-model, you return `#seq<'subModel>`. Furthermore, all overloads have an additional parameter
+`getId` (which for the “level 1” and “level 2” overloads has signature `'subModel -> 'id`) that gets a unique identifier
+for each model. This identifier must be unique among all sub-models in the collection, and is used to know which items
+to add, remove, re-order, and update.
 
-The `toMsg` parameter in the “level 2” and “level 3” overloads has the signature `'id * 'subMsg -> 'msg` (compared with just `'subMsg -> 'msg` for `subModel`). For this parameter you would typically use a parent message case that wraps both the child ID and the child message. You need the ID to know which sub-model it came from, and thus which sub-model to pass the message along to.
+The `toMsg` parameter in the “level 2” and “level 3” overloads has the signature `'id * 'subMsg -> 'msg` (compared with
+just `'subMsg -> 'msg` for `subModel`). For this parameter you would typically use a parent message case that wraps both
+the child ID and the child message. You need the ID to know which sub-model it came from, and thus which sub-model to
+pass the message along to.
 
-Finally, in the “level 3” overload that allows you to transform the model used for the bindings, the `getId` parameter has signature `'bindingModel -> 'id` (instead of `'subModel -> 'id` for the two simpler overloads).
+Finally, in the “level 3” overload that allows you to transform the model used for the bindings, the `getId` parameter
+has signature `'bindingModel -> 'id` (instead of `'subModel -> 'id` for the two simpler overloads).
 
 ### Other bindings
 
@@ -357,32 +451,49 @@ There are two special bindings not yet covered.
 
 #### `subModelSelectedItem`
 
-*Relevant sample: SubModelSelectedItem - ([XAML views](src/Samples/SubModelSelectedItem) and [F# core](src/Samples/SubModelSelectedItem.Core))*
+*Relevant sample:
+SubModelSelectedItem - ([Dynamic](src/Samples/Dynamic/SubModelSelectedItem) | [Typed](src/Samples/Typed/SubModelSelectedItem))*
 
-The section on model normalization made it clear that it’s better to use IDs than complex objects in messages. This means that for bindings to the selected value of a `ListBox` or similar, you’ll likely have better luck using `SelectedValue` and `SelectedValuePath` rather than `SelectedItem`.
+The section on model normalization made it clear that it’s better to use IDs than complex objects in messages. This
+means that for bindings to the selected value of a `ListBox` or similar, you’ll likely have better luck using
+`SelectedValue` and `SelectedValuePath` rather than `SelectedItem`.
 
-Unfortunately some selection-enabled WPF controls only have `SelectedItem` and do not support `SelectedValue` and `SelectedValuePath`. Using `SelectedItem` is particularly cumbersome in Elmish.WPF since the value is not your sub-model, but an instance of the Elmish.WPF view-model. To help with this, Elmish.WPF provides the `subModelSelectedItem` binding.
+Unfortunately some selection-enabled WPF controls only have `SelectedItem` and do not support `SelectedValue` and
+`SelectedValuePath`. Using `SelectedItem` is particularly cumbersome in Elmish.WPF since the value is not your
+sub-model, but an instance of the Elmish.WPF view-model. To help with this, Elmish.WPF provides the
+`subModelSelectedItem` binding.
 
-This binding works together with a `subModelSeq` binding in the same binding list, and allows you to use the `subModelSeq` binding’s IDs in your model while still using `SelectedItem` from XAML. For example, if you use `subModelSeq` to display a list of books identified by a `BookId`, the `subModelSelectedItem` binding allows you to use `SelectedBook: BookId` in your model.
+This binding works together with a `subModelSeq` binding in the same binding list, and allows you to use the
+`subModelSeq` binding’s IDs in your model while still using `SelectedItem` from XAML. For example, if you use
+`subModelSeq` to display a list of books identified by a `BookId`, the `subModelSelectedItem` binding allows you to use
+`SelectedBook: BookId` in your model.
 
 The `subModelSelectedItem` binding has the following parameters:
 
 - `subModelSeqBindingName: string`, where you identify the binding name for the corresponding `subModelSeq` binding
-- `get: 'model -> 'id option`, where you return the ID of the sub-model in the `subModelSeq` binding that should be selected
-- `set: 'id option -> 'msg`, where you return the message to dispatch when the selected item changes (typically this will be a message case wrapping the ID).
+- `get: 'model -> 'id option`, where you return the ID of the sub-model in the `subModelSeq` binding that should be
+  selected
+- `set: 'id option -> 'msg`, where you return the message to dispatch when the selected item changes (typically this
+  will be a message case wrapping the ID).
 
-You bind the `SelectedItem` of a control to the `subModelSelectedItem` binding. Then, Elmish.WPF will take care of the following:
+You bind the `SelectedItem` of a control to the `subModelSelectedItem` binding. Then, Elmish.WPF will take care of the
+following:
 
-- When the UI retrieves the selected item, Elmish.WPF gets the ID using `get`, looks up the correct view-model in the `subModelSeq` binding identified by `subModelSeqBindingName`, and returns that view-model to the UI.
-- When the UI sets the selected item (which it sets to an Elmish.WPF view-model), Elmish.WPF calls `set` with the ID of the sub-model corresponding to that view-model.
+- When the UI retrieves the selected item, Elmish.WPF gets the ID using `get`, looks up the correct view-model in the
+  `subModelSeq` binding identified by `subModelSeqBindingName`, and returns that view-model to the UI.
+- When the UI sets the selected item (which it sets to an Elmish.WPF view-model), Elmish.WPF calls `set` with the ID of
+  the sub-model corresponding to that view-model.
 
 #### `oneWaySeq`
 
-*Relevant sample: OneWaySeq - ([XAML views](src/Samples/OneWaySeq) and [F# core](src/Samples/OneWaySeq.Core))*
+*Relevant sample: OneWaySeq - ([Dynamic](src/Samples/Dynamic/OneWaySeq) | [Typed](src/Samples/Typed/OneWaySeq))*
 
-In some cases, you might want to have a one-way binding not to a single, simple value, but to a potentially large collection of simple values. If you use `oneWay` for this, the entire list will be replaced and re-rendered each time the model updates.
+In some cases, you might want to have a one-way binding not to a single, simple value, but to a potentially large
+collection of simple values. If you use `oneWay` for this, the entire list will be replaced and re-rendered each time
+the model updates.
 
-In the special case that you want to bind to a collection of **simple** (can be bound to directly) and **distinct** values, you can use `oneWaySeq`. This will ensure that only changed items are replaced/moved.
+In the special case that you want to bind to a collection of **simple** (can be bound to directly) and **distinct**
+values, you can use `oneWaySeq`. This will ensure that only changed items are replaced/moved.
 
 The `oneWaySeq` binding has the following parameters:
 
@@ -390,45 +501,69 @@ The `oneWaySeq` binding has the following parameters:
 - `itemEquals: 'a -> 'a -> bool`, to determine whether an item has changed
 - `getId: 'a -> 'id`, to track which items are added, removed, re-ordered, and changed
 
-If the values are not simple (e.g. not strings or numbers), then you can instead use `subModelSeq` to set up separate bindings for each item. And if the values are not distinct (i.e., can not be uniquely identified in the collection), then Elmish.WPF won’t be able to track which items are moved, and you can’t use this optimization.
+If the values are not simple (e.g. not strings or numbers), then you can instead use `subModelSeq` to set up separate
+bindings for each item. And if the values are not distinct (i.e., can not be uniquely identified in the collection),
+then Elmish.WPF won’t be able to track which items are moved, and you can’t use this optimization.
 
-Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite is not true.) The `oneWaySeq` binding is slightly simpler than `subModelSeq` if the elements are simple values that can be bound to directly.
+Note that you can always use `subModelSeq` instead of `oneWaySeq` (the opposite is not true.) The `oneWaySeq` binding is
+slightly simpler than `subModelSeq` if the elements are simple values that can be bound to directly.
 
 ### Lazy bindings
 
-You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map`.
+You may find yourself doing potentially expensive work in one-way bindings. To facilitate simple optimization in these
+cases, Elmish.WPF provides the bindings `oneWayLazy`, `oneWayOptLazy`, and `oneWaySeqLazy`, which
+add [lazy updating](#lazy-updating) and [caching](#caching). These have two extra parameters: `equals` and `map`.
 
-As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of `get` passed to `map`, which may be expensive.
+As with the non-lazy bindings, the initial `get` function is called. For the lazy bindings, this should be cheap; it
+should basically just return what you need from from the model (e.g. a single item or a tuple or record with multiple
+items). Lazy updating is evaluated based on the value from `get`. Only if the binding updates is the output of `get`
+passed to `map`, which may be expensive.
 
 Modifying bindings
 ------------------
 
 ### Lazy updating
 
-For performance optimization, `Binding.addLazy` allows you to add an `equals` parameter to update the viewmodel only when necessary.
+For performance optimization, `Binding.addLazy` allows you to add an `equals` parameter to update the viewmodel only
+when necessary.
 
-`equals` is used to compare the current model with the previous. If equals returns true, the rest of the update process is skipped entirely. If equals returns false, the binding is updated normally.
+`equals` is used to compare the current model with the previous. If equals returns true, the rest of the update process
+is skipped entirely. If equals returns false, the binding is updated normally.
 
 Elmish.WPF provides two helpers you can often use as the `equals` parameter: `refEq` and `elmEq`.
 
-- `refEq` is a good choice if `get` returns a single item (not an inline-created tuple, record, or other wrapper) from your model. It is simply an alias for `LanguagePrimitives.PhysicalEquality` (which is essentially `Object.ReferenceEquals` with better typing). Since the Elmish model is generally immutable, a reference equality check for the output of `get` is a very efficient way to short-circuit the update process. It may cause false negatives if two values are structurally equal but not referentially equal, but this should not be a common case, and structural equality may be prohibitively expensive if comparing e.g. large lists, defeating the purpose.
-- `elmEq` is a good choice if `get` returns multiple items from the model wrapped inline in a tuple or record. It will compare each member of the `get` return value separately (i.e. each record field, or each tuple item). Reference-typed members will be compared using reference equality, and string members and value-typed members will be compared using structural equality.
+- `refEq` is a good choice if `get` returns a single item (not an inline-created tuple, record, or other wrapper) from
+  your model. It is simply an alias for `LanguagePrimitives.PhysicalEquality` (which is essentially
+  `Object.ReferenceEquals` with better typing). Since the Elmish model is generally immutable, a reference equality
+  check for the output of `get` is a very efficient way to short-circuit the update process. It may cause false
+  negatives if two values are structurally equal but not referentially equal, but this should not be a common case, and
+  structural equality may be prohibitively expensive if comparing e.g. large lists, defeating the purpose.
+- `elmEq` is a good choice if `get` returns multiple items from the model wrapped inline in a tuple or record. It will
+  compare each member of the `get` return value separately (i.e. each record field, or each tuple item). Reference-typed
+  members will be compared using reference equality, and string members and value-typed members will be compared using
+  structural equality.
 
-You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want structural comparison (note the caveat above however), you can pass `(=)`.
+You may pass any function you want for `equals`; it does not have to be one of the above. For example, if you want
+structural comparison (note the caveat above however), you can pass `(=)`.
 
 ### Caching
 
 For performance optimization, `Binding.addCaching` caches viewmodel values.
 
-Cached bindings store values retrieved using `get`, so if the view tries to get a value that has not yet been updated, the binding will return the previous value rather than calling `get` again. Non-cached bindings call `get` every time.
+Cached bindings store values retrieved using `get`, so if the view tries to get a value that has not yet been updated,
+the binding will return the previous value rather than calling `get` again. Non-cached bindings call `get` every time.
 
 ### Mapping bindings
 
-Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`, `mapMsg`, and `mapMsgWithModel`.
+Sometimes duplicate mapping code exists across several bindings. The duplicate mappings could be from the parent model
+to a common child model or it could be the wrapping of a child message in a parent message, which might depend on the
+parent model. The duplicate mapping code can be extracted and written once using the mapping functions `mapModel`,
+`mapMsg`, and `mapMsgWithModel`.
 
 #### Example use of `mapModel` and `mapMsg`
 
 Here is a simple example that uses these model and message types.
+
 ```F#
 type ChildModel =
   { GrandChild1: GrandChild1
@@ -455,6 +590,7 @@ let parentBindings () : Binding<ParentModel, ParentMsg> list = [
 ```
 
 The functions `mapModel` and `mapMsg` can remove this duplication.
+
 ```F#
 let childBindings () : Binding<ChildModel, ChildMsg> list = [
   "GrandChild1" |> Binding.twoWay((fun child -> child.GrandChild1), SetGrandChild1)
@@ -469,20 +605,136 @@ let parentBindings () : Binding<ParentModel, ParentMsg> list =
 
 #### Benefit for design-time view models
 
-With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing the bindings to `GrandChild1` and `GrandChild2`.  Specifically, instead of creating the design-time view model from the `parentBindings` bindings, it can now be created from the `childBindings` bindings.  The `SubModelSeq` sample uses this benefit to create a design-time view model for `Counter.xaml`.
+With such duplicate mapping code extracted, it is easier to create a design-time view model for the XAML code containing
+the bindings to `GrandChild1` and `GrandChild2`. Specifically, instead of creating the design-time view model from the
+`parentBindings` bindings, it can now be created from the `childBindings` bindings. The `SubModelSeq` sample uses this
+benefit to create a design-time view model for `Counter.xaml`.
 
 #### Theory behind `mapModel` and `mapMsg`
 
-A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a profunctor, which means that
+A binding in Elmish.WPF is represented by an instance of type `Binding<'model, 'msg>`. It is a profunctor, which means
+that
+
 - it is a contravariant functor in `'model` with `mapModel` as the corresponding mapping function for this functor and
 - it is a covariant functor in `'msg` with `mapMsg` as the corresponding mapping function for this functor.
+
+Choosing Your Binding Approach
+------------------------------
+
+Elmish.WPF offers two approaches for creating bindings between your F# model and WPF views. Understanding when to use
+each approach will help you make the best choice for your application.
+
+### Dynamic Bindings vs Statically-Typed ViewModels
+
+| Aspect             | Dynamic Bindings                   | Statically-Typed ViewModels              |
+|--------------------|------------------------------------|------------------------------------------|
+| **Syntax**         | Functional, list-based             | Object-oriented, property-based          |
+| **Type Safety**    | Runtime binding resolution         | Compile-time binding validation          |
+| **XAML Support**   | Basic IntelliSense                 | Full IntelliSense and auto-completion    |
+| **Design-time**    | Limited design-time support        | Rich design-time experience              |
+| **Performance**    | Good                               | Slightly better (direct property access) |
+| **Flexibility**    | Very flexible, dynamic composition | More structured, explicit definitions    |
+| **Learning Curve** | Familiar to functional programmers | Familiar to WPF/C# developers            |
+| **Refactoring**    | Manual updates needed              | Automatic refactoring support            |
+
+### When to Choose Dynamic Bindings
+
+Choose **dynamic bindings** when:
+
+- **Rapid prototyping**: Quick iteration and experimentation
+- **Simple applications**: Small apps with few UI interactions
+- **Functional preference**: You prefer functional composition over OOP
+- **Dynamic scenarios**: Bindings need to be created or modified at runtime
+- **MVU purists**: You want minimal view layer complexity
+- **Small teams**: Working alone or with F#-experienced developers
+
+### When to Choose Statically-Typed ViewModels
+
+Choose **statically-typed ViewModels** when:
+
+- **Large applications**: Complex apps with many views and interactions
+- **Design collaboration**: Working with UI designers who need design-time data
+- **Type safety**: Compile-time validation is critical
+- **XAML-heavy development**: Extensive use of XAML features and tooling
+- **Mixed teams**: Developers with varying F# experience levels
+- **Legacy integration**: Integrating with existing WPF/MVVM codebases
+- **Third-party tools**: Using tools that expect traditional ViewModels
+
+### Migration Between Approaches
+
+Both approaches use the same underlying MVU architecture, making migration straightforward:
+
+#### From Dynamic to Typed
+
+1. **Create ViewModel class**:
+   ```F#
+   [<AllowNullLiteral>]
+   type MyViewModel(args) =
+       inherit ViewModelBase<Model, Msg>(args)
+       new() = MyViewModel(initialModel |> ViewModelArgs.simple)
+   ```
+
+2. **Convert bindings to properties**:
+   ```F#
+   // From: "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+   // To:
+   member _.CounterValue =
+       base.Get () (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.Count))
+   ```
+
+3. **Handle TwoWay bindings**:
+   ```F#
+   // From: "StepSize" |> Binding.twoWay((fun m -> float m.StepSize), int >> SetStepSize)
+   // To:
+   let stepSizeBinding =
+       Binding.TwoWayT.id
+       >> Binding.mapModel (fun m -> float m.StepSize)
+       >> Binding.mapMsg (int >> SetStepSize)
+
+   member this.StepSize
+       with get () = base.Get () stepSizeBinding
+       and set (value) = base.Set (value) stepSizeBinding
+   ```
+
+4. **Update program creation**:
+   ```F#
+   // From: WpfProgram.mkSimple init update bindings
+   // To:   WpfProgram.mkSimpleT init update MyViewModel
+   ```
+
+#### From Typed to Dynamic
+
+1. **Extract properties to binding list**:
+   ```F#
+   let bindings () = [
+       "CounterValue" |> Binding.oneWay (fun m -> m.Count)
+       "StepSize" |> Binding.twoWay((fun m -> float m.StepSize), int >> SetStepSize)
+   ]
+   ```
+
+2. **Update program creation**:
+   ```F#
+   // From: WpfProgram.mkSimpleT init update MyViewModel
+   // To:   WpfProgram.mkSimple init update bindings
+   ```
+
+### Mixed Approach
+
+You can use both approaches within the same application:
+
+- Use dynamic bindings for simple, frequently-changing views
+- Use typed ViewModels for complex, stable views
+- Convert between approaches as requirements evolve
 
 Statically-Typed View Models
 ----------------------------
 
 ### Inherit from `ViewModelBase<'model, 'msg>`
 
-If you want full design-time support for your view models, consider defining your view models as a class rather than as a list of bindings. This will give you lots of quality-of-life improvements when working in the XAML, such as type checking for errors, auto-completion, and static types to mention in `DataTemplate.DataType` and similar properties for template matching.
+If you want full design-time support for your view models, consider defining your view models as a class rather than as
+a list of bindings. This will give you lots of quality-of-life improvements when working in the XAML, such as type
+checking for errors, auto-completion, and static types to mention in `DataTemplate.DataType` and similar properties for
+template matching.
 
 ```F#
 type [<AllowNullLiteral>] CounterViewModel (args) =
@@ -499,30 +751,181 @@ type [<AllowNullLiteral>] CounterViewModel (args) =
   member _.Reset = base.Get() (Binding.CmdT.set Counter.canReset Counter.Reset)
 ```
 
+### Advantages of Statically-Typed ViewModels
+
+Statically-typed ViewModels provide several benefits over dynamic bindings:
+
+- **Compile-time safety**: XAML binding names are validated at compile time
+- **IntelliSense support**: Full auto-completion in XAML editors
+- **Design-time data**: Rich design-time experience in Visual Studio and Blend
+- **Refactoring support**: Reliable refactoring across view and view model
+- **Type safety**: Strongly-typed property access eliminates runtime binding errors
+- **Performance**: Slightly better performance due to direct property access
+
+### Basic Typed ViewModel Structure
+
+A typical typed ViewModel follows this pattern:
+
+```F#
+[<AllowNullLiteral>]
+type MyViewModel(args) =
+    inherit ViewModelBase<Model, Msg>(args)
+
+    // Default constructor for design-time support
+    new() = MyViewModel(initialModel |> ViewModelArgs.simple)
+
+    // OneWay properties
+    member _.SomeValue =
+        base.Get () (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.SomeValue))
+
+    // Command properties
+    member _.SomeCommand =
+        base.Get () (Binding.CmdT.setAlways SomeMessage)
+
+    // TwoWay properties (see detailed examples below)
+```
+
 ### Typed Bindings
 
-When creating a list of bindings, the output type of each property must be boxed (to `obj`) in order to insert them into the same list. With individually declared bindings on a class member, this restriction is lifted. Therefore we have a set of bindings (denoted with the `T` suffix on the function or the containing module) that do not box the output type.
+When creating a list of bindings, the output type of each property must be boxed (to `obj`) in order to insert them into
+the same list. With individually declared bindings on a class member, this restriction is lifted. Therefore we have a
+set of bindings (denoted with the `T` suffix on the function or the containing module) that do not box the output type.
 
 #### Typed One-way Bindings
 
 These bindings work very similarly to their non-`T` counterparts, except they make exclusive use of the composable api.
 
 - `Binding.OneWayT.id`
-- `Binding.OneWayToSource.id`
+- `Binding.OneWayToSourceT.id`
 - `Binding.CmdT.setAlways`
+
+Example usage:
+
+```F#
+// Simple one-way binding
+member _.CounterValue =
+    base.Get () (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.Count))
+
+// One-way binding with lazy evaluation
+member _.ExpensiveCalculation =
+    base.Get () (Binding.OneWayT.id
+                >> Binding.addLazy (=)
+                >> Binding.mapModel calculateExpensiveValue)
+
+// Command binding
+member _.IncrementCommand =
+    base.Get () (Binding.CmdT.setAlways Increment)
+
+// Conditional command binding
+member _.ResetCommand =
+    base.Get () (Binding.CmdT.set (fun m -> m.Count <> 0) Reset)
+```
+
+#### Typed TwoWay Bindings
+
+TwoWay bindings in typed ViewModels require a specific pattern with getter and setter properties. This is crucial for
+proper WPF data binding:
+
+```F#
+[<AllowNullLiteral>]
+type CounterViewModel(args) =
+    inherit ViewModelBase<Model, Msg>(args)
+
+    // Define the binding pipeline as a let-bound value
+    let stepSizeBinding =
+        Binding.TwoWayT.id
+        >> Binding.addLazy (=)
+        >> Binding.mapModel (fun m -> float m.StepSize)  // Convert from model type
+        >> Binding.mapMsg (int >> SetStepSize)           // Convert to message type
+
+    // Implement property with explicit getter and setter
+    member this.StepSize
+        with get () = base.Get () stepSizeBinding
+        and set (value) = base.Set (value) stepSizeBinding
+```
+
+**Important**: The binding variable (`stepSizeBinding`) must be defined as a `let` binding inside the class, and both
+`get()` and `set()` must be implemented for TwoWay bindings to work correctly.
+
+**Type Conversion**: Notice how we convert between model types (`int`) and WPF types (`float`) in the binding pipeline.
+This is common when binding to controls like `Slider` that use `float` values.
+
+#### Typed TwoWay Bindings with Validation
+
+You can add validation to TwoWay bindings in typed ViewModels:
+
+```F#
+let emailBinding =
+    Binding.TwoWayT.id
+    >> Binding.addLazy (=)
+    >> Binding.mapModel (fun m -> m.Email)
+    >> Binding.mapMsg SetEmail
+    >> Binding.addValidation (fun m ->
+        if String.IsNullOrEmpty(m.Email) then ["Email is required"]
+        elif not (m.Email.Contains("@")) then ["Invalid email format"]
+        else [])
+
+member this.Email
+    with get () = base.Get () emailBinding
+    and set (value) = base.Set (value) emailBinding
+```
 
 #### Typed SubModel Bindings
 
-You can create strongly-typed SubModels in much the same way as you can create normal SubModels - simply replace the `Binding<'model, 'msg> list` with the constructor for a type that implements `ViewModelBase<'model, 'msg>(args)` and takes in that `args` parameter, and use one of the following functions to create the binding:
+You can create strongly-typed SubModels in much the same way as you can create normal SubModels - simply replace the
+`Binding<'model, 'msg> list` with the constructor for a type that implements `ViewModelBase<'model, 'msg>(args)` and
+takes in that `args` parameter, and use one of the following functions to create the binding:
 
-- `Binding.SubModelT.req`
-- `Binding.SubModelSeqUnkeyedT.id`
-- `Binding.SubModelSeqKeyedT.id`
-- `Binding.SubModelWinT.id`
+- `Binding.SubModelT.req` - Required sub-model
+- `Binding.SubModelT.opt` - Optional sub-model
+- `Binding.SubModelSeqUnkeyedT.id` - Collection without keys
+- `Binding.SubModelSeqKeyedT.id` - Collection with keys for efficient updates
+- `Binding.SubModelWinT.id` - Sub-model controlling window state
+
+Example of typed sub-model binding:
+
+```F#
+// Child ViewModel
+[<AllowNullLiteral>]
+type CounterViewModel(args) =
+    inherit ViewModelBase<Counter.Model, Counter.Msg>(args)
+
+    member _.Count =
+        base.Get () (Binding.OneWayT.id >> Binding.mapModel (fun m -> m.Count))
+
+    member _.Increment =
+        base.Get () (Binding.CmdT.setAlways Counter.Increment)
+
+// Parent ViewModel
+[<AllowNullLiteral>]
+type MainViewModel(args) =
+    inherit ViewModelBase<App.Model, App.Msg>(args)
+
+    member _.Counter =
+        base.Get () (Binding.SubModelT.req CounterViewModel
+                    >> Binding.mapModel (fun m -> m.Counter)
+                    >> Binding.mapMsg App.CounterMsg)
+```
+
+#### Typed SubModel Sequence Bindings
+
+For collections of sub-models, use `SubModelSeqKeyedT.id`:
+
+```F#
+[<AllowNullLiteral>]
+type CounterListViewModel(args) =
+    inherit ViewModelBase<CounterList.Model, CounterList.Msg>(args)
+
+    member _.Counters =
+        base.Get () (Binding.SubModelSeqKeyedT.id CounterViewModel (fun m -> m.Id)
+                    >> Binding.mapModel (fun m -> m.Counters)
+                    >> Binding.mapMsg (fun (id, msg) -> CounterMsg(id, msg)))
+```
 
 #### Typed WpfProgram Bindings
 
-Something very similar to the above transformation can also be accomplished at the top level by using one of the following `T` functions to create the program:
+Something very similar to the above transformation can also be accomplished at the top level by using one of the
+following `T` functions to create the program:
 
 - `WpfProgram.mkSimpleT`
 - `WpfProgram.mkProgramT`
@@ -530,6 +933,10 @@ Something very similar to the above transformation can also be accomplished at t
 
 #### Mixing and matching bindings
 
-When migrating to a statically-typed view model, you can use all of the existing bindings as-is, with the exception of two-way bindings (must be split up into `OneWay` and `OneWayToSource` bindings). These will type as `obj` until you upgrade them to the equivalent `T` bindings.
+When migrating to a statically-typed view model, you can use all of the existing bindings as-is, with the exception of
+two-way bindings (must be split up into `OneWay` and `OneWayToSource` bindings). These will type as `obj` until you
+upgrade them to the equivalent `T` bindings.
 
-When intruducing a statically-typed view model as a submodel to a binding defined by the boxed binding list, simply use one of the new [Typed SubModel Bindings](#typed-submodel-bindings) and then call `Binding.boxT` to map the output type. (e.g., `"TypedSubModel" |> Binding.SubModelT.req TypedSubModel >> Binding.boxT`).
+When intruducing a statically-typed view model as a submodel to a binding defined by the boxed binding list, simply use
+one of the new [Typed SubModel Bindings](#typed-submodel-bindings) and then call `Binding.boxT` to map the output
+type. (e.g., `"TypedSubModel" |> Binding.SubModelT.req TypedSubModel >> Binding.boxT`).

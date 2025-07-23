@@ -1,0 +1,17 @@
+﻿<UserControl x:Class="Navigation.CustomerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:Navigation.Core;assembly=Navigation.Core"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:CustomerViewModel}"
+             d:DesignHeight="300" d:DesignWidth="300">
+  <DockPanel LastChildFill="True">
+    <TextBlock Text="{Binding Title}" DockPanel.Dock="Top" FontSize="16" Margin="10" />
+    <StackPanel Orientation="Vertical" Margin="10">
+      <Button Content="Get Current Time" Command="{Binding GetTime}" />
+      <TextBlock Text="{Binding CurrentTime, StringFormat='yyyy-MM-dd HH:mm:ss.fffff zzzzz'}" />
+    </StackPanel>
+  </DockPanel>
+</UserControl>

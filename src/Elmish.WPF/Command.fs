@@ -3,29 +3,42 @@
 open System
 open System.Windows.Input
 
+/// <summary>
 /// A command that optionally hooks into CommandManager.RequerySuggested to
 /// automatically trigger CanExecuteChanged whenever the CommandManager detects
 /// conditions that might change the output of canExecute. It's necessary to use
 /// this feature for command bindings where the CommandParameter is bound to
 /// another UI control (e.g. a ListView.SelectedItem).
+/// </summary>
+/// <param name="execute">The function to execute when the command is invoked.</param>
+/// <param name="canExecute">The function that determines whether the command can execute.</param>
 type internal Command(execute, canExecute) =
 
-  let canExecuteChanged = Event<EventHandler, EventArgs>()
+    let canExecuteChanged = Event<EventHandler, EventArgs>()
 
-  // CommandManager only keeps a weak reference to the event handler,
-  // so a strong reference must be maintained,
-  // which is achieved by this mutable let-binding.
-  // Can test this via the UiBoundCmdParam sample.
-  let mutable _handler = Unchecked.defaultof<EventHandler>
-  member this.AddRequeryHandler () =
-    let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
-    CommandManager.RequerySuggested.AddHandler handler
-    _handler <- handler
+    // CommandManager only keeps a weak reference to the event handler,
+    // so a strong reference must be maintained,
+    // which is achieved by this mutable let-binding.
+    // Can test this via the UiBoundCmdParam sample.
+    let mutable _handler = Unchecked.defaultof<EventHandler>
 
-  member this.RaiseCanExecuteChanged () = canExecuteChanged.Trigger(this, EventArgs.Empty)
+    /// <summary>
+    /// Adds a handler to CommandManager.RequerySuggested for automatic CanExecuteChanged updates.
+    /// </summary>
+    member this.AddRequeryHandler() =
+        let handler = EventHandler(fun _ _ -> this.RaiseCanExecuteChanged())
+        CommandManager.RequerySuggested.AddHandler handler
+        _handler <- handler
 
-  interface ICommand with
-    [<CLIEvent>]
-    member _.CanExecuteChanged = canExecuteChanged.Publish
-    member _.CanExecute p = canExecute p
-    member _.Execute p = execute p
+    /// <summary>
+    /// Raises the CanExecuteChanged event to notify that the command's ability to execute may have changed.
+    /// </summary>
+    member this.RaiseCanExecuteChanged() =
+        canExecuteChanged.Trigger(this, EventArgs.Empty)
+
+    interface ICommand with
+        [<CLIEvent>]
+        member _.CanExecuteChanged = canExecuteChanged.Publish
+
+        member _.CanExecute p = canExecute p
+        member _.Execute p = execute p

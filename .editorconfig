@@ -4,4 +4,6 @@ root = true
 insert_final_newline = false
 trim_trailing_whitespace = true
 indent_style = space
+
+[*.{xml,slnx,fsproj,csproj,xaml}]
 indent_size = 2

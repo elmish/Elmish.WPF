@@ -23,10 +23,10 @@ jobs:
           6.0.x
 
     - name: Restore
-      run: dotnet restore src/Elmish.WPF.sln
+      run: dotnet restore Elmish.WPF.sln
 
     - name: Build
-      run: dotnet build --no-restore --configuration Release src/Elmish.WPF.sln
+      run: dotnet build --no-restore --configuration Release Elmish.WPF.sln
 
     - name: Test
-      run: dotnet test --no-build --configuration Release src/Elmish.WPF.Tests/Elmish.WPF.Tests.fsproj
+      run: dotnet test --no-build --configuration Release tests/Elmish.WPF.Tests/Elmish.WPF.Tests.fsproj

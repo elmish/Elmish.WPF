@@ -1,0 +1,38 @@
+﻿<Window x:Class="Navigation.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Navigation.Core;assembly=Navigation.Core"
+        xmlns:local="clr-namespace:Navigation"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:MainViewModel}"
+        Title="{Binding Title}"
+        Height="450"
+        Width="800">
+  <DockPanel LastChildFill="True">
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_Datei">
+        <MenuItem Header="_Dashboard"
+                  Command="{Binding Navigate}"
+                  CommandParameter="{x:Static vm:Main+Uri.Dashboard}" />
+        <MenuItem Header="Kunden"
+                  Command="{Binding Navigate}"
+                  CommandParameter="{x:Static vm:Main+Uri.Customer}" />
+        <Separator />
+        <MenuItem Header="B_eenden" />
+      </MenuItem>
+    </Menu>
+    <StatusBar DockPanel.Dock="Bottom" />
+    <ContentControl Content="{Binding Content}">
+      <ContentControl.Resources>
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+          <local:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CustomerViewModel}">
+          <local:CustomerView />
+        </DataTemplate>
+      </ContentControl.Resources>
+    </ContentControl>
+  </DockPanel>
+</Window>

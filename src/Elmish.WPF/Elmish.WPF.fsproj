@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Link="README.md" Pack="True" PackagePath="/" />
+    <None Include="..\..\README.md" Link="README.md" Pack="True" PackagePath="/"/>
     <None Include="elmish-wpf-logo-128x128.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -41,27 +41,27 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Elmish.WPF.Benchmarks</_Parameter1>
     </AssemblyAttribute>
-    <Compile Include="InternalUtils.fs" />
-    <Compile Include="Merge.fs" />
-    <Compile Include="Command.fs" />
-    <Compile Include="Utils.fs" />
-    <Compile Include="WindowState.fs" />
-    <Compile Include="ViewModelArgs.fs" />
-    <Compile Include="BindingData.fs" />
-    <Compile Include="BindingVmHelpers.fs" />
-    <Compile Include="ViewModels.fs" />
-    <Compile Include="Binding.fs" />
-    <Compile Include="ViewModelModule.fs" />
-    <Compile Include="WpfProgram.fs" />
+    <Compile Include="InternalUtils.fs"/>
+    <Compile Include="Merge.fs"/>
+    <Compile Include="Command.fs"/>
+    <Compile Include="Utils.fs"/>
+    <Compile Include="WindowState.fs"/>
+    <Compile Include="ViewModelArgs.fs"/>
+    <Compile Include="BindingData.fs"/>
+    <Compile Include="BindingVmHelpers.fs"/>
+    <Compile Include="ViewModels.fs"/>
+    <Compile Include="Binding.fs"/>
+    <Compile Include="ViewModelModule.fs"/>
+    <Compile Include="WpfProgram.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elmish" Version="[4.0.1, 4.99]" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1, 99]" />
+    <PackageReference Include="Elmish" Version="[4.0.1, 4.99]"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1, 99]"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="[6.0.5, 99]" />
+    <PackageReference Update="FSharp.Core" Version="[6.0.5, 99]"/>
   </ItemGroup>
 
 </Project>

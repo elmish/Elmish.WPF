@@ -45,6 +45,9 @@ BenchmarkDotNet.Artifacts/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
+# Claude AI local settings
+.claude/
+
 ### VS Code ###
 .vscode/*
 !.vscode/settings.json
